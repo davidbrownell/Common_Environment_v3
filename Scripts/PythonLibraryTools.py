@@ -1,0 +1,604 @@
+# ----------------------------------------------------------------------
+# |  
+# |  PythonLibraryTools.py
+# |  
+# |  David Brownell <db@DavidBrownell.com>
+# |      2018-05-13 08:40:40
+# |  
+# ----------------------------------------------------------------------
+# |  
+# |  Copyright David Brownell 2018.
+# |  Distributed under the Boost Software License, Version 1.0.
+# |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+# |  
+# ----------------------------------------------------------------------
+"""Tools that help when installing, moving, and detecting changes with Python libraries."""
+
+import itertools
+import json
+import os
+import shutil
+import sys
+import textwrap
+
+from collections import OrderedDict
+
+import inflect as inflect_mod
+import six
+
+import CommonEnvironment
+from CommonEnvironment.CallOnExit import CallOnExit
+from CommonEnvironment import CommandLine
+from CommonEnvironment import FileSystem
+from CommonEnvironment.StreamDecorator import StreamDecorator
+from CommonEnvironment import StringHelpers
+from CommonEnvironment.Shell.All import CurrentShell
+
+# ----------------------------------------------------------------------
+_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
+_script_dir, _script_name = os.path.split(_script_fullpath)
+# ----------------------------------------------------------------------
+
+inflect                                     = inflect_mod.engine()
+
+sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
+with CallOnExit(lambda: sys.path.pop(0)):
+    from RepositoryBootstrap.Impl import Constants as RepositoryBootstrapConstants
+    from RepositoryBootstrap.Impl.ActivationActivity.PythonActivationActivity import EASY_INSTALL_PTH_FILENAME, \
+                                                                                     SCRIPTS_DIR_NAME, \
+                                                                                     WRAPPERS_FILENAME, \
+                                                                                     PythonActivationActivity \
+                                                                                     
+
+# ----------------------------------------------------------------------
+@CommandLine.EntryPoint
+@CommandLine.Constraints( output_stream=None,
+                        )
+def Display( output_stream=sys.stdout,
+           ):
+    """
+    Displays library modifications with the current python installation. 
+    
+    Use Move to prepare the libraries for checkin based on the currently activated repository."""
+    new_content = _NewLibraryContent.Create(_EnvironmentSettings())
+    
+    # ----------------------------------------------------------------------
+    def Display(name, items, is_os_specific_func):
+        cols = [ 40, 9, 120, ]
+        template = "{name:<%d}  {type:<%d}  {fullpath:<%d}" % tuple(cols)
+
+        output_stream.write(textwrap.dedent(
+            """\
+            {sep}
+            {name}
+            {sep}
+
+              {header}
+              {underline}
+              {content}
+
+            """).format( sep='=' * len(name),
+                         name=name,
+                         header=template.format( name="Name",
+                                                 type="Type",
+                                                 fullpath="Path",
+                                               ),
+                         underline=template.format(**{ k : v for k, v in zip( [ "name", "type", "fullpath", ],
+                                                                              [ '-' * col for col in cols ],
+                                                                            ) }),
+                         content="No items" if not items else StringHelpers.LeftJustify( '\n'.join([ template.format( name="{}{}".format( os.path.basename(item),
+                                                                                                                                          ' *' if is_os_specific_func(item) else '',
+                                                                                                                                        ),
+                                                                                                                      type="Directory" if os.path.isdir(item) else "File",
+                                                                                                                      fullpath=item,
+                                                                                                                    )
+                                                                                                     for item in items
+                                                                                                   ]),
+                                                                                         2,
+                                                                                       ),
+                       ))
+
+    # ----------------------------------------------------------------------
+    def DisplayExtensions(name, items):
+        cols = [ 120, ]
+        template = "{fullpath:<%d}" % tuple(cols)
+
+        output_stream.write(textwrap.dedent(
+            """\
+            {sep}
+            {name}
+            {sep}
+
+              {header}
+              {underline}
+              {content}
+
+            """).format( sep='=' * len(name),
+                         name=name,
+                         header=template.format(fullpath="Path"),
+                         underline=template.format(**{ k : v for k, v in zip( [ "fullpath", ],
+                                                                              [ '-' * col for col in cols ],
+                                                                            ) }),
+                         content="No items" if not items else StringHelpers.LeftJustify( '\n'.join(items),
+                                                                                         2,
+                                                                                       ),
+                       ))
+
+    # ----------------------------------------------------------------------
+
+    shell = CurrentShell
+
+    Display("Libraries", new_content.Libraries, new_content.HasOSSpecificLibraryExtensions)
+    Display("Scripts", new_content.Scripts, lambda fullpath: os.path.splitext(_script_fullpath)[1] in [ ".pyd", ".so", shell.ScriptExtension, shell.ExecutableExtension, ])
+    DisplayExtensions("Library Extensions", new_content.LibraryExtensions)
+    DisplayExtensions("Script Extensions", new_content.ScriptExtensions)
+
+# ----------------------------------------------------------------------
+@CommandLine.EntryPoint( no_move=CommandLine.EntryPoint.Parameter("Displays actions that would be taken without making any changes"),
+                         ignore_warnings=CommandLine.EntryPoint.Parameter("Continues if warnings were encountered"),
+                       )
+@CommandLine.Constraints( output_stream=None,
+                        )
+def Move( no_move=False,
+          ignore_warnings=False,
+          output_stream=sys.stdout,
+        ):
+    """Moves any new python libraries to the appropriate Libraries folder associated with the activated repository."""
+
+    with StreamDecorator(output_stream).DoneManager( line_prefix='',
+                                                     prefix="\nResults: ",
+                                                     suffix='\n',
+                                                   ) as dm:
+        if no_move:
+            dm.stream.write("***** Output is for information only; nothing will be moved. *****\n\n")
+            move_func = lambda *args, **kwargs: None
+        else:
+            # ----------------------------------------------------------------------
+            def Move(source_dir_or_filename, dest_dir):
+                FileSystem.MakeDirs(dest_dir)
+                shutil.move(source_dir_or_filename, dest_dir)
+                
+            # ----------------------------------------------------------------------
+
+            move_func = Move
+
+        dm.stream.write("Calculating new library content...")
+        with dm.stream.DoneManager():
+            new_content = _NewLibraryContent.Create(_EnvironmentSettings())
+
+        # Group libraries and distinfo bundles
+
+        # ----------------------------------------------------------------------
+        class PythonLibrary(object):
+            def __init__(self, fullpath):
+                self.Fullpath                           = fullpath
+                self.metadata_path                      = None
+                self.version                            = None
+                self.scripts                            = []
+                
+        # ----------------------------------------------------------------------
+
+        libraries = OrderedDict()
+
+        dm.stream.write("Grouping libraries...")
+        with dm.stream.DoneManager( done_suffix=lambda: "{} found".format(inflect.no("library", len(libraries))),
+                                    suffix='\n',
+                                  ) as this_dm:
+            for library_path in new_content.Libraries:
+                if os.path.isfile(library_path):
+                    this_dm.result = this_dm.result or 1
+                    this_dm.stream.write("WARNING: '{}' is a file and cannot be processed.\n".format(library_path))
+
+                    continue
+
+                basename = os.path.basename(library_path)
+                if ( not basename.endswith(".dist-info") and 
+                     not basename.endswith(".egg-info")
+                   ):
+                    libraries[basename] = PythonLibrary(library_path)
+
+            lowercase_map = { k.lower() : k for k in six.iterkeys(libraries) }
+
+            # Extract library metadata
+            for library_path in new_content.Libraries:
+                if os.path.isfile(library_path):
+                    continue
+
+                basename = os.path.basename(library_path)
+
+                if not ( basename.endswith(".dist-info") or
+                         basename.endswith(".egg-info")
+                       ):
+                    continue
+
+                index = basename.find('-')
+                if index == -1:
+                    this_dm.result = this_dm.result or 1
+                    this_dm.stream.write("WARNING: The library name for '{}' could not be extracted.\n".format(library_path))
+
+                    continue
+
+                potential_name = basename[:index]
+
+                python_library = libraries.get(potential_name, None)
+                if python_library is None:
+                    library_key = lowercase_map.get(potential_name.lower(), None)
+                    if library_key is not None:
+                        python_library = libraries.get(library_key, None)
+
+                if python_library is None:
+                    this_dm.result = this_dm.result or 1
+                    this_dm.stream.write("WARNING: The library name '{}' was not found ({}).\n".format(potential_name, library_path)) 
+
+                    continue
+
+                if basename.endswith(".dist-info"):
+                    python_library.metadata_path = library_path
+
+                    version = None
+
+                    if version is None:
+                        metadata_filename = os.path.join(library_path, "metadata.json")
+                        if os.path.isfile(metadata_filename):
+                            with open(metadata_filename) as f:
+                                data = json.load(f)
+
+                            if "version" not in data:
+                                this_dm.result = -1
+                                this_dm.stream.write("ERROR: 'version' was not found in '{}'.\n".format(library_path))
+
+                                continue
+
+                            version = data["version"]
+
+                    if version is None:
+                        metadata_filename = os.path.join(library_path, "METADATA")
+                        if os.path.isfile(metadata_filename):
+                            for line in open(metadata_filename).readlines():
+                                if line.startswith("Version:"):
+                                    version = line[len("Version:"):].strip()
+                                    break
+
+                    if version is None:
+                        this_dm.result = -1
+                        this_dm.stream.write("ERROR: Metadata was not found for '{}'.\n".format(library_path))
+
+                        continue
+
+                    python_library.version = version
+
+                elif basename.endswith(".egg-info"):
+                    python_library.metadata_path = library_path
+
+                    metadata_filename = os.path.join(library_path, "PKG-INFO")
+                    if not os.path.isfile(metadata_filename):
+                        this_dm.result = -1
+                        this_dm.stream.write("ERROR: Metadata was not found for '{}'.\n".format(metadata_filename))
+
+                        continue
+
+                    version = None
+
+                    for line in open(metadata_filename).readlines():
+                        if line.startswith("Version:"):
+                            version = line[len("Version:"):].strip()
+                            break
+
+                    if version is None:
+                        this_dm.result = -1
+                        this_dm.stream.write("ERROR: 'Version:' was not found in '{}'.\n".format(metadata_filename))
+
+                        continue
+
+                    python_library.version = version
+
+                else:
+                    assert False, basename
+
+            # Eliminate all library info where we couldn't extract the version
+            for library_name in list(six.iterkeys(libraries)):
+                if libraries[library_name].version is None:
+                    this_dm.result = this_dm.result or 1
+                    this_dm.stream.write("WARNING: Version information was not found for '{}'.\n".format(library_name))
+
+                    libraries.pop(library_name)
+
+            # Associate scripts with the known library info
+            for script_fullpath in new_content.Scripts:
+                if os.path.isdir(script_fullpath):
+                    this_dm.result = this_dm.result or 1
+                    this_dm.stream.write("WARNING: '{}' is a directory and will not be processed.\n".format(script_fullpath))
+
+                    continue
+
+                script_name_lower = os.path.splitext(os.path.basename(script_fullpath))[0].lower()
+
+                found = False
+
+                for potential_library_name, potential_library_info in six.iteritems(libraries):
+                    if potential_library_name.lower() in script_name_lower:
+                        potential_library_info.scripts.append(script_fullpath)
+
+                        found = True
+                        break
+
+                if not found:
+                    this_dm.result = this_dm.result or 1
+                    this_dm.stream.write("WARNING: The library for the script '{}' could not be found.\n".format(script_fullpath))
+
+        if dm.result < 0:
+            return dm.result
+
+        if not ignore_warnings and dm.result > 0:
+            dm.stream.write("\nWarnings were encountered. To continue execution even with warnings, specify 'ignore_warnings' on the command line.\n")
+            return dm.result
+
+        if not libraries:
+            return
+
+        dm.stream.write("Moving content...")
+        with dm.stream.DoneManager( suffix='\n',
+                                  ) as move_dm:
+            # ----------------------------------------------------------------------
+            def DestinationIsOSSpecific(dest_dir):
+                # BugBug: I don't think that this works. Should be looking for os-specific names and then python names.
+                if not os.path.isdir(dest_dir):
+                    return False
+
+                found_one = False
+
+                for item in os.listdir(dest_dir):
+                    if not item.startswith("python"):
+                        return False
+
+                    fullpath = os.path.join(dest_dir, item)
+                    if not os.path.isdir(fullpath):
+                        return False
+
+                    found_one = True
+
+                return found_one
+
+            # ----------------------------------------------------------------------
+
+            python_version_dir = "python{}".format(os.getenv("DEVELOPMENT_ENVIRONMENT_PYTHON_VERSION").split('.')[0])
+
+            display_template = "{0:<50} -> {1}\n"
+
+            for index, (library_name, library_info) in enumerate(six.iteritems(libraries)):
+                move_dm.stream.write("Processing '{}' ({} of {})...".format( library_name,
+                                                                             index + 1,
+                                                                             len(libraries),
+                                                                           ))
+                with move_dm.stream.DoneManager() as this_dm:
+                    try:
+                        dest_dir = os.path.join(os.getenv("DEVELOPMENT_ENVIRONMENT_REPOSITORY"), RepositoryBootstrapConstants.LIBRARIES_SUBDIR, PythonActivationActivity.Name, library_name, "v{}".format(library_info.version))
+                        
+                        has_os_specific_dest_dir = False
+
+                        if new_content.HasOSSpecificLibraryExtensions(library_info.Fullpath) or DestinationIsOSSpecific(dest_dir):
+                            dest_dir = os.path.join(dest_dir, CurrentShell.CategoryName, python_version_dir)
+                            has_os_specific_dest_dir = True
+
+                        if os.path.isdir(dest_dir):
+                            # If here, it could be that the library already exists but we have os-specific script files to copy.
+                            # Don't bail if the contents are an exact match (minus any .pyc/.pyo files).
+                            # BugBug
+
+                            this_dm.result = -1
+                            this_dm.stream.write("ERROR: '{}' already exists.\n".format(dest_dir))
+
+                            continue
+
+                        # Copy the library
+                        library_dest_dir = dest_dir
+                        this_dm.stream.write(display_template.format(os.path.basename(library_info.Fullpath), library_dest_dir))
+
+                        move_func(library_info.Fullpath, library_dest_dir)
+
+                        # Copy the metadata
+                        assert library_info.metadata_path
+
+                        metadata_dest_dir = dest_dir
+                        this_dm.stream.write(display_template.format(os.path.basename(library_info.metadata_path), metadata_dest_dir))
+
+                        move_func(library_info.metadata_path, metadata_dest_dir)
+
+                        # Copy the scripts
+                        scripts_dest_dir = os.path.join(dest_dir, SCRIPTS_DIR_NAME)
+
+                        if not has_os_specific_dest_dir and bool(next((script for script in library_info.scripts if os.path.splitext(script)[1] in [ CurrentShell.ScriptExtension, CurrentShell.ExecutableExtension, ]), None)):
+                            scripts_dest_dir = os.path.join(scripts_dest_dir, CurrentShell.CategoryName)
+
+                        for script in library_info.scripts:
+                            if not no_move:
+                                if PythonActivationActivity.NormalizeScript(script) == PythonActivationActivity.NormalizeScriptResult_Modified:
+                                    this_dm.stream.write("    ** The script '{}' was normalized.\n".format(script))
+
+                            this_dm.stream.write(display_template.format("{} [Script]".format(os.path.basename(script)), scripts_dest_dir))
+                            move_func(script, scripts_dest_dir)
+
+                    except Exception as ex:
+                        this_dm.result = -1
+                        this_dm.stream.write("ERROR: {}\n".format(StringHelpers.LeftJustify( str(ex),
+                                                                                             len("ERROR: "),
+                                                                                           )))
+
+        return dm.result
+
+# ----------------------------------------------------------------------
+@CommandLine.EntryPoint
+@CommandLine.Constraints( output_stream=None,
+                        )
+def Install( output_stream=sys.stdout,
+           ):
+    """
+    A replacement for pip install. Will ensure that already installed python libraries are not modified in-place,
+    but rather considered as new libraries for the currently activated repository.
+    """
+    pass # BugBug
+
+# ----------------------------------------------------------------------
+@CommandLine.EntryPoint
+@CommandLine.Constraints( script_filename=CommandLine.FilenameTypeInfo(),
+                          output_stream=None,
+                        )
+def NormalizeScript( script_filename,
+                     output_stream=sys.stdout,
+                   ):
+    """Normalizes a script so that it can be run from any location."""
+
+    with StreamDecorator(output_stream).DoneManager( line_prefix='',
+                                                     prefix="\nResults: ",
+                                                     suffix='\n',
+                                                   ) as dm:
+        result = PythonActivationActivity.NormalizeScript(script_filename)
+        
+        dm.stream.write(PythonActivationActivity.NormalizeScriptResultStrings[result])
+
+        return dm.result
+
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+class _EnvironmentSettings(object):
+    """Python settings based on the current environment."""
+
+    # ----------------------------------------------------------------------
+    def __init__(self):
+        sub_dict = {}
+
+        for suffix in [ "PYTHON_VERSION",
+                        "PYTHON_VERSION_SHORT",
+                      ]:
+            sub_dict[suffix.lower()] = os.getenv("DEVELOPMENT_ENVIRONMENT_{}".format(suffix))
+
+        generated_dir = os.path.join(os.getenv(RepositoryBootstrapConstants.DE_REPO_GENERATED_NAME), PythonActivationActivity.Name)
+        assert os.path.isdir(generated_dir), generated_dir
+
+        # ----------------------------------------------------------------------
+        def Populate(dirs):
+            if not dirs:
+                return generated_dir
+
+            dirs = [ d.format(**sub_dict) for d in dirs ]
+            return os.path.join(generated_dir, *dirs)
+
+        # ----------------------------------------------------------------------
+
+        self.LibraryDir                     = Populate(PythonActivationActivity.LibrarySubdirs)
+        self.ScriptDir                      = Populate(PythonActivationActivity.ScriptSubdirs)
+        self.Binary                         = os.path.join(Populate(PythonActivationActivity.BinSubdirs), "python{}".format(PythonActivationActivity.BinExtension or ''))
+
+    # ----------------------------------------------------------------------
+    def __str__(self):
+        return CommonEnvironment.ObjectStrImpl(self)
+
+# ----------------------------------------------------------------------
+class _NewLibraryContent(object):
+    """New python content based on the current environment"""
+
+    # ----------------------------------------------------------------------
+    @classmethod
+    def Create(cls, settings):
+        shell = CurrentShell
+
+        # ----------------------------------------------------------------------
+        def GetItems(directory, ignore_set):
+            items = []
+
+            assert os.path.isdir(directory), directory
+            is_bin_dir = PythonActivationActivity.BinSubdirs and directory.endswith(os.path.join(*PythonActivationActivity.BinSubdirs))
+            
+            for item in os.listdir(directory):
+                if item in ignore_set:
+                    continue
+
+                fullpath = os.path.join(directory, item)
+                if not shell.IsSymLink(fullpath):
+                    if ( shell.CategoryName == "Linux" and 
+                         is_bin_dir and 
+                         item.startswith("python")
+                       ):
+                        continue
+
+                    items.append(fullpath)
+
+            return items
+
+        # ----------------------------------------------------------------------
+
+        # Get the libraries
+        new_libraries = GetItems(settings.LibraryDir, set([ "__pycache__", EASY_INSTALL_PTH_FILENAME, ]))
+
+        # Ignore .pyc files (which may be here for python 2.7)
+        new_libraries = [ item for item in new_libraries if not os.path.splitext(item)[1] == ".pyc" ]
+
+        # Get os-specific library extensions 
+        os_specific_extensions = [ ".pyd", ".so", shell.ScriptExtension, ]
+        if shell.ExecutableExtension:
+            os_specific_extensions.append(shell.ExecutableExtension)
+
+        new_library_extensions = []
+
+        for new_library in new_libraries:
+            if not os.path.isdir(new_library):
+                continue
+
+            new_library_extensions += FileSystem.WalkFiles( new_library,
+                                                            include_file_extensions=os_specific_extensions,
+                                                          )
+
+        script_ignore_items = set([ "__pycache__", WRAPPERS_FILENAME, ])
+
+        # Create the script's wrappers file to get a list of all the script files that
+        # should be ignored.
+        potential_filename = os.path.join(settings.ScriptDir, WRAPPERS_FILENAME)
+        if os.path.isfile(potential_filename):
+            for name in [ line.strip() for line in open(potential_filename).readlines() if line.strip() ]:
+                script_ignore_items.add(name)
+
+        # Get the scripts
+        new_scripts = GetItems(settings.ScriptDir, script_ignore_items)
+
+        # Get os-specific script extensions
+        new_script_extensions = [ item for item in new_scripts if os.path.splitext(item)[1] in os_specific_extensions ]
+
+        return cls( new_libraries,
+                    new_library_extensions,
+                    new_scripts,
+                    new_script_extensions,
+                  )
+
+    # ----------------------------------------------------------------------
+    def __init__( self,
+                  libraries,
+                  library_extensions,
+                  scripts,
+                  script_extensions,
+                ):
+        self.Libraries                      = libraries
+        self.LibraryExtensions              = library_extensions
+        self.Scripts                        = scripts
+        self.ScriptExtensions               = script_extensions
+
+    # ----------------------------------------------------------------------
+    def HasOSSpecificLibraryExtensions(self, library):
+        assert library in self.Libraries, library
+
+        for item in self.LibraryExtensions:
+            if item.startswith(library):
+                return True
+
+        return False
+
+    # ----------------------------------------------------------------------
+    def __str__(self):
+        return CommonEnvironment.ObjectStrImpl(self)
+
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+if __name__ == "__main__":
+    try: sys.exit(CommandLine.Main())
+    except KeyboardInterrupt: pass
