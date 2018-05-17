@@ -1,0 +1,50 @@
+# ----------------------------------------------------------------------
+# |  
+# |  CommonEnvironmentImports.py
+# |  
+# |  David Brownell <db@DavidBrownell.com>
+# |      2018-05-02 13:33:29
+# |  
+# ----------------------------------------------------------------------
+# |  
+# |  Copyright David Brownell 2018.
+# |  Distributed under the Boost Software License, Version 1.0.
+# |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+# |  
+# ----------------------------------------------------------------------
+"""
+Imports from the Common_Environment repository used during the bootstrap process.
+This file is imported early within the boostrapping process, and in a variety of
+different environments. We can't make too many assumptions about the state of the
+system when we are here.
+"""
+
+import os
+import sys
+
+import RepositoryBootstrap
+from RepositoryBootstrap.Impl import Constants
+
+# ----------------------------------------------------------------------
+_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
+_script_dir, _script_name = os.path.split(_script_fullpath)
+# ----------------------------------------------------------------------
+
+COMMON_ENVIRONMENT_PATH                     = os.path.join(RepositoryBootstrap.GetFundamentalRepository(), Constants.LIBRARIES_SUBDIR, "Python", "CommonEnvironment", "v1.0")
+
+assert os.path.isdir(COMMON_ENVIRONMENT_PATH), COMMON_ENVIRONMENT_PATH
+sys.path.insert(0, COMMON_ENVIRONMENT_PATH)
+
+import CommonEnvironment
+
+from CommonEnvironment.CallOnExit import CallOnExit
+from CommonEnvironment import CommandLine
+from CommonEnvironment import FileSystem
+from CommonEnvironment import Interface
+from CommonEnvironment import Process
+from CommonEnvironment import RegularExpression
+from CommonEnvironment.Shell.All import CurrentShell, ALL_TYPES as Shell_ALL_TYPES
+from CommonEnvironment.StreamDecorator import StreamDecorator
+from CommonEnvironment import StringHelpers
+
+del sys.path[0]

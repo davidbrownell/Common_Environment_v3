@@ -1,0 +1,9 @@
+syntax: glob
+
+__pycache__
+*.pyc
+*.pyo
+
+Generated/*
+Activate.cmd
+Activate.sh
