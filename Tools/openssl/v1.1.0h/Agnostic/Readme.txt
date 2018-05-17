@@ -1,0 +1,1 @@
+Openssl is only used on Linux system. This file ensures that its parent directory is created; the parent directory prevents errors associated with missing OS customizations during activation.
