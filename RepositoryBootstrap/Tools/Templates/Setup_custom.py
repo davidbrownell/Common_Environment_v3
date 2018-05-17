@@ -35,11 +35,46 @@ fundamental_repo = os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL")
 assert os.path.isdir(fundamental_repo), fundamental_repo
 
 sys.path.insert(0, fundamental_repo)
+from RepositoryBootstrap import *
 from RepositoryBootstrap.Configuration import *
 from RepositoryBootstrap.Impl.CommonEnvironmentImports import CurrentShell
 del sys.path[0]
 
 # ----------------------------------------------------------------------
+# There are two types of repositories: Standard and Tool. Only one standard
+# repository may be activated within an environment at a time while any number
+# of tool repositories can be activated within a standard repository environment.
+# Standard repositories may be dependent on other repositories (thereby inheriting
+# their functionality), support multiple configurations, and specify version 
+# information for tools and libraries in themselves or its dependencies.
+#
+# Tool repositories are designed to augment other repositories. They cannot
+# have configurations or dependencies, but may be activated within any other
+# repository. 
+# 
+# These difference are summerized in this table: 
+# 
+#                                                       Standard  Tool
+#                                                       --------  ----
+#      Activated in isolation                              X
+#      Supports configurations                             X
+#      Supports VersionSpecs                               X
+#      Can be dependent upon other repositories            X
+#      Can be activated within any other Standard                   X
+#        repository
+#
+# Consider a script that wraps common Git commands. This functionality is useful 
+# across a number of different repositories, yet doesn't have functionality that 
+# is useful on its own; it provides functionality that augments other repositories. 
+# This functionality should be included within a repository that is classified 
+# as a tool repository.
+#
+# To classify a repository as a Tool repository, decorate the GetDependencies method
+# with the ToolRepository decorator.
+#
+
+
+# @ToolRepository # <-- Uncomment this line to classify this repository as a tool repository
 def GetDependencies():
     """
     Returns information about the dependencies required by this repository.
@@ -87,24 +122,24 @@ def GetDependencies():
                                                    ) ),
                        ])
 
-    # To support a single configuration...
-    Configuration( "A description of Config1; this configuration uses python36",
-                   [ Dependency( "0EAA1DCF22804F90AD9F5A3B85A5D706",  # Id for Common_Environment; found in <Common_Environment>/__RepositoryId__
-                                 "Common_Environment",                # Name used if Common_Environment cannot be found during setup
-                                 "python36",                          # Configuration value used when activating Common_Environment
-                               ),
-                     # Other dependencies go here (if any)    
-                   ],
-                   # By default, the most recent version of all tools and libraries will be activated for this repository and its dependencies.
-                   # If necessary, you can override this behavior by specifying specific versions for tools that should be used when activating
-                   # this repository with this configuration.
-                   VersionSpecs( # Tools
-                                 [ VersionInfo("Some Tool", "v0.0.1"), ],
-                                 # Libraries, organized by language
-                                 { "Python" : [ VersionInfo("Some Library", "v1.2.3"), ],
-                                 },
-                               ),
-                 )
+    # To support a single (unnamed) configuration...
+    return Configuration( "A description of Config1; this configuration uses python36",
+                          [ Dependency( "0EAA1DCF22804F90AD9F5A3B85A5D706",  # Id for Common_Environment; found in <Common_Environment>/__RepositoryId__
+                                        "Common_Environment",                # Name used if Common_Environment cannot be found during setup
+                                        "python36",                          # Configuration value used when activating Common_Environment
+                                      ),
+                            # Other dependencies go here (if any)    
+                          ],
+                          # By default, the most recent version of all tools and libraries will be activated for this repository and its dependencies.
+                          # If necessary, you can override this behavior by specifying specific versions for tools that should be used when activating
+                          # this repository with this configuration.
+                          VersionSpecs( # Tools
+                                        [ VersionInfo("Some Tool", "v0.0.1"), ],
+                                        # Libraries, organized by language
+                                        { "Python" : [ VersionInfo("Some Library", "v1.2.3"), ],
+                                        },
+                                      ),
+                        )
 
 # ----------------------------------------------------------------------
 def GetCustomActions(debug, verbose, explicit_configurations):
@@ -117,7 +152,7 @@ def GetCustomActions(debug, verbose, explicit_configurations):
     cases, this is Bash on Linux systems and Batch or Powershell on Windows systems.
     """
 
-    raise Exception("Remove this exception once you have updated the configuration for your new repository (GetCustomActions).")
+    raise Exception("Remove this exception once you have updated the custom actions for your new repository (GetCustomActions).")
 
     return [ CurrentShell.Commands.Message("This is a sample message"),
            ]

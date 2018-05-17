@@ -137,6 +137,7 @@ class ScriptsActivationActivity(ActivationActivity):
                 #       ( ExtractorMap, DirGenerators )
                 #       ( ExtractorMap, DirGenerator )
                 #       ExtractorMap
+
                 if isinstance(result, tuple):
                     these_extractors, these_generators = result
 
@@ -147,7 +148,6 @@ class ScriptsActivationActivity(ActivationActivity):
                 else:
                     these_extractors = result
 
-                
                 for k, v in six.iteritems(these_extractors):
                     if k in extractors:
                         raise Exception(textwrap.dedent(

@@ -61,8 +61,8 @@ SETUP_ENVIRONMENT_PUSHED_HOOK_EVENT_HANDLER             = "Pushed"
 
 # ----------------------------------------------------------------------
 # |  Custom Activate Methods
-ACTIVATE_ENVIRONMENT_ACTIONS_METHOD_NAME                                    = "CustomActions"
-ACTIVATE_ENVIRONMENT_CUSTOM_SCRIPT_EXTRACTOR_METHOD_NAME                    = "CustomScriptExtractors"
+ACTIVATE_ENVIRONMENT_ACTIONS_METHOD_NAME                                    = "GetCustomActions"
+ACTIVATE_ENVIRONMENT_CUSTOM_SCRIPT_EXTRACTOR_METHOD_NAME                    = "GetCustomScriptExtractors"
 
 SCRIPT_LIST_NAME                                                            = "DevEnvScripts"
 
