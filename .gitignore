@@ -1,0 +1,12 @@
+__pycache__
+*.pyc
+*.pyo
+
+Activate.cmd
+Activate.ps1
+Activate.sh
+
+Generated/*
+
+Tools/Python/*
+Tools/openssl/*
