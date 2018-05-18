@@ -49,18 +49,17 @@ del sys.path[0]
 # information for tools and libraries in themselves or its dependencies.
 #
 # Tool repositories are designed to augment other repositories. They cannot
-# have configurations or dependencies, but may be activated within any other
-# repository. 
+# have configurations or dependencies and may not be activated on their own. 
 # 
 # These difference are summerized in this table: 
 # 
 #                                                       Standard  Tool
 #                                                       --------  ----
-#      Activated in isolation                              X
+#      Can be activated in isolation                       X
 #      Supports configurations                             X
 #      Supports VersionSpecs                               X
 #      Can be dependent upon other repositories            X
-#      Can be activated within any other Standard                   X
+#      Can be activated within any other Standard                  X
 #        repository
 #
 # Consider a script that wraps common Git commands. This functionality is useful 
