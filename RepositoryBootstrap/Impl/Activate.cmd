@@ -66,28 +66,6 @@ goto Exit
 
 :AfterListConfiguration
 
-@REM ----------------------------------------------------------------------
-@REM |  Indicate if this is a tool repo if requested
-if "%1" NEQ "IsToolRepository" goto :AfterIsToolRepository
-
-REM Get the remaining args
-set _ACTIVATE_ENVIRONMENT_WORKING_DIR=%~dp0
-set _ACTIVATE_ENVIRONMENT_CLA=
-
-shift
-
-:GetRemainingArgs_IsToolRepository
-if "%1" NEQ "" (
-    set _ACTIVATE_ENVIRONMENT_CLA=%_ACTIVATE_ENVIRONMENT_CLA% %1
-    shift
-    goto :GetRemainingArgs_IsToolRepository
-)
-
-%_ACTIVATE_ENVIRONMENT_PYTHON_BINARY% -m RepositoryBootstrap.Impl.Activate IsToolRepository %_ACTIVATE_ENVIRONMENT_WORKING_DIR% %_ACTIVATE_ENVIRONMENT_CLA%
-goto Exit
-
-:AfterIsToolRepository
-
 @REM If here, we are in a verified activation scenario. Set the previous value to this value, knowing that that is the value
 @REM that will be committed.
 set _ACTIVATE_ENVIRONMENT_PREVIOUS_FUNDAMENTAL=%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%

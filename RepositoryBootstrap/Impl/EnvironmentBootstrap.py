@@ -89,7 +89,7 @@ class EnvironmentBootstrap(object):
             dependencies = []
 
             for dependency in config_info["Dependencies"]:
-                dependencies.append(Configuration.Dependency( dependency["Id"],
+                dependencies.append(Configuration.Dependency( dependency["RepositoryId"],
                                                               dependency["FriendlyName"],
                                                               dependency["Configuration"],
                                                             ))

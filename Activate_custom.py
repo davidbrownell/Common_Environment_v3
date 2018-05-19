@@ -62,9 +62,11 @@ def GetCustomScriptExtractors(shell):
         if os.path.basename(script_filename) == "__init__.py":
             return
 
-        return shell.Commands.Execute('python "{}" {}'.format( script_filename,
-                                                                                                 shell.AllArgumentsScriptVariable,
-                                                                                               ))
+        return [ shell.Commands.EchoOff(),
+                 shell.Commands.Execute('python "{}" {}'.format( script_filename,
+                                                                 shell.AllArgumentsScriptVariable,
+                                                               )),
+               ]
 
     # ----------------------------------------------------------------------
     def PythonDocs(script_filename):

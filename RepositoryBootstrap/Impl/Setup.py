@@ -165,6 +165,9 @@ def _SetupBootstrap( shell,
             self.repository_root            = None
             self.dependent_configurations   = []
 
+        def __str__(self):
+            return CommonEnvironmentImports.CommonEnvironment.ObjectStrImpl(self)
+
     # ----------------------------------------------------------------------
     def EnumerateDirectories():
         search_items = []
@@ -342,7 +345,7 @@ def _SetupBootstrap( shell,
             if dependency_info.RepositoryId not in id_lookup:
                 id_lookup[dependency_info.RepositoryId] = LookupObject(dependency_info.FriendlyName)
 
-            if_lookup[dependency_info.RepositoryId].dependency_configurations.append(config_name)
+            id_lookup[dependency_info.RepositoryId].dependent_configurations.append(config_name)
 
     # Display status
     col_sizes = [ 54, 32, 100, ]
@@ -484,9 +487,19 @@ def _SetupBootstrap( shell,
                                                                               ),
                    ))
 
-    # Calcualte fingerprints
+    # Populate the configuration locations and Calcualte fingerprints
     for config_name, config_info in six.iteritems(configurations):
-        config_info.Fingerprint = Utilities.CalculateFingerprint( [ repository_root, ] + [ dependency.RepositoryRoot for dependency in config_info.Dependencies ],
+        repository_roots = []
+
+        for dependency in config_info.Dependencies:
+            assert dependency.RepositoryRoot is None, dependency.RepositoryRoot
+            assert dependency.RepositoryId in id_lookup, dependency
+
+            dependency.RepositoryRoot = id_lookup[dependency.RepositoryId].repository_root
+
+            repository_roots.append(dependency.RepositoryRoot)
+
+        config_info.Fingerprint = Utilities.CalculateFingerprint( [ repository_root, ] + repository_roots,
                                                                   repository_root,
                                                                 )
 

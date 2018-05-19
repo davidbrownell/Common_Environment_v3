@@ -129,16 +129,6 @@ then
     should_continue=0
 fi
 
-# ----------------------------------------------------------------------
-# |  Indicate if this is a tool repo if requested
-if [[ "$1" == "IsToolRepository" ]]
-then
-    shift 1
-    
-    $python_binary -m RepositoryBootstrap.Impl.Activate IsToolRepository "`pwd`" "$@"
-    should_continue=0
-fi
-
 # If here, we are in a verified activation scenario. Set the previous value to this value, knowing that that is the value
 # that will be committed.
 previous_fundamental=$DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL
@@ -200,9 +190,10 @@ then
             should_continue=0
         fi
     
-        command_line_args="$@"
+        configuration=$1
+        shift 1
     else
-        command_line_args="None \"$@\""
+        configuration=None
     fi
 fi
 
@@ -212,9 +203,9 @@ then
     temp_script_name=`mktemp`
     rm $temp_script_name
     
-    $python_binary -m RepositoryBootstrap.Impl.Activate Activate $temp_script_name "`pwd`" $command_line_args
+    $python_binary -m RepositoryBootstrap.Impl.Activate Activate $temp_script_name "`pwd`" $configuration "$@"
     generation_error=$?
-    
+
     if [[ -e $temp_script_name ]]
     then
         chmod u+x $temp_script_name
