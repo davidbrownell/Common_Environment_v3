@@ -187,12 +187,6 @@ def Move( no_move=False,
                                     suffix='\n',
                                   ) as this_dm:
             for library_path in new_content.Libraries:
-                if os.path.isfile(library_path):
-                    this_dm.result = this_dm.result or 1
-                    this_dm.stream.write("WARNING: '{}' is a file and cannot be processed.\n".format(library_path))
-
-                    continue
-
                 basename = os.path.basename(library_path)
                 if ( not basename.endswith(".dist-info") and 
                      not basename.endswith(".egg-info")
@@ -222,11 +216,22 @@ def Move( no_move=False,
 
                 potential_name = basename[:index]
 
-                python_library = libraries.get(potential_name, None)
-                if python_library is None:
-                    library_key = lowercase_map.get(potential_name.lower(), None)
-                    if library_key is not None:
-                        python_library = libraries.get(library_key, None)
+                potential_names = [ potential_name,
+                                    "{}.py".format(potential_name),
+                                  ]
+
+                # Try to find the python library based on the potential names
+                python_library = None
+
+                for potential_name in potential_names:
+                    python_library = libraries.get(potential_name, None)
+                    if python_library is None:
+                        library_key = lowercase_map.get(potential_name.lower(), None)
+                        if library_key is not None:
+                            python_library = libraries.get(library_key, None)
+
+                    if python_library is not None:
+                        break
 
                 if python_library is None:
                     this_dm.result = this_dm.result or 1
