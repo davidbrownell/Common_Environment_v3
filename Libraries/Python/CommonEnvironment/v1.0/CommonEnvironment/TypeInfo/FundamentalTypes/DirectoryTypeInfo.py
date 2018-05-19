@@ -15,6 +15,7 @@
 """Contains the DirectoryTypeInfo object."""
 
 import os
+import re
 import sys
 
 import six
@@ -35,11 +36,13 @@ class DirectoryTypeInfo(TypeInfo):
     # ----------------------------------------------------------------------
     def __init__( self,
                   ensure_exists=True,
+                  validation_expression=None,           # Regex
                   **type_info_args
                 ):
         super(DirectoryTypeInfo, self).__init__(**type_info_args)
 
         self.EnsureExists                   = ensure_exists
+        self.ValidationExpression           = validation_expression
 
     # ----------------------------------------------------------------------
     def __str__(self):
@@ -48,9 +51,27 @@ class DirectoryTypeInfo(TypeInfo):
     # ----------------------------------------------------------------------
     @property
     def ConstraintsDesc(self):
-        return "Value must be a valid directory" if self.EnsureExists else ''
+        constraints = []
+
+        if self.EnsureExists:
+            constraints.append("be a valid directory")
+
+        if self.ValidationExpression:
+            constraints.append("match the regular expression '{}'".format(self.ValidationExpression))
+
+        if not constraints:
+            return ''
+
+        return "Value must {}".format(', '.join(constraints))
 
     # ----------------------------------------------------------------------
-    def _ValidateItemNoThrowImpl(self, item, **custom_args):
+    def _ValidateItemNoThrowImpl(self, item):
         if self.EnsureExists and not os.path.isdir(item):
             return "'{}' is not a valid directory".format(item)
+
+        if self.ValidationExpression:
+            if not hasattr(self, "_validation_regex"):
+                self._validation_regex = re.compile(self.ValidationExpression)
+
+            if not self._validation_regex.match(item):
+                return "'{}' does not match the validation expression '{}'".format(item, self.ValidationExpression)

@@ -15,6 +15,7 @@
 """Contains the FilenameTypeInfo object."""
 
 import os
+import re
 import sys
 
 import six
@@ -36,13 +37,15 @@ class FilenameTypeInfo(TypeInfo):
     # ----------------------------------------------------------------------
     def __init__( self,
                   ensure_exists=True,
-                  match_any=False,          # Match files or directories
+                  match_any=False,                      # Match files or directories
+                  validation_expression=None,           # Regex
                   **type_info_args
                 ):
         super(FilenameTypeInfo, self).__init__(**type_info_args)
 
         self.EnsureExists                   = ensure_exists
         self.MatchAny                       = match_any
+        self.ValidationExpression           = validation_expression
 
     # ----------------------------------------------------------------------
     def __str__(self):
@@ -51,15 +54,23 @@ class FilenameTypeInfo(TypeInfo):
     # ----------------------------------------------------------------------
     @property
     def ConstraintsDesc(self):
-        if not self.EnsureExists:
+        constraints = []
+
+        if self.EnsureExists:
+            if self.MatchAny:
+                suffix = " or directory"
+            else:
+                suffix = ''
+
+            constraints.append("be a valid file{}".format(suffix))
+
+        if self.ValidationExpression:
+            constraints.append("match the regular expression '{}'".format(self.ValidationExpression))
+
+        if not constraints:
             return ''
 
-        if self.MatchAny:
-            suffix = " or directory"
-        else:
-            suffix = ''
-
-        return "Value must be a valid file{}".format(suffix)
+        return "Value must {}".format(', '.join(constraints))
 
     # ----------------------------------------------------------------------
     def _ValidateItemNoThrowImpl(self, item):
@@ -70,3 +81,10 @@ class FilenameTypeInfo(TypeInfo):
             else:
                 if not os.path.isfile(item):
                     return "'{}' is not a valid file".format(item)
+
+        if self.ValidationExpression:
+            if not hasattr(self, "_validation_regex"):
+                self._validation_regex = re.compile(self.ValidationExpression)
+
+            if not self._validation_regex.match(item):
+                return "'{}' does not match the validation expression '{}'".format(item, self.ValidationExpression)
