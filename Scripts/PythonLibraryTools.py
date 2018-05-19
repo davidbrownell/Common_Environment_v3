@@ -30,9 +30,11 @@ import CommonEnvironment
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CommandLine
 from CommonEnvironment import FileSystem
+from CommonEnvironment import Process
 from CommonEnvironment.StreamDecorator import StreamDecorator
 from CommonEnvironment import StringHelpers
 from CommonEnvironment.Shell.All import CurrentShell
+from CommonEnvironment.SourceControlManagement.All import GetSCM
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -411,11 +413,12 @@ def Move( no_move=False,
                             scripts_dest_dir = os.path.join(scripts_dest_dir, CurrentShell.CategoryName)
 
                         for script in library_info.scripts:
+                            this_dm.stream.write(display_template.format("{} [Script]".format(os.path.basename(script)), scripts_dest_dir))
+                            
                             if not no_move:
                                 if PythonActivationActivity.NormalizeScript(script) == PythonActivationActivity.NormalizeScriptResult_Modified:
                                     this_dm.stream.write("    ** The script '{}' was normalized.\n".format(script))
 
-                            this_dm.stream.write(display_template.format("{} [Script]".format(os.path.basename(script)), scripts_dest_dir))
                             move_func(script, scripts_dest_dir)
 
                     except Exception as ex:
@@ -428,15 +431,155 @@ def Move( no_move=False,
 
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint
-@CommandLine.Constraints( output_stream=None,
+@CommandLine.Constraints( lib_name=CommandLine.StringTypeInfo(),
+                          pip_arg=CommandLine.StringTypeInfo(arity='*'),
+                          output_stream=None,
                         )
-def Install( output_stream=sys.stdout,
+def Install( lib_name,
+             pip_arg=None,
+             output_stream=sys.stdout,
+             verbose=False,
            ):
     """
     A replacement for pip install. Will ensure that already installed python libraries are not modified in-place,
     but rather considered as new libraries for the currently activated repository.
     """
-    pass # BugBug
+
+    pip_args = pip_arg; del pip_arg
+
+    repo_root = os.getenv(RepositoryBootstrapConstants.DE_REPO_ROOT_NAME)
+
+    scm = GetSCM(repo_root, throw_on_error=False)
+    if not scm:
+        output_stream.write("ERROR: No SCM is active for '{}'.\n".format(repo_root))
+        return -1
+
+    if scm.HasWorkingChanges(repo_root) or scm.HasUntrackedWorkingChanges(repo_root):
+        output_stream.write("ERROR: Changes were detected in '{}'; please revert/shelve these changes and run this script again.\n".format(repo_root))
+        return -1
+
+    with StreamDecorator(output_stream).DoneManager( line_prefix='',
+                                                     prefix="\nResults: ",
+                                                     suffix='\n',
+                                                   ) as dm:
+        pip_command_line = 'pip install "{}"{}'.format( lib_name,
+                                                        '' if not pip_args else " {}".format(' '.join(pip_args)),
+                                                      )
+
+        dm.stream.write("\nDetecting libraries...")
+        with dm.stream.DoneManager( suffix='\n',
+                                  ) as this_dm:
+            libraries = []
+
+            # ----------------------------------------------------------------------
+            def OnOutput(line):
+                this_dm.stream.write(line)
+
+                if not line.startswith("Installing collected packages: "):
+                    return True
+
+                line = line[len("Installing collected packages: "):]
+
+                for library in line.split(','):
+                    library = library.strip()
+                    if library:
+                        libraries.append(library)
+
+                return False
+
+            # ----------------------------------------------------------------------
+
+            this_dm.result = Process.Execute( pip_command_line,
+                                              OnOutput,
+                                              line_delimited_output=True,
+                                            )
+
+            if libraries:
+                this_dm.result = 0
+
+            if this_dm.result != 0:
+                return this_dm.result
+
+        if not libraries:
+            return dm.result
+
+        dm.stream.write("Reverting local changes...")
+        with dm.stream.DoneManager( suffix='\n',
+                                  ) as this_dm:
+            this_dm.result = scm.Clean(repo_root, no_prompt=True)[0]
+
+            if this_dm.result != 0:
+                return this_dm.result
+
+        dm.stream.write("Reverting existing libraries...")
+        with dm.stream.DoneManager( suffix='\n',
+                                  ) as this_dm:
+            python_lib_dir = os.path.join( os.getenv(RepositoryBootstrapConstants.DE_REPO_GENERATED_NAME), 
+                                           PythonActivationActivity.Name, 
+                                           _EnvironmentSettings().LibraryDir,
+                                         )
+            assert os.path.isdir(python_lib_dir), python_lib_dir
+
+            library_items = {}
+
+            for name in os.listdir(python_lib_dir):
+                fullpath = os.path.join(python_lib_dir, name)
+
+                if not os.path.isdir(fullpath):
+                    continue
+
+                library_items[name.lower()] = CurrentShell.IsSymLink(fullpath)
+
+            # ----------------------------------------------------------------------
+            def RemoveItem(name):
+                name_lower = name.lower()
+
+                if library_items[name_lower]:
+                    this_dm.stream.write("Removing '{}' for upgrade.\n".format(name))
+                    os.remove(os.path.join(python_lib_dir, name))
+                else:
+                    this_dm.stream.write("Removing temporary '{}'.\n".format(name))
+                    FileSystem.RemoveTree(os.path.join(python_lib_dir, name))
+
+                del library_items[name_lower]
+
+            # ----------------------------------------------------------------------
+
+            for library in libraries:
+                potential_library_names = [ library, ]
+
+                # Sometimes, a library's name will begin with a 'Py' but be saved in
+                # the file system without the 'Py' prefix. Account for that scenario.
+                if library.lower().startswith("py"):
+                    potential_library_names.append(library[len("py"):])
+
+                for potential_library_name in potential_library_names:
+                    potential_library_name_lower = potential_library_name.lower()
+
+                    if potential_library_name_lower not in library_items:
+                        continue
+
+                    RemoveItem(potential_library_name)
+
+                    # Is there dist- or egg-info as well?
+                    info_items = []
+
+                    for item in six.iterkeys(library_items):
+                        if ( item.startswith(potential_library_name_lower) and 
+                             (item.endswith(".dist-info") or item.endswith(".egg-info"))
+                           ):
+                               info_items.append(item)
+
+                    for info_item in info_items:
+                        RemoveItem(info_item)
+
+                    break
+
+        dm.stream.write("Installing...")
+        with dm.stream.DoneManager() as this_dm:
+            this_dm.result = Process.Execute(pip_command_line, this_dm.stream)
+
+        return dm.result
 
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint
