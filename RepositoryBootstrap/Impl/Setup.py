@@ -420,7 +420,7 @@ def _SetupBootstrap( shell,
         verbose_stream.write("Searching in '{}'...\n".format(directory))
 
         result = Utilities.GetRepositoryUniqueId( directory,
-                                                  throw_on_error=False,
+                                                  raise_on_error=False,
                                                 )
         if result is None:
             continue

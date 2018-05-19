@@ -42,7 +42,7 @@ ALL_TYPES                                   = [ # TODO: GitSourceControlManageme
 # |  Public Methods
 # |  
 # ----------------------------------------------------------------------
-def GetSCM(repo_root, throw_on_error=True):
+def GetSCM(repo_root, raise_on_error=True):
     """Returns the SCM that is active for the provided repo."""
 
     available = []
@@ -53,7 +53,7 @@ def GetSCM(repo_root, throw_on_error=True):
             if scm.IsActive(repo_root):
                 return scm
 
-    if not throw_on_error:
+    if not raise_on_error:
         return
 
     raise Exception(textwrap.dedent(
@@ -72,7 +72,7 @@ def GetSCM(repo_root, throw_on_error=True):
 
 # ----------------------------------------------------------------------
 def GetAnySCM( path, 
-               throw_on_error=True,
+               raise_on_error=True,
                by_repository_id=False,      # If True, will use much faster search heuristics
              ):
     """Returns the SCM that is active for the provided dir or any of its ancestors."""
@@ -88,7 +88,7 @@ def GetAnySCM( path,
         root = path
         while True:
             if os.path.isfile(os.path.join(root, RepositoryBootstrapConstants.REPOSITORY_ID_FILENAME)):
-                return GetSCM(root, throw_on_error=throw_on_error)
+                return GetSCM(root, raise_on_error=raise_on_error)
 
             potential_root = os.path.dirname(root)
             if potential_root == root:
@@ -99,7 +99,7 @@ def GetAnySCM( path,
     else:
         root = path
         while True:
-            potential_scm = GetSCM(root, throw_on_error=False)
+            potential_scm = GetSCM(root, raise_on_error=False)
             if potential_scm:
                 return potential_scm
 

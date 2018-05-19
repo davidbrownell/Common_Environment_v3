@@ -377,7 +377,8 @@ def Move( no_move=False,
                                                                              index + 1,
                                                                              len(libraries),
                                                                            ))
-                with move_dm.stream.DoneManager() as this_dm:
+                with move_dm.stream.DoneManager( suffix='\n',
+                                               ) as this_dm:
                     try:
                         dest_dir = os.path.join(os.getenv("DEVELOPMENT_ENVIRONMENT_REPOSITORY"), RepositoryBootstrapConstants.LIBRARIES_SUBDIR, PythonActivationActivity.Name, library_name, "v{}".format(library_info.version))
                         
@@ -454,7 +455,7 @@ def Install( lib_name,
 
     repo_root = os.getenv(RepositoryBootstrapConstants.DE_REPO_ROOT_NAME)
 
-    scm = GetSCM(repo_root, throw_on_error=False)
+    scm = GetSCM(repo_root, raise_on_error=False)
     if not scm:
         output_stream.write("ERROR: No SCM is active for '{}'.\n".format(repo_root))
         return -1

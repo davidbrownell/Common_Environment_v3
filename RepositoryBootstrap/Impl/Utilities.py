@@ -89,7 +89,7 @@ _GetRepositoryUniqueId_regex                = None
 
 def GetRepositoryUniqueId( repo_root,
                            scm=None,
-                           throw_on_error=True,
+                           raise_on_error=True,
                          ):
     """Returns the name and unique id of the repository associated with the provided root."""
 
@@ -108,7 +108,7 @@ def GetRepositoryUniqueId( repo_root,
         unique_id = match.group("id").upper()
 
     else:
-        if throw_on_error:
+        if raise_on_error:
             raise Exception("Unable to find repository information for '{}'".format(repo_root))
 
         return None
