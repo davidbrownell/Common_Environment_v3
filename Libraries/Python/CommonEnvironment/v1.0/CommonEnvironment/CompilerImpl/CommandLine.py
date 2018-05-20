@@ -1,0 +1,162 @@
+# ----------------------------------------------------------------------
+# |  
+# |  CommandLine.py
+# |  
+# |  David Brownell <db@DavidBrownell.com>
+# |      2018-05-19 20:39:53
+# |  
+# ----------------------------------------------------------------------
+# |  
+# |  Copyright David Brownell 2018.
+# |  Distributed under the Boost Software License, Version 1.0.
+# |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+# |  
+# ----------------------------------------------------------------------
+"""Contains command line utilities used with compilers"""
+
+import os
+import sys
+
+from CommonEnvironment import CommandLine as CECommandLine
+from CommonEnvironment import FileSystem
+
+# ----------------------------------------------------------------------
+_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
+_script_dir, _script_name = os.path.split(_script_fullpath)
+# ----------------------------------------------------------------------
+
+# ----------------------------------------------------------------------
+def CommandLineInvoke( compiler,
+                       inputs,
+                       output_stream,
+                       verbose,
+                       output_via_stderr=False,
+                       output_start_line=None,
+                       output_end_line=None,
+                       **compiler_kwargs
+                     ):
+    # ----------------------------------------------------------------------
+    def Invoke(context, output_stream):
+        if compiler.IsCompiler:
+            method_name = "Compile"
+        elif compiler.IsCodeGenerator:
+            method_name = "Generate"
+        elif compiler.IsVerifier:
+            method_name = "Verify"
+        else:
+            assert False, compiler
+
+        return getattr(compiler, method_name)(context, output_stream, verbose)
+
+    # ----------------------------------------------------------------------
+
+    return _CommandLineImpl( compiler,
+                             inputs,
+                             Invoke,
+                             output_stream,
+                             compiler_kwargs,
+                             output_via_stderr=output_via_stderr,
+                             output_start_line=output_start_line,
+                             output_end_line=output_end_line,
+                           )
+
+# ----------------------------------------------------------------------
+def CommandLineClean( compiler,
+                      inputs,
+                      output_stream,
+                      **compiler_kwargs
+                    ):
+    return _CommandLineImpl( compiler,
+                             inputs,
+                             compiler.Clean,
+                             output_stream,
+                             compiler_kwargs,
+                           )
+
+# ----------------------------------------------------------------------
+def CommandLineCleanOutputDir(output_dir, output_stream):
+    if not os.path.isdir(output_dir):
+        output_stream.write("'{}' does not exist.\n".format(output_dir))
+    else:
+        output_stream.write("Removing '{}'...".format(output_dir))
+        with output_stream.DoneManager():
+            FileSystem.RemoveTree(output_dir)
+
+    return 0
+
+# ----------------------------------------------------------------------
+def CommandLineCleanOutputFilename(output_filename, output_stream):
+    if not os.path.isfile(output_filename):
+        output_stream.write("'{}' does not exist.\n".format(output_filename))
+    else:
+        output_stream.write("Removing '{}'...".format(output_filename))
+        with output_stream.DoneManager():
+            FileSystem.RemoveFile(output_filename)
+
+    return 0
+
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+def _CommandLineImpl( compiler,
+                      inputs,
+                      functor,              # def Func(context, output_stream) -> rval
+                      output_stream,
+                      compiler_kwargs,
+                      output_via_stderr=False,
+                      output_start_line=None,
+                      output_end_line=None,
+                    ):
+    assert compiler
+    assert inputs
+    assert output_stream
+
+    result = compiler.ValidateEnvironment()
+    if result:
+        output_stream.write("{}\n".format(result.rstrip()))
+        return -1
+
+    # Validate the input
+    inputs = [ os.path.realpath(input) for input in inputs ]
+
+    for input in inputs:
+        if not os.path.exists(input):
+            raise CECommandLine.UsageException("'{}' is not a valid file or directory".format(input))
+
+        result = compiler.InputTypeInfo.ValidateItemNoThrow(input)
+        if result is not None:
+            raise CECommandLine.UsageException(result)
+
+        if os.path.isfile(input) and not compiler.IsSupported((input):
+            raise CECommandLine.UsageException("'{}' is not supported".format(input))
+
+    # Execute
+    with output_stream.DoneManager( line_prefix='',
+                                    prefix="\nResult: ",
+                                    suffix='\n',
+                                    display_exceptions=False,
+                                  ) as dm:
+        dm.stream.write("Generating context...")
+        with dm.stream.DoneManager() as this_dm:
+            try:
+                contexts = list(compiler.GenerateContextItems(inputs, **compiler_kwargs))
+            except Exception as ex:
+                this_dm.result = -1
+
+                if getattr(ex, "IsDiagnosticException", False):
+                    this_dm.stream.write("{}\n".format(str(ex)))
+
+                    contexts = []
+                else:
+                    raise
+
+        for index, context in enumerate(contexts):
+            dm.stream.flush()
+
+            result = functor(context, dm.stream)
+
+            if dm.result == 0 or (dm.result > 0 and result < 0):
+                dm.result = result
+
+        return dm.result
+            

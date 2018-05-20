@@ -1,0 +1,68 @@
+# ----------------------------------------------------------------------
+# |  
+# |  __init__.py
+# |  
+# |  David Brownell <db@DavidBrownell.com>
+# |      2018-05-19 14:09:14
+# |  
+# ----------------------------------------------------------------------
+# |  
+# |  Copyright David Brownell 2018.
+# |  Distributed under the Boost Software License, Version 1.0.
+# |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+# |  
+# ----------------------------------------------------------------------
+"""Contains the InvocationQueryMixin object"""
+
+import os
+import sys
+
+from CommonEnvironment.Interface import Interface, abstractmethod
+
+# ----------------------------------------------------------------------
+_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
+_script_dir, _script_name = os.path.split(_script_fullpath)
+# ----------------------------------------------------------------------
+
+class InvocationQueryMixin(Interface):
+    """Object that implements strategies for determining if a compiler should be invoked based on input."""
+
+    ( InvokeReason_Always,
+      InvokeReason_Force,
+      InvokeReason_PrevContextMissing,
+      InvokeReason_NewerGenerators,
+      InvokeReason_MissingOutput,
+      InvokeReason_DifferentOutput,
+      InvokeReason_NewerInput,
+      InvokeReason_DifferentMetadata,
+      InvokeReason_OptIn,
+    ) = range(9)
+
+    # ----------------------------------------------------------------------
+    # |  Methods defined in CompilerImpl; these methods forward to Impl
+    # |  functions to clearly indicate to CompilerImpl that they are handled,
+    # |  while also creating methods that must be implemented by derived
+    # |  mixins.
+    # ----------------------------------------------------------------------
+    @classmethod
+    def _GetInvokeReason(cls, *args, **kwargs):
+        return cls._GetInvokeReasonImpl(*args, **kwargs)
+
+    # ----------------------------------------------------------------------
+    @classmethod
+    def _PersistContext(cls, *args, **kwargs):
+        return cls._PersistContextImpl(*args, **kwargs)
+
+    # ----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    @abstractmethod
+    @staticmethod
+    def _GetInvokeReasonImpl(context, output_stream):
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    @abstractmethod
+    @staticmethod
+    def _PersistContextImpl(context):
+        raise Exception("Abstract method")
