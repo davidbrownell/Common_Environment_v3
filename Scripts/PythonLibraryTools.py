@@ -235,7 +235,7 @@ def Move( no_move=False,
 
                 if python_library is None:
                     this_dm.result = this_dm.result or 1
-                    this_dm.stream.write("WARNING: The library name '{}' was not found ({}).\n".format(potential_name, library_path)) 
+                    this_dm.stream.write("WARNING: The library name '{}' was not found ({}).\n".format(potential_names[0], library_path)) 
 
                     continue
 
@@ -380,6 +380,9 @@ def Move( no_move=False,
                 with move_dm.stream.DoneManager( suffix='\n',
                                                ) as this_dm:
                     try:
+                        if library_name.endswith(".py"):
+                            library_name = library_name[:-len(".py")]
+
                         dest_dir = os.path.join(os.getenv("DEVELOPMENT_ENVIRONMENT_REPOSITORY"), RepositoryBootstrapConstants.LIBRARIES_SUBDIR, PythonActivationActivity.Name, library_name, "v{}".format(library_info.version))
                         
                         has_os_specific_dest_dir = False
