@@ -124,9 +124,9 @@ def Activate( output_filename_or_stdout,
                 raise Exception("'{}' is not a valid version spec prefix".format(keys[0]))
 
             found = False
-            for vi in version_infos:
-                if vi.Name == name:
-                    vi.Version = v
+            for version_info in version_infos:
+                if version_info.Name == name:
+                    version_info.Version = v
                     found = True
                     break
 
@@ -145,14 +145,14 @@ def Activate( output_filename_or_stdout,
 
             assert not tool_activation_data.VersionSpecs.Tool
             assert not tool_activation_data.VersionSpecs.Libraries
-            assert len(tool_activation_data.PrioritizedRepos) == 1
+            assert len(tool_activation_data.PrioritizedRepositories) == 1
 
-            tool_repo = tool_activation_data.PrioritizedRepos[0]
+            tool_repo = tool_activation_data.PrioritizedRepositories[0]
             tool_repo.IsToolRepo = True
 
             # Add this repo as a repo to be activated if it isn't already in the list
-            if not any(r.Id == tool_repo.Id for r in activation_data.PrioritizedRepos):
-                activation_data.PrioritizedRepos.append(tool_repo)
+            if not any(r.Id == tool_repo.Id for r in activation_data.PrioritizedRepositories):
+                activation_data.PrioritizedRepositories.append(tool_repo)
 
         # ----------------------------------------------------------------------
 

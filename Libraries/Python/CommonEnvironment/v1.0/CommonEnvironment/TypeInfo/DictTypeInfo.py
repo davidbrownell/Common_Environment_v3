@@ -115,6 +115,8 @@ class DictTypeInfo(TypeInfo):
             if attributes:
                 return "The item contains extraneous data: {}".format(', '.join([ "'{}'".format(attr) for attr in attributes ]))
 
+        return None
+
     # ----------------------------------------------------------------------
     @staticmethod
     @extensionmethod
@@ -128,4 +130,3 @@ class DictTypeInfo(TypeInfo):
     def _GetAttributeValue(item, name, type_info):
         """Returns the value for the given attribute."""
         return item[name]
-

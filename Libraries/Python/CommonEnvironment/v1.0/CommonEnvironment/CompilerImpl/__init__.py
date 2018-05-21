@@ -31,8 +31,8 @@ from CommonEnvironment.Interface import Interface, \
 from CommonEnvironment.StreamDecorator import StreamDecorator
 from CommonEnvironment import StringHelpers
 
-from CommonEnvironment.TypeInfo.FundamentalTypeInfo.DirectoryTypeInfo import DirectoryTypeInfo
-from CommonEnvironment.TypeInfo.FundamentalTypeInfo.FilenameTypeInfo import FilenameTypeInfo
+from CommonEnvironment.TypeInfo.FundamentalTypes.DirectoryTypeInfo import DirectoryTypeInfo
+from CommonEnvironment.TypeInfo.FundamentalTypes.FilenameTypeInfo import FilenameTypeInfo
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -96,8 +96,8 @@ class CompilerImpl(Interface):
     # |  
     # ----------------------------------------------------------------------
 
-    @extensionmethod
     @staticmethod
+    @extensionmethod
     def ValidateEnvironment():
         """
         Used to determine if a compiler can run in the current environment. This method
@@ -113,8 +113,8 @@ class CompilerImpl(Interface):
         pass 
 
     # ----------------------------------------------------------------------
-    @extensionmethod
     @staticmethod
+    @extensionmethod
     def IsSupported(item):
         """
         Returns True if the given input is supported by the compiler.
@@ -128,8 +128,8 @@ class CompilerImpl(Interface):
         return True
 
     # ----------------------------------------------------------------------
-    @extensionmethod
     @staticmethod
+    @extensionmethod
     def IsSupportedTestFile(item):
         """
         Return True if the item is a valid test file.
@@ -141,8 +141,8 @@ class CompilerImpl(Interface):
         return True
 
     # ----------------------------------------------------------------------
-    @extensionmethod
     @classmethod
+    @extensionmethod
     def ItemToTestName(cls, item_name, test_type_name):
         """
         Converts from an item name to its corresponding test file name.
@@ -165,13 +165,13 @@ class CompilerImpl(Interface):
                                                                                            ext=ext,
                                                                                          ))
 
-        else:
-            assert False, (cls.Name, cls.InputTypeInfo)
+        assert False, (cls.Name, cls.InputTypeInfo)
+        return None
 
     # ----------------------------------------------------------------------
-    @extensionmethod
     @classmethod
-    def TestToItemNae(cls, test_name):
+    @extensionmethod
+    def TestToItemName(cls, test_filename):
         """
         Converts from a test name to its corresponding item name.
 
@@ -182,27 +182,27 @@ class CompilerImpl(Interface):
         if isinstance(cls.InputTypeInfo, DirectoryTypeInfo):
             # We can't reason about item directories, so just return the directory itself.
             # A derived class may want to handle this scenario more gracefully.
-            return test_name
+            return test_filename
 
         elif isinstance(cls.InputTypeInfo, FilenameTypeInfo):
             dirname, basename = os.path.split(test_filename)
 
-            match = repr.match( r"^(?P<name>.+?)\.(?P<test_type>.+?)(?P<ext>\..+?)$",
-                                basename,
-                              )
+            match = re.match( r"^(?P<name>.+)\.(?P<test_type>[^_\.]+Test)(?P<ext>\..+)$",
+                              basename,
+                            )
             if not match:
-                raise Exception("'{}' is not a recognized test name".format(test_name))
+                raise Exception("'{}' is not a recognized test name".format(test_filename))
 
             name = "{}{}".format(match.group("name"), match.group("ext"))
             test_type = match.group("test_type")
 
-            if path and os.path.basename(path) == inflect.plural(test_type):
-                path = os.path.dirname(path)
+            if dirname and os.path.basename(dirname) == inflect.plural(test_type):
+                dirname = os.path.dirname(dirname)
 
-            return os.path.join(path, name)
+            return os.path.join(dirname, name)
 
-        else:
-            assert False, (cls.Name, cls.InputTypeInfo)
+        assert False, (cls.Name, cls.InputTypeInfo)
+        return None
 
     # ----------------------------------------------------------------------
     @classmethod
@@ -229,16 +229,24 @@ class CompilerImpl(Interface):
         for input in inputs:
             if os.path.isfile(input):
                 if isinstance(cls.InputTypeInfo, FilenameTypeInfo):
+                    result = cls.InputTypeInfo.ValidateItem(input)          # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
+                    if result is not None:
+                        raise cls.DiagnosticException(result)
+
                     potential_inputs = [ input, ]
                 elif isinstance(cls.InputTypeInfo, DirectoryTypeInfo):
-                    raise Exception("The filename '{}' was provided as input, but this object operates on directories.".format(input))
+                    raise cls.DiagnosticException("The filename '{}' was provided as input, but this object operates on directories.".format(input))
                 else:
                     assert False, (cls.Name, cls.InputTypeInfo)
 
             elif os.path.isdir(input):
                 if isinstance(cls.InputTypeInfo, FilenameTypeInfo):
-                    potential_inputs = list(FileSystem.WalkFiles(input))
+                    potential_inputs = [ filename for filename in FileSystem.WalkFiles(input) if cls.InputTypeInfo.IsValid(filename) ]      # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
                 elif isinstance(cls.InputTypeInfo, DirectoryTypeInfo):
+                    result = cls.InputTypeInfo.ValidateItem(input)          # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
+                    if result is not None:
+                        raise cls.DiagnosticException(result)
+
                     potential_inputs = [ input, ]
                 else:
                     assert False, (cls.Name, cls.InputTypeInfo)
@@ -254,6 +262,7 @@ class CompilerImpl(Interface):
         if optional_metadata is None:
             # ----------------------------------------------------------------------
             def MetadataGenerator():
+                # <Using a conditional statement with a constant value> pylint: disable = W0125
                 if False:
                     yield
 
@@ -262,7 +271,7 @@ class CompilerImpl(Interface):
         elif isinstance(optional_metadata, dict):
             # ----------------------------------------------------------------------
             def MetadataGenerator():
-                for kvp in six.iterites(optional_metadata):
+                for kvp in six.iteritems(optional_metadata):
                     yield kvp
 
             # ----------------------------------------------------------------------
@@ -319,7 +328,7 @@ class CompilerImpl(Interface):
 
         contexts = list(cls.GenerateContextItems(inputs, **kwargs))
         if not contexts:
-            return
+            return None
 
         if len(contexts) != 1:
             raise Exception("Multiple contexts were found ({})".format(len(contexts)))
@@ -374,6 +383,7 @@ class CompilerImpl(Interface):
 
                 verbose_stream = StreamDecorator( dm.stream,
                                                   prefix=StringHelpers.LeftJustify( textwrap.dedent(
+                                                                                        # <Wrong hanging indentation> pylint: disable = C0330
                                                                                         """\
 
                                                                                         ========================================
@@ -402,7 +412,7 @@ class CompilerImpl(Interface):
                                          status_stream,
                                          verbose_stream,
                                          verbose,
-                                       )
+                                       ) or 0
 
             if dm.result >= 0:
                 cls._PersistContext(context)
@@ -413,7 +423,7 @@ class CompilerImpl(Interface):
     # BugBug: ShouldProcessConfigInfo
     
     # ----------------------------------------------------------------------
-    @classmethod
+    @staticmethod
     def PopulateEnvironmentVars( s, 
                                  _placeholder_prefix="${",
                                  _placeholder_suffix="}",
@@ -436,8 +446,8 @@ class CompilerImpl(Interface):
         for k, v in six.iteritems(os.environ):
             environ_lower[k.lower()] = v
 
-        regex = re.compile(r"{prefix}(?P<var>.+?){suffix}".format( re.escape(_placeholder_prefix),
-                                                                   re.escape(_placeholder_suffix),
+        regex = re.compile(r"{prefix}(?P<var>.+?){suffix}".format( prefix=re.escape(_placeholder_prefix),
+                                                                   suffix=re.escape(_placeholder_suffix),
                                                                  ))
 
         # ----------------------------------------------------------------------
@@ -469,8 +479,8 @@ class CompilerImpl(Interface):
     # ----------------------------------------------------------------------
 
     # BugBug: Move this
-    @extensionmethod
     @staticmethod
+    @extensionmethod
     def _GetAdditionalGeneratorFiles(context):
         """
         Specify a list of additional filenames that are used to implement compilation
@@ -482,15 +492,15 @@ class CompilerImpl(Interface):
         return []
 
     # ----------------------------------------------------------------------
-    @extensionmethod
     @staticmethod
+    @extensionmethod
     def _GetDisplayName(metadata_or_context):
         """Name used to uniquely identify the compliation in status messages."""
         return None
 
     # ----------------------------------------------------------------------
-    @extensionmethod
     @staticmethod
+    @extensionmethod
     def _GetOptionalMetadata():
         """
         Metadata that should be applied if it doesn't already exist. 
@@ -501,8 +511,8 @@ class CompilerImpl(Interface):
         return []
 
     # ----------------------------------------------------------------------
-    @extensionmethod
     @staticmethod
+    @extensionmethod
     def _GetRequiredMetadataNames():
         """
         Names that must be a part of the metadata.
@@ -512,8 +522,8 @@ class CompilerImpl(Interface):
         return []
 
     # ----------------------------------------------------------------------
-    @extensionmethod
     @staticmethod
+    @extensionmethod
     def _GetRequiredContextNames():
         """
         Names that must be a part of the context.
@@ -524,8 +534,8 @@ class CompilerImpl(Interface):
         return []
 
     # ----------------------------------------------------------------------
-    @extensionmethod
     @staticmethod
+    @extensionmethod
     def _CreateContext(metadata):
         """Returns a context object tuned specifically for the provided metadata"""
 
@@ -533,48 +543,49 @@ class CompilerImpl(Interface):
         return metadata
 
     # ----------------------------------------------------------------------
-    @abstractmethod
     @staticmethod
+    @abstractmethod
     def _GenerateMetadataItems(invocation_group_inputs, user_provided_metadata):
         """Implemented by an InputProcessingMixin"""
         raise Exception("Abstract method")
 
     # ----------------------------------------------------------------------
-    @abstractmethod
     @staticmethod
+    @abstractmethod
     def _GetInputItems(contet):
         """Implemented by an InputProcessingMixin"""
         raise Exception("Abstract method")
 
     # ----------------------------------------------------------------------
-    @abstractmethod
     @staticmethod
+    @abstractmethod
     def _GetOutputFilenames(context):
         """Implemented by an OutputMixin"""
         raise Exception("Abstract method")
 
     # ----------------------------------------------------------------------
-    @abstractmethod
     @staticmethod
+    @abstractmethod
     def _CleanImpl(context, output_stream):
         """Implemented by an OutputMixin"""
         raise Exception("Abstract method")
 
     # ----------------------------------------------------------------------
-    @abstractmethod
     @staticmethod
+    @abstractmethod
     def _InvokeImpl(invoke_reason, context, status_stream, verbose_stream, verbose):
         """Implemented by an InvocationMixin"""
         raise Exception("Abstract method")
 
     # ----------------------------------------------------------------------
-    @abstractmethod
     @staticmethod
+    @abstractmethod
     def _GetInvokeReason(context, output_stream):
         """Implemented by an InvocationQueryMixin"""
         raise Exception("Abstract method")
 
     # ----------------------------------------------------------------------
+    @staticmethod
     @abstractmethod
     def _PersistContext(context):
         """Implemented by an InvocationQueryMixin"""
@@ -591,9 +602,10 @@ class CompilerImpl(Interface):
             status_suffix = '"{}"...'.format(input_items[0])
         else:
             status_suffix = textwrap.dedent(
+                                # <Wrong hanging indentation> pylint: disable = C0330
                                 """\
 
                                 {}
                                 """).fromat('\n'.join([ "    - {}".format(input_item) for input_item in input_items ]))
 
-        return "{} {}".format(prefix, status_suffix)
+        return "{} {}".format(verb, status_suffix)

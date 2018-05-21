@@ -20,7 +20,7 @@ import textwrap
 
 from CommonEnvironment.Interface import staticderived
 from CommonEnvironment.Shell import Shell
-from CommonEnvironment.Shell.Commands import *
+from CommonEnvironment.Shell.Commands import Set, Augment
 from CommonEnvironment.Shell.Commands.Visitor import Visitor
 
 # ----------------------------------------------------------------------
@@ -43,6 +43,9 @@ class LinuxShellImpl(Shell):
     # ----------------------------------------------------------------------
     @staticderived
     class CommandVisitor(Visitor):
+        
+        # <Parameters differ from overridden '<...>' method> pylint: disable = W0221
+
         # ----------------------------------------------------------------------
         @staticmethod
         def OnComment(command):
@@ -117,7 +120,7 @@ class LinuxShellImpl(Shell):
         @staticmethod
         def OnAugment(command):
             if not command.Values:
-                return
+                return None
 
             current_values = set(LinuxShellImpl.EnumEnvironmentVariable(command.Name))
             
@@ -125,7 +128,7 @@ class LinuxShellImpl(Shell):
             new_values = [ value for value in new_values if value not in current_values ]
 
             if not new_values:
-                return
+                return None
 
             return "export {name}={values}:${name}".format( name=command.Name,
                                                             values=LinuxShellImpl.EnvironmentVariableDelimiter.join(command.Values),
@@ -140,12 +143,14 @@ class LinuxShellImpl(Shell):
                 {error}
                 return {return_code}
                 """).format( success=textwrap.dedent(
+                                        # <Wrong hanging indentation> pylint: disable = C0330
                                         """\
                                         if [ $? -eq 0 ]; then
                                             read -p "Press [Enter] to continue"
                                         fi
                                         """) if command.PauseOnSuccess else '',
                              error=textwrap.dedent(
+                                        # <Wrong hanging indentation> pylint: disable = C0330
                                         """\
                                         if [ $? -ne 0]; then
                                             read -p "Press [Enter] to continue"
@@ -225,6 +230,7 @@ class LinuxShellImpl(Shell):
     # ----------------------------------------------------------------------
     @classmethod
     def IsActive(cls, platform_name):
+        # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
         return cls.Name.lower() in platform_name
 
     # ----------------------------------------------------------------------

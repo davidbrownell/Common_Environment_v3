@@ -17,13 +17,20 @@
 import os
 import sys
 
-from CommonEnvironment.Interface import *
-from CommonEnvironment.Shell.Commands import *
+from CommonEnvironment.Interface import Interface, \
+                                        abstractmethod, \
+                                        staticderived
+
+# <Unused import> pylint: disable = W0614
+
+from CommonEnvironment.Shell.Commands.All import *      # <Wildcard import> pylint: disable = W0401
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
+
+# <Missing docstring> pylint: disable = C0111
 
 # ----------------------------------------------------------------------
 class Visitor(Interface):
@@ -171,46 +178,49 @@ class Visitor(Interface):
 # |  Public Methods
 # |  
 # ----------------------------------------------------------------------
-def CreateSimpleVisitor( onCommentFunc=None,            # def Func(command, *args, **kwargs)
-                         onMessageFunc=None,            # def Func(command, *args, **kwargs)
-                         onCallFunc=None,               # def Func(command, *args, **kwargs)
-                         onExecuteFunc=None,            # def Func(command, *args, **kwargs)
-                         onSymbolicLinkFunc=None,       # def Func(command, *args, **kwargs)
-                         onPathFunc=None,               # def Func(command, *args, **kwargs)
-                         onAugmentPathFunc=None,        # def Func(command, *args, **kwargs)
-                         onSetFunc=None,                # def Func(command, *args, **kwargs)
-                         onAugmentFunc=None,            # def Func(command, *args, **kwargs)
-                         onExitFunc=None,               # def Func(command, *args, **kwargs)
-                         onExitOnErrorFunc=None,        # def Func(command, *args, **kwargs)
-                         onRawFunc=None,                # def Func(command, *args, **kwargs)
-                         onEchoOffFunc=None,            # def Func(command, *args, **kwargs)
-                         onCommandPromptFunc=None,      # def Func(command, *args, **kwargs)
-                         onDeleteFunc=None,             # def Func(command, *args, **kwargs)
-                         onCopyFunc=None,               # def Func(command, *args, **kwargs)
-                         onMoveFunc=None,               # def Func(command, *args, **kwargs)
-                         onDefaultFunc=None,            # def Func(command, *args, **kwargs)
+# <Too many arguments> pylint: disable = R0913
+# <Too many local variables> pylint: disable = R0914
+
+def CreateSimpleVisitor( on_comment_func=None,          # def Func(command, *args, **kwargs)
+                         on_message_func=None,          # def Func(command, *args, **kwargs)
+                         on_call_func=None,             # def Func(command, *args, **kwargs)
+                         on_execute_func=None,          # def Func(command, *args, **kwargs)
+                         on_symbolic_link_func=None,    # def Func(command, *args, **kwargs)
+                         on_path_func=None,             # def Func(command, *args, **kwargs)
+                         on_augment_path_func=None,     # def Func(command, *args, **kwargs)
+                         on_set_func=None,              # def Func(command, *args, **kwargs)
+                         on_augment_func=None,          # def Func(command, *args, **kwargs)
+                         on_exit_func=None,             # def Func(command, *args, **kwargs)
+                         on_exit_on_error_func=None,    # def Func(command, *args, **kwargs)
+                         on_raw_func=None,              # def Func(command, *args, **kwargs)
+                         on_echo_off_func=None,         # def Func(command, *args, **kwargs)
+                         on_command_prompt_func=None,   # def Func(command, *args, **kwargs)
+                         on_delete_func=None,           # def Func(command, *args, **kwargs)
+                         on_copy_func=None,             # def Func(command, *args, **kwargs)
+                         on_move_func=None,             # def Func(command, *args, **kwargs)
+                         on_default_func=None,          # def Func(command, *args, **kwargs)
                        ):
     """Creates a CommandVisitor instance implemented in terms of the non-None function arguments."""
 
-    onDefaultFunc = onDefaultFunc or (lambda command, *args, **kwargs: None)
+    on_default_func = on_default_func or (lambda command, *args, **kwargs: None)
 
-    onCommentFunc = onCommentFunc or onDefaultFunc
-    onMessageFunc = onMessageFunc or onDefaultFunc
-    onCallFunc = onCallFunc or onDefaultFunc
-    onExecuteFunc = onExecuteFunc or onDefaultFunc
-    onSymbolicLinkFunc = onSymbolicLinkFunc or onDefaultFunc
-    onPathFunc = onPathFunc or onDefaultFunc
-    onAugmentPathFunc = onAugmentPathFunc or onDefaultFunc
-    onSetFunc = onSetFunc or onDefaultFunc
-    onAugmentFunc = onAugmentFunc or onDefaultFunc
-    onExitFunc = onExitFunc or onDefaultFunc
-    onExitOnErrorFunc = onExitOnErrorFunc or onDefaultFunc
-    onRawFunc = onRawFunc or onDefaultFunc
-    onEchoOffFunc = onEchoOffFunc or onDefaultFunc
-    onCommandPromptFunc = onCommandPromptFunc or onDefaultFunc
-    onDeleteFunc = onDeleteFunc or onDefaultFunc
-    onCopyFunc = onCopyFunc or onDefaultFunc
-    onMoveFunc = onMoveFunc or onDefaultFunc
+    on_comment_func = on_comment_func or on_default_func
+    on_message_func = on_message_func or on_default_func
+    on_call_func = on_call_func or on_default_func
+    on_execute_func = on_execute_func or on_default_func
+    on_symbolic_link_func = on_symbolic_link_func or on_default_func
+    on_path_func = on_path_func or on_default_func
+    on_augment_path_func = on_augment_path_func or on_default_func
+    on_set_func = on_set_func or on_default_func
+    on_augment_func = on_augment_func or on_default_func
+    on_exit_func = on_exit_func or on_default_func
+    on_exit_on_error_func = on_exit_on_error_func or on_default_func
+    on_raw_func = on_raw_func or on_default_func
+    on_echo_off_func = on_echo_off_func or on_default_func
+    on_command_prompt_func = on_command_prompt_func or on_default_func
+    on_delete_func = on_delete_func or on_default_func
+    on_copy_func = on_copy_func or on_default_func
+    on_move_func = on_move_func or on_default_func
     
     # ----------------------------------------------------------------------
     @staticderived
@@ -218,89 +228,89 @@ def CreateSimpleVisitor( onCommentFunc=None,            # def Func(command, *arg
         # ----------------------------------------------------------------------
         @staticmethod
         def OnComment(command, *args, **kwargs):
-            return onCommentFunc(command, *args, **kwargs)
+            return on_comment_func(command, *args, **kwargs)
     
         # ----------------------------------------------------------------------
         @staticmethod
         def OnMessage(command, *args, **kwargs):
-            return onMessageFunc(command, *args, **kwargs)
+            return on_message_func(command, *args, **kwargs)
     
         # ----------------------------------------------------------------------
         @staticmethod
         def OnCall(command, *args, **kwargs):
-            return onCallFunc(command, *args, **kwargs)
+            return on_call_func(command, *args, **kwargs)
     
         # ----------------------------------------------------------------------
         @staticmethod
         def OnExecute(command, *args, **kwargs):
-            return onExecuteFunc(command, *args, **kwargs)
+            return on_execute_func(command, *args, **kwargs)
     
         # ----------------------------------------------------------------------
         @staticmethod
         def OnSymbolicLink(command, *args, **kwargs):
-            return onSymbolicLinkFunc(command, *args, **kwargs)
+            return on_symbolic_link_func(command, *args, **kwargs)
     
         # ----------------------------------------------------------------------
         @staticmethod
         def OnPath(command, *args, **kwargs):
-            return onPathFunc(command, *args, **kwargs)
+            return on_path_func(command, *args, **kwargs)
     
         # ----------------------------------------------------------------------
         @staticmethod
         def OnAugmentPath(command, *args, **kwargs):
-            return onAugmentPathFunc(command, *args, **kwargs)
+            return on_augment_path_func(command, *args, **kwargs)
     
         # ----------------------------------------------------------------------
         @staticmethod
         def OnSet(command, *args, **kwargs):
-            return onSetFunc(command, *args, **kwargs)
+            return on_set_func(command, *args, **kwargs)
     
         # ----------------------------------------------------------------------
         @staticmethod
         def OnAugment(command, *args, **kwargs):
-            return onAugmentFunc(command, *args, **kwargs)
+            return on_augment_func(command, *args, **kwargs)
     
         # ----------------------------------------------------------------------
         @staticmethod
         def OnExit(command, *args, **kwargs):
-            return onExitFunc(command, *args, **kwargs)
+            return on_exit_func(command, *args, **kwargs)
     
         # ----------------------------------------------------------------------
         @staticmethod
         def OnExitOnError(command, *args, **kwargs):
-            return onExitOnErrorFunc(command, *args, **kwargs)
+            return on_exit_on_error_func(command, *args, **kwargs)
     
         # ----------------------------------------------------------------------
         @staticmethod
         def OnRaw(command, *args, **kwargs):
-            return onRawFunc(command, *args, **kwargs)
+            return on_raw_func(command, *args, **kwargs)
     
         # ----------------------------------------------------------------------
         @staticmethod
         def OnEchoOff(command, *args, **kwargs):
-            return onEchoOffFunc(command, *args, **kwargs)
+            return on_echo_off_func(command, *args, **kwargs)
     
         # ----------------------------------------------------------------------
         @staticmethod
         def OnCommandPrompt(command, *args, **kwargs):
-            return onCommandPromptFunc(command, *args, **kwargs)
+            return on_command_prompt_func(command, *args, **kwargs)
     
         # ----------------------------------------------------------------------
         @staticmethod
         def OnDelete(command, *args, **kwargs):
-            return onDeleteFunc(command, *args, **kwargs)
+            return on_delete_func(command, *args, **kwargs)
     
         # ----------------------------------------------------------------------
         @staticmethod
         def OnCopy(command, *args, **kwargs):
-            return onCopyFunc(command, *args, **kwargs)
+            return on_copy_func(command, *args, **kwargs)
     
         # ----------------------------------------------------------------------
         @staticmethod
         def OnMove(command, *args, **kwargs):
-            return onMoveFunc(command, *args, **kwargs)
+            return on_move_func(command, *args, **kwargs)
 
     # ----------------------------------------------------------------------
 
     return SimpleVisitor
-
+    

@@ -54,15 +54,15 @@ def GetCommonPath(*items):
 
     if CurrentShell.HasCaseSensitiveFileSystem:
         # ----------------------------------------------------------------------
-        def Equal(a, b):
-            return a == b
+        def Equal(value1, value2):
+            return value1 == value2
 
         # ----------------------------------------------------------------------
 
     else:
         # ----------------------------------------------------------------------
-        def Equal(a, b):
-            return a.lower() == b.lower()
+        def Equal(value1, value2):
+            return value1.lower() == value2.lower()
 
         # ----------------------------------------------------------------------
 
@@ -145,6 +145,8 @@ def Normalize(path):
         if os.path.exists(path) and CurrentShell.Name == "Windows":
             import win32api
 
+            # <Module 'win32api' has not 'GetLongPathName' member, but source is unavailable. Consider adding this module to extension-pkg-whitelist if you want to perform analysis based on run-time introspection of living objects.> pylint: disable = I1101
+
             path = win32api.GetLongPathName(win32api.GetShortPathName(path))
 
         drive, suffix = os.path.splitdrive(path)
@@ -190,7 +192,7 @@ def RemoveFile( path,
     return True
 
 # ----------------------------------------------------------------------
-def WalkDirs( root,
+def WalkDirs( directory,
 
               include_dir_names=None,                   # e.g. "A_Single_Dir"
               exclude_dir_names=None,                   # e.g. "A_Single_Dir"
@@ -221,25 +223,23 @@ def WalkDirs( root,
 
     if include_generated:
         # ----------------------------------------------------------------------
-        def IsValid(fullpath, dir):
+        def IsValid(fullpath, directory):
             return ( process_traverse_dir_path(fullpath) and
-                     process_traverse_dir_name(dir)
+                     process_traverse_dir_name(directory)
                    )
 
         # ----------------------------------------------------------------------
     else:
         # ----------------------------------------------------------------------
-        def IsValid(fullpath, dir):
-            return ( dir not in CODE_EXCLUDE_DIR_NAMES and
+        def IsValid(fullpath, directory):
+            return ( directory not in CODE_EXCLUDE_DIR_NAMES and
                      process_traverse_dir_path(fullpath) and
-                     process_traverse_dir_name(dir)
+                     process_traverse_dir_name(directory)
                    )
 
         # ----------------------------------------------------------------------
 
-    root = Normalize(root)
-
-    for root, dirs, filenames in os.walk(root):
+    for root, dirs, filenames in os.walk(Normalize(directory)):
         try:
             root = str(root)
         except UnicodeEncodeError:
@@ -269,7 +269,7 @@ def WalkDirs( root,
             dirs[:] = []
 
 # ----------------------------------------------------------------------
-def WalkFiles( root,
+def WalkFiles( directory,
 
                include_dir_names=None,                  # A_Single_Dir
                exclude_dir_names=None,                  # A_Single_Dir
@@ -309,7 +309,7 @@ def WalkFiles( root,
     process_file_extension = _ProcessWalkArgs(include_file_extensions, exclude_file_extensions)
     process_full_path = _ProcessWalkArgs(include_full_paths, exclude_full_paths)
 
-    for root, filenames in WalkDirs( root,
+    for root, filenames in WalkDirs( directory,
                                      include_dir_names=include_dir_names,
                                      exclude_dir_names=exclude_dir_names,
                                      include_dir_paths=include_dir_paths,
@@ -393,7 +393,7 @@ def _ProcessWalkArgs(include_items, exclude_items):
         return [ items, ]
 
     # ----------------------------------------------------------------------
-    def In(value, items):
+    def IsIn(value, items):
         for item in items:
             if isinstance(item, six.string_types) and item == value:
                 return True
@@ -417,10 +417,10 @@ def _ProcessWalkArgs(include_items, exclude_items):
 
     # ----------------------------------------------------------------------
     def Impl(value):
-        if exclude_items and In(value, exclude_items):
+        if exclude_items and IsIn(value, exclude_items):
             return False
 
-        if include_items and not In(value, include_items):
+        if include_items and not IsIn(value, include_items):
             return False
 
         return True

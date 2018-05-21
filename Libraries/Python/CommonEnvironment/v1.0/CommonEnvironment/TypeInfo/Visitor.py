@@ -17,8 +17,12 @@
 import os
 import sys
 
-from CommonEnvironment.Interface import *
-from CommonEnvironment.TypeInfo.All import *
+from CommonEnvironment.Interface import abstractmethod, \
+                                        staticderived
+
+# <Unused import> pylint: disable = W0614
+
+from CommonEnvironment.TypeInfo.All import *            # <Wildcard import> pylint: disable = W0401
 from CommonEnvironment.TypeInfo.FundamentalTypes.Visitor import Visitor as FundamentalVisitor, \
                                                                 CreateSimpleVisitor as FundamentalCreateSimpleVisitor
 
@@ -102,71 +106,71 @@ class Visitor(FundamentalVisitor):
 # |  Public Methods
 # |  
 # ----------------------------------------------------------------------
-def CreateSimpleVisitor( onAnyOfFunc=None,              # def Func(type_info, *args, **kwargs)
-                         onClassFunc=None,              # def Func(type_info, *args, **kwargs)
-                         onMethodFunc=None,             # def Func(type_info, *args, **kwargs)
-                         onClassMethodFunc=None,        # def Func(type_info, *args, **kwargs)
-                         onStaticMethodFunc=None,       # def Func(type_info, *args, **kwargs)
-                         onDictFunc=None,               # def Func(type_info, *args, **kwargs)
-                         onListFunc=None,               # def Func(type_info, *args, **kwargs)
+def CreateSimpleVisitor( on_any_of_func=None,           # def Func(type_info, *args, **kwargs)
+                         on_class_func=None,            # def Func(type_info, *args, **kwargs)
+                         on_method_func=None,           # def Func(type_info, *args, **kwargs)
+                         on_class_method_func=None,     # def Func(type_info, *args, **kwargs)
+                         on_static_method_func=None,    # def Func(type_info, *args, **kwargs)
+                         on_dict_func=None,             # def Func(type_info, *args, **kwargs)
+                         on_list_func=None,             # def Func(type_info, *args, **kwargs)
 
-                         onDefaultFunc=None,            # def Func(type_info, *args, **kwargs)
+                         on_default_func=None,          # def Func(type_info, *args, **kwargs)
 
                          **fundamental_funcs
                        ):
     """Creates a Visitor instance implemented in terms of the non-None function arguments."""
 
-    onDefaultFunc = onDefaultFunc or (lambda type_info, *args, **kwargs: None)
+    on_default_func = on_default_func or (lambda type_info, *args, **kwargs: None)
 
-    onAnyOfFunc = onAnyOfFunc or onDefaultFunc
-    onClassFunc = onClassFunc or onDefaultFunc
-    onMethodFunc = onMethodFunc or onDefaultFunc
-    onClassMethodFunc = onClassMethodFunc or onDefaultFunc
-    onStaticMethodFunc = onStaticMethodFunc or onDefaultFunc
-    onDictFunc = onDictFunc or onDefaultFunc
-    onListFunc = onListFunc or onDefaultFunc
+    on_any_of_func = on_any_of_func or on_default_func
+    on_class_func = on_class_func or on_default_func
+    on_method_func = on_method_func or on_default_func
+    on_class_method_func = on_class_method_func or on_default_func
+    on_static_method_func = on_static_method_func or on_default_func
+    on_dict_func = on_dict_func or on_default_func
+    on_list_func = on_list_func or on_default_func
 
     # ----------------------------------------------------------------------
     @staticderived
     class SimpleVisitor( Visitor, 
-                         FundamentalCreateSimpleVisitor( onDefaultFunc=onDefaultFunc,
+                         FundamentalCreateSimpleVisitor( on_default_func=on_default_func,
                                                          **fundamental_funcs
                                                        ),
                        ):
         # ----------------------------------------------------------------------
         @staticmethod
         def OnAnyOf(type_info, *args, **kwargs):
-            return onAnyOfFunc(type_info, *args, **kwargs)
+            return on_any_of_func(type_info, *args, **kwargs)
 
         # ----------------------------------------------------------------------
         @staticmethod
         def OnClass(type_info, *args, **kwargs):
-            return onClassFunc(type_info, *args, **kwargs)
+            return on_class_func(type_info, *args, **kwargs)
 
         # ----------------------------------------------------------------------
         @staticmethod
         def OnMethod(type_info, *args, **kwargs):
-            return onMethodFunc(type_info, *args, **kwargs)
+            return on_method_func(type_info, *args, **kwargs)
 
         # ----------------------------------------------------------------------
         @staticmethod
         def OnClassMethod(type_info, *args, **kwargs):
-            return onClassMethodFunc(type_info, *args, **kwargs)
+            return on_class_method_func(type_info, *args, **kwargs)
 
         # ----------------------------------------------------------------------
         @staticmethod
         def OnStaticMethod(type_info, *args, **kwargs):
-            return onStaticMethodFunc(type_info, *args, **kwargs)
+            return on_static_method_func(type_info, *args, **kwargs)
 
         # ----------------------------------------------------------------------
         @staticmethod
         def OnDict(type_info, *args, **kwargs):
-            return onDictFunc(type_info, *args, **kwargs)
+            return on_dict_func(type_info, *args, **kwargs)
 
         # ----------------------------------------------------------------------
         @staticmethod
         def OnList(type_info, *args, **kwargs):
-            return onListFunc(type_info, *args, **kwargs)
+            return on_list_func(type_info, *args, **kwargs)
 
     # ----------------------------------------------------------------------
 

@@ -18,13 +18,20 @@ import os
 import stat
 import sys
 import tempfile
+import textwrap
 
-from CommonEnvironment.Interface import *
+from CommonEnvironment.Interface import Interface, \
+                                        abstractproperty, \
+                                        abstractmethod, \
+                                        extensionmethod
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
+
+# <Assigning to function call which only returns None> pylint: disable = E1128
+# <Using a conditional statement with a constant value> pylint: disable = W0125
 
 # ----------------------------------------------------------------------
 class Shell(Interface):
@@ -125,12 +132,12 @@ class Shell(Interface):
         from CommonEnvironment.Shell.Commands.All import ALL_COMMANDS
         
         # ----------------------------------------------------------------------
-        class Object(object):
+        class ShellCommandsObject(object):
             pass
 
         # ----------------------------------------------------------------------
 
-        commands = Object()
+        commands = ShellCommandsObject()
 
         for command in ALL_COMMANDS:
             setattr(commands, command.__name__, command)
@@ -172,7 +179,7 @@ class Shell(Interface):
         visitor = cls.CommandVisitor
 
         for command in command_or_commands:
-            result = visitor.Accept(command)
+            result = visitor.Accept(command)            # <Class '<name>' has no '<attr>' member> pylint: disable = E1103
             if result:
                 results.append(result)
 
@@ -285,7 +292,11 @@ class Shell(Interface):
         for those systems where it is a straighforward process.
         """
 
-        result, output = cls.ExecuteCommands(SymbolicLink(link_filename, target, is_dir))
+        from CommonEnvironment.Shell.Commands import SymbolicLink
+
+        result, output = cls.ExecuteCommands( SymbolicLink(link_filename, target, is_dir),
+                                              output_stream=None,
+                                            )
         if result != 0:
             raise Exception(textwrap.dedent(
                 """\
@@ -321,7 +332,7 @@ class Shell(Interface):
     @staticmethod
     @extensionmethod
     def DeleteSymLink(filename, command_only=False):
-        assert command_only == False, "'command_only' is not supported"
+        assert not command_only, "'command_only' is not supported"
         os.remove(filename)
     
     # ----------------------------------------------------------------------

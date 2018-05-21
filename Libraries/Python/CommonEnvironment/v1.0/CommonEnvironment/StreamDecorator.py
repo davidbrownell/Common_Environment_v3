@@ -18,13 +18,9 @@ import datetime
 import os
 import re
 import sys
-import textwrap
 import time
 
 from contextlib import contextmanager
-
-import six
-from six import StringIO
 
 from CommonEnvironment import Nonlocals
 from CommonEnvironment.CallOnExit import CallOnExit
@@ -34,6 +30,8 @@ from CommonEnvironment import StringHelpers
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
+
+# <Naming style> pylint: disable = C0103
 
 # ----------------------------------------------------------------------
 class StreamDecorator(object):

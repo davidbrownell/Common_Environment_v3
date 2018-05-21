@@ -31,13 +31,20 @@ _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
+# <Missing function docstring> pylint: disable = C0111
+# <Wrong hanging indentation> pylint: disable = C0330
+# <Class '<name>' has no '<attr>' member> pylint: disable = E1103
+# <Unreachable code> pylint: disable = W0101
+# <Wildcard import> pylint: disable = W0401
+# <Unused argument> pylint: disable = W0613
+
 fundamental_repo = os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL")
 assert os.path.isdir(fundamental_repo), fundamental_repo
 
 sys.path.insert(0, fundamental_repo)
-from RepositoryBootstrap import *
-from RepositoryBootstrap.Configuration import *
-from RepositoryBootstrap.Impl.CommonEnvironmentImports import CurrentShell
+from RepositoryBootstrap import *                                           # <Unused import> pylint: disable = W0614
+from RepositoryBootstrap.Configuration import *                             # <Unused import> pylint: disable = W0614
+from RepositoryBootstrap.Impl.CommonEnvironmentImports import CurrentShell  # <Unused import> pylint: disable = W0614
 del sys.path[0]
 
 # ----------------------------------------------------------------------

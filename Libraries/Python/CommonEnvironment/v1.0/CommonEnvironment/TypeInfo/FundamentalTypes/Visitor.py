@@ -17,7 +17,10 @@
 import os
 import sys
 
-from CommonEnvironment.Interface import *
+from CommonEnvironment.Interface import Interface, \
+                                        abstractmethod, \
+                                        staticderived 
+
 from CommonEnvironment.TypeInfo.FundamentalTypes.All import *
 
 # ----------------------------------------------------------------------
@@ -142,38 +145,38 @@ class Visitor(Interface):
 # |  Public Methods
 # |  
 # ----------------------------------------------------------------------
-def CreateSimpleVisitor( onBoolFunc=None,               # def Func(type_info, *args, **kwargs)
-                         onDateTimeFunc=None,           # def Func(type_info, *args, **kwargs)
-                         onDateFunc=None,               # def Func(type_info, *args, **kwargs)
-                         onDirectoryFunc=None,          # def Func(type_info, *args, **kwargs)
-                         onDurationFunc=None,           # def Func(type_info, *args, **kwargs)
-                         onEnumFunc=None,               # def Func(type_info, *args, **kwargs)
-                         onFilenameFunc=None,           # def Func(type_info, *args, **kwargs)
-                         onFloatFunc=None,              # def Func(type_info, *args, **kwargs)
-                         onGuidFunc=None,               # def Func(type_info, *args, **kwargs)
-                         onIntFunc=None,                # def Func(type_info, *args, **kwargs)
-                         onStringFunc=None,             # def Func(type_info, *args, **kwargs)
-                         onTimeFunc=None,               # def Func(type_info, *args, **kwargs)
-                         onUriFunc=None,                # def Func(type_info, *args, **kwargs)
-                         onDefaultFunc=None,            # def Func(type_info, *args, **kwargs)
+def CreateSimpleVisitor( on_bool_func=None,             # def Func(type_info, *args, **kwargs)
+                         on_date_time_func=None,        # def Func(type_info, *args, **kwargs)
+                         on_date_func=None,             # def Func(type_info, *args, **kwargs)
+                         on_directory_func=None,        # def Func(type_info, *args, **kwargs)
+                         on_duration_func=None,         # def Func(type_info, *args, **kwargs)
+                         on_enum_func=None,             # def Func(type_info, *args, **kwargs)
+                         on_filename_func=None,         # def Func(type_info, *args, **kwargs)
+                         on_float_func=None,            # def Func(type_info, *args, **kwargs)
+                         on_guid_func=None,             # def Func(type_info, *args, **kwargs)
+                         on_int_func=None,              # def Func(type_info, *args, **kwargs)
+                         on_string_func=None,           # def Func(type_info, *args, **kwargs)
+                         on_time_func=None,             # def Func(type_info, *args, **kwargs)
+                         on_uri_func=None,              # def Func(type_info, *args, **kwargs)
+                         on_default_func=None,          # def Func(type_info, *args, **kwargs)
                        ):
     """Creates a Visitor instance implemented in terms of the non-None function arguments."""
 
-    onDefaultFunc = onDefaultFunc or (lambda type_info, *args, **kwargs: None)
+    on_default_func = on_default_func or (lambda type_info, *args, **kwargs: None)
 
-    onBoolFunc = onBoolFunc or onDefaultFunc
-    onDateTimeFunc = onDateTimeFunc or onDefaultFunc
-    onDateFunc = onDateFunc or onDefaultFunc
-    onDirectoryFunc = onDirectoryFunc or onDefaultFunc
-    onDurationFunc = onDurationFunc or onDefaultFunc
-    onEnumFunc = onEnumFunc or onDefaultFunc
-    onFilenameFunc = onFilenameFunc or onDefaultFunc
-    onFloatFunc = onFloatFunc or onDefaultFunc
-    onGuidFunc = onGuidFunc or onDefaultFunc
-    onIntFunc = onIntFunc or onDefaultFunc
-    onStringFunc = onStringFunc or onDefaultFunc
-    onTimeFunc = onTimeFunc or onDefaultFunc
-    onUriFunc = onUriFunc or onDefaultFunc
+    on_bool_func = on_bool_func or on_default_func
+    on_date_time_func = on_date_time_func or on_default_func
+    on_date_func = on_date_func or on_default_func
+    on_directory_func = on_directory_func or on_default_func
+    on_duration_func = on_duration_func or on_default_func
+    on_enum_func = on_enum_func or on_default_func
+    on_filename_func = on_filename_func or on_default_func
+    on_float_func = on_float_func or on_default_func
+    on_guid_func = on_guid_func or on_default_func
+    on_int_func = on_int_func or on_default_func
+    on_string_func = on_string_func or on_default_func
+    on_time_func = on_time_func or on_default_func
+    on_uri_func = on_uri_func or on_default_func
 
     # ----------------------------------------------------------------------
     @staticderived
@@ -181,67 +184,67 @@ def CreateSimpleVisitor( onBoolFunc=None,               # def Func(type_info, *a
         # ----------------------------------------------------------------------
         @staticmethod
         def OnBool(type_info, *args, **kwargs):
-            return onBoolFunc(type_info, *args, **kwargs)
+            return on_bool_func(type_info, *args, **kwargs)
 
         # ----------------------------------------------------------------------
         @staticmethod
         def OnDateTime(type_info, *args, **kwargs):
-            return onDateTimeFunc(type_info, *args, **kwargs)
+            return on_date_time_func(type_info, *args, **kwargs)
 
         # ----------------------------------------------------------------------
         @staticmethod
         def OnDate(type_info, *args, **kwargs):
-            return onDateFunc(type_info, *args, **kwargs)
+            return on_date_func(type_info, *args, **kwargs)
 
         # ----------------------------------------------------------------------
         @staticmethod
         def OnDirectory(type_info, *args, **kwargs):
-            return onDirectoryFunc(type_info, *args, **kwargs)
+            return on_directory_func(type_info, *args, **kwargs)
 
         # ----------------------------------------------------------------------
         @staticmethod
         def OnDuration(type_info, *args, **kwargs):
-            return onDurationFunc(type_info, *args, **kwargs)
+            return on_duration_func(type_info, *args, **kwargs)
 
         # ----------------------------------------------------------------------
         @staticmethod
         def OnEnum(type_info, *args, **kwargs):
-            return onEnumFunc(type_info, *args, **kwargs)
+            return on_enum_func(type_info, *args, **kwargs)
 
         # ----------------------------------------------------------------------
         @staticmethod
         def OnFilename(type_info, *args, **kwargs):
-            return onFilenameFunc(type_info, *args, **kwargs)
+            return on_filename_func(type_info, *args, **kwargs)
 
         # ----------------------------------------------------------------------
         @staticmethod
         def OnFloat(type_info, *args, **kwargs):
-            return onFloatFunc(type_info, *args, **kwargs)
+            return on_float_func(type_info, *args, **kwargs)
 
         # ----------------------------------------------------------------------
         @staticmethod
         def OnGuid(type_info, *args, **kwargs):
-            return onGuidFunc(type_info, *args, **kwargs)
+            return on_guid_func(type_info, *args, **kwargs)
 
         # ----------------------------------------------------------------------
         @staticmethod
         def OnInt(type_info, *args, **kwargs):
-            return onIntFunc(type_info, *args, **kwargs)
+            return on_int_func(type_info, *args, **kwargs)
 
         # ----------------------------------------------------------------------
         @staticmethod
         def OnString(type_info, *args, **kwargs):
-            return onStringFunc(type_info, *args, **kwargs)
+            return on_string_func(type_info, *args, **kwargs)
 
         # ----------------------------------------------------------------------
         @staticmethod
         def OnTime(type_info, *args, **kwargs):
-            return onTimeFunc(type_info, *args, **kwargs)
+            return on_time_func(type_info, *args, **kwargs)
 
         # ----------------------------------------------------------------------
         @staticmethod
         def OnUri(type_info, *args, **kwargs):
-            return onUriFunc(type_info, *args, **kwargs)
+            return on_uri_func(type_info, *args, **kwargs)
 
     # ----------------------------------------------------------------------
 

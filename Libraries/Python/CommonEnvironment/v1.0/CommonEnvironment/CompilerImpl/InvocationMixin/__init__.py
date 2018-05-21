@@ -24,6 +24,8 @@ _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
+# ----------------------------------------------------------------------
+# <Too few public methods> pylint: disable = R0903
 class InvocationMixin(Interface):
     """Object that implements strategies for invoking functionality."""
 

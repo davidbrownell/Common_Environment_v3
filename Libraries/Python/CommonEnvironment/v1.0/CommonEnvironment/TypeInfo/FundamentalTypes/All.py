@@ -71,7 +71,7 @@ def CreateFromPythonType(typ, **kwargs):
     """
 
     if sys.version_info[0] == 2:
-        if typ in [ str, unicode, basestring, ]:
+        if typ in [ str, unicode, basestring, ]:        # <Undefined variable> pylint: disable = E0602
             return StringTypeInfo(**kwargs)
     else:
         if typ == str:

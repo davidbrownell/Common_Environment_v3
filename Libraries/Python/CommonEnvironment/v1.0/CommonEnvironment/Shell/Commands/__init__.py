@@ -25,6 +25,8 @@ _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
+# <Too few public methods> pylint: disable = R0903
+
 # ----------------------------------------------------------------------
 class Comment(object):
     """A comment within a generated script"""
@@ -94,7 +96,7 @@ class Set(object):
             if self.Values is None:
                 os.environ.pop(self.Name, None)
             else:
-                from CommonEnvironment.Shell.Commands.All import CurrentShell
+                from CommonEnvironment.Shell.All import CurrentShell
 
                 os.environ[self.Name] = CurrentShell.EnvironmentVariableDelimiter.join(self.Values)
 
@@ -113,7 +115,7 @@ class Augment(object):
         self.Values                         = value_or_values if isinstance(value_or_values, list) else [ value_or_values, ]
 
         if update_memory:
-            from CommonEnvironment.Shell.Commands.All import CurrentShell
+            from CommonEnvironment.Shell.All import CurrentShell
 
             existing_values = list(CurrentShell.EnumEnvironmentVariable(self.Name))
         

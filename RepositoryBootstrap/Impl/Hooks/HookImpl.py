@@ -34,7 +34,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 
 sys.path.insert(0, os.path.join(_script_dir, "GeneratedCode"))
 with CallOnExit(lambda: sys.path.pop(0)):
-    import HooksImplParser
+    import HooksImplParser                              # <Unable to import> pylint: disable = E0401
 
 sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
 with CallOnExit(lambda: sys.path.pop(0)):

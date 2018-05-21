@@ -19,6 +19,9 @@ different environments. We can't make too many assumptions about the state of th
 system when we are here.
 """
 
+# <third part inport <...> should be placed before <...>> pylint: disable = C0411
+# <Unused import> pylint: disable = W0611
+
 import os
 import sys
 

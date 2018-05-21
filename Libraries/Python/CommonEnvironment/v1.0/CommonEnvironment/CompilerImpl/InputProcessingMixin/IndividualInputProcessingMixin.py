@@ -24,6 +24,8 @@ _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
+# ----------------------------------------------------------------------
+# <Too few public methods> pylint: disable = R0903
 class IndividualInputProcessingMixin(InputProcessingMixin):
     """Each input is processed in isolation."""
 
@@ -32,7 +34,7 @@ class IndividualInputProcessingMixin(InputProcessingMixin):
     # ----------------------------------------------------------------------
     @classmethod
     def _GenerateMetadataItemsImpl(cls, invocation_group_inputs, metadata):
-        if cls.AttributeName in user_provided_metadata:
+        if cls.AttributeName in metadata:
             raise Exception("'{}' is a reserved keyword".format(cls.AttributeName))
 
         for input in invocation_group_inputs:

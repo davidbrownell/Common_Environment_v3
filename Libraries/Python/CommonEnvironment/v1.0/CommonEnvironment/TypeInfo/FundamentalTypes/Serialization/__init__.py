@@ -36,7 +36,7 @@ class Serialization(Interface):
         if type_info.Arity.IsOptional and item_or_items is None:
             return None
         elif type_info.Arity.IsCollection:
-            return [ cls.SerializeItem(type_info, item, **custom_args) for item in items_or_items ]
+            return [ cls.SerializeItem(type_info, item, **custom_args) for item in item_or_items ]
 
         return cls.SerializeItem(type_info, item_or_items, **custom_args)
 

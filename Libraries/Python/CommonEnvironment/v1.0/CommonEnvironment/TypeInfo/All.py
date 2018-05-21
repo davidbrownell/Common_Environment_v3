@@ -22,7 +22,9 @@ from CommonEnvironment.TypeInfo.ClassTypeInfo import ClassTypeInfo, MethodTypeIn
 from CommonEnvironment.TypeInfo.DictTypeInfo import DictTypeInfo
 from CommonEnvironment.TypeInfo.ListTypeInfo import ListTypeInfo
 
-from CommonEnvironment.TypeInfo.FundamentalTypes.All import *
+# <Unused import> pylint: disable = W0614
+
+from CommonEnvironment.TypeInfo.FundamentalTypes.All import *               # <Wildcard import> pylint: disable = W0401
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable

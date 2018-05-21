@@ -134,6 +134,7 @@ disable=print-statement,
         deprecated-sys-function,
         exception-escape,
         comprehension-escape,
+        C0111,                              # Missing docstring
         C0303,                              # Trailing whitespace
         C0321,                              # More than one statement on a single line
         C0326,                              # Exactly one space required before assignment

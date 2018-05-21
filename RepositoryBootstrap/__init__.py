@@ -80,6 +80,8 @@ except ImportError:
             break
 
     # Try to import again
+
+    # <Imports are not grouped> pylint: disable = C0412
     import inflect
     import six
     import wrapt

@@ -32,7 +32,7 @@ class AtomicInputProcessingMixin(InputProcessingMixin):
     # ----------------------------------------------------------------------
     @classmethod
     def _GenerateMetadataItemsImpl(cls, invocation_group_inputs, metadata):
-        if cls.AttributeName in user_provided_metadata:
+        if cls.AttributeName in metadata:
             raise Exception("'{}' is a reserved keyword".format(cls.AttributeName))
 
         metadata[cls.AttributeName] = invocation_group_inputs

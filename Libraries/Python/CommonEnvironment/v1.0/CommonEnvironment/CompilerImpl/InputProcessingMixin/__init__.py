@@ -35,23 +35,23 @@ class InputProcessingMixin(Interface):
     # ----------------------------------------------------------------------
     @classmethod
     def _GenerateMetadataItems(cls, *args, **kwargs):
-        return _GenerateMetadataItemsImpl(*args, **kwargs)
+        return cls._GenerateMetadataItemsImpl(*args, **kwargs)
 
     # ----------------------------------------------------------------------
     @classmethod
     def _GetInputItems(cls, *args, **kwargs):
-        return _GetInputItemsImpl(*args, **kwargs)
+        return cls._GetInputItemsImpl(*args, **kwargs)
 
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
-    @abstractmethod
     @staticmethod
+    @abstractmethod
     def _GenerateMetadataItemsImpl(invocation_group_inputs, metadata):
         raise Exception("Abstract method")
 
     # ----------------------------------------------------------------------
-    @abstractmethod
     @staticmethod
+    @abstractmethod
     def _GetInputItemsImpl(context):
         raise Exception("Abstract method")

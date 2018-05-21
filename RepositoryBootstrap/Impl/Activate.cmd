@@ -203,7 +203,7 @@ exit /B %_ACTIVATE_ERROR_LEVEL%
 @REM ---------------------------------------------------------------------------
 :CreateTempScriptName
 setlocal EnableDelayedExpansion
-set _filename=%~dp0ActivateEnvironment-!RANDOM!-!Time:~6,5!.cmd
+set _filename=%~dp0Activate-!RANDOM!-!Time:~6,5!.cmd
 endlocal & set _ACTIVATE_ENVIRONMENT_TEMP_SCRIPT_NAME=%_filename%
 
 if exist "%_ACTIVATE_ENVIRONMENT_TEMP_SCRIPT_NAME%" goto :CreateTempScriptName

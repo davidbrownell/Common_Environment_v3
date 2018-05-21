@@ -116,29 +116,17 @@ def _CommandLineImpl( compiler,
         output_stream.write("{}\n".format(result.rstrip()))
         return -1
 
-    # Validate the input
-    inputs = [ os.path.realpath(input) for input in inputs ]
-
-    for input in inputs:
-        if not os.path.exists(input):
-            raise CECommandLine.UsageException("'{}' is not a valid file or directory".format(input))
-
-        result = compiler.InputTypeInfo.ValidateItemNoThrow(input)
-        if result is not None:
-            raise CECommandLine.UsageException(result)
-
-        if os.path.isfile(input) and not compiler.IsSupported((input):
-            raise CECommandLine.UsageException("'{}' is not supported".format(input))
-
     # Execute
     with output_stream.DoneManager( line_prefix='',
                                     prefix="\nResult: ",
                                     suffix='\n',
                                     display_exceptions=False,
                                   ) as dm:
-        dm.stream.write("Generating context...")
+        dm.stream.write("\nGenerating context...")
         with dm.stream.DoneManager() as this_dm:
             try:
+                inputs = [ os.path.realpath(input) for input in inputs ]
+
                 contexts = list(compiler.GenerateContextItems(inputs, **compiler_kwargs))
             except Exception as ex:
                 this_dm.result = -1

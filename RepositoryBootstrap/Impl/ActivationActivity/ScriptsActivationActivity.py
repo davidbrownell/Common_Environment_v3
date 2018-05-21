@@ -89,6 +89,7 @@ class ScriptsActivationActivity(ActivationActivity):
 
         WrappedItem                         = namedtuple( "WrappedItem",
                                                           [ "Name",
+                                                            "DisplayName",
                                                             "Desc",
                                                             "ScriptInfo",
                                                           ],
@@ -117,7 +118,7 @@ class ScriptsActivationActivity(ActivationActivity):
         with verbose_stream.DoneManager( done_suffixes=[ lambda: "{} found".format(inflect.no("extractor", len(extractors))),
                                                          lambda: "{} found".format(inflect.no("generator", len(dir_generators))),
                                                        ],
-                                      ):
+                                       ):
             args = { "shell" : shell,
                      "repositories" : repositories,
                      "version_specs" : version_specs,
@@ -128,7 +129,7 @@ class ScriptsActivationActivity(ActivationActivity):
                                                Constants.ACTIVATE_ENVIRONMENT_CUSTOM_SCRIPT_EXTRACTOR_METHOD_NAME,
                                                args,
                                                as_list=False,
-                                              )
+                                             )
                 if result is None:
                     continue
 
@@ -141,7 +142,7 @@ class ScriptsActivationActivity(ActivationActivity):
                 if isinstance(result, tuple):
                     these_extractors, these_generators = result
 
-                    if not isisntance(these_generators, list):
+                    if not isinstance(these_generators, list):
                         these_generators = [ these_generators, ]
 
                     dir_generators += these_generators
@@ -183,10 +184,10 @@ class ScriptsActivationActivity(ActivationActivity):
 
         # Get the scrpts
         if extractors:
-            scripts = []
+            script_infos = []
 
             verbose_stream.write("Searching for content...")
-            with verbose_stream.DoneManager( done_suffix=lambda: "{} found".format(inflect.no("script", len(scripts))),
+            with verbose_stream.DoneManager( done_suffix=lambda: "{} found".format(inflect.no("script", len(script_infos))),
                                            ):
                 
                 for repository in repositories:
@@ -242,12 +243,12 @@ class ScriptsActivationActivity(ActivationActivity):
                                 if extractor is None:
                                     continue
 
-                                scripts.append(ScriptInfo( repository,
-                                                           extractor,
-                                                           script_filename,
-                                                         ))
+                                script_infos.append(ScriptInfo( repository,
+                                                                extractor,
+                                                                script_filename,
+                                                              ))
 
-            if scripts:
+            if script_infos:
                 wrappers = OrderedDict()
 
                 verbose_stream.write("Creating script wrappers...")
@@ -259,15 +260,15 @@ class ScriptsActivationActivity(ActivationActivity):
                     # from high-level repositories more often than lower-level ones when names collide.
                     # Reverse the order of the higher-level scripts get the standard name while conflicts
                     # in lower-level libraries are renamed.
-                    scripts.reverse()
+                    script_infos.reverse()
 
-                    for script in scripts:
-                        these_commands = script.Extractor.CreateCommandsFunc(script.Filename)
+                    for script_info in script_infos:
+                        these_commands = script_info.Extractor.CreateCommandsFunc(script_info.Filename)
                         if these_commands is None:
                             continue
 
                         # Create an unique name for the wrapper
-                        base_name = script.Extractor.ScriptNameDecoratorFunc(os.path.splitext(os.path.basename(script.Filename))[0])
+                        base_name = script_info.Extractor.ScriptNameDecoratorFunc(os.path.splitext(os.path.basename(script_info.Filename))[0])
 
                         conflicts = []
 
@@ -279,31 +280,37 @@ class ScriptsActivationActivity(ActivationActivity):
 
                             if potential_filename in wrappers:
                                 conflicts.append(wrappers[potential_filename])
-                                continue
+                            else:
+                                break
 
-                            base_name = os.path.splitext(os.path.basename(potential_filename))[0]
+                        base_name = os.path.splitext(os.path.basename(potential_filename))[0]
 
-                            if conflicts and no_display_conflicts:
-                                dm.stream.write(textwrap.dedent(
-                                    """\
-                                    The wrapper script for '{original_name}' has been renamed '{new_name}' to avoid naming conflicts with:
-                                    {conflicts}
-                                    """).format( original_name=script.Filename,
-                                                 new_name=base_name,
-                                                 conflicts='\n'.join([ "    - {}".format(wrapped_item.ScriptInfo.Filename) for wrapped_item in conflicts ]),
-                                               ))
+                        if conflicts and no_display_conflicts:
+                            dm.stream.write(textwrap.dedent(
+                                """\
+                                The wrapper script for '{original_name}' has been renamed '{new_name}' to avoid naming conflicts with:
+                                {conflicts}
+                                """).format( original_name=script_info.Filename,
+                                             new_name=base_name,
+                                             conflicts='\n'.join([ "    - {}".format(wrapped_item.ScriptInfo.Filename) for wrapped_item in conflicts ]),
+                                           ))
 
-                            with open(potential_filename, 'w') as f:
-                                f.write(shell.GenerateCommands(these_commands))
+                        with open(potential_filename, 'w') as f:
+                            f.write(shell.GenerateCommands(these_commands))
 
-                            shell.MakeFileExecutable(potential_filename)
+                        shell.MakeFileExecutable(potential_filename)
 
-                            wrappers[potential_filename] = WrappedItem( base_name,
-                                                                        script.Extractor.CreateDocumentationFunc(script.Filename),
-                                                                        script,
-                                                                      )
+                        assert script_info.Filename.startswith(script_info.Repo.Root), (script_info.Filename, script_info.Repo.Root)
+                        display_location = script_info.Filename[len(script_info.Repo.Root):].lstrip(os.path.sep)
 
-                            break
+                        assert display_location.startswith(Constants.SCRIPTS_SUBDIR), display_location
+                        display_location = display_location[len(Constants.SCRIPTS_SUBDIR):].lstrip(os.path.sep)
+
+                        wrappers[potential_filename] = WrappedItem( base_name,
+                                                                    display_location,
+                                                                    script_info.Extractor.CreateDocumentationFunc(script_info.Filename),
+                                                                    script_info,
+                                                                  )
 
                 if wrappers:
                     verbose_stream.write("Creating '{}'...".format(Constants.SCRIPT_LIST_NAME))
@@ -314,7 +321,12 @@ class ScriptsActivationActivity(ActivationActivity):
 
                         prev_repo = None
 
-                        for wrapper_info in six.itervalues(wrappers):
+                        # Above, we reversed the items so we could order from most-specific to least-specific. Here,
+                        # we want to order from least-specific to most specific.
+                        wrapper_infos = list(six.itervalues(wrappers))
+                        wrapper_infos.reverse()
+
+                        for wrapper_info in wrapper_infos:
                             if wrapper_info.ScriptInfo.Repo != prev_repo:
                                 header = "{name:<70} {location:>80}".format( name="{} <{}>".format(wrapper_info.ScriptInfo.Repo.Name, wrapper_info.ScriptInfo.Repo.Id),
                                                                              location=wrapper_info.ScriptInfo.Repo.Root,
@@ -331,10 +343,7 @@ class ScriptsActivationActivity(ActivationActivity):
 
                                 prev_repo = wrapper_info.ScriptInfo.Repo
 
-                            assert wrapper_info.ScriptInfo.Filename.startswith(wrapper_info.ScriptInfo.Repo.Root), (wrapper_info.ScriptInfo.Filename, wrapper_info.ScriptInfo.Repo.Root)
-                            display_location = wrapper_info.ScriptInfo.Filename[len(wrapper_info.ScriptInfo.Repo.Root):].lstrip(os.path.sep)
-
-                            content = "{0:<68} {1:>78}".format(shell.CreateScriptName(wrapper_info.Name), display_location)
+                            content = "{0:<68} {1:>78}".format(shell.CreateScriptName(wrapper_info.Name), wrapper_info.DisplayName)
                             content += "\n{}\n".format('-' * len(content))
 
                             if wrapper_info.Desc:
@@ -351,6 +360,7 @@ class ScriptsActivationActivity(ActivationActivity):
 
                     # Write output
                     lines = textwrap.dedent(
+                                # <Wrong hanging indentation> pylint: disable = C0330
                                 """\
                                 Shell wrappers have been created for all the recognized files contained within the directory
                                 '{script_dir}' across all repositories. For a complete list of these wrappers, run:

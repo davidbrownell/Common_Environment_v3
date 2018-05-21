@@ -17,7 +17,9 @@
 import os
 import sys
 
-from CommonEnvironment.Shell.Commands import *
+# <Unused import> pylint: disable = W0614
+
+from CommonEnvironment.Shell.Commands import *          # <Wildcard import> pylint: disable = W0401
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable

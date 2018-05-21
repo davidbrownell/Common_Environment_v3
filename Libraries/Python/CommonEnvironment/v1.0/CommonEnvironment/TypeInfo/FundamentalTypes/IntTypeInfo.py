@@ -100,4 +100,6 @@ class IntTypeInfo(TypeInfo):
 
         if self.Max is not None and item > self.Max:
             return "{} is not <= {}".format(item, self.Max)
+
+        return None
         

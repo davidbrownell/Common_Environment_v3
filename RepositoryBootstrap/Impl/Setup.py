@@ -17,7 +17,6 @@ One-time environment preparation for a repository.
 
 """
 
-import json
 import os
 import shutil
 import sys
@@ -29,7 +28,8 @@ import inflect as inflect_mod
 import six
 
 import RepositoryBootstrap
-from RepositoryBootstrap.Configuration import *
+
+from RepositoryBootstrap.Configuration import Configuration
 
 from RepositoryBootstrap.Impl import CommonEnvironmentImports
 from RepositoryBootstrap.Impl import Constants
@@ -282,6 +282,8 @@ def _SetupBootstrap( shell,
             import win32api
             import win32file
 
+            # <Module 'win32api' has not 'GetLogicalDriveStrings' member, but source is unavailable. Consider adding this module to extension-pkg-whitelist if you want to perform analysis based on run-time introspection of living objects.> pylint: disable = I1101
+
             for drive in [ drive for drive in win32api.GetLogicalDriveStrings().split('\000') if drive and win32file.GetDriveType(drive) == win32file.DRIVE_FIXED ]:
                 PushSearchItem(drive)
 
@@ -308,7 +310,7 @@ def _SetupBootstrap( shell,
 
             # Is this a tool repo? Tool repos are specified via the ToolRepository 
             # decorator.
-            is_tool_reposotory = ( hasattr(dependencies_func, "_self_wrapper") and
+            is_tool_repository = ( hasattr(dependencies_func, "_self_wrapper") and
                                    dependencies_func._self_wrapper.__name__ == "ToolRepository"
                                  )
 
@@ -386,6 +388,7 @@ def _SetupBootstrap( shell,
                                             for k, v in six.iteritems(id_lookup)
                                           ]),
                      configurations='' if not has_configurations else CommonEnvironmentImports.StringHelpers.LeftJustify( textwrap.dedent(
+                                                                                                                            # <Wrong hanging indentation> pylint: disable = C0330
                                                                                                                             """\
                                                                                                                             Based on these configurations:
 
@@ -400,6 +403,7 @@ def _SetupBootstrap( shell,
                                                                                                                                                                                              4,
                                                                                                                                                                                            ),
                                                                                                                                          '' if explict_configurations else textwrap.dedent(
+                                                                                                                                                                            # <Wrong hanging indentation> pylint: disable = C0330
                                                                                                                                                                             """\
 
                                                                                                                                                                             To setup specific configurations, specify this argument one or more times on the command line:
@@ -425,7 +429,7 @@ def _SetupBootstrap( shell,
         if result is None:
             continue
 
-        repo_name, repo_guid = result
+        repo_guid = result[1]
 
         if repo_guid in id_lookup:
             # Note that we may already have a repository associated with this guid.
@@ -512,6 +516,7 @@ def _SetupBootstrap( shell,
                               )
 
 # ----------------------------------------------------------------------
+# <Unused argument> pylint: disable = W0613
 def _SetupCustom( shell,
                   repository_root,
                   customization_mod,
@@ -520,7 +525,7 @@ def _SetupCustom( shell,
                   explict_configurations,
                 ):
     if customization_mod is None or not hasattr(customization_mod, Constants.SETUP_ENVIRONMENT_ACTIONS_METHOD_NAME):
-        return
+        return None
 
     func = CommonEnvironmentImports.Interface.CreateCulledCallable(getattr(customization_mod, Constants.SETUP_ENVIRONMENT_ACTIONS_METHOD_NAME))
 
@@ -530,6 +535,7 @@ def _SetupCustom( shell,
                 })
 
 # ----------------------------------------------------------------------
+# <Unused argument> pylint: disable = W0613
 def _SetupShortcuts( shell,
                      repository_root,
                      customization_mod,
@@ -548,6 +554,7 @@ def _SetupShortcuts( shell,
            ]
 
 # ----------------------------------------------------------------------
+# <Unused argument> pylint: disable = W0613
 def _SetupGeneratedPermissions( shell,
                                 repository_root,
                                 customization_mod,
@@ -561,6 +568,7 @@ def _SetupGeneratedPermissions( shell,
     os.chmod(generated_dir, 0x777)
 
 # ----------------------------------------------------------------------
+# <Unused argument> pylint: disable = W0613
 def _SetupScmHooks( shell,
                     repository_root,
                     customization_mod,

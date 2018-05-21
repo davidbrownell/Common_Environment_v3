@@ -86,8 +86,8 @@ def Execute( command_line,
 
                 return line_delimited_original_output(content)
 
-            else:
-                internal_content.append(content)
+            internal_content.append(content)
+            return None
 
         # ----------------------------------------------------------------------
         def Flush():
@@ -119,11 +119,11 @@ def Execute( command_line,
         for key in list(six.iterkeys(environment)):
             value = environment[key]
 
-            if isinstance(key, unicode):
+            if isinstance(key, unicode):                # <Undefined variable> pylint: disable = E0602
                 del environment[key]
                 key = ConvertToString(key)
 
-            if isinstance(value, unicode):
+            if isinstance(value, unicode):              # <Undefined variable> pylint: disable = E0602
                 value = ConvertToString(value)
 
             environment[key] = value
@@ -234,7 +234,7 @@ def Execute( command_line,
 
                 assert content
 
-                if output(to_ascii_string(content)) == False:
+                if not output(to_ascii_string(content)):
                     hard_stop = True
                     break
 

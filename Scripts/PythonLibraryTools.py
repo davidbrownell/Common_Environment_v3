@@ -14,7 +14,6 @@
 # ----------------------------------------------------------------------
 """Tools that help when installing, moving, and detecting changes with Python libraries."""
 
-import itertools
 import json
 import os
 import shutil
@@ -51,6 +50,11 @@ with CallOnExit(lambda: sys.path.pop(0)):
                                                                                      WRAPPERS_FILENAME, \
                                                                                      PythonActivationActivity \
                                                                                      
+# <Missing function docstring> pylint: disable = C0111
+# <Too few public methods> pylint: disable = R0903
+# <Too many braches> pylint: disable = R0912
+# <Too many local variables> pylint: disable = R0914
+# <Too many nested blocks> pylint: disable = R1702
 
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint
@@ -65,7 +69,7 @@ def Display( output_stream=sys.stdout,
     new_content = _NewLibraryContent.Create(_EnvironmentSettings())
     
     # ----------------------------------------------------------------------
-    def Display(name, items, is_os_specific_func):
+    def Write(name, items, is_os_specific_func):
         cols = [ 40, 9, 120, ]
         template = "{name:<%d}  {type:<%d}  {fullpath:<%d}" % tuple(cols)
 
@@ -101,7 +105,7 @@ def Display( output_stream=sys.stdout,
                        ))
 
     # ----------------------------------------------------------------------
-    def DisplayExtensions(name, items):
+    def WriteExtensions(name, items):
         cols = [ 120, ]
         template = "{fullpath:<%d}" % tuple(cols)
 
@@ -130,10 +134,10 @@ def Display( output_stream=sys.stdout,
 
     shell = CurrentShell
 
-    Display("Libraries", new_content.Libraries, new_content.HasOSSpecificLibraryExtensions)
-    Display("Scripts", new_content.Scripts, lambda fullpath: os.path.splitext(_script_fullpath)[1] in [ ".pyd", ".so", shell.ScriptExtension, shell.ExecutableExtension, ])
-    DisplayExtensions("Library Extensions", new_content.LibraryExtensions)
-    DisplayExtensions("Script Extensions", new_content.ScriptExtensions)
+    Write("Libraries", new_content.Libraries, new_content.HasOSSpecificLibraryExtensions)
+    Write("Scripts", new_content.Scripts, lambda fullpath: os.path.splitext(_script_fullpath)[1] in [ ".pyd", ".so", shell.ScriptExtension, shell.ExecutableExtension, ])
+    WriteExtensions("Library Extensions", new_content.LibraryExtensions)
+    WriteExtensions("Script Extensions", new_content.ScriptExtensions)
 
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint( no_move=CommandLine.EntryPoint.Parameter("Displays actions that would be taken without making any changes"),
@@ -156,13 +160,13 @@ def Move( no_move=False,
             move_func = lambda *args, **kwargs: None
         else:
             # ----------------------------------------------------------------------
-            def Move(source_dir_or_filename, dest_dir):
+            def Impl(source_dir_or_filename, dest_dir):
                 FileSystem.MakeDirs(dest_dir)
                 shutil.move(source_dir_or_filename, dest_dir)
                 
             # ----------------------------------------------------------------------
 
-            move_func = Move
+            move_func = Impl
 
         dm.stream.write("Calculating new library content...")
         with dm.stream.DoneManager():
@@ -447,7 +451,6 @@ def Move( no_move=False,
 def Install( lib_name,
              pip_arg=None,
              output_stream=sys.stdout,
-             verbose=False,
            ):
     """
     A replacement for pip install. Will ensure that already installed python libraries are not modified in-place,
@@ -577,7 +580,7 @@ def Install( lib_name,
                         if ( item.startswith(potential_library_name_lower) and 
                              (item.endswith(".dist-info") or item.endswith(".egg-info"))
                            ):
-                               info_items.append(item)
+                            info_items.append(item)
 
                     for info_item in info_items:
                         RemoveItem(info_item)

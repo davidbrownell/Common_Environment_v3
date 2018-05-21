@@ -29,6 +29,9 @@ _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
+# <...> doesn't conform to <style> naming style> pylint: disable = C0103
+
+# ----------------------------------------------------------------------
 _is_python2                                 = sys.version_info[0] == 2
 
 # Introduce some abc items into the current namespace for convenience
@@ -52,6 +55,7 @@ class InterfaceException(Exception):
     pass
 
 # ----------------------------------------------------------------------
+# <Too few public methods> pylint: disable = R0903
 class Interface(object):
     """
     Augments python abstract base class functionality with support for static methods,
@@ -98,6 +102,7 @@ class Interface(object):
         _verified_types                     = set()
 
         # ----------------------------------------------------------------------
+        # <Too many local variables> pylint: disable = R0914
         def __new__(cls, *args, **kwargs):
             # If here, ABC has already validated that abstract methods and properties are
             # present and named correctly. We not need to validate static methods and parameters.
@@ -126,6 +131,7 @@ class Interface(object):
                     ) = six.moves.range(4)
 
                     # ----------------------------------------------------------------------
+                    # <Too few public methods> pylint: disable = R0903
                     class NoDefault(object):
                         """
                         Placeholder to indicate that a default value was not provided; we
@@ -165,6 +171,7 @@ class Interface(object):
                             return "property"
 
                         assert False, self.Type
+                        return None
 
                     # ----------------------------------------------------------------------
                     def LocationString(self):
@@ -209,7 +216,6 @@ class Interface(object):
 
                 for base in reversed(inspect.getmro(cls)):
                     these_abstracts = []
-                    these_extension_methods = {}
 
                     for member_name, member_info in inspect.getmembers(base):
                         if getattr(member_info, "__extension_method", False):
@@ -417,20 +423,21 @@ class Interface(object):
                     # ----------------------------------------------------------------------
 
                     raise InterfaceException([ textwrap.dedent(
-                                                 """\
-                                                 {name}
-                                                         Abstract {abstract_location}
-                                                 {abstract_params}
+                                                    # <Wrong hanging indentation> pylint: disable = C0330
+                                                    """\
+                                                    {name}
+                                                            Abstract {abstract_location}
+                                                    {abstract_params}
                                             
-                                                         Concrete {concrete_location}
-                                                 {concrete_params}
+                                                            Concrete {concrete_location}
+                                                    {concrete_params}
                                             
-                                                 """).format( name=name,
-                                                              abstract_location=aentity.LocationString(),
-                                                              abstract_params=DisplayParams(aparams),
-                                                              concrete_location=centity.LocationString(),
-                                                              concrete_params=DisplayParams(cparams),
-                                                            )
+                                                    """).format( name=name,
+                                                                 abstract_location=aentity.LocationString(),
+                                                                 abstract_params=DisplayParams(aparams),
+                                                                 concrete_location=centity.LocationString(),
+                                                                 concrete_params=DisplayParams(cparams),
+                                                               )
                                                for name, aparams, aentity, cparams, centity in errors
                                              ])
 
@@ -569,7 +576,7 @@ def CreateCulledCallable(func):
 
         else:
             # ----------------------------------------------------------------------
-            def Invoke(kwargs):
+            def Invoke(_):
                 return func()
 
             # ----------------------------------------------------------------------
@@ -609,14 +616,14 @@ if _is_python2:
 
         # This is a bit strange, but class functions will have a __self__ value 
         # that isn't None
-        return item.__self__ is not None and type(item.__self__) == type
+        return item.__self__ is not None and type(item.__self__) == type    # <Using type() instead of isinstance() for a typecheck.> pylint: disable = C0123
 
     # ----------------------------------------------------------------------
     def IsStandardMethod(item):
         if not inspect.ismethod(item):
             return False
 
-        return item.__self__ is None or type(item.__self__) != type
+        return item.__self__ is None or type(item.__self__) != type         # <Using type() instead of isinstance() for a typecheck.> pylint: disable = C0123
 
     # ----------------------------------------------------------------------
 

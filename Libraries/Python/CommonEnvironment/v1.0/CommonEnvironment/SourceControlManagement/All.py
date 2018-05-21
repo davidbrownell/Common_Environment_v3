@@ -54,7 +54,7 @@ def GetSCM(repo_root, raise_on_error=True):
                 return scm
 
     if not raise_on_error:
-        return
+        return None
 
     raise Exception(textwrap.dedent(
         """\
@@ -125,7 +125,7 @@ def EnumSCMs(path):
 
     for root, directories, _ in os.walk(path):
         for scm in ALL_TYPES:
-            if scm.IsRootDir(root):
+            if scm.IsRoot(root):
                 yield scm, root
 
                 # Don't search in subdirs, as there won't be any

@@ -20,7 +20,9 @@ import sys
 import inflect as inflect_mod
 import six
 
-from CommonEnvironment.Interface import *
+from CommonEnvironment.Interface import Interface, \
+                                        abstractmethod, \
+                                        abstractproperty
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -152,6 +154,7 @@ class Arity(object):
                                  )
 
     # ----------------------------------------------------------------------
+    # <Too many return statements> pylint: disable = R0911
     def __cmp__(self, other):
         if not isinstance(other, self.__class__):
             return -1
@@ -263,9 +266,9 @@ class TypeInfo(Interface):
     def IsExpectedType(self, item):
         """Returns True if the item is the expected Python type"""
         if self.ExpectedTypeIsCallable:
-            return self.ExpectedType(item)
+            return self.ExpectedType(item)              # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
 
-        return isinstance(item, self.ExpectedType)
+        return isinstance(item, self.ExpectedType)      # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
 
     # ----------------------------------------------------------------------
     def IsValid(self, item_or_items, **custom_args):
@@ -337,7 +340,7 @@ class TypeInfo(Interface):
             if (count == 0 and not self.Arity.IsOptional) or count > 1:
                 return "1 item was expected"
 
-            return
+            return None
 
         if self.Arity.Min != None and count < self.Arity.Min:
             return "At least {} {} expected".format( inflect.no("item", self.Arity.Min),
@@ -348,6 +351,8 @@ class TypeInfo(Interface):
             return "At most {} {} expected".format( inflect.no("item", self.Arity.Max),
                                                     inflect.plural_verb("was", self.Arity.Max),
                                                   )
+
+        return None
 
     # TODO: End
 
@@ -373,12 +378,14 @@ class TypeInfo(Interface):
             if result is not None:
                 return result
 
+        return None
+
     # ----------------------------------------------------------------------
     def ValidateItemNoThrow(self, item, **custom_args):
         """Returns an error string if the input is not valid."""
 
         if self.Arity.IsOptional and item is None:
-            return
+            return None
 
         if not self.IsExpectedType(item):
             return "'{}' is not {}".format(item, inflect.a(self._GetExpectedTypeString()))
@@ -391,6 +398,8 @@ class TypeInfo(Interface):
         if result is not None:
             return result
 
+        return None
+
     # ----------------------------------------------------------------------
     def ValidateArityNoThrow(self, item_or_items):
         """Returns an error string if the input's arity is not valid."""
@@ -399,7 +408,7 @@ class TypeInfo(Interface):
             if self.Arity.Min != 0:
                 return "An item was expected"
 
-            return
+            return None
 
         if isinstance(item_or_items, (list, tuple)):
             if self.Arity.Max == 1:
@@ -423,6 +432,8 @@ class TypeInfo(Interface):
         else:
             return "Invalid input"
 
+        return None
+
     # ----------------------------------------------------------------------
     # |  
     # |  Protected Methods
@@ -439,9 +450,9 @@ class TypeInfo(Interface):
             return self.__class__.__name__
 
         if isinstance(self.ExpectedTypeIsCallable, tuple):
-            return ', '.join([ GetTypeName(t) for t in self.ExpectedType ])
+            return ', '.join([ GetTypeName(t) for t in self.ExpectedType ])     # <Class '<name>' has no '<attr>' member> pylint: disable = E1103
 
-        return GetTypeName(self.ExpectedType)
+        return GetTypeName(self.ExpectedType)                                   # <Class '<name>' has no '<attr>' member> pylint: disable = E1103
 
     # ----------------------------------------------------------------------
     # |  

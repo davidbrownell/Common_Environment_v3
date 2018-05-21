@@ -24,6 +24,7 @@ import six
 from CommonEnvironment import Describe
 from CommonEnvironment import CommandLine
 from CommonEnvironment import StringHelpers
+from CommonEnvironment.SourceControlManagement import SourceControlManagement, DistributedSourceControlManagement
 from CommonEnvironment.SourceControlManagement.All import GetAnySCM, ALL_TYPES as ALL_SCM_TYPES
 from CommonEnvironment.SourceControlManagement import UpdateMergeArgs
 
@@ -33,6 +34,16 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 _SCM_NAMES                                  = [ scm.Name for scm in ALL_SCM_TYPES ]
+
+# <Missing function docstring> pylint: disable = C0111
+
+# ----------------------------------------------------------------------
+def _SCMDocstringDecorator(scm_method):
+    def Decorator(func):
+        func.__doc__ = scm_method.__doc__
+        return func
+
+    return Decorator
 
 # ----------------------------------------------------------------------
 def CommandLineSuffix():
@@ -54,6 +65,8 @@ def CommandLineSuffix():
 def Info( directory=None,
           output_stream=sys.stdout,
         ):
+    """Returns information for all known SCMs based on the active directory"""
+
     directory = directory or os.getcwd()
 
     col_widths = [ 60, 12, 9, ]
@@ -87,6 +100,7 @@ def Info( directory=None,
                    ))
 
 # ----------------------------------------------------------------------
+@_SCMDocstringDecorator(SourceControlManagement.Create)
 @CommandLine.EntryPoint
 @CommandLine.Constraints( scm=CommandLine.EnumTypeInfo(_SCM_NAMES),
                           output_dir=CommandLine.DirectoryTypeInfo(ensure_exists=False),
@@ -104,6 +118,7 @@ def Create( scm,
                 )
 
 # ----------------------------------------------------------------------
+@_SCMDocstringDecorator(SourceControlManagement.Clone)
 @CommandLine.EntryPoint
 @CommandLine.Constraints( scm=CommandLine.EnumTypeInfo(_SCM_NAMES),
                           uri=CommandLine.StringTypeInfo(),
@@ -125,6 +140,7 @@ def Clone( scm,
                 )
 
 # ----------------------------------------------------------------------
+@_SCMDocstringDecorator(SourceControlManagement.GetRoot)
 @CommandLine.EntryPoint
 @CommandLine.Constraints( directory=CommandLine.DirectoryTypeInfo(arity='?'),
                           scm=CommandLine.EnumTypeInfo(_SCM_NAMES, arity='?'),
@@ -142,6 +158,7 @@ def GetRoot( directory=None,
                 )
 
 # ----------------------------------------------------------------------
+@_SCMDocstringDecorator(SourceControlManagement.IsRoot)
 @CommandLine.EntryPoint
 @CommandLine.Constraints( directory=CommandLine.DirectoryTypeInfo(arity='?'),
                           scm=CommandLine.EnumTypeInfo(_SCM_NAMES, arity='?'),
@@ -159,6 +176,7 @@ def IsRoot( directory=None,
                 )
 
 # ----------------------------------------------------------------------
+@_SCMDocstringDecorator(SourceControlManagement.GetUniqueName)
 @CommandLine.EntryPoint
 @CommandLine.Constraints( directory=CommandLine.DirectoryTypeInfo(arity='?'),
                           scm=CommandLine.EnumTypeInfo(_SCM_NAMES, arity='?'),
@@ -176,6 +194,7 @@ def GetUniqueName( directory=None,
                 )
 
 # ----------------------------------------------------------------------
+@_SCMDocstringDecorator(SourceControlManagement.Who)
 @CommandLine.EntryPoint
 @CommandLine.Constraints( directory=CommandLine.DirectoryTypeInfo(arity='?'),
                           scm=CommandLine.EnumTypeInfo(_SCM_NAMES, arity='?'),
@@ -193,6 +212,7 @@ def Who( directory=None,
                 )
 
 # ----------------------------------------------------------------------
+@_SCMDocstringDecorator(SourceControlManagement.HasUntrackedWorkingChanges)
 @CommandLine.EntryPoint
 @CommandLine.Constraints( directory=CommandLine.DirectoryTypeInfo(arity='?'),
                           scm=CommandLine.EnumTypeInfo(_SCM_NAMES, arity='?'),
@@ -210,6 +230,7 @@ def HasUntrackedWorkingChanges( directory=None,
                 )
 
 # ----------------------------------------------------------------------
+@_SCMDocstringDecorator(SourceControlManagement.HasWorkingChanges)
 @CommandLine.EntryPoint
 @CommandLine.Constraints( directory=CommandLine.DirectoryTypeInfo(arity='?'),
                           scm=CommandLine.EnumTypeInfo(_SCM_NAMES, arity='?'),
@@ -227,6 +248,7 @@ def HasWorkingChanges( directory=None,
                 )
 
 # ----------------------------------------------------------------------
+@_SCMDocstringDecorator(SourceControlManagement.GetWorkingChangeStatus)
 @CommandLine.EntryPoint
 @CommandLine.Constraints( directory=CommandLine.DirectoryTypeInfo(arity='?'),
                           scm=CommandLine.EnumTypeInfo(_SCM_NAMES, arity='?'),
@@ -244,6 +266,7 @@ def GetWorkingChangeStatus( directory=None,
                 )
 
 # ----------------------------------------------------------------------
+@_SCMDocstringDecorator(SourceControlManagement.Clean)
 @CommandLine.EntryPoint
 @CommandLine.Constraints( directory=CommandLine.DirectoryTypeInfo(arity='?'),
                           scm=CommandLine.EnumTypeInfo(_SCM_NAMES, arity='?'),
@@ -262,6 +285,7 @@ def Clean( yes=False,
                 )
 
 # ----------------------------------------------------------------------
+@_SCMDocstringDecorator(SourceControlManagement.GetBranches)
 @CommandLine.EntryPoint
 @CommandLine.Constraints( directory=CommandLine.DirectoryTypeInfo(arity='?'),
                           scm=CommandLine.EnumTypeInfo(_SCM_NAMES, arity='?'),
@@ -279,6 +303,7 @@ def GetBranches( directory=None,
                 )
 
 # ----------------------------------------------------------------------
+@_SCMDocstringDecorator(SourceControlManagement.GetCurrentBranch)
 @CommandLine.EntryPoint
 @CommandLine.Constraints( directory=CommandLine.DirectoryTypeInfo(arity='?'),
                           scm=CommandLine.EnumTypeInfo(_SCM_NAMES, arity='?'),
@@ -296,6 +321,7 @@ def GetCurrentBranch( directory=None,
                 )
 
 # ----------------------------------------------------------------------
+@_SCMDocstringDecorator(SourceControlManagement.GetCurrentNormalizedBranch)
 @CommandLine.EntryPoint
 @CommandLine.Constraints( directory=CommandLine.DirectoryTypeInfo(arity='?'),
                           scm=CommandLine.EnumTypeInfo(_SCM_NAMES, arity='?'),
@@ -313,6 +339,7 @@ def GetCurrentNormalizedBranch( directory=None,
                 )
 
 # ----------------------------------------------------------------------
+@_SCMDocstringDecorator(SourceControlManagement.GetMostRecentBranch)
 @CommandLine.EntryPoint
 @CommandLine.Constraints( directory=CommandLine.DirectoryTypeInfo(arity='?'),
                           scm=CommandLine.EnumTypeInfo(_SCM_NAMES, arity='?'),
@@ -330,6 +357,7 @@ def GetMostRecentBranch( directory=None,
                 )
 
 # ----------------------------------------------------------------------
+@_SCMDocstringDecorator(SourceControlManagement.CreateBranch)
 @CommandLine.EntryPoint
 @CommandLine.Constraints( branch_name=CommandLine.StringTypeInfo(),
                           directory=CommandLine.DirectoryTypeInfo(arity='?'),
@@ -349,6 +377,7 @@ def CreateBranch( branch_name,
                 )
 
 # ----------------------------------------------------------------------
+@_SCMDocstringDecorator(SourceControlManagement.SetBranch)
 @CommandLine.EntryPoint
 @CommandLine.Constraints( branch_name=CommandLine.StringTypeInfo(),
                           directory=CommandLine.DirectoryTypeInfo(arity='?'),
@@ -368,6 +397,7 @@ def SetBranch( branch_name,
                 )
 
 # ----------------------------------------------------------------------
+@_SCMDocstringDecorator(SourceControlManagement.SetBranchOrDefault)
 @CommandLine.EntryPoint
 @CommandLine.Constraints( branch_name=CommandLine.StringTypeInfo(),
                           directory=CommandLine.DirectoryTypeInfo(arity='?'),
@@ -387,6 +417,7 @@ def SetBranchOrDefault( branch_name,
                 )
 
 # ----------------------------------------------------------------------
+@_SCMDocstringDecorator(SourceControlManagement.GetChangeInfo)
 @CommandLine.EntryPoint
 @CommandLine.Constraints( change=CommandLine.StringTypeInfo(),
                           directory=CommandLine.DirectoryTypeInfo(arity='?'),
@@ -406,6 +437,7 @@ def GetChangeInfo( change,
                 )
 
 # ----------------------------------------------------------------------
+@_SCMDocstringDecorator(SourceControlManagement.AddFiles)
 @CommandLine.EntryPoint
 @CommandLine.Constraints( file=CommandLine.FilenameTypeInfo(arity='*'),
                           recurse=CommandLine.BoolTypeInfo(arity='?'),
@@ -450,7 +482,7 @@ def AddFiles( file=None,
 
     else:
         # ----------------------------------------------------------------------
-        def Functor(fullpath):
+        def Functor(_):
             return True
 
         # ----------------------------------------------------------------------
@@ -466,6 +498,7 @@ def AddFiles( file=None,
                 )
 
 # ----------------------------------------------------------------------
+@_SCMDocstringDecorator(SourceControlManagement.Commit)
 @CommandLine.EntryPoint
 @CommandLine.Constraints( description=CommandLine.StringTypeInfo(),
                           username=CommandLine.StringTypeInfo(arity='?'),
@@ -487,6 +520,7 @@ def Commit( description,
                 )
 
 # ----------------------------------------------------------------------
+@_SCMDocstringDecorator(SourceControlManagement.Update)
 @CommandLine.EntryPoint
 @CommandLine.Constraints( change=CommandLine.StringTypeInfo(arity='?'),
                           branch=CommandLine.StringTypeInfo(arity='?'),
@@ -513,6 +547,7 @@ def Update( change=None,
                 )
 
 # ----------------------------------------------------------------------
+@_SCMDocstringDecorator(SourceControlManagement.Merge)
 @CommandLine.EntryPoint
 @CommandLine.Constraints( change=CommandLine.StringTypeInfo(arity='?'),
                           branch=CommandLine.StringTypeInfo(arity='?'),
@@ -539,6 +574,7 @@ def Merge( change=None,
                 )
 
 # ----------------------------------------------------------------------
+@_SCMDocstringDecorator(SourceControlManagement.GetChangesSinceLastMerge)
 @CommandLine.EntryPoint
 @CommandLine.Constraints( dest_branch=CommandLine.StringTypeInfo(),
                           source_change=CommandLine.StringTypeInfo(arity='?'),
@@ -573,6 +609,7 @@ def GetChangesSinceLastMerge( dest_branch,
                 )
 
 # ----------------------------------------------------------------------
+@_SCMDocstringDecorator(SourceControlManagement.GetChangedFiles)
 @CommandLine.EntryPoint
 @CommandLine.Constraints( change=CommandLine.StringTypeInfo(arity='*'),
                           directory=CommandLine.DirectoryTypeInfo(arity='?'),
@@ -593,6 +630,7 @@ def GetChangedFiles( change=None,
                 )
 
 # ----------------------------------------------------------------------
+@_SCMDocstringDecorator(SourceControlManagement.EnumBlameInfo)
 @CommandLine.EntryPoint
 @CommandLine.Constraints( filename=CommandLine.FilenameTypeInfo(),
                           directory=CommandLine.DirectoryTypeInfo(arity='?'),
@@ -612,6 +650,7 @@ def EnumBlameInfo( filename,
                 )
 
 # ----------------------------------------------------------------------
+@_SCMDocstringDecorator(SourceControlManagement.EnumTrackedFiles)
 @CommandLine.EntryPoint
 @CommandLine.Constraints( directory=CommandLine.DirectoryTypeInfo(arity='?'),
                           scm=CommandLine.EnumTypeInfo(_SCM_NAMES, arity='?'),
@@ -629,6 +668,7 @@ def EnumTrackedFiles( directory=None,
                 )
 
 # ----------------------------------------------------------------------
+@_SCMDocstringDecorator(SourceControlManagement.CreatePatch)
 @CommandLine.EntryPoint
 @CommandLine.Constraints( patch_filename=CommandLine.FilenameTypeInfo(ensure_exists=False),
                           start_change=CommandLine.StringTypeInfo(arity='?'),
@@ -656,6 +696,7 @@ def CreatePatch( patch_filename,
                 )
 
 # ----------------------------------------------------------------------
+@_SCMDocstringDecorator(SourceControlManagement.ApplyPatch)
 @CommandLine.EntryPoint
 @CommandLine.Constraints( patch_filename=CommandLine.FilenameTypeInfo(),
                           directory=CommandLine.DirectoryTypeInfo(arity='?'),
@@ -676,6 +717,7 @@ def ApplyPatch( patch_filename,
                 )
 
 # ----------------------------------------------------------------------
+@_SCMDocstringDecorator(DistributedSourceControlManagement.Reset)
 @CommandLine.EntryPoint
 @CommandLine.Constraints( directory=CommandLine.DirectoryTypeInfo(arity='?'),
                           scm=CommandLine.EnumTypeInfo(_SCM_NAMES, arity='?'),
@@ -699,6 +741,7 @@ def Reset( yes=False,
                 )
 
 # ----------------------------------------------------------------------
+@_SCMDocstringDecorator(DistributedSourceControlManagement.HasUpdateChanges)
 @CommandLine.EntryPoint
 @CommandLine.Constraints( directory=CommandLine.DirectoryTypeInfo(arity='?'),
                           scm=CommandLine.EnumTypeInfo(_SCM_NAMES, arity='?'),
@@ -717,6 +760,7 @@ def HasUpdateChanges( directory=None,
                 )
 
 # ----------------------------------------------------------------------
+@_SCMDocstringDecorator(DistributedSourceControlManagement.HasLocalChanges)
 @CommandLine.EntryPoint
 @CommandLine.Constraints( directory=CommandLine.DirectoryTypeInfo(arity='?'),
                           scm=CommandLine.EnumTypeInfo(_SCM_NAMES, arity='?'),
@@ -735,6 +779,7 @@ def HasLocalChanges( directory=None,
                 )
 
 # ----------------------------------------------------------------------
+@_SCMDocstringDecorator(DistributedSourceControlManagement.GetLocalChanges)
 @CommandLine.EntryPoint
 @CommandLine.Constraints( directory=CommandLine.DirectoryTypeInfo(arity='?'),
                           scm=CommandLine.EnumTypeInfo(_SCM_NAMES, arity='?'),
@@ -753,6 +798,7 @@ def GetLocalChanges( directory=None,
                 )
 
 # ----------------------------------------------------------------------
+@_SCMDocstringDecorator(DistributedSourceControlManagement.HasRemoteChanges)
 @CommandLine.EntryPoint
 @CommandLine.Constraints( directory=CommandLine.DirectoryTypeInfo(arity='?'),
                           scm=CommandLine.EnumTypeInfo(_SCM_NAMES, arity='?'),
@@ -771,6 +817,7 @@ def HasRemoteChanges( directory=None,
                 )
 
 # ----------------------------------------------------------------------
+@_SCMDocstringDecorator(DistributedSourceControlManagement.GetRemoteChanges)
 @CommandLine.EntryPoint
 @CommandLine.Constraints( directory=CommandLine.DirectoryTypeInfo(arity='?'),
                           scm=CommandLine.EnumTypeInfo(_SCM_NAMES, arity='?'),
@@ -789,6 +836,7 @@ def GetRemoteChanges( directory=None,
                 )
 
 # ----------------------------------------------------------------------
+@_SCMDocstringDecorator(DistributedSourceControlManagement.GetChangeStatus)
 @CommandLine.EntryPoint
 @CommandLine.Constraints( directory=CommandLine.DirectoryTypeInfo(arity='?'),
                           scm=CommandLine.EnumTypeInfo(_SCM_NAMES, arity='?'),
@@ -807,6 +855,7 @@ def GetChangeStatus( directory=None,
                 )
 
 # ----------------------------------------------------------------------
+@_SCMDocstringDecorator(DistributedSourceControlManagement.Push)
 @CommandLine.EntryPoint
 @CommandLine.Constraints( directory=CommandLine.DirectoryTypeInfo(arity='?'),
                           scm=CommandLine.EnumTypeInfo(_SCM_NAMES, arity='?'),
@@ -818,7 +867,7 @@ def Push( create_remote_branch=False,
           output_stream=sys.stdout,
         ):
     return _Wrap( "Push", 
-                  lambda directory, scm: scm.Push(directory), 
+                  lambda directory, scm: scm.Push(directory, create_remote_branch=create_remote_branch), 
                   directory, 
                   scm, 
                   output_stream,
@@ -826,6 +875,7 @@ def Push( create_remote_branch=False,
                 )
 
 # ----------------------------------------------------------------------
+@_SCMDocstringDecorator(DistributedSourceControlManagement.Pull)
 @CommandLine.EntryPoint
 @CommandLine.Constraints( branch=CommandLine.StringTypeInfo(arity='*'),
                           directory=CommandLine.DirectoryTypeInfo(arity='?'),
@@ -914,7 +964,8 @@ def _Wrap( method_name,
                      output=StringHelpers.LeftJustify(sink.strip(), 24),
                    ))
 
-             
+    return 0
+
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------

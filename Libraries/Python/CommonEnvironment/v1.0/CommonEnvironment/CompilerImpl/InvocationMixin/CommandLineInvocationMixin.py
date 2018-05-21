@@ -20,10 +20,12 @@ import textwrap
 
 import six
 
+from CommonEnvironment.Interface import abstractmethod
 from CommonEnvironment import Process
 
 from CommonEnvironment.CompilerImpl.InvocationMixin import InvocationMixin
 from CommonEnvironment.Shell.All import CurrentShell
+from CommonEnvironment.StreamDecorator import StreamDecorator
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable

@@ -32,6 +32,7 @@ _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
+# ----------------------------------------------------------------------
 class EnvironmentBootstrap(object):
     """
     Object that persists environment bootstrap data.
@@ -55,6 +56,7 @@ class EnvironmentBootstrap(object):
 
             if not os.path.exists(fullpath):
                 raise Exception(textwrap.dedent(
+                                    # <Wrong hanging indentation> pylint: disable = C0330
                                     """
                                     '{}' does not exist.
 
@@ -170,6 +172,7 @@ class EnvironmentBootstrap(object):
         with open(output_filename, 'w') as f:
             # ----------------------------------------------------------------------
             class Encoder(json.JSONEncoder):
+                # <An attribute defined in json.encoder line 158 hides this method> pylint: disable = E0202
                 def default(self, obj):
                     return obj.__dict__
 
@@ -201,5 +204,3 @@ class EnvironmentBootstrap(object):
     # ----------------------------------------------------------------------
     def __str__(self):
         return CommonEnvironmentImports.CommonEnvironment.ObjectStrImpl(self)
-
-                                     

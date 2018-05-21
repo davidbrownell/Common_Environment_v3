@@ -16,10 +16,11 @@
 
 import os
 import sys
+import textwrap
 
 from CommonEnvironment.Interface import staticderived, clsinit
-from CommonEnvironment.Shell import *
-from CommonEnvironment.Shell.Commands import *
+from CommonEnvironment.Shell import Shell
+from CommonEnvironment.Shell.Commands import Set, Augment
 from CommonEnvironment.Shell.Commands.Visitor import Visitor
 
 # ----------------------------------------------------------------------
@@ -38,6 +39,9 @@ class WindowsShell(Shell):
     # ----------------------------------------------------------------------
     @staticderived
     class CommandVisitor(Visitor):
+
+        # <Parameters differ from overridden '<...>' method> pylint: disable = W0221
+
         # ----------------------------------------------------------------------
         @staticmethod
         def OnComment(command):
@@ -125,7 +129,7 @@ class WindowsShell(Shell):
         @classmethod
         def OnAugment(cls, command):
             if not command.Values:
-                return
+                return None
 
             current_values = set(WindowsShell.EnumEnvironmentVariable(command.Name))
             
@@ -133,7 +137,7 @@ class WindowsShell(Shell):
             new_values = [ value for value in new_values if value not in current_values ]
 
             if not new_values:
-                return
+                return None
 
             return "SET {name}={values};%{name}%".format( name=command.Name,
                                                           values=WindowsShell.EnvironmentVariableDelimiter.join(command.Values),
@@ -249,6 +253,8 @@ class WindowsShell(Shell):
     def IsSymLink(filename):
         import win32file
 
+        # <Module 'win32file' has not 'GetFileAttributes' member, but source is unavailable. Consider adding this module to extension-pkg-whitelist if you want to perform analysis based on run-time introspection of living objects.> pylint: disable = I1101
+
         file_attribute_reparse_point = 1024
     
         return os.path.exists(filename) and win32file.GetFileAttributes(filename) & file_attribute_reparse_point == file_attribute_reparse_point
@@ -259,8 +265,8 @@ class WindowsShell(Shell):
         # much of its functionality manually.
 
         # ----------------------------------------------------------------------
-        @staticmethod
-        def ResolveSymLink(filename):
+        @classmethod
+        def ResolveSymLink(cls, filename):
             # Python 2.+ doesn't support symlinks on Windows and there doesn't seem to be
             # a way to resolve a symlink without parsing the file, and libraries mentioned
             # http://stackoverflow.com/questions/1447575/symlinks-on-windows/7924557#7924557
@@ -270,8 +276,6 @@ class WindowsShell(Shell):
             
             import re
 
-            import six
-            from six import StringIO
             import six.moves.cPickle as pickle
 
             from CommonEnvironment import Process
@@ -312,11 +316,12 @@ class WindowsShell(Shell):
                 command_line = 'dir /AL "%s"' % os.path.dirname(filename)
                 is_match = lambda name: name == os.path.basename(filename)
 
-            rval, sink = Process.Execute(command_line)
-            
+            result, output = Process.Execute(command_line)
+            assert result == 0
+
             regexp = re.compile(r".+<(?P<type>.+?)>\s+(?P<link>.+?)\s+\[(?P<filename>.+?)\]\s*")
 
-            for line in sink.split('\n'):
+            for line in output.split('\n'):
                 match = regexp.match(line)
                 if match:
                     link = match.group("link")
@@ -329,12 +334,12 @@ class WindowsShell(Shell):
                     cls._symlink_lookup[filename] = target_filename
                     return target_filename
 
-            assert False, sink
+            assert False, output
 
         # ----------------------------------------------------------------------
-        @staticmethod
-        def DeleteSymLink(filename):
-            assert self.IsSymLink(filename), filename
+        @classmethod
+        def DeleteSymLink(cls, filename):
+            assert cls.IsSymLink(filename), filename
         
             if os.path.isdir(filename):
                 command_line = 'rmdir "{}"'.format(filename)

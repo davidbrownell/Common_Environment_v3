@@ -294,8 +294,7 @@ def _Impl(ui, verb, json_content, is_debug):
     with output_stream.DoneManager( suffix='\n',
                                   ) as dm:
         display_sentinel = "Display?!__"
-        display_sentinel_len = len(display_sentinel)
-
+        
         json_filename = shell.CreateTempFilename(".json")
 
         with open(json_filename, 'w') as f:
@@ -360,14 +359,14 @@ def _Impl(ui, verb, json_content, is_debug):
                             content = []
                             
                             # ----------------------------------------------------------------------
-                            def Display(c):
-                                if c.startswith(display_sentinel):
-                                    c = c.replace(display_sentinel, '')
+                            def Display(value):
+                                if value.startswith(display_sentinel):
+                                    stipped_value = value.replace(display_sentinel, '')
 
-                                    this_dm.stream.write(c)
+                                    this_dm.stream.write(stipped_value)
                                     this_dm.stream.flush()
 
-                                content.append(c)
+                                content.append(value)
 
                             # ----------------------------------------------------------------------
 

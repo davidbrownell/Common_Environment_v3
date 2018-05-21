@@ -99,7 +99,6 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
                                            repositories,
                                            version_specs,
                                            generated_dir,
-                                           delay_execute_context,
                                          )
 
             for command in commands:
@@ -338,7 +337,7 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
 
         with Utilities.CustomMethodManager(customization_filename, method_name) as method:
             if method is None:
-                return
+                return None
 
             method = CommonEnvironmentImports.Interface.CreateCulledCallable(method)
 
@@ -418,7 +417,7 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
                                      new_id=repository.Id,
                                      new_root=repository.Root,
                                      original_name=libraries[item].Repository.Name,
-                                     original_config=" ({})".format(libraries[item].Repository.Configuration) if libraries[name].Repo.Configuration else '',
+                                     original_config=" ({})".format(libraries[item].Repository.Configuration) if libraries[item].Repo.Configuration else '',
                                      original_version=libraries[item].Version,
                                      original_id=libraries[item].Repository.Id,
                                      original_root=libraries[item].Repository.Root,
@@ -457,7 +456,7 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
 
                             if this_version not in dirs:
                                 raise Exception("Library versions were found in '{}', but no customization was found for '{}' ({} found).".format( fullpath,
-                                                                                                                                                   this_Version,
+                                                                                                                                                   this_version,
                                                                                                                                                    ', '.join([ "'{}'".format(dir) for dir in dirs ]),
                                                                                                                                                  ))
                             fullpath = os.path.join(fullpath, this_version)
@@ -615,8 +614,9 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
         raise Exception("Abstract method")
 
     # ----------------------------------------------------------------------
-    @staticmethod
-    def _DelayExecute( shell,
+    @classmethod
+    def _DelayExecute( cls,
+                       shell,
                        *args,
                        **kwargs
                      ):

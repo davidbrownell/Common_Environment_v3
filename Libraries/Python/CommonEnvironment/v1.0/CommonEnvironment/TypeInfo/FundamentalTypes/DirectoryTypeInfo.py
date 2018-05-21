@@ -71,7 +71,7 @@ class DirectoryTypeInfo(TypeInfo):
 
         if self.ValidationExpression:
             if not hasattr(self, "_validation_regex"):
-                self._validation_regex = re.compile(self.ValidationExpression)
+                self._validation_regex = re.compile("^{}$".format(self.ValidationExpression))
 
             if not self._validation_regex.match(item):
                 return "'{}' does not match the validation expression '{}'".format(item, self.ValidationExpression)

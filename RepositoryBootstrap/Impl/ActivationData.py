@@ -123,7 +123,7 @@ class ActivationData(object):
                                         )
                               for repo_data in data["PrioritizedRepositories"]
                             ],
-                            Configuration.VersionSpecs( tool_version_info,
+                            Configuration.VersionSpecs( tool_version_specs,
                                                         library_version_specs,
                                                       ),
                           )
@@ -287,7 +287,7 @@ class ActivationData(object):
                         library_version_info.setdefault(library_language, []).append(version_info)
                         version_info_lookup[version_info] = repo
 
-                    elif verion_info.Version != existing_version_info.Version:
+                    elif version_info.Version != existing_version_info.Version:
                         OnVersionMismatch("{} Libraries".format(library_language), version_info, existing_version_info)
 
             # Process this repository's dependencies
@@ -378,7 +378,7 @@ class ActivationData(object):
         with open(self._GetFilename(self.Root, self.Configuration), 'w') as f:
             # ----------------------------------------------------------------------
             class Encoder(json.JSONEncoder):
-                def default(self, obj):
+                def default(self, obj):                 # <An attribute defined in <...> hides this method> pylint: disable = E0202
                     return obj.__dict__
 
             # ----------------------------------------------------------------------

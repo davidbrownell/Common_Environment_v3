@@ -19,6 +19,7 @@ import sys
 import textwrap
 
 from CommonEnvironment import FileSystem
+from CommonEnvironment.Interface import abstractmethod
 
 from CommonEnvironment.CompilerImpl.InvocationQueryMixin import InvocationQueryMixin
 

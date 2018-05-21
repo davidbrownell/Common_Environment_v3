@@ -28,6 +28,9 @@ _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
+# <Method is abstract in class> pylint: disable = W0223
+
+# ----------------------------------------------------------------------
 class Verifier( IndividualInputProcessingMixin,
                 AlwaysInvocationQueryMixin,
                 NoOutputMixin,
