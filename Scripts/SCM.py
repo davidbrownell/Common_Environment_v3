@@ -54,7 +54,7 @@ def CommandLineSuffix():
 
         {}
 
-        """).format( '\n'.join([ "        - {}".format(scm.Name) for scm in ALL_SCM_TYPES ]),
+        """).format( '\n'.join([ "    - {}".format(scm.Name) for scm in ALL_SCM_TYPES ]),
                    )
 
 # ----------------------------------------------------------------------
@@ -65,7 +65,7 @@ def CommandLineSuffix():
 def Info( directory=None,
           output_stream=sys.stdout,
         ):
-    """Returns information for all known SCMs based on the active directory"""
+    """Returns information for all known SCMs based on the active directory."""
 
     directory = directory or os.getcwd()
 
