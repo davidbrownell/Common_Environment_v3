@@ -29,7 +29,7 @@ import wrapt
 import CommonEnvironment
 from CommonEnvironment.Constraints import Constraints
 from CommonEnvironment import StringHelpers
-
+from CommonEnvironment.StreamDecorator import StreamDecorator
 from CommonEnvironment.TypeInfo import ValidationException
 from CommonEnvironment.TypeInfo.All import *
 from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import StringSerialization
@@ -49,7 +49,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # rather than processing the command.
 DEBUG_COMMAND_LINE_ARG                      = "_debug_command_line"
 
-MAX_COLUMN_WIDTH                            = 100
+MAX_COLUMN_WIDTH                            = 190
 
 # The following methods can be optionally defined by the calling file
 # to customize output characteristics.
@@ -249,7 +249,27 @@ class EntryPointInformation(object):
         self.EntryPointDecorator            = entry_point_decorator
         self.ConstraintsDecorator           = constraints_decorator
         self.Name                           = self.EntryPointDecorator.NameOverride or function.__name__
-        self.Description                    = function.__doc__ or ''
+        
+        # Process the description
+        description_lines = (function.__doc__ or '').split('\n')
+
+        # ----------------------------------------------------------------------
+        def IsWhitespace(value):
+            for c in value:
+                if c not in [ ' ', '\r', '\n', '\t', ]:
+                    return False
+
+            return True
+
+        # ----------------------------------------------------------------------
+
+        while description_lines and IsWhitespace(description_lines[0]):
+            description_lines.pop(0)
+
+        while description_lines and IsWhitespace(description_lines[-1]):
+            description_lines.pop()
+
+        self.Description                    = textwrap.dedent('\n'.join(description_lines))
 
         # Populate the parameters
         parameters = []
@@ -452,9 +472,16 @@ class Executor(object):
             del arg_strings[1]
 
         # Is there a request for verbose help?
-        # TODO: Method-specific help
         if any(arg.startswith(self.CommandLineArgPrefix) and arg[len(self.CommandLineArgPrefix):].lower() in [ "?", "help", "h", ] for arg in arg_strings):
-            return self.Usage(verbose=True)
+            # Is the request for a specific method?
+            if len(self.EntryPoints) > 1 and len(arg_strings) > 2:
+                potential_method_name = arg_strings[1]
+            else:
+                potential_method_name = None
+
+            return self.Usage( verbose=True,
+                               potential_method_name=potential_method_name,
+                             )
 
         # Get the function to call
         if len(self.EntryPoints) == 1:
@@ -563,7 +590,7 @@ class Executor(object):
             if not getattr(sys.exc_info()[1], "_DisplayedException", False):
                 import traceback
 
-                output_stream.write("ERROR: {}".format('\n'.join([ "       {}".format(line) for line in traceback.format_exc().split('\n') ])))
+                output_stream.write("ERROR: {}".format(StringHelpers.LeftJustify(traceback.format_exc(), len("ERROR: "))))
 
             result = -1
 
@@ -574,6 +601,7 @@ class Executor(object):
                error=None,
                error_stream=sys.stderr,
                verbose=False,
+               potential_method_name=None,
              ):
         error_stream.write(textwrap.dedent(
             """\
@@ -584,18 +612,132 @@ class Executor(object):
                          prefix='' if not self.ScriptDescriptionPrefix else "\n\n{}".format(self.ScriptDescriptionPrefix),
                        ))
 
-        if len(self.EntryPoints) == 1:
-            standard, verbose_desc = self._GenerateUsageInformation(self.EntryPoints[0])
+        indented_stream = StreamDecorator(error_stream, line_prefix="    ")
+
+        # Narrow the list down if help was requested for a single method
+        entry_points = self.EntryPoints
+
+        if len(self.EntryPoints) > 1 and len(self.Args) >= 2:
+            potential_method_name = self.Args[1].lower()
+
+            for entry_point in entry_points:
+                if entry_point.Name.lower() == potential_method_name:
+                    entry_points = [ entry_point, ]
+                    break
+
+        # Display a single item or multiple items
+        if len(entry_points) == 1:
+            standard, verbose_desc = self._GenerateUsageInformation(entry_points[0])
+
+            # Add the method name if necessary
+            if len(self.EntryPoints) > 1:
+                if '\n' in standard:
+                    standard = "\n    {}{}".format( entry_points[0].Name,
+                                                    standard,
+                                                  )
+                else:
+                    standard = "{} {}".format( entry_points[0].Name,
+                                               standard,
+                                             )
+
             if verbose:
                 standard = "{}\n\n{}".format(standard, verbose_desc)
 
-            error_stream.write("    {} {}".format(self.ScriptName, '\n'.join([ "    {}".format(line) for line in standard.split('\n') ])))
+            indented_stream.write("    {} {}\n\n".format( self.ScriptName, 
+                                                          StringHelpers.LeftJustify(standard, 4),
+                                                        ))
         else:
-            pass
+            # ----------------------------------------------------------------------
+            def FormatInlineFuncDesc(content):
+                initial_whitespace = 37
 
-        print("BugBug******************", error)
+                assert MAX_COLUMN_WIDTH > initial_whitespace
+                content = StringHelpers.Wrap(content, MAX_COLUMN_WIDTH - initial_whitespace)
+
+                return StringHelpers.LeftJustify(content, initial_whitespace)
+
+            # ----------------------------------------------------------------------
+
+            indented_stream.write(textwrap.dedent(
+                """\
+                    {script_name} <command> [args]
+
+                Where '<command>' can be one of the following:
+                ----------------------------------------------
+                """).format( script_name=self.ScriptName,
+                           ))
+
+            for entry_point in entry_points:
+                indented_stream.write("    - {name:<30} {desc}\n".format( name=entry_point.Name,
+                                                                          desc=FormatInlineFuncDesc(entry_point.Description),
+                                                                        ))
+
+            indented_stream.write('\n')
+
+            for entry_point in entry_points:
+                intro = "When '<command>' is '{}':".format(entry_point.Name)
+
+                standard, verbose_desc = self._GenerateUsageInformation(entry_point)
+
+                # Insert the function name as an argument
+                if '\n' in standard:
+                    multi_line_args = True
+                    standard = "        {}{}".format(entry_point.Name, StringHelpers.LeftJustify(standard, 4))
+                else:
+                    multi_line_args = False
+                    standard = "{} {}".format(entry_point.Name, standard)
+
+                if verbose:
+                    standard = "{}\n\n{}".format( standard,
+                                                  StringHelpers.LeftJustify(verbose_desc, 4, skip_first_line=False),
+                                                )
+
+                indented_stream.write(textwrap.dedent(
+                    """\
+                    {intro}
+                    {sep}
+                        {script_name}{newline}{standard}
+
+                    """).format( intro=intro,
+                                 sep='-' * len(intro),
+                                 script_name=self.ScriptName,
+                                 newline='\n' if multi_line_args else ' ',
+                                 standard=standard,
+                               ))
+
+        if self.ScriptDescriptionSuffix:
+            error_stream.write("\n{}\n".format(self.ScriptDescriptionSuffix.strip()))
+
+        if not verbose:
+            error_stream.write(textwrap.dedent(
+                """\
+
+
+
+                Run "{script_name} {prefix}?" for additional information.
+
+                """).format( script_name=self.ScriptName,
+                             prefix=self.CommandLineArgPrefix,
+                           ))
+
+        if error:
+            error = "\n\nERROR: {}\n".format(StringHelpers.LeftJustify(error, len("ERROR: ")))
+
+            try:
+                import colorama
+
+                colorama.init(autoreset=True)
+                error_stream = sys.stderr
+
+                error_stream.write("{}{}{}".format( colorama.Fore.RED,
+                                                    colorama.Style.BRIGHT,
+                                                    error,
+                                                  ))
+
+            except ImportError:
+                error_stream.write(error)
+
         return -1
-
 
     # ----------------------------------------------------------------------
     def _ParseCommandLine(self, entry_point, args):
@@ -784,10 +926,9 @@ class Executor(object):
 
         # Remove the description size from the verbose offset
         verbose_desc_offset -= width
-        verbose_template = (col_padding * ' ').join(verbose_template)
-
+        
         assert verbose_desc_offset < MAX_COLUMN_WIDTH, (verbose_desc_offset, MAX_COLUMN_WIDTH)
-        verbose_desc_offset = ' ' * verbose_desc_offset
+        verbose_template = (col_padding * ' ').join(verbose_template)
 
         # Gather the command line and verbose parts
         command_line = []
@@ -839,6 +980,8 @@ class Executor(object):
                 elif index:
                     arg = " {}".format(arg)
 
+                command_line.append(arg)
+
                 # Verbose
                 if parameter.DefaultValue is not EntryPointInformation.ParameterInfo.NoDefault:
                     if parameter.IsSwitch:
@@ -852,11 +995,9 @@ class Executor(object):
                                                         "switch" if parameter.IsSwitch else "Dictionary" if isinstance(parameter.TypeInfo, DictTypeInfo) else parameter.TypeInfo.Desc,
                                                         parameter.DisplayArity,
                                                         str(default_value),
-                                                        '\n'.join([ "{}{}".format( verbose_desc_offset,
-                                                                                   line,
-                                                                                 )
-                                                                    for line in StringHelpers.Wrap(parameter.Description, MAX_COLUMN_WIDTH - len(verbose_desc_offset)).split('\n')
-                                                                  ]),
+                                                        StringHelpers.LeftJustify( StringHelpers.Wrap(parameter.Description, MAX_COLUMN_WIDTH - verbose_desc_offset),
+                                                                                   verbose_desc_offset,
+                                                                                 ),
                                                       ))
 
                 constraints = parameter.TypeInfo.ConstraintsDesc
