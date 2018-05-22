@@ -86,7 +86,9 @@ def Execute( command_line,
 
                 return line_delimited_original_output(content)
 
-            internal_content.append(content)
+            else:
+                internal_content.append(content)
+
             return None
 
         # ----------------------------------------------------------------------
@@ -234,7 +236,7 @@ def Execute( command_line,
 
                 assert content
 
-                if not output(to_ascii_string(content)):
+                if output(to_ascii_string(content)) == False:
                     hard_stop = True
                     break
 
