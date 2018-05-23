@@ -66,6 +66,7 @@ def OnCommitting(data, output_stream):
                 ERROR: {this} {file} {is_} greater than {size}:
                 
                 {errors}
+
                 """).format( this=inflect.plural_adj("this", len(errors)).capitalize(),
                              file=inflect.plural("file", len(errors)),
                              is_=inflect.plural("is", len(errors)),
@@ -82,43 +83,44 @@ def OnCommitting(data, output_stream):
         allow_sentinel = "allow invalid change groups"
 
         if allow_sentinel not in data.description.lower():
+            current_dir = os.getcwd()       # This file is run from the repository's root
+
+            # ----------------------------------------------------------------------
+            class ItemInfo(object):
+                def __init__(self, item_name):
+                    self.Exists             = os.path.isfile(os.path.join(current_dir, item_name.replace('/', os.path.sep)))
+                    self.Changed            = False
+
+            # ----------------------------------------------------------------------
+
             all_groups = [ [ ".hgignore", ".gitignore", ],
                            [ "readme.rst", "readme.md", ],
                          ]
 
             changes = {}
+            
 
             for groups in all_groups:
                 for item in groups:
-                    changes[item] = False
+                    changes[item] = ItemInfo(item)
 
             for filename in itertools.chain(data.modified, data.added):
-                base_name = os.path.basename(filename)
-
-                if base_name in changes:
-                    changes[base_name] = True
+                filename = CommonEnvironmentImports.FileSystem.TrimPath(filename, current_dir)
+                
+                if filename in changes:
+                    changes[filename].Changed = True
 
             errors = []
 
             for group in all_groups:
-                count = 0
+                has_changes = None
 
                 for item in group:
-                    if changes[item]:
-                        count += 1
-
-                if count and count != len(group):
-                    # This is only an error if all the files in the group exist
-                    all_exist = True
-                    current_dir = os.getcwd()
-
-                    for item in group:
-                        if not os.path.isfile(os.path.join(current_dir, item)):
-                            all_exist = False
-                            break
-
-                    if all_exist:
+                    if changes[item].Exists and changes[item].Changed != has_changes and has_changes is not None:
                         errors.append(group)
+                        break
+
+                    has_changes = changes[item].Changed
 
             if errors:
                 dm.stream.write(textwrap.dedent(
@@ -126,6 +128,7 @@ def OnCommitting(data, output_stream):
                     ERROR: {this} {change} must be grouped with changes to other item(s). To disable this check, include the text '{sentinel}' in the change description.
 
                     {errors}
+
                     """).format( this=inflect.plural("this", len(errors)).capitalize(),
                                  change=inflect.plural("change", len(errors)),
                                  sentinel=allow_sentinel,
@@ -159,6 +162,7 @@ def OnCommitting(data, output_stream):
                     ERROR: {this} {change} contained the banned text 'BugBug'. To disable this check, include the text '{sentinel}' in the change description.
 
                     {errors}
+
                     """).format( this=inflect.plural("this", len(errors)).capitalize(),
                                  change=inflect.plural("change", len(errors)),
                                  sentinel=allow_sentinel,
