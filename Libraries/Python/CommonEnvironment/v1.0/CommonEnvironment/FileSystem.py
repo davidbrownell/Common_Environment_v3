@@ -129,6 +129,24 @@ def GetRelativePath(starting_dir, dest):
     return "{}{}".format((("..{}".format(os.path.sep)) * seps), dest)
 
 # ----------------------------------------------------------------------
+def TrimPath(fullpath, initial_path):
+    """Removes the intial path from the fullpath"""
+
+    if CurrentShell.HasCaseSensitiveFileSystem:
+        decorator_func = lambda item: item
+    else:
+        decorator_func = lambda item: item.lower()
+
+    if not decorator_func(fullpath).startswith(decorator_func(initial_path)):
+        raise Exception("'{}' does not begin with '{}'".format(fullpath, iniitial_path))
+
+    fullpath = fullpath[len(initial_path):]
+    if fullpath.startswith(os.path.sep):
+        fullpath = fullpath[len(os.path.sep):]
+
+    return fullpath
+
+# ----------------------------------------------------------------------
 def AddTrailingSep(value):
     if not value.endswith(os.path.sep):
         value += os.path.sep
