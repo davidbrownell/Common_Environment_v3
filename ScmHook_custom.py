@@ -108,7 +108,17 @@ def OnCommitting(data, output_stream):
                         count += 1
 
                 if count and count != len(group):
-                    errors.append(group)
+                    # This is only an error if all the files in the group exist
+                    all_exist = True
+                    current_dir = os.getcwd()
+
+                    for item in group:
+                        if not os.path.isfile(os.path.join(current_dir, item)):
+                            all_exist = False
+                            break
+
+                    if all_exist:
+                        errors.append(group)
 
             if errors:
                 dm.stream.write(textwrap.dedent(
