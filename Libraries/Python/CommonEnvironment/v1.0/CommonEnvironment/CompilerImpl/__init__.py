@@ -113,9 +113,15 @@ class CompilerImpl(Interface):
         pass 
 
     # ----------------------------------------------------------------------
+    @classmethod
+    def IsSupported(cls, filename):
+        """Returns True if the filename provided is valid and has valid content."""
+        return cls.InputTypeInfo.IsValid(filename) and cls.IsSupportedContent(filename)
+
+    # ----------------------------------------------------------------------
     @staticmethod
     @extensionmethod
-    def IsSupported(item):
+    def IsSupportedContent(filename):
         """
         Returns True if the given input is supported by the compiler.
         
@@ -254,7 +260,7 @@ class CompilerImpl(Interface):
             else:
                 raise Exception("The input '{}' is not a valid filename or directory".format(input))
 
-            invocation_group_inputs += [ potential_input for potential_input in potential_inputs if cls.IsSupported(potential_input) ]
+            invocation_group_inputs += [ potential_input for potential_input in potential_inputs if cls.IsSupportedContent(potential_input) ]
 
         # Populate default metadata
         optional_metadata = cls._GetOptionalMetadata()
@@ -326,7 +332,7 @@ class CompilerImpl(Interface):
                       ):
         """Calls GenerateContextItems, ensuring that there is only one context generated"""
 
-        contexts = list(cls.GenerateContextItems(inputs, **kwargs))
+        contexts = list(cls.GenerateContextItems(input, **kwargs))
         if not contexts:
             return None
 
