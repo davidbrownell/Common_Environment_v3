@@ -95,3 +95,6 @@ DE_REPO_GENERATED_NAME                                  = "DEVELOPMENT_ENVIRONME
 DE_REPO_CONFIGURATION_NAME                              = "DEVELOPMENT_ENVIRONMENT_REPOSITORY_CONFIGURATION"
 
 DE_REPO_ACTIVATED_FLAG                                  = "DEVELOPMENT_ENVIRONMENT_REPOSITORY_ACTIVATED_FLAG"
+
+# ----------------------------------------------------------------------
+TEMPORARY_FILE_EXTENSION                                = ".SourceRepositoryTools"
