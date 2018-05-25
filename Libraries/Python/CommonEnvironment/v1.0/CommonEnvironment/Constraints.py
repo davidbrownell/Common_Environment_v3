@@ -24,6 +24,7 @@ import six
 import wrapt
 
 from CommonEnvironment.TypeInfo import ValidationException
+from CommonEnvironment.TypeInfo.DictTypeInfo import DictTypeInfo
 from CommonEnvironment.TypeInfo.FundamentalTypes.All import CreateFromPythonType as CreateFundamentalFromPythonType
 
 # ----------------------------------------------------------------------
@@ -140,10 +141,12 @@ class Constraints(object):
                         # rather than None. Handle that wonkiness here by providing the actual value.
                         if ( default_value is None and
                              arg in self.Preconditions and
-                             self.Preconditions[arg] is not None and 
-                             self.Preconditions[arg].Arity.IsCollection
+                             self.Preconditions[arg] is not None
                            ):
-                            kwargs[arg] = []
+                            if self.Preconditions[arg].Arity.IsCollection:
+                                kwargs[arg] = []
+                            elif isinstance(self.Preconditions[arg], DictTypeInfo):
+                                kwargs[arg] = {}
 
                 return kwargs
 
