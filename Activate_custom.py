@@ -28,6 +28,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 
 sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
 from RepositoryBootstrap.Impl import CommonEnvironmentImports
+from RepositoryBootstrap.Impl import DynamicPluginArchitecture
 del sys.path[0]
 
 # ----------------------------------------------------------------------
@@ -51,7 +52,48 @@ def GetCustomActions( output_stream,
     cases, this is Bash on Linux systems and Batch or Powershell on Windows systems.
     """
 
-    return 
+    actions = []
+
+    Commands = CommonEnvironmentImports.CurrentShell.Commands
+
+    if fast:
+        actions.append(Commands.Message("** FAST: Dynamic tester information has not been activated. ({}) **".format(_script_fullpath)))
+    else:
+        # Reset any existing values
+        os.environ["DEVELOPMENT_ENVIRONMENT_COMPILERS"] = ''
+        os.environ["DEVELOPMENT_ENVIRONMENT_TEST_PARSER"] = ''
+        os.environ["DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_EXTRACTORS"] = ''
+        os.environ["DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_VALIDATORS"] = ''
+
+        actions += DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_COMPILERS",
+                                                                           os.path.join(_script_dir, "Scripts", "Compilers"),
+                                                                           lambda fullpath, name, ext: ext == ".py" and (name.endswith("Compiler") or name.endswith("CodeGenerator") or name.endswith("Verifier")),
+                                                                         )
+
+        actions += DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_TEST_PARSERS",
+                                                                           os.path.join(_script_dir, "Scripts", "TestParsers"),
+                                                                           lambda fullpath, name, ext: ext == ".py" and name.endswith("TestParser"),
+                                                                         )
+        
+        # TODO: actions += DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_EXTRACTORS",
+        # TODO:                                                                    os.path.join(_script_dir, "Scripts", "CodeCoverageExtractors"),
+        # TODO:                                                                    lambda fullpath, name, ext: ext == ".py" and name.endswith("CodeCoverageExtractor"),
+        # TODO:                                                                  )
+        # TODO: 
+        actions += DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_VALIDATORS",
+                                                                           os.path.join(_script_dir, "Scripts", "CodeCoverageValidators"),
+                                                                           lambda fullpath, name, ext: ext == ".py" and name.endswith("CodeCoverageValidator"),
+                                                                         )
+
+    actions.append(Commands.Augment( "DEVELOPMENT_ENVIRONMENT_TESTER_CONFIGURATIONS",
+                                     [ "python-compiler-PyLint",
+                                       "python-test_parser-Python",
+                                       "python-code_coverage_extractor-Python",
+                                     ],
+                                     update_memory=True,
+                                   ))
+
+    return actions
 
 # ----------------------------------------------------------------------
 def GetCustomScriptExtractors(shell):
