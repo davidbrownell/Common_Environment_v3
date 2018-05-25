@@ -12,3 +12,6 @@ Generated/*
 
 Tools/Python/*
 Tools/openssl/*
+
+.coverage
+coverage.xml

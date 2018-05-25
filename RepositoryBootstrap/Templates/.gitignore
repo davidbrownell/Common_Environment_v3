@@ -5,3 +5,6 @@ __pycache__
 Generated/*
 Activate.cmd
 Activate.sh
+
+.coverage
+coverage.xml

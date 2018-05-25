@@ -75,11 +75,11 @@ def GetCustomActions( output_stream,
                                                                            lambda fullpath, name, ext: ext == ".py" and name.endswith("TestParser"),
                                                                          )
         
-        # TODO: actions += DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_EXTRACTORS",
-        # TODO:                                                                    os.path.join(_script_dir, "Scripts", "CodeCoverageExtractors"),
-        # TODO:                                                                    lambda fullpath, name, ext: ext == ".py" and name.endswith("CodeCoverageExtractor"),
-        # TODO:                                                                  )
-        # TODO: 
+        actions += DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_EXTRACTORS",
+                                                                           os.path.join(_script_dir, "Scripts", "CodeCoverageExtractors"),
+                                                                           lambda fullpath, name, ext: ext == ".py" and name.endswith("CodeCoverageExtractor"),
+                                                                         )
+        
         actions += DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_VALIDATORS",
                                                                            os.path.join(_script_dir, "Scripts", "CodeCoverageValidators"),
                                                                            lambda fullpath, name, ext: ext == ".py" and name.endswith("CodeCoverageValidator"),

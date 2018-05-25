@@ -115,7 +115,7 @@ if custom_configurations:
             if optional_code_coverage_extractor_name is not None:
                 optional_code_coverage_extractor = next((code_coverage_extractor for code_coverage_extractor in CODE_COVERAGE_EXTRACTORS if code_coverage_extractor.Name == optional_code_coverage_extractor_name), None)
                 if optional_code_coverage_extractor is None:
-                    pass # BugBug raise Exception("The code coverage extractor '{}' used in the configuration '{}' does not exist".format(optional_code_coverage_extractor_name, configuration_name))
+                    raise Exception("The code coverage extractor '{}' used in the configuration '{}' does not exist".format(optional_code_coverage_extractor_name, configuration_name))
             else:
                 optional_code_coverage_extractor = None
 
@@ -388,8 +388,8 @@ class Results(object):
                                                                          log=execute_result.CoverageOutput or "N/A",
                                                                          time=execute_result.CoverageTime or "N/A",
                                                                          data=execute_result.CoverageDataFilename or "N/A",
-                                                                         percentage="{0.02f}%".format(execute_result.CoveragePercentage) if execute_result.CoveragePercentage is not None else "N/A",
-                                                                         percentages="N/A" if self.coverage_percentages is None else "\n{}".format('\n'.join([ "        - [{value:<7}] {name}".format(value="{0:0.2f}%".format(percentage), name=name) for name, percentage in six.iteritems(execute_result.CoveragePercentages) ])),
+                                                                         percentage="{0:0.2f}%".format(execute_result.CoveragePercentage) if execute_result.CoveragePercentage is not None else "N/A",
+                                                                         percentages="N/A" if execute_result.CoveragePercentages is None else "\n{}".format('\n'.join([ "        - [{value:<7}] {name}".format(value="{0:0.2f}%".format(percentage), name=name) for name, percentage in six.iteritems(execute_result.CoveragePercentages) ])),
                                                                        ),
                                                           4,
                                                           skip_first_line=False,
@@ -587,6 +587,7 @@ def GenerateTestResults( test_items,
     assert max_num_concurrent_tasks > 1, max_num_concurrent_task
 
     execute_in_parallel = True # BugBug
+    continue_iterations_on_error = True # BugBug
 
     # Check for congruent plugins
     result = compiler.ValidateEnvironment()
@@ -1021,8 +1022,8 @@ def GenerateTestResults( test_items,
 # ----------------------------------------------------------------------
 _compiler_type_info                         = CommandLine.EnumTypeInfo([ compiler.Name for compiler in COMPILERS ] + [ str(index) for index in six.moves.range(1, len(COMPILERS) + 1) ])
 _test_parser_type_info                      = CommandLine.EnumTypeInfo([ test_parser.Name for test_parser in TEST_PARSERS ] + [ str(index) for index in six.moves.range(1, len(TEST_PARSERS) + 1) ])
-# BugBug _code_coverage_extractor_type_info              = CommandLine.EnumTypeInfo([ cce.Name for cce in CODE_COVERAGE_EXTRACTORS ] + [ str(index) for index in six.moves.range(1, len(CODE_COVERAGE_EXTRACTORS) + 1) ])
-# BugBug _code_coverage_validator_type_info              = CommandLine.EnumTypeInfo([ ccv.Name for ccv in CODE_COVERAGE_VALIDATORS ] + [ str(index) for index in six.moves.range(1, len(CODE_COVERAGE_VALIDATORS) + 1) ])
+_code_coverage_extractor_type_info          = CommandLine.EnumTypeInfo([ cce.Name for cce in CODE_COVERAGE_EXTRACTORS ] + [ str(index) for index in six.moves.range(1, len(CODE_COVERAGE_EXTRACTORS) + 1) ], arity='?')
+_code_coverage_validator_type_info          = CommandLine.EnumTypeInfo([ ccv.Name for ccv in CODE_COVERAGE_VALIDATORS ] + [ str(index) for index in six.moves.range(1, len(CODE_COVERAGE_VALIDATORS) + 1) ], arity='?')
 _ConfigurationTypeinfo                      = CommandLine.EnumTypeInfo(list(six.iterkeys(CONFIGURATIONS)))
 
 # ----------------------------------------------------------------------
@@ -1328,8 +1329,8 @@ def MatchAllTests( input_dir,
 @CommandLine.Constraints( filename=CommandLine.FilenameTypeInfo(),
                           compiler=_compiler_type_info,
                           test_parser=_test_parser_type_info,
-                          code_coverage_extractor=CommandLine.StringTypeInfo(arity='?'), # BugBug
-                          code_coverage_validator=CommandLine.StringTypeInfo(arity='?'), # BugBug
+                          code_coverage_extractor=_code_coverage_extractor_type_info,
+                          code_coverage_validator=_code_coverage_validator_type_info,
                           iterations=CommandLine.IntTypeInfo(min=1, arity='?'),
                           compiler_flag=CommandLine.DictTypeInfo(require_exact_match=False, arity='?'),
                           test_parser_flag=CommandLine.DictTypeInfo(require_exact_match=False, arity='?'),
@@ -1392,8 +1393,8 @@ def Execute( filename,
                           output_dir=CommandLine.DirectoryTypeInfo(ensure_exists=False),
                           compiler=_compiler_type_info,
                           test_parser=_test_parser_type_info,
-                          code_coverage_extractor=CommandLine.StringTypeInfo(arity='?'), # BugBug
-                          code_coverage_validator=CommandLine.StringTypeInfo(arity='?'), # BugBug
+                          code_coverage_extractor=_code_coverage_extractor_type_info,
+                          code_coverage_validator=_code_coverage_validator_type_info,
                           execute_in_parallel=CommandLine.BoolTypeInfo(arity='?'),
                           iterations=CommandLine.IntTypeInfo(min=1, arity='?'),
                           compiler_flag=CommandLine.DictTypeInfo(require_exact_match=False, arity='?'),
