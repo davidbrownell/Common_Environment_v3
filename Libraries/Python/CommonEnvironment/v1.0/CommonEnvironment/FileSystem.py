@@ -132,6 +132,9 @@ def GetRelativePath(starting_dir, dest):
 def TrimPath(fullpath, initial_path):
     """Removes the intial path from the fullpath"""
 
+    if not initial_path:
+        return fullpath
+
     if CurrentShell.HasCaseSensitiveFileSystem:
         decorator_func = lambda item: item
     else:
