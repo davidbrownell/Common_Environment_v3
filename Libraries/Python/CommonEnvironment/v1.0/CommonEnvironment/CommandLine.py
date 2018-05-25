@@ -166,7 +166,7 @@ class EntryPointInformation(object):
             self.IsRequired                 = is_required
             self.IsSwitch                   = is_switch
             self.DefaultValue               = default_value
-
+            
             if self.DefaultValue is not self.NoDefault and self.TypeInfo.Arity.Min != 0:
                 raise Exception("Parameters with default values should have an optional arity ({})".format(self.Name))
 
@@ -535,7 +535,7 @@ class Executor(object):
                              )
 
         kwargs = result
-
+        
         if verbose:
             output_stream.write(textwrap.dedent(
                 """\
@@ -997,12 +997,12 @@ class Executor(object):
                                                         str(default_value),
                                                         StringHelpers.LeftJustify( StringHelpers.Wrap(parameter.Description, MAX_COLUMN_WIDTH - verbose_desc_offset),
                                                                                    verbose_desc_offset,
-                                                                                 ),
+                                                                                 ).rstrip(),
                                                       ))
 
                 constraints = parameter.TypeInfo.ConstraintsDesc
                 if constraints:
-                    verbose.append("        - {}\n".format(constraints))
+                    verbose.append("        - {}".format(constraints))
 
         return ''.join(command_line), '\n'.join(verbose)
 
