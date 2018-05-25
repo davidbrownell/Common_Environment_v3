@@ -64,6 +64,9 @@ class DictTypeInfo(TypeInfo):
     # ----------------------------------------------------------------------
     @property
     def ConstraintsDesc(self):
+        if not self.Items:
+            return ''
+
         return "Value must contain the attributes {}".format( ', '.join([ "'{}' <{}>".format(k, v.Desc) for k, v in six.iteritems(self.Items) ]))
 
     # ----------------------------------------------------------------------
