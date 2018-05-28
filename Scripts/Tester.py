@@ -33,7 +33,6 @@ import inflect as inflect_mod
 
 from CommonEnvironment import Nonlocals, ObjectStrImpl
 from CommonEnvironment.CallOnExit import CallOnExit
-from CommonEnvironment.CodeCoverageExtractorImpl import CodeCoverageExtractorImpl
 from CommonEnvironment import CommandLine
 from CommonEnvironment import FileSystem
 from CommonEnvironment import Process
@@ -41,6 +40,7 @@ from CommonEnvironment.Shell.All import CurrentShell
 from CommonEnvironment import StringHelpers
 from CommonEnvironment.StreamDecorator import StreamDecorator
 from CommonEnvironment import TaskPool
+from CommonEnvironment.TestExecutorImpl import TestExecutorImpl
 
 from CommonEnvironment.TypeInfo.FundamentalTypes.DirectoryTypeInfo import DirectoryTypeInfo
 from CommonEnvironment.TypeInfo.FundamentalTypes.DurationTypeInfo import DurationTypeInfo
@@ -78,8 +78,8 @@ def _LoadCompilerFromModule(mod):
 # ----------------------------------------------------------------------
 
 COMPILERS                                   = [ _LoadCompilerFromModule(mod) for mod in DPA.EnumeratePlugins("DEVELOPMENT_ENVIRONMENT_COMPILERS") ]
+TEST_EXECUTORS                              = [ mod.TestExecutor for mod in DPA.EnumeratePlugins("DEVELOPMENT_ENVIRONMENT_TEST_EXECUTORS") ]
 TEST_PARSERS                                = [ mod.TestParser for mod in DPA.EnumeratePlugins("DEVELOPMENT_ENVIRONMENT_TEST_PARSERS") ]
-CODE_COVERAGE_EXTRACTORS                    = [ mod.CodeCoverageExtractor for mod in DPA.EnumeratePlugins("DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_EXTRACTORS") ]
 CODE_COVERAGE_VALIDATORS                    = [ mod.CodeCoverageValidator for mod in DPA.EnumeratePlugins("DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_VALIDATORS") ]
 
 CONFIGURATIONS                              = OrderedDict()
@@ -102,7 +102,8 @@ if custom_configurations:
                     configuration_name,
                     compiler_name,
                     test_parser_name,
-                    optional_code_coverage_extractor_name,
+                    coverage_executor_name,    
+                    coverage_validator_name,
                   ):
             compiler = next((compiler for compiler in COMPILERS if compiler.Name == compiler_name), None)
             if compiler is None:
@@ -112,23 +113,40 @@ if custom_configurations:
             if test_parser is None:
                 raise Exception("The test parser '{}' used in the configuration '{}' does not exist".format(test_parser_name, configuration_name))
 
-            if optional_code_coverage_extractor_name is not None:
-                optional_code_coverage_extractor = next((code_coverage_extractor for code_coverage_extractor in CODE_COVERAGE_EXTRACTORS if code_coverage_extractor.Name == optional_code_coverage_extractor_name), None)
-                if optional_code_coverage_extractor is None:
-                    raise Exception("The code coverage extractor '{}' used in the configuration '{}' does not exist".format(optional_code_coverage_extractor_name, configuration_name))
+            if coverage_executor_name:
+                coverage_executor = next((executor for executor in TEST_EXECUTORS if executor.Name == coverage_executor_name), None)
+                if coverage_executor is None:
+                    raise Exception("The test executor '{}' used in the configuration '{}' does not exist".format(coverage_executor_name, configuration_name))
             else:
-                optional_code_coverage_extractor = None
+                coverage_executor = None
 
-            return cls(compiler, test_parser, optional_code_coverage_extractor)
+            if coverage_validator_name:
+                coverage_validator = next((validator for validator in CODE_COVERAGE_VALIDATORS if validator.Name == coverage_validator_name), None)
+                if coverage_validator is None:
+                    raise Exception("The coverage validator '{}' used in the configuration '{}' does not exist".format(coverage_validator_name, configuration_name))
+            else:
+                coverage_validator = None
+
+            return cls( compiler, 
+                        test_parser, 
+                        coverage_executor,
+                        coverage_validator,
+                      )
 
         # ----------------------------------------------------------------------
-        def __init__(self, compiler, test_parser, optional_code_coverage_extractor):
+        def __init__( self, 
+                      compiler, 
+                      test_parser, 
+                      optional_coverage_executor,
+                      optional_code_coverage_validator=None,
+                    ):
             assert compiler
             assert test_parser
 
-            self.Compiler                               = compiler
-            self.TestParser                             = test_parser
-            self.OptionalCodeCoverageExtractor          = optional_code_coverage_extractor
+            self.Compiler                               = compiler()
+            self.TestParser                             = test_parser()
+            self.OptionalCoverageExecutor               = optional_coverage_executor() if optional_coverage_executor else None
+            self.OptionalCodeCoverageValidator          = optional_code_coverage_validator() if optional_code_coverage_validator else None
 
     # ----------------------------------------------------------------------
                       
@@ -137,7 +155,7 @@ if custom_configurations:
                     )\s*"?(?#
         Name        )(?P<name>.+?)(?#
                     )\s*-\s*(?#
-        Type        )(?P<type>(?:compiler|test_parser|code_coverage_extractor))(?#
+        Type        )(?P<type>(?:compiler|test_parser|coverage_executor|coverage_validator))(?#
                     )\s*-\s*(?#
         Value       )(?P<value>[^"]+)(?#
                     )"?\s*(?#
@@ -184,11 +202,9 @@ if custom_configurations:
             CONFIGURATIONS[key] = Configuration.Create( key,
                                                         compiler, 
                                                         item_map["test_parser"],
-                                                        item_map.get("code_coverage_extractor", "Noop"),
+                                                        item_map.get("coverage_executor", None),
+                                                        item_map.get("coverage_validator", None),
                                                       )
-
-_UNIVERSAL_BASIC_FLAGS                      = []
-_UNIVERSAL_CODE_COVERAGE_FLAGS              = [ "/code_coverage_validator=Standard", ]
 
 TEST_TYPES = [] # BugBug
 
@@ -226,7 +242,7 @@ class Results(object):
 
         self.has_errors                     = False
         
-        self.execute_results                = []        # CodeCoverageExtracotrImpl.ExecuteResult
+        self.execute_results                = []        # TestExecutorImpl.ExecuteResult
         self.test_parse_results             = []        # TestParseResult
         self.coverage_validation_results    = []        # CoverageValidationResult
                 
@@ -282,9 +298,9 @@ class Results(object):
 
     # ----------------------------------------------------------------------
     def ToString( self,
-                  optional_compiler,
-                  optional_test_parser,
-                  optional_code_coverage_extractor,
+                  compiler,
+                  test_parser,
+                  optional_test_executor,
                   optional_code_coverage_validator,
                 ):
         # ----------------------------------------------------------------------
@@ -304,12 +320,12 @@ class Results(object):
 
         # ----------------------------------------------------------------------
 
-        results = [ "{color_push}{compiler}{test_parser}{extractor}{validator}{color_pop}\n\n" \
+        results = [ "{color_push}{compiler}{test_parser}{executor}{validator}{color_pop}\n\n" \
                         .format( color_push="{}{}".format(colorama.Fore.WHITE, colorama.Style.BRIGHT),
                                  color_pop=colorama.Style.RESET_ALL,
-                                 compiler=      "Compiler:                                       {}\n".format(optional_compiler.Name) if optional_compiler else '',
-                                 test_parser=   "Test Parser:                                    {}\n".format(optional_test_parser.Name) if optional_test_parser else '',
-                                 extractor=     "Code Coverage Extractor:                        {}\n".format(optional_code_coverage_extractor.Name) if optional_code_coverage_extractor else '',
+                                 compiler=      "Compiler:                                       {}\n".format(compiler.Name),
+                                 test_parser=   "Test Parser:                                    {}\n".format(test_parser.Name),
+                                 executor=      "Test Executor:                                  {}\n".format(optional_test_executor.Name) if optional_test_executor else '',
                                  validator=     "Code Coverage Validator:                        {}\n".format(optional_code_coverage_validator.Name) if optional_code_coverage_validator else '',
                                ),
                   ]
@@ -420,9 +436,29 @@ class Results(object):
         get_duration = lambda duration: StringSerialization.DeserializeItem(dti, duration) if duration is not None else datetime.timedelta(seconds=0)
 
         total_time += get_duration(self.compile_time)
-        # BugBug total_time += get_duration(self.test_time)
-        # BugBug total_time += get_duration(self.test_parse_time)
-        # BugBug total_time += get_duration(self.coverage_time)
+
+        # ----------------------------------------------------------------------
+        def Average(items, attr_name):
+            num_items = 0
+            total_time = datetime.timedelta(seconds = 0)
+
+            for item in items:
+                value = getattr(item, attr_name, None)
+                if value is not None:
+                    num_items += 1
+                    total_time += get_duration(value)
+
+            if num_items == 0:
+                return total_time
+
+            return total_time / num_items
+
+        # ----------------------------------------------------------------------
+
+        total_time += Average(self.execute_results, "TestTime")
+        total_time += Average(self.execute_results, "CoverageTime")
+        total_time += Average(self.test_parse_results, "Time")
+        total_time += Average(self.coverage_validation_results, "Time")
 
         return StringSerialization.SerializeItem(dti, total_time)
 
@@ -461,9 +497,9 @@ class CompleteResult(object):
 
     # ----------------------------------------------------------------------
     def ToString( self,
-                  optional_compiler,
-                  optional_test_parser,
-                  optional_code_coverage_extractor,
+                  compiler,
+                  test_parser,
+                  optional_test_executor,
                   optional_code_coverage_validator,
                 ):
         header_length = max(180, len(self.Item) + 4)
@@ -485,17 +521,17 @@ class CompleteResult(object):
                          header='=' * header_length,
                          item=self.Item,
                          item_length=header_length - 2,
-                         debug="N/A" if not self.debug else StringHelpers.LeftJustify( self.debug.ToString( optional_compiler,
-                                                                                                            optional_test_parser,
-                                                                                                            optional_code_coverage_extractor,
+                         debug="N/A" if not self.debug else StringHelpers.LeftJustify( self.debug.ToString( compiler,
+                                                                                                            test_parser,
+                                                                                                            optional_test_executor,
                                                                                                             optional_code_coverage_validator,
                                                                                                           ), 
                                                                                        4,
                                                                                        skip_first_line=False,
                                                                                      ).rstrip(),
-                         release="N/A" if not self.release else StringHelpers.LeftJustify( self.release.ToString( optional_compiler,
-                                                                                                                  optional_test_parser,
-                                                                                                                  optional_code_coverage_extractor,
+                         release="N/A" if not self.release else StringHelpers.LeftJustify( self.release.ToString( compiler,
+                                                                                                                  test_parser,
+                                                                                                                  optional_test_executor,
                                                                                                                   optional_code_coverage_validator,
                                                                                                                 ), 
                                                                                            4,
@@ -564,7 +600,7 @@ def GenerateTestResults( test_items,
                          output_dir,
                          compiler,
                          test_parser,
-                         optional_code_coverage_extractor,
+                         optional_test_executor,
                          optional_code_coverage_validator,
                          execute_in_parallel,
                          iterations,
@@ -575,7 +611,6 @@ def GenerateTestResults( test_items,
                          output_stream,
                          verbose,
                          no_status,
-                         print_command_line,
                          max_num_concurrent_tasks=multiprocessing.cpu_count(),
                        ):
     assert test_items
@@ -586,9 +621,6 @@ def GenerateTestResults( test_items,
     assert output_stream
     assert max_num_concurrent_tasks > 1, max_num_concurrent_task
 
-    execute_in_parallel = True # BugBug
-    continue_iterations_on_error = True # BugBug
-
     # Check for congruent plugins
     result = compiler.ValidateEnvironment()
     if result:
@@ -598,27 +630,29 @@ def GenerateTestResults( test_items,
     if not test_parser.IsSupportedCompiler(compiler):
         raise Exception("The test parser '{}' does not support the compiler '{}'.".format(test_parser.Name, compiler.Name))
 
-    if optional_code_coverage_extractor:
-        result = optional_code_coverage_extractor.ValidateEnvironment()
+    if optional_test_executor:
+        result = optional_test_executor.ValidateEnvironment()
         if result:
-            output_stream.write("ERROR: The current environment is not supported by the code coverage extractor '{}': {}.\n".format(optional_code_coverage_extractor.Name, result))
+            output_stream.write("ERROR: The current environment is not supported by the test executor '{}': {}.\n".format(optional_test_executor.Name, result))
             return None
 
-        if not optional_code_coverage_extractor.IsSupportedCompiler(compiler):
-            raise Exception("The code coverage extractor '{}' does not support the compiler '{}'.".format(optional_code_coverage_extractor.Name, compiler.Name))
+        if not optional_test_executor.IsSupportedCompiler(compiler):
+            raise Exception("The test executor '{}' does not support the compiler '{}'.".format(optional_test_executor.Name, compiler.Name))
 
-    if optional_code_coverage_validator and not optional_code_coverage_extractor:
-        raise Exception("A code coverage validator cannot be used without a code coverage extractor")
+    if optional_code_coverage_validator and not optional_test_executor:
+        raise Exception("A code coverage validator cannot be used without a test executor")
 
     FileSystem.MakeDirs(output_dir)
 
     # Ensure that we only build the debug configuration with code coverage
-    if optional_code_coverage_extractor:
+    if optional_test_executor:
         execute_in_parallel = False
 
         if compiler.IsCompiler:
             debug_only = True
             release_only = False
+
+    internal_exception_result_code = 54321 
 
     # ----------------------------------------------------------------------
     # |  Prepare the working data
@@ -677,7 +711,7 @@ def GenerateTestResults( test_items,
 
             results.compiler_context = compiler.GetContextItem( working_data.complete_result.Item,
                                                                 is_debug=configuration == "Debug",
-                                                                is_profile=bool(optional_code_coverage_extractor),
+                                                                is_profile=bool(optional_test_executor),
                                                                 output_filename=results.compile_binary,
                                                                 force=True,
                                                               )
@@ -739,9 +773,7 @@ def GenerateTestResults( test_items,
                     output_stream.write(compile_output)
 
             except:
-                compile_result = -1
-                compile_output = traceback.format_exc()
-
+                compile_result = internal_exception_result_code
                 raise
 
             finally:
@@ -800,8 +832,6 @@ def GenerateTestResults( test_items,
 
         # ----------------------------------------------------------------------
         def Invoke():
-            internal_exception_result_code = 54321 
-
             # ----------------------------------------------------------------------
             def WriteLog(log_name, content):
                 if content is None:
@@ -828,24 +858,21 @@ def GenerateTestResults( test_items,
             try:
                 test_command_line = test_parser.CreateInvokeCommandLine(configuration_results.compiler_context, debug_on_error)
 
-                if optional_code_coverage_extractor:
-                    execute_result = optional_code_coverage_extractor.Execute( compiler,
-                                                                               configuration_results.compiler_context,
-                                                                               test_command_line,
-                                                                             )
+                if optional_test_executor:
+                    executor = optional_test_executor
                 else:
-                    result, output = Process.Execute(test_command_line)
+                    executor = next(executor for executor in TEST_EXECUTORS if executor.Name == "Standard")
 
-                    execute_result = CodeCoverageExtractorImpl.ExecuteResult( result, 
-                                                                              output,
-                                                                              None, # Populate below
-                                                                            )
+                execute_result = executor.Execute( compiler,
+                                                   configuration_results.compiler_context,
+                                                   test_command_line,
+                                                 )
 
             except:
-                execute_result = CodeCoverageExtractorImpl.ExecuteResult( internal_exception_result_code,
-                                                                          None,
-                                                                          None, # Populate below
-                                                                        )
+                execute_result = TestExecutorImpl.ExecuteResult( internal_exception_result_code,
+                                                                 None,
+                                                                 None, # Populate below
+                                                               )
                 raise
 
             finally:
@@ -857,7 +884,7 @@ def GenerateTestResults( test_items,
                 original_test_output = execute_result.TestOutput
 
                 execute_result.TestOutput = WriteLog("test", execute_result.TestOutput)
-                execute_result.CoverageOutput = WriteLog("code_coverage_extrator", execute_result.CoverageOutput)
+                execute_result.CoverageOutput = WriteLog("executor", execute_result.CoverageOutput)
 
                 configuration_results.execute_results[iteration] = execute_result
 
@@ -1020,26 +1047,69 @@ def GenerateTestResults( test_items,
 # |  Command Line Functionality
 # |  
 # ----------------------------------------------------------------------
-_compiler_type_info                         = CommandLine.EnumTypeInfo([ compiler.Name for compiler in COMPILERS ] + [ str(index) for index in six.moves.range(1, len(COMPILERS) + 1) ])
-_test_parser_type_info                      = CommandLine.EnumTypeInfo([ test_parser.Name for test_parser in TEST_PARSERS ] + [ str(index) for index in six.moves.range(1, len(TEST_PARSERS) + 1) ])
-_code_coverage_extractor_type_info          = CommandLine.EnumTypeInfo([ cce.Name for cce in CODE_COVERAGE_EXTRACTORS ] + [ str(index) for index in six.moves.range(1, len(CODE_COVERAGE_EXTRACTORS) + 1) ], arity='?')
-_code_coverage_validator_type_info          = CommandLine.EnumTypeInfo([ ccv.Name for ccv in CODE_COVERAGE_VALIDATORS ] + [ str(index) for index in six.moves.range(1, len(CODE_COVERAGE_VALIDATORS) + 1) ], arity='?')
-_ConfigurationTypeinfo                      = CommandLine.EnumTypeInfo(list(six.iterkeys(CONFIGURATIONS)))
+_compiler_type_info                                     = CommandLine.EnumTypeInfo([ compiler.Name for compiler in COMPILERS ] + [ str(index) for index in six.moves.range(1, len(COMPILERS) + 1) ])
+_test_parser_type_info                                  = CommandLine.EnumTypeInfo([ test_parser.Name for test_parser in TEST_PARSERS ] + [ str(index) for index in six.moves.range(1, len(TEST_PARSERS) + 1) ])
+_test_executor_type_info                                = CommandLine.EnumTypeInfo([ executor.Name for executor in TEST_EXECUTORS ] + [ str(index) for index in six.moves.range(1, len(TEST_EXECUTORS) + 1) ], arity='?')
+_code_coverage_validator_type_info                      = CommandLine.EnumTypeInfo([ ccv.Name for ccv in CODE_COVERAGE_VALIDATORS ] + [ str(index) for index in six.moves.range(1, len(CODE_COVERAGE_VALIDATORS) + 1) ], arity='?')
+_configuration_type_info                                = CommandLine.EnumTypeInfo(list(six.iterkeys(CONFIGURATIONS)))
+
+_configuration_param_description                        = CommandLine.EntryPoint.Parameter("BugBug")
+_input_dir_param_descripiton                            = CommandLine.EntryPoint.Parameter("BugBug")
+_output_dir_param_description                           = CommandLine.EntryPoint.Parameter("BugBug")
+_test_type_param_description                            = CommandLine.EntryPoint.Parameter("BugBug")
+_execute_in_parallel_param_description                  = CommandLine.EntryPoint.Parameter("BugBug")
+_iterations_param_description                           = CommandLine.EntryPoint.Parameter("BugBug")
+_debug_on_error_param_description                       = CommandLine.EntryPoint.Parameter("BugBug")
+_continue_iterations_on_error_param_description         = CommandLine.EntryPoint.Parameter("BugBug")
+_code_coverage_param_description                        = CommandLine.EntryPoint.Parameter("BugBug")
+_debug_only_param_description                           = CommandLine.EntryPoint.Parameter("BugBug")
+_release_only_param_description                         = CommandLine.EntryPoint.Parameter("BugBug")
+_verbose_param_description                              = CommandLine.EntryPoint.Parameter("BugBug")
+_quiet_param_description                                = CommandLine.EntryPoint.Parameter("BugBug")
+_preserve_ansi_escape_sequences_param_description       = CommandLine.EntryPoint.Parameter("BugBug")
+_no_status_param_description                            = CommandLine.EntryPoint.Parameter("BugBug")
+
+_compiler_param_description                             = CommandLine.EntryPoint.Parameter("BugBug")
+_compiler_flag_param_description                        = CommandLine.EntryPoint.Parameter("BugBug")
+
+_test_parser_param_description                          = CommandLine.EntryPoint.Parameter("BugBug")
+_test_parser_flag_param_description                     = CommandLine.EntryPoint.Parameter("BugBug")
+
+_test_executor_param_description                        = CommandLine.EntryPoint.Parameter("BugBug")
+_test_executor_flag_param_description                   = CommandLine.EntryPoint.Parameter("BugBug")
+
+_code_coverage_validator_param_description              = CommandLine.EntryPoint.Parameter("BugBug")
+_code_coverage_validator_flag_param_description         = CommandLine.EntryPoint.Parameter("BugBug")
 
 # ----------------------------------------------------------------------
-@CommandLine.EntryPoint # BugBug: Descriptions
-@CommandLine.Constraints( configuration=_ConfigurationTypeinfo,
+@CommandLine.EntryPoint( configuration=_configuration_param_description,
+                         filename_or_dir=CommandLine.EntryPoint.Parameter("BugBug"),
+                         output_dir=_output_dir_param_description,
+                         test_type=_test_type_param_description,
+                         execute_in_parallel=_execute_in_parallel_param_description,
+                         iterations=_iterations_param_description,
+                         debug_on_error=_debug_on_error_param_description,
+                         continue_iterations_on_error=_continue_iterations_on_error_param_description,
+                         code_coverage=_code_coverage_param_description,
+                         debug_only=_debug_only_param_description,
+                         release_only=_release_only_param_description,
+                         verbose=_verbose_param_description,
+                         quiet=_quiet_param_description,
+                         preserve_ansi_escape_sequences=_preserve_ansi_escape_sequences_param_description,
+                         no_status=_no_status_param_description,
+                       )
+@CommandLine.Constraints( configuration=_configuration_type_info,
                           filename_or_dir=CommandLine.FilenameTypeInfo(match_any=True),
-                          test_type=CommandLine.StringTypeInfo(arity='?'),
                           output_dir=CommandLine.DirectoryTypeInfo(ensure_exists=False, arity='?'),
+                          test_type=CommandLine.StringTypeInfo(arity='?'),
                           execute_in_parallel=CommandLine.BoolTypeInfo(arity='?'),
                           iterations=CommandLine.IntTypeInfo(min=1, arity='?'),
                           output_stream=None,
                         )
 def Test( configuration,
           filename_or_dir,
-          test_type=None,
           output_dir=None,
+          test_type=None,
           execute_in_parallel=None,
           iterations=1,
           debug_on_error=False,
@@ -1052,7 +1122,6 @@ def Test( configuration,
           quiet=False,
           preserve_ansi_escape_sequences=False,
           no_status=False,
-          print_command_line=False,
        ):
     """Tests the given input"""
     
@@ -1066,12 +1135,12 @@ def Test( configuration,
             raise CommandLine.UsageException("The 'output_dir' command line argument must be provided when 'filename_or_dir' is a directory.")
 
         return _ExecuteTreeImpl( filename_or_dir,
-                                 test_type,
                                  output_dir,
+                                 test_type,
                                  configuration.Compiler,
                                  configuration.TestParser,
-                                 configuration.OptionalCodeCoverageExtractor,
-                                 None, # BugBug: code_coverage_validator
+                                 configuration.OptionalCoverageExecutor if code_coverage else None,
+                                 configuration.OptionalCodeCoverageValidator if code_coverage else None,
                                  execute_in_parallel=execute_in_parallel,
                                  iterations=iterations,
                                  debug_on_error=debug_on_error,
@@ -1083,7 +1152,6 @@ def Test( configuration,
                                  quiet=quiet,
                                  preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
                                  no_status=no_status,
-                                 print_command_line=print_command_line,
                                )
 
     if quiet:
@@ -1092,8 +1160,8 @@ def Test( configuration,
     return _ExecuteImpl( filename_or_dir,
                          configuration.Compiler,
                          configuration.TestParser,
-                         configuration.OptionalCodeCoverageExtractor,
-                         None, # BugBug: code_coverage_validator
+                         configuration.OptionalCoverageExecutor if code_coverage else None,
+                         configuration.OptionalCodeCoverageValidator if code_coverage else None,
                          iterations=iterations,
                          debug_on_error=debug_on_error,
                          continue_iterations_on_error=continue_iterations_on_error,
@@ -1103,11 +1171,20 @@ def Test( configuration,
                          verbose=verbose,
                          preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
                          no_status=no_status,
-                         print_command_line=print_command_line,
                        )
 
 # ----------------------------------------------------------------------
-@CommandLine.EntryPoint # BugBug: Descriptions
+@CommandLine.EntryPoint( filename=CommandLine.EntryPoint.Parameter("BugBug"),
+                         iterations=_iterations_param_description,
+                         debug_on_error=_debug_on_error_param_description,
+                         continue_iterations_on_error=_continue_iterations_on_error_param_description,
+                         code_coverage=_code_coverage_param_description,
+                         debug_only=_debug_only_param_description,
+                         release_only=_release_only_param_description,
+                         verbose=_verbose_param_description,
+                         preserve_ansi_escape_sequences=_preserve_ansi_escape_sequences_param_description,
+                         no_status=_no_status_param_description,
+                       )
 @CommandLine.Constraints( filename=CommandLine.FilenameTypeInfo(),
                           iterations=CommandLine.IntTypeInfo(min=1, arity='?'),
                           output_stream=None,
@@ -1123,7 +1200,6 @@ def TestFile( filename,
               verbose=False,
               preserve_ansi_escape_sequences=False,
               no_status=False,
-              print_command_line=False,
             ):
     """Tests the given input file"""
 
@@ -1143,8 +1219,8 @@ def TestFile( filename,
 
     return Test( configuration,
                  filename,
-                 test_type=None,
                  output_dir=None,
+                 test_type=None,
                  execute_in_parallel=False,
                  iterations=iterations,
                  debug_on_error=debug_on_error,
@@ -1157,23 +1233,37 @@ def TestFile( filename,
                  quiet=False,
                  preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
                  no_status=no_status,
-                 print_command_line=print_command_line,
                )
  
 # ----------------------------------------------------------------------
-@CommandLine.EntryPoint # BugBug: Descriptions
-@CommandLine.Constraints( configuration=_ConfigurationTypeinfo,
+@CommandLine.EntryPoint( configuration=_configuration_param_description,
+                         input_dir=_input_dir_param_descripiton,
+                         output_dir=_output_dir_param_description,
+                         test_type=_test_type_param_description,
+                         execute_in_parallel=_execute_in_parallel_param_description,
+                         iterations=_iterations_param_description,
+                         debug_on_error=_debug_on_error_param_description,
+                         continue_iterations_on_error=_continue_iterations_on_error_param_description,
+                         code_coverage=_code_coverage_param_description,
+                         debug_only=_debug_only_param_description,
+                         release_only=_release_only_param_description,
+                         verbose=_verbose_param_description,
+                         quiet=_quiet_param_description,
+                         preserve_ansi_escape_sequences=_preserve_ansi_escape_sequences_param_description,
+                         no_status=_no_status_param_description,
+                       )
+@CommandLine.Constraints( configuration=_configuration_type_info,
                           input_dir=CommandLine.DirectoryTypeInfo(),
-                          test_type=CommandLine.StringTypeInfo(),
                           output_dir=CommandLine.DirectoryTypeInfo(ensure_exists=False),
+                          test_type=CommandLine.StringTypeInfo(),
                           execute_in_parallel=CommandLine.BoolTypeInfo(arity='?'),
                           iterations=CommandLine.IntTypeInfo(min=1, arity='?'),
                           output_stream=None,
                         )
 def TestType( configuration,
               input_dir,
-              test_type,
               output_dir,
+              test_type,
               execute_in_parallel=None,
               iterations=1,
               debug_on_error=False,
@@ -1186,14 +1276,13 @@ def TestType( configuration,
               quiet=False,
               preserve_ansi_escape_sequences=False,
               no_status=False,
-              print_command_line=False,
        ):
     """Run tests for the test type with the specified configuration"""
     
     return Test( configuration,
                  input_dir,
-                 test_type=test_type,
                  output_dir=output_dir,
+                 test_type=test_type,
                  execute_in_parallel=execute_in_parallel,
                  iterations=iterations,
                  debug_on_error=debug_on_error,
@@ -1206,21 +1295,34 @@ def TestType( configuration,
                  quiet=quiet,
                  preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
                  no_status=no_status,
-                 print_command_line=print_command_line,
                )
 
 # ----------------------------------------------------------------------
-@CommandLine.EntryPoint
+@CommandLine.EntryPoint( input_dir=_input_dir_param_descripiton,
+                         output_dir=_output_dir_param_description,
+                         test_type=_test_type_param_description,
+                         execute_in_parallel=_execute_in_parallel_param_description,
+                         iterations=_iterations_param_description,
+                         debug_on_error=_debug_on_error_param_description,
+                         continue_iterations_on_error=_continue_iterations_on_error_param_description,
+                         code_coverage=_code_coverage_param_description,
+                         debug_only=_debug_only_param_description,
+                         release_only=_release_only_param_description,
+                         verbose=_verbose_param_description,
+                         quiet=_quiet_param_description,
+                         preserve_ansi_escape_sequences=_preserve_ansi_escape_sequences_param_description,
+                         no_status=_no_status_param_description,
+                       )
 @CommandLine.Constraints( input_dir=CommandLine.DirectoryTypeInfo(),
-                          test_type=CommandLine.StringTypeInfo(),
                           output_dir=CommandLine.DirectoryTypeInfo(ensure_exists=False),
+                          test_type=CommandLine.StringTypeInfo(),
                           execute_in_parallel=CommandLine.BoolTypeInfo(arity='?'),
                           iterations=CommandLine.IntTypeInfo(min=1, arity='?'),
                           output_stream=None,
                         )
 def TestAll( input_dir,
-             test_type,
              output_dir,
+             test_type,
              execute_in_parallel=None,
              iterations=1,
              debug_on_error=False,
@@ -1233,7 +1335,6 @@ def TestAll( input_dir,
              quiet=False,
              preserve_ansi_escape_sequences=False,
              no_status=False,
-             print_command_line=False,
            ):
     """Run tests for the test type with all configurations"""
     
@@ -1246,7 +1347,7 @@ def TestAll( input_dir,
                                                           index + 1,
                                                           len(CONFIGURATIONS),
                                                         )
-            dm.stream.write("{sep}\n{header}\n{sep}\n".format( header,
+            dm.stream.write("{sep}\n{header}\n{sep}\n".format( header=header,
                                                                sep='-' * len(header),
                                                              ))
             with dm.stream.DoneManager( line_prefix='',
@@ -1255,8 +1356,8 @@ def TestAll( input_dir,
                                       ) as this_dm:
                 this_dm.result = TestType( configuration,
                                            input_dir,
-                                           test_type,
                                            output_dir,
+                                           test_type,
                                            execute_in_parallel=execute_in_parallel,
                                            iterations=iterations,
                                            debug_on_error=debug_on_error,
@@ -1269,13 +1370,17 @@ def TestAll( input_dir,
                                            quiet=quiet,
                                            preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
                                            no_status=no_status,
-                                           print_command_line=print_command_line,
                                          )
 
         return dm.result
 
 # ----------------------------------------------------------------------
-@CommandLine.EntryPoint
+@CommandLine.EntryPoint( input_dir=_input_dir_param_descripiton,
+                         test_type=_test_type_param_description,
+                         compiler=_compiler_param_description,
+                         compiler_flag=_compiler_flag_param_description,
+                         verbose=_verbose_param_description,
+                       )
 @CommandLine.Constraints( input_dir=CommandLine.DirectoryTypeInfo(),
                           test_type=CommandLine.StringTypeInfo(),
                           compiler=_compiler_type_info,
@@ -1293,7 +1398,10 @@ def MatchTests( input_dir,
     pass # BugBug
 
 # ----------------------------------------------------------------------
-@CommandLine.EntryPoint
+@CommandLine.EntryPoint( input_dir=_input_dir_param_descripiton,
+                         test_type=_test_type_param_description,
+                         verbose=_verbose_param_description,
+                       )
 @CommandLine.Constraints( input_dir=CommandLine.DirectoryTypeInfo(),
                           test_type=CommandLine.StringTypeInfo(),
                           output_stream=None,
@@ -1325,30 +1433,47 @@ def MatchAllTests( input_dir,
         return dm.result
 
 # ----------------------------------------------------------------------
-@CommandLine.EntryPoint
+@CommandLine.EntryPoint( filename=CommandLine.EntryPoint.Parameter("BugBug"),
+                         compiler=_compiler_param_description,
+                         test_parser=_test_parser_param_description,
+                         test_executor=_test_executor_param_description,
+                         code_coverage_validator=_code_coverage_validator_param_description,
+                         iterations=_iterations_param_description,
+                         debug_on_error=_debug_on_error_param_description,
+                         continue_iterations_on_error=_continue_iterations_on_error_param_description,
+                         compiler_flag=_compiler_flag_param_description,
+                         test_parser_flag=_test_parser_flag_param_description,
+                         test_executor_flag=_test_executor_flag_param_description,
+                         code_coverage_validator_flag=_code_coverage_validator_flag_param_description,
+                         debug_only=_debug_only_param_description,
+                         release_only=_release_only_param_description,
+                         verbose=_verbose_param_description,
+                         preserve_ansi_escape_sequences=_preserve_ansi_escape_sequences_param_description,
+                         no_status=_no_status_param_description,
+                       )
 @CommandLine.Constraints( filename=CommandLine.FilenameTypeInfo(),
                           compiler=_compiler_type_info,
                           test_parser=_test_parser_type_info,
-                          code_coverage_extractor=_code_coverage_extractor_type_info,
+                          test_executor=_test_executor_type_info,
                           code_coverage_validator=_code_coverage_validator_type_info,
                           iterations=CommandLine.IntTypeInfo(min=1, arity='?'),
                           compiler_flag=CommandLine.DictTypeInfo(require_exact_match=False, arity='?'),
                           test_parser_flag=CommandLine.DictTypeInfo(require_exact_match=False, arity='?'),
-                          code_coverage_extractor_flag=CommandLine.DictTypeInfo(require_exact_match=False, arity='?'),
+                          test_executor_flag=CommandLine.DictTypeInfo(require_exact_match=False, arity='?'),
                           code_coverage_validator_flag=CommandLine.DictTypeInfo(require_exact_match=False, arity='?'),
                           output_stream=None,
                         )
 def Execute( filename,
              compiler,
              test_parser,
-             code_coverage_extractor=None,
+             test_executor=None,
              code_coverage_validator=None,
              iterations=1,
              debug_on_error=False,
              continue_iterations_on_error=False,
              compiler_flag=None,
              test_parser_flag=None,
-             code_coverage_extractor_flag=None,
+             test_executor_flag=None,
              code_coverage_validator_flag=None,
              debug_only=False,
              release_only=False,
@@ -1356,15 +1481,14 @@ def Execute( filename,
              verbose=False,
              preserve_ansi_escape_sequences=False,
              no_status=False,
-             print_command_line=False,
            ):
     """
-    Executes a specific test using a specific compiler, test parser, code coverage extractor, and code coverage validator. In most
+    Executes a specific test using a specific compiler, test parser, test executor, and code coverage validator. In most
     cases, it is easier to use a Test___ method rather than this one.
     """
 
-    if code_coverage_extractor_flag and code_coverage_extractor is None:
-        raise CommandLine.UsageException("Code coverage extractor flags are only valid when a code coverage extractor is specified")
+    if test_executor_flag and test_executor is None:
+        raise CommandLine.UsageException("Test executor flags are only valid when a test executor is specified")
 
     if code_coverage_validator_flag and code_coverage_validator is None:
         raise CommandLine.UsageException("Code coverage validator flags are only valid when a code coverage validator is specified")
@@ -1372,7 +1496,7 @@ def Execute( filename,
     return _ExecuteImpl( filename,
                          _GetFromCommandLineArg(compiler, COMPILERS, compiler_flag),
                          _GetFromCommandLineArg(test_parser, TEST_PARSERS, test_parser_flag),
-                         _GetFromCommandLineArg(code_coverage_extractor, CODE_COVERAGE_EXTRACTORS, code_coverage_extractor_flag, allow_empty=True),
+                         _GetFromCommandLineArg(test_executor, TEST_EXECUTORS, test_executor_flag, allow_empty=True),
                          _GetFromCommandLineArg(code_coverage_validator, CODE_COVERAGE_VALIDATORS, code_coverage_validator_flag, allow_empty=True),
                          iterations=iterations,
                          debug_on_error=debug_on_error,
@@ -1383,32 +1507,52 @@ def Execute( filename,
                          verbose=verbose,
                          preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
                          no_status=no_status,
-                         print_command_line=print_command_line,
                        )
 
 # ----------------------------------------------------------------------
-@CommandLine.EntryPoint
+@CommandLine.EntryPoint( input_dir=_input_dir_param_descripiton,
+                         output_dir=_output_dir_param_description,
+                         test_type=_test_type_param_description,
+                         compiler=_compiler_param_description,
+                         test_parser=_test_parser_param_description,
+                         test_executor=_test_executor_param_description,
+                         code_coverage_validator=_code_coverage_validator_param_description,
+                         execute_in_parallel=_execute_in_parallel_param_description,
+                         iterations=_iterations_param_description,
+                         debug_on_error=_debug_on_error_param_description,
+                         continue_iterations_on_error=_continue_iterations_on_error_param_description,
+                         compiler_flag=_compiler_flag_param_description,
+                         test_parser_flag=_test_parser_flag_param_description,
+                         test_executor_flag=_test_executor_flag_param_description,
+                         code_coverage_validator_flag=_code_coverage_validator_flag_param_description,
+                         debug_only=_debug_only_param_description,
+                         release_only=_release_only_param_description,
+                         verbose=_verbose_param_description,
+                         quiet=_quiet_param_description,
+                         preserve_ansi_escape_sequences=_preserve_ansi_escape_sequences_param_description,
+                         no_status=_no_status_param_description,
+                       )
 @CommandLine.Constraints( input_dir=CommandLine.DirectoryTypeInfo(),
-                          test_type=CommandLine.StringTypeInfo(),
                           output_dir=CommandLine.DirectoryTypeInfo(ensure_exists=False),
+                          test_type=CommandLine.StringTypeInfo(),
                           compiler=_compiler_type_info,
                           test_parser=_test_parser_type_info,
-                          code_coverage_extractor=_code_coverage_extractor_type_info,
+                          test_executor=_test_executor_type_info,
                           code_coverage_validator=_code_coverage_validator_type_info,
                           execute_in_parallel=CommandLine.BoolTypeInfo(arity='?'),
                           iterations=CommandLine.IntTypeInfo(min=1, arity='?'),
                           compiler_flag=CommandLine.DictTypeInfo(require_exact_match=False, arity='?'),
                           test_parser_flag=CommandLine.DictTypeInfo(require_exact_match=False, arity='?'),
-                          code_coverage_extractor_flag=CommandLine.DictTypeInfo(require_exact_match=False, arity='?'),
+                          test_executor_flag=CommandLine.DictTypeInfo(require_exact_match=False, arity='?'),
                           code_coverage_validator_flag=CommandLine.DictTypeInfo(require_exact_match=False, arity='?'),
                           output_stream=None,
                         )
 def ExecuteTree( input_dir,
-                 test_type,
                  output_dir,
+                 test_type,
                  compiler,
                  test_parser,
-                 code_coverage_extractor=None,
+                 test_executor=None,
                  code_coverage_validator=None,
                  execute_in_parallel=None,
                  iterations=1,
@@ -1416,7 +1560,7 @@ def ExecuteTree( input_dir,
                  continue_iterations_on_error=False,
                  compiler_flag=None,
                  test_parser_flag=None,
-                 code_coverage_extractor_flag=None,
+                 test_executor_flag=None,
                  code_coverage_validator_flag=None,
                  debug_only=False,
                  release_only=False,
@@ -1425,25 +1569,24 @@ def ExecuteTree( input_dir,
                  quiet=False,
                  preserve_ansi_escape_sequences=False,
                  no_status=False,
-                 print_command_line=False,
                ):
     """
-    Executes tests found within 'test_type' subdirectories using a specific compiler, test parser, code coverage extractor, and code coverage validator. In most
+    Executes tests found within 'test_type' subdirectories using a specific compiler, test parser, test executor, and code coverage validator. In most
     cases, it is easier to use a Test___ method rather than this one.
     """
     
-    if code_coverage_extractor_flag and code_coverage_extractor is None:
-        raise CommandLine.UsageException("Code coverage extractor flags are only valid when a code coverage extractor is specified")
+    if test_executor_flag and test_executor is None:
+        raise CommandLine.UsageException("Test executor flags are only valid when a test executor is specified")
 
     if code_coverage_validator_flag and code_coverage_validator is None:
         raise CommandLine.UsageException("Code coverage validator flags are only valid when a code coverage validator is specified")
 
     return _ExecuteTreeImpl( input_dir,
-                             test_type,
                              output_dir,
+                             test_type,
                              _GetFromCommandLineArg(compiler, COMPILERS, compiler_flag),
                              _GetFromCommandLineArg(test_parser, TEST_PARSERS, test_parser_flag),
-                             _GetFromCommandLineArg(code_coverage_extractor, CODE_COVERAGE_EXTRACTORS, code_coverage_extractor_flag, allow_empty=True),
+                             _GetFromCommandLineArg(test_executor, TEST_EXECUTORS, test_executor_flag, allow_empty=True),
                              _GetFromCommandLineArg(code_coverage_validator, CODE_COVERAGE_VALIDATORS, code_coverage_validator_flag, allow_empty=True),
                              execute_in_parallel=execute_in_parallel,
                              iterations=iterations,
@@ -1456,7 +1599,6 @@ def ExecuteTree( input_dir,
                              quiet=quiet,
                              preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
                              no_status=no_status,
-                             print_command_line=print_command_line,
                            )
 
 # ----------------------------------------------------------------------
@@ -1466,7 +1608,7 @@ def CommandLineSuffix():
                                         Where...
 
                                             <configuration> can be one of these values:
-                                                  (A configuration provides pre-configured values for <compiler>, <test_parser>, and <code_coverage_extractor>)
+                                                  (A configuration provides pre-configured values for <compiler>, <test_parser>, and <test_executor>)
 
                                         {configurations}
 
@@ -1482,26 +1624,26 @@ def CommandLineSuffix():
 
                                         {test_parsers}
 
-                                            <code_coverage_extractor> can be:
+                                            <test_executor> can be:
 
-                                        {code_coverage_extractors}
+                                        {test_executors}
 
                                             <code_coverage_validator> can be:
 
                                         {code_coverage_validators}
 
                                         
-                                        An valid item index or name may be used for these command line arguments:
+                                        A valid name or index may be used for these command line arguments:
                                             - <compiler>
                                             - <test_parser>
-                                            - <code_coverage_extractor>
+                                            - <test_executor>
                                             - <code_coverage_validator>
 
                                         """).format( configurations='\n'.join([ "      - {}".format(config) for config in six.iterkeys(CONFIGURATIONS) ]),
                                                      test_types='\n'.join([ "      - {name:<30}  {desc}".format(name=ttmd.Name, desc=ttmd.Description) for ttmd in TEST_TYPES ]),
                                                      compilers='\n'.join([ "      {0}) {1:<20} {2}".format(index + 1, compiler.Name, compiler.Description) for index, compiler in enumerate(COMPILERS) ]),
                                                      test_parsers='\n'.join([ "      {0}) {1:<20} {2}".format(index + 1, compiler.Name, compiler.Description) for index, compiler in enumerate(TEST_PARSERS) ]),
-                                                     code_coverage_extractors='\n'.join([ "      {0}) {1:<20} {2}".format(index + 1, compiler.Name, compiler.Description) for index, compiler in enumerate(CODE_COVERAGE_EXTRACTORS) ]),
+                                                     test_executors='\n'.join([ "      {0}) {1:<20} {2}".format(index + 1, compiler.Name, compiler.Description) for index, compiler in enumerate(TEST_EXECUTORS) ]),
                                                      code_coverage_validators='\n'.join([ "      {0}) {1:<20} {2}".format(index + 1, compiler.Name, compiler.Description) for index, compiler in enumerate(CODE_COVERAGE_VALIDATORS) ]),
                                                    ),
                                       4,
@@ -1532,7 +1674,7 @@ def _GetFromCommandLineArg(arg, items, flags, allow_empty=False):
 def _ExecuteImpl( filename_or_dir,
                   compiler,
                   test_parser,
-                  code_coverage_extractor,
+                  test_executor,
                   code_coverage_validator,
                   iterations,
                   debug_on_error,
@@ -1543,9 +1685,12 @@ def _ExecuteImpl( filename_or_dir,
                   verbose,
                   preserve_ansi_escape_sequences,
                   no_status,
-                  print_command_line,
                 ):
     assert compiler.IsSupported(filename_or_dir), (compiler.Name, filename_or_dir)
+
+    if test_executor and test_executor.Name != "Standard" and code_coverage_validator is None:
+        code_coverage_validator = next(ccv for ccv in CODE_COVERAGE_VALIDATORS if ccv.Name == "Standard")
+        code_coverage_validator = code_coverage_validator()
 
     with StreamDecorator.GenerateAnsiSequenceStream( output_stream,
                                                      preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
@@ -1558,7 +1703,7 @@ def _ExecuteImpl( filename_or_dir,
                                                 temp_filename,
                                                 compiler,
                                                 test_parser,
-                                                code_coverage_extractor,
+                                                test_executor,
                                                 code_coverage_validator,
                                                 execute_in_parallel=False,
                                                 iterations=iterations,
@@ -1569,7 +1714,6 @@ def _ExecuteImpl( filename_or_dir,
                                                 output_stream=output_stream,
                                                 verbose=verbose,
                                                 no_status=no_status,
-                                                print_command_line=print_command_line,
                                               )
         FileSystem.RemoveFile(temp_filename)
 
@@ -1582,7 +1726,7 @@ def _ExecuteImpl( filename_or_dir,
         output_stream.write('\n')
         output_stream.write(complete_result.ToString( compiler,
                                                       test_parser,
-                                                      code_coverage_extractor,
+                                                      test_executor,
                                                       code_coverage_validator,
                                                     ))
 
@@ -1590,11 +1734,11 @@ def _ExecuteImpl( filename_or_dir,
 
 # ----------------------------------------------------------------------
 def _ExecuteTreeImpl( input_dir,
-                      test_type,
                       output_dir,
+                      test_type,
                       compiler,
                       test_parser,
-                      code_coverage_extractor,
+                      test_executor,
                       code_coverage_validator,
                       execute_in_parallel,
                       iterations,
@@ -1607,10 +1751,13 @@ def _ExecuteTreeImpl( input_dir,
                       quiet,
                       preserve_ansi_escape_sequences,
                       no_status,
-                      print_command_line,
                     ):
     if verbose and quiet:
         raise CommandLine.UsageException("'verbose' and 'quiet' are mutually exclusive options and cannot be specified together")
+
+    if test_executor and test_executor.Name != "Standard" and code_coverage_validator is None:
+        code_coverage_validator = next(ccv for ccv in CODE_COVERAGE_VALIDATORS if ccv.Name == "Standard")
+        code_coverage_validator = code_coverage_validator()
 
     with StreamDecorator.GenerateAnsiSequenceStream( output_stream,
                                                      preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
@@ -1649,7 +1796,7 @@ def _ExecuteTreeImpl( input_dir,
                                                     output_dir,
                                                     compiler,
                                                     test_parser,
-                                                    code_coverage_extractor,
+                                                    test_executor,
                                                     code_coverage_validator,
                                                     execute_in_parallel=execute_in_parallel,
                                                     iterations=iterations,
@@ -1660,7 +1807,6 @@ def _ExecuteTreeImpl( input_dir,
                                                     output_stream=dm.stream,
                                                     verbose=verbose,
                                                     no_status=no_status,
-                                                    print_command_line=print_command_line,
                                                   )
             if not complete_results:
                 return 0
@@ -1671,7 +1817,7 @@ def _ExecuteTreeImpl( input_dir,
                 for complete_result in complete_results:
                     dm.stream.write(complete_result.ToString( compiler,
                                                               test_parser,
-                                                              code_coverage_extractor,
+                                                              test_executor,
                                                               code_coverage_validator,
                                                             ))
 

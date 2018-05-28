@@ -1,6 +1,6 @@
 # ----------------------------------------------------------------------
 # |  
-# |  PythonCodeCoverageExtractor.py
+# |  PyCoverageTestExecutor.py
 # |  
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-05-24 21:27:31
@@ -12,7 +12,7 @@
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 # |  
 # ----------------------------------------------------------------------
-"""Contains the CodeCoverageExtractor object"""
+"""Contains the TestExecutor object"""
 
 import datetime
 import os
@@ -30,7 +30,7 @@ from CommonEnvironment.Interface import staticderived
 from CommonEnvironment import Process
 from CommonEnvironment.Shell.All import CurrentShell
 
-from CommonEnvironment.CodeCoverageExtractorImpl import CodeCoverageExtractorImpl
+from CommonEnvironment.TestExecutorImpl import TestExecutorImpl
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -39,11 +39,11 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 
 sys.path.insert(0, _script_dir)
 with CallOnExit(lambda: sys.path.pop(0)):
-    pass # BugBug from TransparentCoverageExtractor import CodeCoverageExtractor as TransparentCoverageExtractor
+    from StandardTestExecutor import TestExecutor as StandardTestExecutor
 
 # ----------------------------------------------------------------------
 @staticderived
-class CodeCoverageExtractor(CodeCoverageExtractorImpl):
+class TestExecutor(TestExecutorImpl):
     """
     Extracts code coverage information from python files. Coverage includes and
     excludes are extracted from comments embedded in the source.
@@ -69,7 +69,7 @@ class CodeCoverageExtractor(CodeCoverageExtractorImpl):
 
     # ----------------------------------------------------------------------
     # |  Public Properties
-    Name                                    = "Python"
+    Name                                    = "PyCoverage"
     Description                             = "Extracts code coverage information for Python source code using coverage.py."
 
     # ----------------------------------------------------------------------
@@ -146,19 +146,39 @@ class CodeCoverageExtractor(CodeCoverageExtractorImpl):
                 else:
                     raise Exception("'{}' is not a supported action".format(action))
 
+        if disable_code_coverage:
+            return StandardTestExecutor.Execute( compiler,
+                                                 context,
+                                                 'python "{}"'.format(filename),
+                                               )
+
         # Attempt to determine include and exclude information based on the original filename
         if not disable_code_coverage and not includes and not excludes:
             sut_filename = compiler.TestToItemName(filename)
-            sut_filename = os.path.join("*", os.path.basename(sut_filename))
 
-            includes.append(sut_filename)
+            # Import by python fullpath
+            dirname, basename = os.path.split(sut_filename)
             
-        if disable_code_coverage:
-            return TransparentCoverageExtractor.Execute( compiler,
-                                                         context,
-                                                         'python "{}"'.format(filename),
-                                                       )
+            stack = [ basename, ]
 
+            while True:
+                potential_filename = os.path.join(dirname, "__init__.py")
+                if not os.path.isfile(potential_filename):
+                    break
+
+                potential_dirname, basename = os.path.split(dirname)
+
+                stack.append(basename)
+
+                if potential_dirname == dirname:
+                    break
+
+                dirname = potential_dirname
+
+            stack.reverse()
+
+            includes.append("*/{}".format('/'.join(stack)))
+        
         # Run the process and calculate code coverage
         temp_filename = CurrentShell.CreateTempFilename(".py")
 
@@ -176,11 +196,11 @@ class CodeCoverageExtractor(CodeCoverageExtractorImpl):
             # Run the process
             start_time = time.time()
 
-            command_line = '{} "{}" {} {}'.format( command_line_template.format("run"),
-                                                   '"--include={}"'.format(','.join(includes)) if includes else '',
-                                                   '"--omit={}"'.format(','.join(excludes)) if excludes else '',
-                                                   filename,
-                                                 )
+            command_line = '{} {} {} {}'.format( command_line_template.format("run"),
+                                                 '"--include={}"'.format(','.join(includes)) if includes else '',
+                                                 '"--omit={}"'.format(','.join(excludes)) if excludes else '',
+                                                 filename,
+                                               )
 
             test_result, test_output = Process.Execute(command_line)
             test_time = str(datetime.timedelta(seconds=(time.time() - start_time)))

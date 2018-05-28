@@ -61,23 +61,31 @@ def GetCustomActions( output_stream,
     else:
         # Reset any existing values
         os.environ["DEVELOPMENT_ENVIRONMENT_COMPILERS"] = ''
+        os.environ["DEVELOPMENT_ENVIRONMENT_TEST_EXECUTORS"] = ''
         os.environ["DEVELOPMENT_ENVIRONMENT_TEST_PARSER"] = ''
-        os.environ["DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_EXTRACTORS"] = ''
         os.environ["DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_VALIDATORS"] = ''
+        os.environ["DEVELOPMENT_ENVIRONMENT_TESTER_CONFIGURATIONS"] = ''
+
+        actions += [ CommonEnvironmentImports.CurrentShell.Commands.Set("DEVELOPMENT_ENVIRONMENT_COMPILERS", None),
+                     CommonEnvironmentImports.CurrentShell.Commands.Set("DEVELOPMENT_ENVIRONMENT_TEST_EXECUTORS", None),
+                     CommonEnvironmentImports.CurrentShell.Commands.Set("DEVELOPMENT_ENVIRONMENT_TEST_PARSERS", None),
+                     CommonEnvironmentImports.CurrentShell.Commands.Set("DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_VALIDATORS", None),
+                     CommonEnvironmentImports.CurrentShell.Commands.Set("DEVELOPMENT_ENVIRONMENT_TESTER_CONFIGURATIONS", None),
+                   ]
 
         actions += DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_COMPILERS",
                                                                            os.path.join(_script_dir, "Scripts", "Compilers"),
                                                                            lambda fullpath, name, ext: ext == ".py" and (name.endswith("Compiler") or name.endswith("CodeGenerator") or name.endswith("Verifier")),
                                                                          )
 
+        actions += DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_TEST_EXECUTORS",
+                                                                           os.path.join(_script_dir, "Scripts", "TestExecutors"),
+                                                                           lambda fullpath, name, ext: ext == ".py" and name.endswith("TestExecutor"),
+                                                                         )
+        
         actions += DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_TEST_PARSERS",
                                                                            os.path.join(_script_dir, "Scripts", "TestParsers"),
                                                                            lambda fullpath, name, ext: ext == ".py" and name.endswith("TestParser"),
-                                                                         )
-        
-        actions += DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_EXTRACTORS",
-                                                                           os.path.join(_script_dir, "Scripts", "CodeCoverageExtractors"),
-                                                                           lambda fullpath, name, ext: ext == ".py" and name.endswith("CodeCoverageExtractor"),
                                                                          )
         
         actions += DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_VALIDATORS",
@@ -87,8 +95,8 @@ def GetCustomActions( output_stream,
 
     actions.append(Commands.Augment( "DEVELOPMENT_ENVIRONMENT_TESTER_CONFIGURATIONS",
                                      [ "python-compiler-PyLint",
-                                       "python-test_parser-Python",
-                                       "python-code_coverage_extractor-Python",
+                                       "python-test_parser-PyUnittest",
+                                       "python-coverage_executor-PyCoverage",
                                      ],
                                      update_memory=True,
                                    ))

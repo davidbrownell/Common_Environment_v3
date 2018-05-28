@@ -12,7 +12,7 @@
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 # |  
 # ----------------------------------------------------------------------
-"""Contains the CodeCoverageExtractorImpl"""
+"""Contains the TestExecutorImpl object"""
 
 import os
 import sys
@@ -30,8 +30,8 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 # ----------------------------------------------------------------------
-class CodeCoverageExtractorImpl(Interface):
-    """Abstract base class for object that is able to extract code coverage information from data produced during a test's execution."""
+class TestExecutorImpl(Interface):
+    """Abstract base class for object that is able to execute a test and potentiall extract code coverage information from data produced during the test's execution."""
 
     # ----------------------------------------------------------------------
     # |  

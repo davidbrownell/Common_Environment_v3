@@ -1,6 +1,6 @@
 # ----------------------------------------------------------------------
 # |  
-# |  PythonTestParser.py
+# |  PythonUnittestTestParser.py
 # |  
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-05-22 07:59:46
@@ -33,7 +33,7 @@ class TestParser(TestParserImpl):
 
     # ----------------------------------------------------------------------
     # |  Public Properties
-    Name                                    = "Python"
+    Name                                    = "PyUnittest"
     Description                             = "Parses Python unittest output."
 
     # ----------------------------------------------------------------------
