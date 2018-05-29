@@ -129,6 +129,12 @@ def OnCommitting(data, output_stream):
 
                     {errors}
 
+                           The tool 'pandoc' (in the Tools directory) can be used to automatically convert from one file format to another.
+
+                           Examples:
+                               pandoc readme.rst -o readme.md
+                               pandoc readme.md -o readme.rst
+
                     """).format( this=inflect.plural("this", len(errors)).capitalize(),
                                  change=inflect.plural("change", len(errors)),
                                  sentinel=allow_sentinel,
