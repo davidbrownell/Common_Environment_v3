@@ -41,6 +41,7 @@ from CommonEnvironment import StringHelpers
 from CommonEnvironment.StreamDecorator import StreamDecorator
 from CommonEnvironment import TaskPool
 from CommonEnvironment.TestExecutorImpl import TestExecutorImpl
+from CommonEnvironment.TestTypeMetadata import TEST_TYPES
 
 from CommonEnvironment.TypeInfo.FundamentalTypes.DirectoryTypeInfo import DirectoryTypeInfo
 from CommonEnvironment.TypeInfo.FundamentalTypes.DurationTypeInfo import DurationTypeInfo
@@ -205,8 +206,6 @@ if custom_configurations:
                                                         item_map.get("coverage_executor", None),
                                                         item_map.get("coverage_validator", None),
                                                       )
-
-TEST_TYPES = [] # BugBug
 
 # ----------------------------------------------------------------------
 # |  
@@ -570,7 +569,7 @@ def ExtractTestItems( input_dir,
             if os.path.exists(TEST_IGNORE_FILENAME_TEMPLATE.format(fullpath)):
                 continue
 
-            if compiler.IsSupported(_script_fullpath) and compiler.IsSupportedTestFile(_script_fullpath):
+            if compiler.IsSupported(fullpath) and compiler.IsSupportedTestFile(fullpath):
                 test_items.append(fullpath)
             else:
                 verbose_stream.write("'{}' is not supported by the compiler.\n".format(fullpath))
@@ -1053,37 +1052,37 @@ _test_executor_type_info                                = CommandLine.EnumTypeIn
 _code_coverage_validator_type_info                      = CommandLine.EnumTypeInfo([ ccv.Name for ccv in CODE_COVERAGE_VALIDATORS ] + [ str(index) for index in six.moves.range(1, len(CODE_COVERAGE_VALIDATORS) + 1) ], arity='?')
 _configuration_type_info                                = CommandLine.EnumTypeInfo(list(six.iterkeys(CONFIGURATIONS)))
 
-_configuration_param_description                        = CommandLine.EntryPoint.Parameter("BugBug")
-_input_dir_param_descripiton                            = CommandLine.EntryPoint.Parameter("BugBug")
-_output_dir_param_description                           = CommandLine.EntryPoint.Parameter("BugBug")
-_test_type_param_description                            = CommandLine.EntryPoint.Parameter("BugBug")
-_execute_in_parallel_param_description                  = CommandLine.EntryPoint.Parameter("BugBug")
-_iterations_param_description                           = CommandLine.EntryPoint.Parameter("BugBug")
-_debug_on_error_param_description                       = CommandLine.EntryPoint.Parameter("BugBug")
-_continue_iterations_on_error_param_description         = CommandLine.EntryPoint.Parameter("BugBug")
-_code_coverage_param_description                        = CommandLine.EntryPoint.Parameter("BugBug")
-_debug_only_param_description                           = CommandLine.EntryPoint.Parameter("BugBug")
-_release_only_param_description                         = CommandLine.EntryPoint.Parameter("BugBug")
-_verbose_param_description                              = CommandLine.EntryPoint.Parameter("BugBug")
-_quiet_param_description                                = CommandLine.EntryPoint.Parameter("BugBug")
-_preserve_ansi_escape_sequences_param_description       = CommandLine.EntryPoint.Parameter("BugBug")
-_no_status_param_description                            = CommandLine.EntryPoint.Parameter("BugBug")
+_configuration_param_description                        = CommandLine.EntryPoint.Parameter("Name for a preconfigured set of a compiler, test parser, and test executor.")
+_input_dir_param_descripiton                            = CommandLine.EntryPoint.Parameter("Input directory used to search for input.")
+_output_dir_param_description                           = CommandLine.EntryPoint.Parameter("Output directory populated with execution results.")
+_test_type_param_description                            = CommandLine.EntryPoint.Parameter("Test type that specifies the types of tests to process.")
+_execute_in_parallel_param_description                  = CommandLine.EntryPoint.Parameter("Execute tests in parallel.")
+_iterations_param_description                           = CommandLine.EntryPoint.Parameter("Execute all tests N times.")
+_debug_on_error_param_description                       = CommandLine.EntryPoint.Parameter("Launch debugging functionality upon error (if supported by the compiler).")
+_continue_iterations_on_error_param_description         = CommandLine.EntryPoint.Parameter("Continue running iterations even when errors are encountered.")
+_code_coverage_param_description                        = CommandLine.EntryPoint.Parameter("Generate code coverage information when running tests.")
+_debug_only_param_description                           = CommandLine.EntryPoint.Parameter("Only build and execute debug variants.")
+_release_only_param_description                         = CommandLine.EntryPoint.Parameter("Only build and execute release variants.")
+_verbose_param_description                              = CommandLine.EntryPoint.Parameter("Verbose output.")
+_quiet_param_description                                = CommandLine.EntryPoint.Parameter("Quiet output.")
+_preserve_ansi_escape_sequences_param_description       = CommandLine.EntryPoint.Parameter("Preserve ansi escape sequences when generating output (useful when invoking this functionality from another script).")
+_no_status_param_description                            = CommandLine.EntryPoint.Parameter("Do not display progress bar status when building and executing.")
 
-_compiler_param_description                             = CommandLine.EntryPoint.Parameter("BugBug")
-_compiler_flag_param_description                        = CommandLine.EntryPoint.Parameter("BugBug")
+_compiler_param_description                             = CommandLine.EntryPoint.Parameter("The name or index of the compiler to use.")
+_compiler_flag_param_description                        = CommandLine.EntryPoint.Parameter("Custom flags passed when creating the compiler.")
 
-_test_parser_param_description                          = CommandLine.EntryPoint.Parameter("BugBug")
-_test_parser_flag_param_description                     = CommandLine.EntryPoint.Parameter("BugBug")
+_test_parser_param_description                          = CommandLine.EntryPoint.Parameter("The name or index of the test parser to use.")
+_test_parser_flag_param_description                     = CommandLine.EntryPoint.Parameter("Custom flags passed when creating the test parser.")
 
-_test_executor_param_description                        = CommandLine.EntryPoint.Parameter("BugBug")
-_test_executor_flag_param_description                   = CommandLine.EntryPoint.Parameter("BugBug")
+_test_executor_param_description                        = CommandLine.EntryPoint.Parameter("The name or index of the test executor to use.")
+_test_executor_flag_param_description                   = CommandLine.EntryPoint.Parameter("Custom flags passed when creating the test executor.")
 
-_code_coverage_validator_param_description              = CommandLine.EntryPoint.Parameter("BugBug")
-_code_coverage_validator_flag_param_description         = CommandLine.EntryPoint.Parameter("BugBug")
+_code_coverage_validator_param_description              = CommandLine.EntryPoint.Parameter("The name or index of the code coverage validator to use.")
+_code_coverage_validator_flag_param_description         = CommandLine.EntryPoint.Parameter("Custom flags passed when creating the code coverage validator.")
 
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint( configuration=_configuration_param_description,
-                         filename_or_dir=CommandLine.EntryPoint.Parameter("BugBug"),
+                         filename_or_dir=CommandLine.EntryPoint.Parameter("Filename or directory to test."),
                          output_dir=_output_dir_param_description,
                          test_type=_test_type_param_description,
                          execute_in_parallel=_execute_in_parallel_param_description,
@@ -1174,7 +1173,7 @@ def Test( configuration,
                        )
 
 # ----------------------------------------------------------------------
-@CommandLine.EntryPoint( filename=CommandLine.EntryPoint.Parameter("BugBug"),
+@CommandLine.EntryPoint( filename=CommandLine.EntryPoint.Parameter("Filename to test."),
                          iterations=_iterations_param_description,
                          debug_on_error=_debug_on_error_param_description,
                          continue_iterations_on_error=_continue_iterations_on_error_param_description,
@@ -1384,8 +1383,7 @@ def TestAll( input_dir,
 @CommandLine.Constraints( input_dir=CommandLine.DirectoryTypeInfo(),
                           test_type=CommandLine.StringTypeInfo(),
                           compiler=_compiler_type_info,
-                          compiler_flag=CommandLine.StringTypeInfo(arity='*'),
-                          output_stream=None,
+                          compiler_flag=CommandLine.DictTypeInfo(require_exact_match=False, arity='?'),                          output_stream=None,
                         )
 def MatchTests( input_dir,
                 test_type,
@@ -1395,7 +1393,115 @@ def MatchTests( input_dir,
                 verbose=False,
               ):
     """Matches tests to production code for tests found within 'test_type' subdirectories."""
-    pass # BugBug
+    
+    compiler = _GetFromCommandLineArg(compiler, COMPILERS, compiler_flag)
+    assert compiler
+
+    if not isinstance(compiler.InputTypeInfo, FilenameTypeInfo):
+        output_stream.write("Tests can only be matched for compilers that operate on individual files.\n")
+        return 0
+
+    output_stream = StreamDecorator(output_stream)
+
+    traverse_exclude_dir_names = [ "Generated", 
+                                   "Impl",
+                                   "Details",
+                                 ]
+
+    output_stream.write("Parsing '{}'...".format(input_dir))
+    with output_stream.DoneManager( suffix='\n',
+                                  ) as dm:
+        source_files = list(FileSystem.WalkFiles( input_dir,
+                                                  include_dir_paths=[ lambda fullpath: os.path.isdir(os.path.join(fullpath, test_type)), ],
+                                                  include_full_paths=[ compiler.IsSupported, ],
+                                                  exclude_file_names=[ "Build.py", ],
+                                                  traverse_exclude_dir_names=traverse_exclude_dir_names,
+                                                ))
+
+        test_items = ExtractTestItems( input_dir,
+                                       test_type,
+                                       compiler,
+                                       dm.stream if verbose else None,
+                                     )
+
+        # Remove any test items that correspond to sources that were explicitly removed.
+        # We want to run these tests, but don't want to report them as errors.
+
+        # ----------------------------------------------------------------------
+        def IsMissingTest(filename):
+            parts = filename.split(os.path.sep)
+
+            for part in parts:
+                if part in traverse_exclude_dir_names:
+                    return False
+
+            return True
+
+        # ----------------------------------------------------------------------
+
+        test_items = [ test_item for test_item in test_items if IsMissingTest(test_item) ]
+
+    output_stream.write(textwrap.dedent(
+        """\
+        Source Files:   {}
+        Test Files:     {}
+
+        """).format(len(source_files), len(test_items)))
+
+
+    output_template = "{source:<120} -> {test}\n"
+
+    verbose_stream = StreamDecorator(output_stream if verbose else None)
+
+    index = 0
+    while index < len(source_files):
+        source_filename = source_files[index]
+
+        test_item = compiler.ItemToTestName(source_filename, test_type)
+
+        if os.path.isfile(test_item):
+            # We can't be sure that the test is in the file, as multiple source files may map
+            # to the same test file (as in the case of headers with ".h" and ".hpp" extensions).
+            if test_item in test_items:
+                test_items.remove(test_item)
+
+            del source_files[index]
+
+            verbose_stream.write(output_template.format(source=source_filename, test=test_item))
+        else:
+            index += 1
+
+    verbose_stream.write("\n\n")
+
+    if source_files:
+        header = "{} without corresponding tests".format(inflect.no("source file", len(source_files)))
+
+        output_stream.write(textwrap.dedent(
+            """\
+            {header}
+            {sep}
+            {content}
+
+            """).format( header=header,
+                         sep='-' * len(header),
+                         content='\n'.join(source_files),
+                       ))
+
+    if test_items:
+        header = "{} with corresponding sources".format(inflect.no("test file", len(test_items)))
+
+        output_stream.write(textwrap.dedent(
+            """\
+            {header}
+            {sep}
+            {content}
+
+            """).format( header=header,
+                         sep='-' * len(header),
+                         content='\n'.join(test_items),
+                       ))
+
+    return 0 if not source_files and not test_items else -1
 
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint( input_dir=_input_dir_param_descripiton,
@@ -1433,7 +1539,7 @@ def MatchAllTests( input_dir,
         return dm.result
 
 # ----------------------------------------------------------------------
-@CommandLine.EntryPoint( filename=CommandLine.EntryPoint.Parameter("BugBug"),
+@CommandLine.EntryPoint( filename=CommandLine.EntryPoint.Parameter("Filename to execute."),
                          compiler=_compiler_param_description,
                          test_parser=_test_parser_param_description,
                          test_executor=_test_executor_param_description,
@@ -1634,6 +1740,7 @@ def CommandLineSuffix():
 
                                         
                                         A valid name or index may be used for these command line arguments:
+
                                             - <compiler>
                                             - <test_parser>
                                             - <test_executor>
@@ -1668,6 +1775,7 @@ def _GetFromCommandLineArg(arg, items, flags, allow_empty=False):
         item = next(item for item in items if item.Name == arg)
 
     assert item
+
     return item(**flags)
 
 # ----------------------------------------------------------------------
