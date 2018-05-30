@@ -31,6 +31,9 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 
 sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
 from RepositoryBootstrap.Impl import CommonEnvironmentImports
+
+FileSystem                                  = CommonEnvironmentImports.FileSystem
+
 del sys.path[0]
 
 # ----------------------------------------------------------------------
@@ -70,8 +73,8 @@ def OnCommitting(data, output_stream):
                 """).format( this=inflect.plural_adj("this", len(errors)).capitalize(),
                              file=inflect.plural("file", len(errors)),
                              is_=inflect.plural("is", len(errors)),
-                             size=CommonEnvironmentImports.FileSystem.GetSizeDisplay(max_size),
-                             errors='\n'.join([ "    - {} ({})".format(k, CommonEnvironmentImports.FileSystem.GetSizeDisplay(v)) for k, v in six.iteritems(errors) ]),
+                             size=FileSystem.GetSizeDisplay(max_size),
+                             errors='\n'.join([ "    - {} ({})".format(k, FileSystem.GetSizeDisplay(v)) for k, v in six.iteritems(errors) ]),
                            ))
 
             dm.result = -1
@@ -105,7 +108,7 @@ def OnCommitting(data, output_stream):
                     changes[item] = ItemInfo(item)
 
             for filename in itertools.chain(data.modified, data.added):
-                filename = CommonEnvironmentImports.FileSystem.TrimPath(filename, current_dir)
+                filename = FileSystem.TrimPath(filename, current_dir)
                 
                 if filename in changes:
                     changes[filename].Changed = True

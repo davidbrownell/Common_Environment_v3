@@ -23,7 +23,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
-from RepositoryBootstrap.Impl.CommonEnvironmentImports import CurrentShell
+from RepositoryBootstrap.SetupAndActivate import CurrentShell
 del sys.path[0]
 
 # <Class '<name>' has no '<attr>' member> pylint: disable = E1101

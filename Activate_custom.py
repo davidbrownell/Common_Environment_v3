@@ -28,7 +28,13 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 
 sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
 from RepositoryBootstrap.SetupAndActivate import DynamicPluginArchitecture
+
+# Note that other repositories can import CommonEnvironment directly.
 from RepositoryBootstrap.Impl import CommonEnvironmentImports
+
+CurrentShell                                = CommonEnvironmentImports.CurrentShell
+StringHelpers                               = CommonEnvironmentImports.StringHelpers
+
 del sys.path[0]
 
 # ----------------------------------------------------------------------
@@ -54,7 +60,7 @@ def GetCustomActions( output_stream,
 
     actions = []
 
-    Commands = CommonEnvironmentImports.CurrentShell.Commands
+    Commands = CurrentShell.Commands
 
     if fast:
         actions.append(Commands.Message("** FAST: Dynamic tester information has not been activated. ({}) **".format(_script_fullpath)))
@@ -66,11 +72,11 @@ def GetCustomActions( output_stream,
         os.environ["DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_VALIDATORS"] = ''
         os.environ["DEVELOPMENT_ENVIRONMENT_TESTER_CONFIGURATIONS"] = ''
 
-        actions += [ CommonEnvironmentImports.CurrentShell.Commands.Set("DEVELOPMENT_ENVIRONMENT_COMPILERS", None),
-                     CommonEnvironmentImports.CurrentShell.Commands.Set("DEVELOPMENT_ENVIRONMENT_TEST_EXECUTORS", None),
-                     CommonEnvironmentImports.CurrentShell.Commands.Set("DEVELOPMENT_ENVIRONMENT_TEST_PARSERS", None),
-                     CommonEnvironmentImports.CurrentShell.Commands.Set("DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_VALIDATORS", None),
-                     CommonEnvironmentImports.CurrentShell.Commands.Set("DEVELOPMENT_ENVIRONMENT_TESTER_CONFIGURATIONS", None),
+        actions += [ CurrentShell.Commands.Set("DEVELOPMENT_ENVIRONMENT_COMPILERS", None),
+                     CurrentShell.Commands.Set("DEVELOPMENT_ENVIRONMENT_TEST_EXECUTORS", None),
+                     CurrentShell.Commands.Set("DEVELOPMENT_ENVIRONMENT_TEST_PARSERS", None),
+                     CurrentShell.Commands.Set("DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_VALIDATORS", None),
+                     CurrentShell.Commands.Set("DEVELOPMENT_ENVIRONMENT_TESTER_CONFIGURATIONS", None),
                    ]
 
         actions += DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_COMPILERS",
@@ -123,7 +129,7 @@ def GetCustomScriptExtractors(shell):
         co = compile(open(script_filename, 'rb').read(), script_filename, "exec")
 
         if co and co.co_consts and isinstance(co.co_consts[0], six.string_types) and co.co_consts[0][0] != '_':
-            return CommonEnvironmentImports.StringHelpers.Wrap(co.co_consts[0], 100)
+            return StringHelpers.Wrap(co.co_consts[0], 100)
 
     # ----------------------------------------------------------------------
     def PowershellScriptWrapper(script_filename):

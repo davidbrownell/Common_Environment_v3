@@ -43,8 +43,8 @@ assert os.path.isdir(fundamental_repo), fundamental_repo
 
 sys.path.insert(0, fundamental_repo)
 from RepositoryBootstrap import *                                           # <Unused import> pylint: disable = W0614
+from RepositoryBootstrap.SetupAndActivate import CurrentShell               # <Unused import> pylint: disable = W0614
 from RepositoryBootstrap.SetupAndActivate.Configuration import *            # <Unused import> pylint: disable = W0614
-from RepositoryBootstrap.Impl.CommonEnvironmentImports import CurrentShell  # <Unused import> pylint: disable = W0614
 del sys.path[0]
 
 # ----------------------------------------------------------------------

@@ -35,7 +35,6 @@ fundamental_repo = os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL")
 assert os.path.isdir(fundamental_repo), fundamental_repo
 
 sys.path.insert(0, fundamental_repo)
-from RepositoryBootstrap.Impl.CommonEnvironmentImports import CurrentShell
 from RepositoryBootstrap.SetupAndActivate.Configuration import *
 del sys.path[0]
 
