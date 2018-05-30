@@ -23,12 +23,13 @@ from collections import OrderedDict
 
 import six
 
-from RepositoryBootstrap import Configuration
 from RepositoryBootstrap import Constants
 
 from RepositoryBootstrap.Impl import CommonEnvironmentImports
 from RepositoryBootstrap.Impl.EnvironmentBootstrap import EnvironmentBootstrap
 from RepositoryBootstrap.Impl import Utilities
+
+from RepositoryBootstrap.SetupAndActivate import Configuration
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable

@@ -29,7 +29,6 @@ import six
 
 import RepositoryBootstrap
 
-from RepositoryBootstrap.Configuration import Configuration
 from RepositoryBootstrap import Constants
 
 from RepositoryBootstrap.Impl import CommonEnvironmentImports
@@ -37,6 +36,8 @@ from RepositoryBootstrap.Impl.EnvironmentBootstrap import EnvironmentBootstrap
 from RepositoryBootstrap.Impl import Utilities
 
 from RepositoryBootstrap.Impl.ActivationActivity.PythonActivationActivity import PythonActivationActivity
+
+from RepositoryBootstrap.SetupAndActivate.Configuration import Configuration
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable

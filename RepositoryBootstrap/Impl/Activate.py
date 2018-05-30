@@ -24,7 +24,6 @@ from collections import OrderedDict
 import inflect as inflect_mod
 import six
 
-from RepositoryBootstrap import Configuration
 from RepositoryBootstrap import Constants
 
 from RepositoryBootstrap.Impl.ActivationData import ActivationData
@@ -36,6 +35,8 @@ from RepositoryBootstrap.Impl.ActivationActivity import ActivationActivity
 from RepositoryBootstrap.Impl.ActivationActivity.PythonActivationActivity import PythonActivationActivity
 from RepositoryBootstrap.Impl.ActivationActivity.ScriptsActivationActivity import ScriptsActivationActivity
 from RepositoryBootstrap.Impl.ActivationActivity.ToolsActivationActivity import ToolsActivationActivity
+
+from RepositoryBootstrap.SetupAndActivate import Configuration
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable

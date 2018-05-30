@@ -27,8 +27,8 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
+from RepositoryBootstrap.SetupAndActivate import DynamicPluginArchitecture
 from RepositoryBootstrap.Impl import CommonEnvironmentImports
-from RepositoryBootstrap.Impl import DynamicPluginArchitecture
 del sys.path[0]
 
 # ----------------------------------------------------------------------
