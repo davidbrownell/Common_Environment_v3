@@ -33,7 +33,7 @@ _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
-_SCM_NAMES                                  = [ scm.Name for scm in ALL_SCM_TYPES ]
+_SCM_NAMES                                  = [ _scm.Name for _scm in ALL_SCM_TYPES ]
 
 # <Missing function docstring> pylint: disable = C0111
 

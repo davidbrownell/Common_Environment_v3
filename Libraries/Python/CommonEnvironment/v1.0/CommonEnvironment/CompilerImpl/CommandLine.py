@@ -17,7 +17,6 @@
 import os
 import sys
 
-from CommonEnvironment import CommandLine as CECommandLine
 from CommonEnvironment import FileSystem
 
 # ----------------------------------------------------------------------
@@ -100,12 +99,12 @@ def CommandLineCleanOutputFilename(output_filename, output_stream):
 # ----------------------------------------------------------------------
 def _CommandLineImpl( compiler,
                       inputs,
-                      functor,              # def Func(context, output_stream) -> rval
+                      functor,                          # def Func(context, output_stream) -> rval
                       output_stream,
                       compiler_kwargs,
-                      output_via_stderr=False,
-                      output_start_line=None,
-                      output_end_line=None,
+                      output_via_stderr=False,          # <Unused variable> pylint: disable = W0613
+                      output_start_line=None,           # <Unused variable> pylint: disable = W0613
+                      output_end_line=None,             # <Unused variable> pylint: disable = W0613
                     ):
     assert compiler
     assert inputs
@@ -125,7 +124,7 @@ def _CommandLineImpl( compiler,
         dm.stream.write("\nGenerating context...")
         with dm.stream.DoneManager() as this_dm:
             try:
-                inputs = [ os.path.realpath(input) for input in inputs ]
+                inputs = [ os.path.realpath(input) for input in inputs ]    # <Redefinig built-in type> pylint: disable = W0622
 
                 contexts = list(compiler.GenerateContextItems(inputs, **compiler_kwargs))
             except Exception as ex:
@@ -138,7 +137,7 @@ def _CommandLineImpl( compiler,
                 else:
                     raise
 
-        for index, context in enumerate(contexts):
+        for context in contexts:
             dm.stream.flush()
 
             result = functor(context, dm.stream)

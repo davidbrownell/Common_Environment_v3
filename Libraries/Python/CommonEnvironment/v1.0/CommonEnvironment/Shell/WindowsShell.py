@@ -276,7 +276,9 @@ class WindowsShell(Shell):
             
             import re
 
-            import six.moves.cPickle as pickle
+            # <No name in module> pylint: disable = E0611
+            # <Unable to import> pylint: disable = F0401
+            import six.moves.cPickle as pickle          
 
             from CommonEnvironment import Process
 
@@ -338,7 +340,7 @@ class WindowsShell(Shell):
 
         # ----------------------------------------------------------------------
         @classmethod
-        def DeleteSymLink(cls, filename):
+        def DeleteSymLink(cls, filename, command_only=False):
             assert cls.IsSymLink(filename), filename
         
             if os.path.isdir(filename):
@@ -352,3 +354,4 @@ class WindowsShell(Shell):
                 return command_line
                 
             os.system(command_line)
+            return None
