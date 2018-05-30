@@ -46,7 +46,7 @@ inflect                                     = inflect_mod.engine()
 assert os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL")
 sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
 with CallOnExit(lambda: sys.path.pop(0)):
-    from RepositoryBootstrap.Impl import Constants as RepositoryBootstrapConstants
+    from RepositoryBootstrap import Constants as RepositoryBootstrapConstants
 
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint( delete_before=CommandLine.EntryPoint.Parameter("Delete files that are older than this value"),

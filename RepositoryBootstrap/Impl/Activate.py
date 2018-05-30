@@ -25,10 +25,10 @@ import inflect as inflect_mod
 import six
 
 from RepositoryBootstrap import Configuration
+from RepositoryBootstrap import Constants
 
 from RepositoryBootstrap.Impl.ActivationData import ActivationData
 from RepositoryBootstrap.Impl import CommonEnvironmentImports
-from RepositoryBootstrap.Impl import Constants
 from RepositoryBootstrap.Impl.EnvironmentBootstrap import EnvironmentBootstrap
 from RepositoryBootstrap.Impl import Utilities
 

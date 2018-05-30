@@ -19,8 +19,8 @@ import sys
 
 import inflect as inflect_mod
 
+from RepositoryBootstrap import Constants
 from RepositoryBootstrap.Impl import CommonEnvironmentImports
-from RepositoryBootstrap.Impl import Constants
 from RepositoryBootstrap.Impl.ActivationActivity import ActivationActivity
 
 # ----------------------------------------------------------------------

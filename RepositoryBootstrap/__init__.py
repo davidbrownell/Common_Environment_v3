@@ -26,7 +26,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 def GetFundamentalRepository():
     """Returns the location of the fundamental repository."""
 
-    from RepositoryBootstrap.Impl import Constants
+    from RepositoryBootstrap import Constants
 
     value = os.getenv(Constants.DE_FUNDAMENTAL_ROOT_NAME)
     if value is None:

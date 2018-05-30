@@ -24,8 +24,9 @@ import six
 import six.moves.cPickle as pickle
 
 import RepositoryBootstrap
+from RepositoryBootstrap import Constants
+
 from RepositoryBootstrap.Impl import CommonEnvironmentImports
-from RepositoryBootstrap.Impl import Constants
 from RepositoryBootstrap.Impl import Utilities
 
 # ----------------------------------------------------------------------

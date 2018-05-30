@@ -28,7 +28,7 @@ from RepositoryBootstrap.Impl.ActivationActivity.PythonActivationActivity import
 del sys.path[0]
 
 # For convenience, this script is taking all of the arguments that RepositoryBootstrap/Impl/Setup.py takes.
-# In order to decrease coupling, don't using CommandLine (which takes a concreate list of arguments), but
+# In order to decrease coupling, don't using CommandLine (which takes a concrete list of arguments), but
 # rather extract the arguments that we need from the actual args.
 
 verbose = False

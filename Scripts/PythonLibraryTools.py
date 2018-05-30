@@ -44,7 +44,7 @@ inflect                                     = inflect_mod.engine()
 
 sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
 with CallOnExit(lambda: sys.path.pop(0)):
-    from RepositoryBootstrap.Impl import Constants as RepositoryBootstrapConstants
+    from RepositoryBootstrap import Constants as RepositoryBootstrapConstants
     from RepositoryBootstrap.Impl.ActivationActivity.PythonActivationActivity import EASY_INSTALL_PTH_FILENAME, \
                                                                                      SCRIPTS_DIR_NAME, \
                                                                                      WRAPPERS_FILENAME, \

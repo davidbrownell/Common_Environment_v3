@@ -38,8 +38,8 @@ with CallOnExit(lambda: sys.path.pop(0)):
 
 sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
 with CallOnExit(lambda: sys.path.pop(0)):
+    from RepositoryBootstrap import Constants
     from RepositoryBootstrap.Impl.ActivationData import ActivationData
-    from RepositoryBootstrap.Impl import Constants
     from RepositoryBootstrap.Impl import Utilities
 
 # ----------------------------------------------------------------------

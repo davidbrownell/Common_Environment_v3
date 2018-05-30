@@ -246,9 +246,9 @@ def _Impl(ui, verb, json_content, is_debug):
     try:
         sys.path.insert(0, _fundamental_root)
 
+        from RepositoryBootstrap import Constants
         from RepositoryBootstrap.Impl import CommonEnvironmentImports
-        from RepositoryBootstrap.Impl import Constants
-
+        
         del sys.path[0]
     except:
         import traceback

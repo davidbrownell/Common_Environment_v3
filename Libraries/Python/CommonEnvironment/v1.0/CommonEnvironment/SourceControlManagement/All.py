@@ -83,7 +83,7 @@ def GetAnySCM( path,
 
         sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
         with CallOnExit(lambda: sys.path.pop(0)):
-            from RepositoryBootstrap.Impl import Constants as RepositoryBootstrapConstants
+            from RepositoryBootstrap import Constants as RepositoryBootstrapConstants
 
         root = path
         while True:
@@ -121,7 +121,7 @@ def EnumSCMs(path):
 
     sys.path.insert(0, os.getenv("DEVELOPMENT_ENVRIONMENT_FUNDAMENTAL"))
     with CallOnExit(lambda: sys.path.pop(0)):
-        from RepositoryBootstrap.Impl import Constants as RepositoryBootstrapConstants
+        from RepositoryBootstrap import Constants as RepositoryBootstrapConstants
 
     for root, directories, _ in os.walk(path):
         for scm in ALL_TYPES:

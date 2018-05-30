@@ -109,7 +109,7 @@ def EntryPoint( repo_dir,
             # Create the repo id
             sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
             with CallOnExit(lambda: sys.path.pop(0)):
-                from RepositoryBootstrap.Impl import Constants as RepositoryBootstrapConstants
+                from RepositoryBootstrap import Constants as RepositoryBootstrapConstants
 
             dest_filename = os.path.join(repo_dir, RepositoryBootstrapConstants.REPOSITORY_ID_FILENAME)
             if not os.path.exists(dest_filename):

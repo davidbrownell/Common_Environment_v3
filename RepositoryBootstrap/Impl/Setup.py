@@ -30,9 +30,9 @@ import six
 import RepositoryBootstrap
 
 from RepositoryBootstrap.Configuration import Configuration
+from RepositoryBootstrap import Constants
 
 from RepositoryBootstrap.Impl import CommonEnvironmentImports
-from RepositoryBootstrap.Impl import Constants
 from RepositoryBootstrap.Impl.EnvironmentBootstrap import EnvironmentBootstrap
 from RepositoryBootstrap.Impl import Utilities
 

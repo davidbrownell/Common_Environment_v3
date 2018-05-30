@@ -42,7 +42,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 
 sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
 with CallOnExit(lambda: sys.path.pop(0)):
-    from RepositoryBootstrap.Impl import Constants as RepositoryBootstrapConstants
+    from RepositoryBootstrap import Constants as RepositoryBootstrapConstants
     
 # ----------------------------------------------------------------------
 # |  

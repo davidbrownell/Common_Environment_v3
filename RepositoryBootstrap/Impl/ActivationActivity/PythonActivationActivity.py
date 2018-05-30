@@ -24,8 +24,8 @@ from collections import OrderedDict
 import inflect as inflect_mod
 import six
 
+from RepositoryBootstrap import Constants
 from RepositoryBootstrap.Impl import CommonEnvironmentImports
-from RepositoryBootstrap.Impl import Constants
 from RepositoryBootstrap.Impl.ActivationActivity import ActivationActivity
 
 # ----------------------------------------------------------------------
