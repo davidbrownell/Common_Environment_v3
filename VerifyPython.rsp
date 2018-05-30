@@ -1,0 +1,8 @@
+# Python sources to verify
+#
+#   Usage:
+#       PythonVerifier @VerifyPython.rsp
+#
+/input=Libraries\Python\CommonEnvironment\v1.0
+/input=RepositoryBootstrap
+/input=Scripts

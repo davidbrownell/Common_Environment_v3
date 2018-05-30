@@ -524,8 +524,15 @@ class Executor(object):
                                    verbose=verbose,
                                  )
 
+            arg_strings = []
+
             with open(filename) as f:
-                arg_strings = [ line.strip() for line in f.readlines() if line.strip() ]
+                for line in f.readlines():
+                    line = line.strip()
+                    if not line or line.startswith('#'):
+                        continue
+
+                    arg_strings.append(line)
 
         # Parse the command line
         result = self._ParseCommandLine(entry_point, arg_strings)

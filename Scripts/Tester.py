@@ -56,7 +56,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 assert os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL")
 sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
 with CallOnExit(lambda: sys.path.pop(0)):
-    from RepositoryBootstrap.Impl import DynamicPluginArchitecture as DPA
+    from RepositoryBootstrap.SetupAndActivate import DynamicPluginArchitecture as DPA
 
 # ----------------------------------------------------------------------
 StreamDecorator.InitAnsiSequenceStreams()
