@@ -498,16 +498,18 @@ valid-metaclass-classmethod-first-arg=mcs
 
 # Maximum number of arguments for function / method
 #  original: max-args=5
-max-args=10
+max-args=15
 
 # Maximum number of attributes for a class (see R0902).
-max-attributes=7
+# original: max-attributes=7
+max-attributes=15
 
 # Maximum number of boolean expressions in a if statement
 max-bool-expr=5
 
 # Maximum number of branch for function / method body
-max-branches=12
+# original: max-branches=12
+max-branches=20
 
 # Maximum number of locals for function / method body
 max-locals=15
@@ -519,13 +521,15 @@ max-parents=7
 max-public-methods=20
 
 # Maximum number of return / yield for function / method body
-max-returns=6
+# original: max-returns=6
+max-returns=10
 
 # Maximum number of statements in function / method body
 max-statements=50
 
 # Minimum number of public methods for a class (see R0903).
-min-public-methods=2
+# original: min-public-methods=2
+min-public-methods=1
 
 
 [IMPORTS]

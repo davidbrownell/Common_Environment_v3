@@ -23,7 +23,6 @@ import tempfile
 import textwrap
 import threading
 import time
-import traceback
 
 from collections import OrderedDict, namedtuple
 
@@ -35,7 +34,6 @@ from CommonEnvironment import Nonlocals, ObjectStrImpl
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CommandLine
 from CommonEnvironment import FileSystem
-from CommonEnvironment import Process
 from CommonEnvironment.Shell.All import CurrentShell
 from CommonEnvironment import StringHelpers
 from CommonEnvironment.StreamDecorator import StreamDecorator
@@ -59,6 +57,8 @@ with CallOnExit(lambda: sys.path.pop(0)):
     from RepositoryBootstrap.SetupAndActivate import DynamicPluginArchitecture as DPA
 
 # ----------------------------------------------------------------------
+# <Too many lines in module> pylint: disable = C0302
+
 StreamDecorator.InitAnsiSequenceStreams()
 inflect                                     = inflect_mod.engine()
 
@@ -75,6 +75,7 @@ def _LoadCompilerFromModule(mod):
             return result
 
     assert False, mod
+    return None
 
 # ----------------------------------------------------------------------
 
@@ -82,8 +83,6 @@ COMPILERS                                   = [ _LoadCompilerFromModule(mod) for
 TEST_EXECUTORS                              = [ mod.TestExecutor for mod in DPA.EnumeratePlugins("DEVELOPMENT_ENVIRONMENT_TEST_EXECUTORS") ]
 TEST_PARSERS                                = [ mod.TestParser for mod in DPA.EnumeratePlugins("DEVELOPMENT_ENVIRONMENT_TEST_PARSERS") ]
 CODE_COVERAGE_VALIDATORS                    = [ mod.CodeCoverageValidator for mod in DPA.EnumeratePlugins("DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_VALIDATORS") ]
-
-CONFIGURATIONS                              = OrderedDict()
 
 # Extract configuration-specific information from other repositories. This ensures that this file,
 # which is in the fundamental repo, doesn't take a dependency on repos that depend on this one.
@@ -93,119 +92,130 @@ CONFIGURATIONS                              = OrderedDict()
 #
 #       "<configuration name>-<compiler|test_parser|code_coverage>-<value>"
 
-custom_configurations = os.getenv("DEVELOPMENT_ENVIRONMENT_TESTER_CONFIGURATIONS")
-if custom_configurations:
-    # ----------------------------------------------------------------------
-    class Configuration(object):
+# ----------------------------------------------------------------------
+def _CreateConfigurations():
+    configurations = OrderedDict()
+
+    custom_configurations = os.getenv("DEVELOPMENT_ENVIRONMENT_TESTER_CONFIGURATIONS")
+    if custom_configurations:
         # ----------------------------------------------------------------------
-        @classmethod
-        def Create( cls,
-                    configuration_name,
-                    compiler_name,
-                    test_parser_name,
-                    coverage_executor_name,    
-                    coverage_validator_name,
-                  ):
-            compiler = next((compiler for compiler in COMPILERS if compiler.Name == compiler_name), None)
-            if compiler is None:
-                raise Exception("The compiler '{}' used in the configuration '{}' does not exist".format(compiler_name, configuration_name))
-
-            test_parser = next((test_parser for test_parser in TEST_PARSERS if test_parser.Name == test_parser_name), None)
-            if test_parser is None:
-                raise Exception("The test parser '{}' used in the configuration '{}' does not exist".format(test_parser_name, configuration_name))
-
-            if coverage_executor_name:
-                coverage_executor = next((executor for executor in TEST_EXECUTORS if executor.Name == coverage_executor_name), None)
-                if coverage_executor is None:
-                    raise Exception("The test executor '{}' used in the configuration '{}' does not exist".format(coverage_executor_name, configuration_name))
-            else:
-                coverage_executor = None
-
-            if coverage_validator_name:
-                coverage_validator = next((validator for validator in CODE_COVERAGE_VALIDATORS if validator.Name == coverage_validator_name), None)
-                if coverage_validator is None:
-                    raise Exception("The coverage validator '{}' used in the configuration '{}' does not exist".format(coverage_validator_name, configuration_name))
-            else:
-                coverage_validator = None
-
-            return cls( compiler, 
-                        test_parser, 
-                        coverage_executor,
-                        coverage_validator,
-                      )
-
+        class Configuration(object):
+            # ----------------------------------------------------------------------
+            @classmethod
+            def Create( cls,
+                        configuration_name,
+                        compiler_name,
+                        test_parser_name,
+                        coverage_executor_name,    
+                        coverage_validator_name,
+                      ):
+                compiler = next((compiler for compiler in COMPILERS if compiler.Name == compiler_name), None)
+                if compiler is None:
+                    raise Exception("The compiler '{}' used in the configuration '{}' does not exist".format(compiler_name, configuration_name))
+    
+                test_parser = next((test_parser for test_parser in TEST_PARSERS if test_parser.Name == test_parser_name), None)
+                if test_parser is None:
+                    raise Exception("The test parser '{}' used in the configuration '{}' does not exist".format(test_parser_name, configuration_name))
+    
+                if coverage_executor_name:
+                    coverage_executor = next((executor for executor in TEST_EXECUTORS if executor.Name == coverage_executor_name), None)
+                    if coverage_executor is None:
+                        raise Exception("The test executor '{}' used in the configuration '{}' does not exist".format(coverage_executor_name, configuration_name))
+                else:
+                    coverage_executor = None
+    
+                if coverage_validator_name:
+                    coverage_validator = next((validator for validator in CODE_COVERAGE_VALIDATORS if validator.Name == coverage_validator_name), None)
+                    if coverage_validator is None:
+                        raise Exception("The coverage validator '{}' used in the configuration '{}' does not exist".format(coverage_validator_name, configuration_name))
+                else:
+                    coverage_validator = None
+    
+                return cls( compiler, 
+                            test_parser, 
+                            coverage_executor,
+                            coverage_validator,
+                          )
+    
+            # ----------------------------------------------------------------------
+            def __init__( self, 
+                          compiler, 
+                          test_parser, 
+                          optional_coverage_executor,
+                          optional_code_coverage_validator=None,
+                        ):
+                assert compiler
+                assert test_parser
+    
+                self.Compiler                               = compiler()
+                self.TestParser                             = test_parser()
+                self.OptionalCoverageExecutor               = optional_coverage_executor() if optional_coverage_executor else None
+                self.OptionalCodeCoverageValidator          = optional_code_coverage_validator() if optional_code_coverage_validator else None
+    
         # ----------------------------------------------------------------------
-        def __init__( self, 
-                      compiler, 
-                      test_parser, 
-                      optional_coverage_executor,
-                      optional_code_coverage_validator=None,
-                    ):
-            assert compiler
-            assert test_parser
+                          
+        regex = re.compile(textwrap.dedent(
+            # <Wrong hanging indentation> pylint: disable = C0330
+           r"""(?#
+                        )\s*"?(?#
+            Name        )(?P<name>.+?)(?#
+                        )\s*-\s*(?#
+            Type        )(?P<type>(?:compiler|test_parser|coverage_executor|coverage_validator))(?#
+                        )\s*-\s*(?#
+            Value       )(?P<value>[^"]+)(?#
+                        )"?\s*(?#
+            )"""))
+    
+        configuration_map = OrderedDict()
+    
+        for configuration in [ item for item in custom_configurations.split(CurrentShell.EnvironmentVariableDelimiter) if item.strip() ]:
+            match = regex.match(configuration)
+            assert match, configuration
+    
+            configuration_name = match.group("name").lower()
+            type_ = match.group("type")
+            value = match.group("value")
+    
+            if configuration_name not in configuration_map:
+                configuration_map[configuration_name] = {}
+    
+            if type_ in configuration_map[configuration_name]:
+                if not isinstance(configuration_map[configuration_name][type_], list):
+                    configuration_map[configuration_name][type_] = [ configuration_map[configuration_name][type_], ]
+    
+                configuration_map[configuration_name][type_].append(value)
+            else:
+                configuration_map[configuration_name][type_] = value
+    
+        for item_key, item_map in six.iteritems(configuration_map):
+            # compiler and test parser are required
+            if "compiler" not in item_map or "test_parser" not in item_map:
+                continue
+    
+            if isinstance(item_map["compiler"], list):
+                compiler_info = [ ( "{}-{}".format(item_key, compiler),
+                                    compiler,
+                                  ) for compiler in item_map["compiler"]
+                                ]
+            elif isinstance(item_map["compiler"], six.string_types):
+                compiler_info = [ ( item_key, item_map["compiler"] ),
+                                ]
+            else:
+                assert False, type(item_map["compiler"])
+    
+            for compiler_key, compiler in compiler_info:
+                configurations[compiler_key] = Configuration.Create( compiler_key,
+                                                                     compiler, 
+                                                                     item_map["test_parser"],
+                                                                     item_map.get("coverage_executor", None),
+                                                                     item_map.get("coverage_validator", None),
+                                                                   )
+    return configurations
 
-            self.Compiler                               = compiler()
-            self.TestParser                             = test_parser()
-            self.OptionalCoverageExecutor               = optional_coverage_executor() if optional_coverage_executor else None
-            self.OptionalCodeCoverageValidator          = optional_code_coverage_validator() if optional_code_coverage_validator else None
+# ----------------------------------------------------------------------
 
-    # ----------------------------------------------------------------------
-                      
-    regex = re.compile(textwrap.dedent(
-       r"""(?#
-                    )\s*"?(?#
-        Name        )(?P<name>.+?)(?#
-                    )\s*-\s*(?#
-        Type        )(?P<type>(?:compiler|test_parser|coverage_executor|coverage_validator))(?#
-                    )\s*-\s*(?#
-        Value       )(?P<value>[^"]+)(?#
-                    )"?\s*(?#
-        )"""))
-
-    configuration_map = OrderedDict()
-
-    for configuration in [ item for item in custom_configurations.split(CurrentShell.EnvironmentVariableDelimiter) if item.strip() ]:
-        match = regex.match(configuration)
-        assert match, configuration
-
-        configuration_name = match.group("name").lower()
-        type_ = match.group("type")
-        value = match.group("value")
-
-        if configuration_name not in configuration_map:
-            configuration_map[configuration_name] = {}
-
-        if type_ in configuration_map[configuration_name]:
-            if not isinstance(configuration_map[configuration_name][type_], list):
-                configuration_map[configuration_name][type_] = [ configuration_map[configuration_name][type_], ]
-
-            configuration_map[configuration_name][type_].append(value)
-        else:
-            configuration_map[configuration_name][type_] = value
-
-    for key, item_map in six.iteritems(configuration_map):
-        # compiler and test parser are required
-        if "compiler" not in item_map or "test_parser" not in item_map:
-            continue
-
-        if isinstance(item_map["compiler"], list):
-            compiler_info = [ ( "{}-{}".format(key, compiler),
-                                compiler,
-                              ) for compiler in item_map["compiler"]
-                            ]
-        elif isinstance(item_map["compiler"], six.string_types):
-            compiler_info = [ ( key, item_map["compiler"] ),
-                            ]
-        else:
-            assert False, type(item_map["compiler"])
-
-        for key, compiler in compiler_info:
-            CONFIGURATIONS[key] = Configuration.Create( key,
-                                                        compiler, 
-                                                        item_map["test_parser"],
-                                                        item_map.get("coverage_executor", None),
-                                                        item_map.get("coverage_validator", None),
-                                                      )
+CONFIGURATIONS                              = _CreateConfigurations()
+del _CreateConfigurations
 
 # ----------------------------------------------------------------------
 # |  
@@ -354,7 +364,7 @@ class Results(object):
         for index, (execute_result, test_parse_result, coverage_validation_result) in enumerate(zip( self.execute_results,
                                                                                                      self.test_parse_results,
                                                                                                      self.coverage_validation_results,
-                                                                                                    )):
+                                                                                                   )):
             if not execute_result and not test_parse_result and not coverage_validation_result:
                 continue
 
@@ -363,6 +373,7 @@ class Results(object):
 
             if execute_result:
                 results.append(StringHelpers.LeftJustify( textwrap.dedent(
+                                                            # <Wrong hanging indentation> pylint: disable = C0330
                                                             """\
                                                                 Test Execution Result:                      {test_result}
                                                                 Test Execution Log Filename:                {test_log}
@@ -378,6 +389,7 @@ class Results(object):
 
             if test_parse_result:
                 results.append(StringHelpers.LeftJustify( textwrap.dedent(
+                                                            # <Wrong hanging indentation> pylint: disable = C0330
                                                             """\
                                                             Test Parse Result:                          {test_parse_result}
                                                             Test Parse Time:                            {test_parse_time}
@@ -391,6 +403,7 @@ class Results(object):
 
             if execute_result and execute_result.CoverageResult is not None:
                 results.append(StringHelpers.LeftJustify( textwrap.dedent(
+                                                            # <Wrong hanging indentation> pylint: disable = C0330
                                                             """\
                                                             Code Coverage Result:                       {result}
                                                             Code Coverage Log Filename:                 {log}
@@ -412,6 +425,7 @@ class Results(object):
 
             if coverage_validation_result:
                 results.append(StringHelpers.LeftJustify( textwrap.dedent(
+                                                            # <Wrong hanging indentation> pylint: disable = C0330
                                                             """\
                                                             Code Coverage Validation Result:            {result}
                                                             Code Coverage Validation Time:              {time}
@@ -577,10 +591,10 @@ def ExtractTestItems( input_dir,
     elif isinstance(compiler.InputTypeInfo, DirectoryTypeInfo):
         search_string = ".{}.".format(test_subdir)
 
-        for root, filenames in FileSystem.WalkDirs( input_dir,
-                                                    include_dir_names=[ lambda d: search_string in d ],
-                                                    traverse_exclude_dir_names=traverse_exclude_dir_names,
-                                                  ):
+        for root, _ in FileSystem.WalkDirs( input_dir,
+                                            include_dir_names=[ lambda d: search_string in d ],
+                                            traverse_exclude_dir_names=traverse_exclude_dir_names,
+                                          ):
             if os.path.exists(TEST_IGNORE_FILENAME_TEMPLATE.format(root)):
                 continue
 
@@ -618,7 +632,7 @@ def GenerateTestResults( test_items,
     assert test_parser
     assert iterations > 0, iterations
     assert output_stream
-    assert max_num_concurrent_tasks > 1, max_num_concurrent_task
+    assert max_num_concurrent_tasks > 1, max_num_concurrent_tasks
 
     # Check for congruent plugins
     result = compiler.ValidateEnvironment()
@@ -740,7 +754,7 @@ def GenerateTestResults( test_items,
             configuration_results = working_data.complete_result.debug
 
         if configuration_results.compiler_context is None:
-            return
+            return None
 
         if not no_status:
             on_status_update("Waiting")
@@ -814,9 +828,7 @@ def GenerateTestResults( test_items,
     # |  Execute
     
     # ----------------------------------------------------------------------
-    def TestThreadProc( task_index, 
-                        output_stream, 
-                        on_status_update,
+    def TestThreadProc( on_status_update,
                         working_data,
                         configuration_results,
                         configuration,
@@ -834,7 +846,7 @@ def GenerateTestResults( test_items,
             # ----------------------------------------------------------------------
             def WriteLog(log_name, content):
                 if content is None:
-                    return
+                    return None
 
                 log_filename = os.path.join( working_data.output_dir,
                                              configuration,
@@ -976,9 +988,8 @@ def GenerateTestResults( test_items,
             assert False, configuration
 
         # ----------------------------------------------------------------------
+        # <Wrong hanging indentation> pylint: disable = C0330
         def TestThreadProcWrapper( # The first args must be named explicitly as TaskPool is using Interface.CreateCulledCallback
-                                   task_index, 
-                                   output_stream, 
                                    on_status_update,
 
                                    # Capture these values
@@ -987,9 +998,7 @@ def GenerateTestResults( test_items,
                                    configuration=configuration,
                                    iteration=iteration,
                                  ):
-            return TestThreadProc( task_index, 
-                                   output_stream, 
-                                   on_status_update,
+            return TestThreadProc( on_status_update,
                                    working_data,
                                    configuration_results,
                                    configuration,
@@ -1002,8 +1011,8 @@ def GenerateTestResults( test_items,
                                                             configuration,
                                                             '' if iterations == 1 else " <Iteration {}>".format(iteration + 1),
                                                           ),
-                                         TestThreadProcWrapper,
-                                       ))
+                                        TestThreadProcWrapper,
+                                      ))
 
     # ----------------------------------------------------------------------
 
@@ -1121,7 +1130,7 @@ def Test( configuration,
           quiet=False,
           preserve_ansi_escape_sequences=False,
           no_status=False,
-       ):
+        ):
     """Tests the given input"""
     
     configuration = CONFIGURATIONS[configuration]
@@ -1275,7 +1284,7 @@ def TestType( configuration,
               quiet=False,
               preserve_ansi_escape_sequences=False,
               no_status=False,
-       ):
+            ):
     """Run tests for the test type with the specified configuration"""
     
     return Test( configuration,
@@ -1710,6 +1719,7 @@ def ExecuteTree( input_dir,
 # ----------------------------------------------------------------------
 def CommandLineSuffix():
     return StringHelpers.LeftJustify( textwrap.dedent(
+                                        # <Wrong hanging indentation> pylint: disable = C0330
                                         """\
                                         Where...
 

@@ -137,13 +137,13 @@ def EntryPoint( delete_before=datetime.timedelta(days=7),
                 {files}
 
                 ? ({total_size}) [y/N] """).format( files='\n'.join([ "    {name:<26}  {type:18}  {size:<17}  {age:<30}  {fullpath}".format( name=fi.Name,
-                                                                                                                                            type=fi.Type,
-                                                                                                                                            size=FileSystem.GetSizeDisplay(fi.Size),
-                                                                                                                                            age=str(fi.Age),
-                                                                                                                                            fullpath=fi.Fullpath,
-                                                                                                                                          )
-                                                                     for fi in file_infos
-                                                                   ]),
+                                                                                                                                             type=fi.Type,
+                                                                                                                                             size=FileSystem.GetSizeDisplay(fi.Size),
+                                                                                                                                             age=str(fi.Age),
+                                                                                                                                             fullpath=fi.Fullpath,
+                                                                                                                                           )
+                                                                      for fi in file_infos
+                                                                    ]),
                                                     total_size=FileSystem.GetSizeDisplay(total_size),
                                                   ))
 

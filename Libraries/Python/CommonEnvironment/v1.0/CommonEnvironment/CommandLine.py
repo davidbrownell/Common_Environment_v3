@@ -26,12 +26,14 @@ from collections import OrderedDict
 import six
 import wrapt
 
+# <Unused import> pylint: disable = W0614
+
 import CommonEnvironment
 from CommonEnvironment.Constraints import Constraints
 from CommonEnvironment import StringHelpers
 from CommonEnvironment.StreamDecorator import StreamDecorator
 from CommonEnvironment.TypeInfo import ValidationException
-from CommonEnvironment.TypeInfo.All import *
+from CommonEnvironment.TypeInfo.All import *                                # <Wildcard import> pylint: disable = W0401
 from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import StringSerialization
 
 # ----------------------------------------------------------------------
@@ -89,7 +91,7 @@ class EntryPoint(object):
 
     # ----------------------------------------------------------------------
     # |  Public Types
-
+    # <Too few public methods> pylint: disable = R0903
     class Parameter(object):
         """Information about a parameter made available on the commend line."""
         def __init__( self,
@@ -141,7 +143,9 @@ class EntryPointInformation(object):
     # ----------------------------------------------------------------------
     # |  Public Types
     class ParameterInfo(object):
-        class NoDefault(object): pass
+        # <Too few public methods> pylint: disable = R0903
+        class NoDefault(object): 
+            pass
 
         # ----------------------------------------------------------------------
         def __init__( self,
@@ -155,7 +159,7 @@ class EntryPointInformation(object):
                       is_required,
                       is_switch,
                       default_value,
-                   ):
+                    ):
             self.TypeInfo                   = type_info
             self.Name                       = name
             self.Description                = description
@@ -290,6 +294,7 @@ class EntryPointInformation(object):
             if arg in entry_point_decorator_names:
                 entry_point_decorator_names.remove(arg)
 
+            # <Too many boolean expressions in if statement> pylint: disable = R0916
             if ( (self.ConstraintsDecorator and arg in self.ConstraintsDecorator.Preconditions and self.ConstraintsDecorator.Preconditions[arg] is None) or
                  (arg in self.EntryPointDecorator.Parameters and (entry_point_decorator.Parameters[arg] is None or entry_point_decorator.Parameters[arg].Ignore))
                ):
@@ -396,7 +401,7 @@ class EntryPointInformation(object):
     @staticmethod
     def _GetArgSpec(function):
         if sys.version_info[0] == 2:
-            return inspect.getargspec(function)
+            return inspect.getargspec(function)         # <Using deprecated method> pylint: disable = W1505
         
         return inspect.getfullargspec(function)
 
@@ -405,6 +410,7 @@ class Executor(object):
     """Command line processor and invoker."""
 
     # ----------------------------------------------------------------------
+    # <Too many arguments> pylint: disable = R0913
     def __init__( self,
                   args=sys.argv,
                   command_line_arg_prefix='/',
@@ -434,6 +440,7 @@ class Executor(object):
             raise Exception("No entry points were provided or found")
 
         self._keyword_regex = re.compile(textwrap.dedent(
+                                            # <Wrong hanging indentation> pylint: disable = C0330
                                            r"""^(?#
                                             Prefix:             )\s*{prefix}(?#
                                             Tag:                )(?P<tag>\S+?)(?#
@@ -443,9 +450,10 @@ class Executor(object):
                                             [optional end]      ))?(?#
                                             )$""").format( prefix=re.escape(self.CommandLineArgPrefix),
                                                            separator=re.escape(self.CommandLineKeywordSeparator),
-                                                        ))
+                                                         ))
 
         self._dict_regex = re.compile(textwrap.dedent(
+                                            # <Wrong hanging indentation> pylint: disable = C0330
                                            r"""^(?#
                                             Tag:                )\s*(?P<tag>.+?)(?#
                                             Sep:                )\s*(?<!\\){separator}\s*(?#
@@ -779,7 +787,7 @@ class Executor(object):
 
                     argument_values[parameter.Name][tag].append(value)
 
-                return
+                return None
 
             if parameter.IsSwitch:
                 # Preserve the value as a string so it can be deserialized below
@@ -824,6 +832,8 @@ class Executor(object):
 
             else:
                 assert False
+
+            return None
 
         # ----------------------------------------------------------------------
         def ApplyPositionalArgument(parameter, arg):

@@ -79,7 +79,7 @@ class TestParserImpl(Interface):
 
         if "inputs" in context:
             assert context["inputs"]
-            assert isisntance(context["inputs"], list), context["inputs"]
+            assert isinstance(context["inputs"], list), context["inputs"]
             return context["inputs"][0]
 
         raise Exception("Unknown input")

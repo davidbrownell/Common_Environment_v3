@@ -41,7 +41,7 @@ class CodeCoverageValidator(CodeCoverageValidatorImpl):
     def __init__( self,
                   min_code_coverage_percentage=DEFAULT_MIN_CODE_COVERAGE_PERCENTAGE,
                 ):
-        super(CodeCoverageValidatorImpl, self).__init__()
+        super(CodeCoverageValidator, self).__init__()
 
         self._min_code_coverage_percentage  = min_code_coverage_percentage
         assert self._min_code_coverage_percentage >= 0.0 and self._min_code_coverage_percentage <= 100.0, self._min_code_coverage_percentage
