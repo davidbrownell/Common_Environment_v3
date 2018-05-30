@@ -595,9 +595,11 @@ def _SetupScmHooks( shell,
         if not config.has_section("hooks"):
             config.add_section("hooks")
 
-        config.set("hooks", "pretxncommit.CommonEnvironment", "python:{}:PreTxnCommit".format(hooks_filename))
-        config.set("hooks", "preoutgoing.CommonEnvironment", "python:{}:PreOutgoing".format(hooks_filename))
-        config.set("hooks", "pretxnchangegroup.CommonEnvironment", "python:{}:PreTxnChangeGroup".format(hooks_filename))
+        relative_hooks_filename = CommonEnvironmentImports.FileSystem.GetRelativePath(repository_root, hooks_filename)
+
+        config.set("hooks", "pretxncommit.CommonEnvironment", "python:{}:PreTxnCommit".format(relative_hooks_filename))
+        config.set("hooks", "preoutgoing.CommonEnvironment", "python:{}:PreOutgoing".format(relative_hooks_filename))
+        config.set("hooks", "pretxnchangegroup.CommonEnvironment", "python:{}:PreTxnChangeGroup".format(relative_hooks_filename))
 
         backup_hg_filename = "{}.bak".format(potential_hg_filename)
         if os.path.isfile(potential_hg_filename) and not os.path.isfile(backup_hg_filename):
