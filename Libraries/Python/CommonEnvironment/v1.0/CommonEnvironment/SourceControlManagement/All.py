@@ -20,7 +20,7 @@ import textwrap
 
 from CommonEnvironment.CallOnExit import CallOnExit
 
-# TODO: from CommonEnvironment.SourceControlManagement.GitSourceControlManagement import GitSourceControlManagement
+from CommonEnvironment.SourceControlManagement.GitSourceControlManagement import GitSourceControlManagement
 from CommonEnvironment.SourceControlManagement.MercurialSourceControlManagement import MercurialSourceControlManagement
 
 # ----------------------------------------------------------------------
@@ -33,7 +33,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # |  Public Types
 # |  
 # ----------------------------------------------------------------------
-ALL_TYPES                                   = [ # TODO: GitSourceControlManagement,
+ALL_TYPES                                   = [ GitSourceControlManagement,
                                                 MercurialSourceControlManagement,
                                               ]
 

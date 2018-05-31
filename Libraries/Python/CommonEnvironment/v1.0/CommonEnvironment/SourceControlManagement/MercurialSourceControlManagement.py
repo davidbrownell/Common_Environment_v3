@@ -134,7 +134,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
         if os.path.isdir(output_dir):
             raise Exception("The directory '{}' already exists and will not be overwritten".format(output_dir))
 
-        os.makedirs(output_dir)
+        FileSystem.MakeDirs(output_dir)
         return cls.Execute(os.getcwd(), 'hg init "{}"'.format(output_dir))
 
     # ----------------------------------------------------------------------
@@ -344,6 +344,12 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
             source_branch = cls._GetBranchAssociatedWithChange(repo_root, source_merge_arg.Change)
             additional_filters.append("{}::".format(source_merge_arg.Change))
 
+        elif isinstance(source_merge_arg, DateUpdateMergeArg):
+            source_branch = cls.GetCurrentBranch(repo_root)
+            additional_filters.append("date('{}{}')".format( GetDateOperator(source_merge_arg.GreaterThan),
+                                                             StringSerialization.SerializeItem(DateTimeTypeInfo(), source_merge_arg.Date, microseconds=False),
+                                                           ))
+
         elif isinstance(source_merge_arg, BranchAndDateUpdateMergeArg):
             source_branch = source_merge_arg.Branch
             additional_filters.append("date('{}{}')".format( GetDateOperator(source_merge_arg.GreaterThan),
@@ -381,7 +387,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
         else:
             changes = [ None, ]
 
-        filenames = []
+        filenames = set()
 
         for change in changes:
             command_line = command_line_template.format(change=change)
@@ -394,9 +400,9 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
 
                 filename = os.path.join(repo_root, line[2:])
                 if filename not in filenames:
-                    filenames.append(filename)
+                    filenames.add(filename)
 
-        return filenames
+        return sorted(filenames)
 
     # ----------------------------------------------------------------------
     @classmethod
@@ -568,7 +574,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
     # ----------------------------------------------------------------------
     @classmethod
     def _AddFilesImpl(cls, repo_root, filenames):
-        return cls.Execute(repo_root, 'hg add{}'.format(' '.join([ '"{}"'.format(filename) for filename in filenames ])))
+        return cls.Execute(repo_root, 'hg add {}'.format(' '.join([ '"{}"'.format(filename) for filename in filenames ])))
 
     # ----------------------------------------------------------------------
     @classmethod
