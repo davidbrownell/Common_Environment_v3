@@ -104,22 +104,6 @@ class SourceControlManagement(Interface):
         raise Exception("Abstract method")
 
     # ----------------------------------------------------------------------
-    @staticmethod 
-    @abstractmethod
-    def GetRoot(repo_dir):
-        """
-        Returns the root directory of the repository associated with the provided directory
-        using conventions specific to the SCM.
-        """
-        raise Exception("Abstract method")
-    
-    # ----------------------------------------------------------------------
-    @classmethod
-    def IsRoot(cls, repo_dir):
-        """Returns True if the given dir is the root dir for the repository"""
-        return cls.IsAvailable() and cls.IsActive(repo_dir) and cls.GetRoot(repo_dir) == repo_dir
-
-    # ----------------------------------------------------------------------
     @staticmethod
     @abstractmethod
     def Create(output_dir):
@@ -148,38 +132,20 @@ class SourceControlManagement(Interface):
         raise Exception("Abstract method")
 
     # ----------------------------------------------------------------------
-    @staticmethod
+    @staticmethod 
     @abstractmethod
-    def HasUntrackedWorkingChanges(repo_root):
-        """Returns True if there are changes to files that are not tracked in the local working directory."""
+    def GetRoot(repo_dir):
+        """
+        Returns the root directory of the repository associated with the provided directory
+        using conventions specific to the SCM.
+        """
         raise Exception("Abstract method")
-
+    
     # ----------------------------------------------------------------------
-    @staticmethod
-    @abstractmethod
-    def HasWorkingChanges(repo_root):
-        """Returns True if there are changes to files in the local working directory."""
-        raise Exception("Abstract method")
-
-    # ----------------------------------------------------------------------
-    GetWorkingChangeStatusResult            = namedtuple( "GetWorkingChangeStatusResult",
-                                                          [ "untracked",
-                                                            "working",
-                                                            
-                                                          ],
-                                                        )
-
     @classmethod
-    @extensionmethod
-    def GetWorkingChangeStatus(cls, repo_root):
-        """
-        Returns information about local change status. Derived implementations should
-        override this method if it is possible to implement it in a more efficient
-        manner.
-        """
-        return cls.GetWorkingChangeStatusResult( cls.HasUntrackedWorkingChanges(repo_root),
-                                                 cls.HasWorkingChanges(repo_root),
-                                               )
+    def IsRoot(cls, repo_dir):
+        """Returns True if the given dir is the root dir for the repository"""
+        return cls.IsAvailable() and cls.IsActive(repo_dir) and cls.GetRoot(repo_dir) == repo_dir
 
     # ----------------------------------------------------------------------
     @staticmethod
@@ -243,6 +209,40 @@ class SourceControlManagement(Interface):
         return cls.SetBranch( repo_root,
                               branch_name if branch_name in cls.GetBranches(repo_root) else cls.DefaultBranch,
                             )
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @abstractmethod
+    def HasUntrackedWorkingChanges(repo_root):
+        """Returns True if there are changes to files that are not tracked in the local working directory."""
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @abstractmethod
+    def HasWorkingChanges(repo_root):
+        """Returns True if there are changes to files in the local working directory."""
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    GetWorkingChangeStatusResult            = namedtuple( "GetWorkingChangeStatusResult",
+                                                          [ "untracked",
+                                                            "working",
+                                                            
+                                                          ],
+                                                        )
+
+    @classmethod
+    @extensionmethod
+    def GetWorkingChangeStatus(cls, repo_root):
+        """
+        Returns information about local change status. Derived implementations should
+        override this method if it is possible to implement it in a more efficient
+        manner.
+        """
+        return cls.GetWorkingChangeStatusResult( cls.HasUntrackedWorkingChanges(repo_root),
+                                                 cls.HasWorkingChanges(repo_root),
+                                               )
 
     # ----------------------------------------------------------------------
     @staticmethod

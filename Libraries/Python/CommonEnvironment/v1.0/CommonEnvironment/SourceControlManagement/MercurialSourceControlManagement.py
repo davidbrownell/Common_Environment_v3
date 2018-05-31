@@ -129,30 +129,6 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
         return result
 
     # ----------------------------------------------------------------------
-    _cached_roots                           = set()
-
-    @classmethod
-    def GetRoot(cls, repo_dir):
-        for k in cls._cached_roots:
-            if repo_dir.startswith(k):
-                return k
-
-        result, output = cls.Execute( repo_dir,
-                                      "hg root",
-                                      strip=True,
-                                    )
-        assert result == 0, (result, output)
-
-        cls._cached_roots.add(output)
-
-        return output
-    
-    # ----------------------------------------------------------------------
-    @classmethod
-    def IsRoot(cls, repo_dir):
-        return os.path.isdir(os.path.join(repo_dir, cls.WorkingDirectories[0]))
-
-    # ----------------------------------------------------------------------
     @classmethod
     def Create(cls, output_dir):
         if os.path.isdir(output_dir):
@@ -202,28 +178,28 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
         return output.strip()
 
     # ----------------------------------------------------------------------
+    _cached_roots                           = set()
+
     @classmethod
-    def HasUntrackedWorkingChanges(cls, repo_root):
-        result, output = cls.Execute(repo_root, "hg status --pager never")
+    def GetRoot(cls, repo_dir):
+        for k in cls._cached_roots:
+            if repo_dir.startswith(k):
+                return k
 
-        for line in output.split('\n'):
-            if line.strip().startswith('?'):
-                return True
+        result, output = cls.Execute( repo_dir,
+                                      "hg root",
+                                      strip=True,
+                                    )
+        assert result == 0, (result, output)
 
-        return False
+        cls._cached_roots.add(output)
 
+        return output
+    
     # ----------------------------------------------------------------------
     @classmethod
-    def HasWorkingChanges(cls, repo_root):
-        result, output = cls.Execute(repo_root, "hg status --pager never")
-
-        for line in output.split('\n'):
-            line = line.strip()
-
-            if line and not line.startswith('?'):
-                return True
-
-        return False
+    def IsRoot(cls, repo_dir):
+        return os.path.isdir(os.path.join(repo_dir, cls.WorkingDirectories[0]))
 
     # ----------------------------------------------------------------------
     @classmethod
@@ -277,6 +253,30 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
     @classmethod
     def SetBranch(cls, repo_root, branch_name):
         return cls.Execute(repo_root, 'hg update "{}"'.format(branch_name))
+
+    # ----------------------------------------------------------------------
+    @classmethod
+    def HasUntrackedWorkingChanges(cls, repo_root):
+        result, output = cls.Execute(repo_root, "hg status --pager never")
+
+        for line in output.split('\n'):
+            if line.strip().startswith('?'):
+                return True
+
+        return False
+
+    # ----------------------------------------------------------------------
+    @classmethod
+    def HasWorkingChanges(cls, repo_root):
+        result, output = cls.Execute(repo_root, "hg status --pager never")
+
+        for line in output.split('\n'):
+            line = line.strip()
+
+            if line and not line.startswith('?'):
+                return True
+
+        return False
 
     # ----------------------------------------------------------------------
     @classmethod

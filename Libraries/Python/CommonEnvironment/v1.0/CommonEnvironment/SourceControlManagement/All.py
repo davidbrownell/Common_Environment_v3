@@ -119,7 +119,7 @@ def EnumSCMs(path):
     Yields (scm, repo_root)
     """
 
-    sys.path.insert(0, os.getenv("DEVELOPMENT_ENVRIONMENT_FUNDAMENTAL"))
+    sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
     with CallOnExit(lambda: sys.path.pop(0)):
         from RepositoryBootstrap import Constants as RepositoryBootstrapConstants
 
