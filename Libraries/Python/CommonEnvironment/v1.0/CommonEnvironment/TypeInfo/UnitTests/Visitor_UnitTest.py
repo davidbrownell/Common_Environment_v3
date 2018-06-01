@@ -32,16 +32,16 @@ class StandardSuite(unittest.TestCase):
 
     # ----------------------------------------------------------------------
     def test_Standard(self):
-        nonlocals = Nonlocals( onAnyOf=0,
-                               onClass=0,
-                               onMethod=0,
-                               onClassMethod=0,
-                               onStaticMethod=0,
-                               onDict=0,
-                               onList=0,
+        nonlocals = Nonlocals( on_any_of=0,
+                               on_class=0,
+                               on_method=0,
+                               on_class_method=0,
+                               on_static_method=0,
+                               on_dict=0,
+                               on_list=0,
                                
-                               onBool=0,
-                               onString=0,
+                               on_bool=0,
+                               on_string=0,
                              )
 
         # ----------------------------------------------------------------------
@@ -50,18 +50,18 @@ class StandardSuite(unittest.TestCase):
 
         # ----------------------------------------------------------------------
 
-        attributes = [ "onAnyOf",
-                       "onClass",
-                       "onMethod",
-                       "onClassMethod",
-                       "onStaticMethod",
-                       "onDict",
-                       "onList",
-                       "onBool",
-                       "onString",
+        attributes = [ "on_any_of",
+                       "on_class",
+                       "on_method",
+                       "on_class_method",
+                       "on_static_method",
+                       "on_dict",
+                       "on_list",
+                       "on_bool",
+                       "on_string",
                      ]
 
-        params = { "{}Func".format(attr) : lambda ti, attr=attr: Update(attr) for attr in attributes }
+        params = { "{}_func".format(attr) : lambda ti, attr=attr: Update(attr) for attr in attributes }
 
         visitor = CreateSimpleVisitor(**params)
 

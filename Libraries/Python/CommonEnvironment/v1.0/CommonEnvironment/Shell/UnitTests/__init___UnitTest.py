@@ -41,7 +41,8 @@ class MyShell(Shell):
     Architecture                            = "987"
     UserDirectory                           = "<user>"
     TempDirectory                           = "<temp>"
-    
+    CompressionExtensions                   = [ ".compressed", ]
+
     class CommandVisitor(object):
         @staticmethod
         def Accept(command):
@@ -51,6 +52,11 @@ class MyShell(Shell):
     @staticmethod
     def IsActive(platform_name):
         return True
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    def RemoveDir(path):
+        pass
 
 # ----------------------------------------------------------------------
 class StandardSuite(unittest.TestCase):

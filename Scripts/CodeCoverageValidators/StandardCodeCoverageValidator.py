@@ -17,7 +17,6 @@
 import os
 import sys
 
-from CommonEnvironment.Interface import staticderived
 from CommonEnvironment.CodeCoverageValidatorImpl import CodeCoverageValidatorImpl
 
 # ----------------------------------------------------------------------
@@ -26,7 +25,6 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 # ----------------------------------------------------------------------
-@staticderived
 class CodeCoverageValidator(CodeCoverageValidatorImpl):
 
     # ----------------------------------------------------------------------

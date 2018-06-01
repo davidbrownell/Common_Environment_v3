@@ -25,26 +25,12 @@ _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
-@EntryPoint
-@Constraints( a=StringTypeInfo(),
-              b=IntTypeInfo(min=1),
-              c=IntTypeInfo(arity='?') # BugBug: This should be an issue and detected within CommandLine
-            )
-def Method1(a, b, c=None):
-    print("BugBug!!!!!", a, b)
-    pass
-
 # ----------------------------------------------------------------------
 class StandardSuite(unittest.TestCase):
     
     # ----------------------------------------------------------------------
-    def setUp(self):
-        self.executor = Executor([ "<ScriptName>", "foo", ]) # BugBug "10", ])
-
-    # ----------------------------------------------------------------------
     def test_NoArgs(self):
-        self.executor.Invoke( verbose=True,
-                            )
+        self.assertTrue(True)
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------

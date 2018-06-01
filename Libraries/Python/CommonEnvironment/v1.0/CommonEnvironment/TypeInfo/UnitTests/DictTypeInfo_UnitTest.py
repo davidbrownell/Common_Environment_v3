@@ -36,7 +36,8 @@ class StandardSuite(unittest.TestCase):
         self.assertEqual(self.ti.Desc, "Dictionary")
         self.assertEqual(self.ti.ExpectedType, dict)
         self.assertEqual(self.ti.ConstraintsDesc, "Value must contain the attributes 'a' <Integer>, 'b' <String>")
-        self.assertRaises(Exception, lambda: DictTypeInfo())
+        DictTypeInfo() # Empty is OK when require_exact_match is False or not set
+        self.assertRaises(Exception, lambda: DictTypeInfo(require_exact_match=True))
 
     # ----------------------------------------------------------------------
     def test_Validation(self):

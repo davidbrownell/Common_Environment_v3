@@ -828,7 +828,8 @@ def GenerateTestResults( test_items,
     # |  Execute
     
     # ----------------------------------------------------------------------
-    def TestThreadProc( on_status_update,
+    def TestThreadProc( output_stream,
+                        on_status_update,
                         working_data,
                         configuration_results,
                         configuration,
@@ -878,6 +879,9 @@ def GenerateTestResults( test_items,
                                                    configuration_results.compiler_context,
                                                    test_command_line,
                                                  )
+
+                if execute_result.TestResult != 0:
+                    output_stream.write(execute_result.TestOutput)
 
             except:
                 execute_result = TestExecutorImpl.ExecuteResult( internal_exception_result_code,
@@ -990,6 +994,7 @@ def GenerateTestResults( test_items,
         # ----------------------------------------------------------------------
         # <Wrong hanging indentation> pylint: disable = C0330
         def TestThreadProcWrapper( # The first args must be named explicitly as TaskPool is using Interface.CreateCulledCallback
+                                   output_stream,
                                    on_status_update,
 
                                    # Capture these values
@@ -998,7 +1003,8 @@ def GenerateTestResults( test_items,
                                    configuration=configuration,
                                    iteration=iteration,
                                  ):
-            return TestThreadProc( on_status_update,
+            return TestThreadProc( output_stream,
+                                   on_status_update,
                                    working_data,
                                    configuration_results,
                                    configuration,
@@ -1848,7 +1854,22 @@ def _ExecuteImpl( filename_or_dir,
                                                       code_coverage_validator,
                                                     ))
 
-        return complete_result.ResultCode() or 0
+        result = complete_result.ResultCode() or 0
+
+        if verbose and result != 0:
+            for configuration_results in [ complete_result.debug,
+                                           complete_result.release,
+                                         ]:
+                if configuration_results.compile_result != 0 and configuration_results.compile_log is not None:
+                    output_stream.write(open(configuration_results.compile_log).read())
+                    break
+
+                for er in configuration_results.execute_results:
+                    if er.TestResult != 0 and er.TestOutput is not None:
+                        output_stream.write(open(er.TestOutput).read())
+                        break
+
+        return result
 
 # ----------------------------------------------------------------------
 def _ExecuteTreeImpl( input_dir,
