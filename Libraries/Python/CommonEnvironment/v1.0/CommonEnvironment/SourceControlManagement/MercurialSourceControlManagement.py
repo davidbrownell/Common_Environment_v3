@@ -257,7 +257,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
     # ----------------------------------------------------------------------
     @classmethod
     def HasUntrackedWorkingChanges(cls, repo_root):
-        result, output = cls.Execute(repo_root, "hg status --pager never")
+        result, output = cls.Execute(repo_root, "hg status")
 
         for line in output.split('\n'):
             if line.strip().startswith('?'):
@@ -268,7 +268,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
     # ----------------------------------------------------------------------
     @classmethod
     def HasWorkingChanges(cls, repo_root):
-        result, output = cls.Execute(repo_root, "hg status --pager never")
+        result, output = cls.Execute(repo_root, "hg status")
 
         for line in output.split('\n'):
             line = line.strip()
@@ -379,7 +379,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
     # ----------------------------------------------------------------------
     @classmethod
     def GetChangedFiles(cls, repo_root, change_or_changes_or_none):
-        command_line_template = "hg status --pager never"
+        command_line_template = "hg status"
 
         if change_or_changes_or_none:
             changes = change_or_changes_or_none if isinstance(change_or_changes_or_none, list) else [ change_or_changes_or_none, ]
@@ -437,7 +437,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
     def EnumTrackedFiles(cls, repo_root):
         temp_filename = CurrentShell.CreateTempFilename()
 
-        result, output = cls.Execute(repo_root, 'hg status --pager never --no-status --clean --added --modified > "{}"'.format(temp_filename))
+        result, output = cls.Execute(repo_root, 'hg status --no-status --clean --added --modified > "{}"'.format(temp_filename))
         assert result == 0, (result, output)
 
         assert os.path.isfile(temp_filename), temp_filename
