@@ -167,7 +167,7 @@ class PythonActivationActivity(ActivationActivity):
                                      "Modified",
                                    ]
 
-    _NormalizeScript_script_shebang_regex               = re.compile(r"^\s*(#!.+?python.*)", re.DOTALL | re.MULTILINE)
+    _NormalizeScript_script_shebang_regex               = re.compile(r"^\s*(#!.+python.*?)$", re.MULTILINE)
 
     if sys.version_info[0] == 2:
         _NormalizeScript_executable_shebang_regex       = re.compile(r"(#!.+pythonw?\.exe)")
