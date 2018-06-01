@@ -595,22 +595,36 @@ def Install( lib_name,
 
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint
-@CommandLine.Constraints( script_filename=CommandLine.FilenameTypeInfo(),
+@CommandLine.Constraints( script_filename_or_dir=CommandLine.FilenameTypeInfo(match_any=True),
                           output_stream=None,
                         )
-def NormalizeScript( script_filename,
-                     output_stream=sys.stdout,
-                   ):
+def Normalize( script_filename_or_dir,
+               output_stream=sys.stdout,
+             ):
     """Normalizes a script so that it can be run from any location."""
 
     with StreamDecorator(output_stream).DoneManager( line_prefix='',
                                                      prefix="\nResults: ",
                                                      suffix='\n',
                                                    ) as dm:
-        result = PythonActivationActivity.NormalizeScript(script_filename)
-        
-        dm.stream.write(PythonActivationActivity.NormalizeScriptResultStrings[result])
+        if os.path.isfile(script_filename_or_dir):
+            script_filenames = [ script_filename_or_dir, ]
+        elif os.path.isdir(script_filename_or_dir):
+            script_filenames = list(FileSystem.WalkFiles(script_filename_or_dir, recurse=False))
+        else:
+            assert False
 
+        for index, script_filename in enumerate(script_filenames):
+            nonlocals = CommonEnvironment.Nonlocals(result=None)
+
+            dm.stream.write("Processing '{}' ({} of {})...".format( script_filename,
+                                                                    index + 1,
+                                                                    len(script_filenames),
+                                                                  ))
+            with dm.stream.DoneManager( done_suffix=lambda: PythonActivationActivity.NormalizeScriptResultStrings[nonlocals.result],
+                                      ):
+                nonlocals.result = PythonActivationActivity.NormalizeScript(script_filename)
+        
         return dm.result
 
 # ----------------------------------------------------------------------
