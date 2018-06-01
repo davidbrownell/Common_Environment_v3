@@ -76,6 +76,7 @@ def CommandLineSuffix():
                         )
 def Info( directory=None,
           output_stream=sys.stdout,
+          verbose=False,
         ):
     """Returns information for all known SCMs based on the active directory."""
 
@@ -86,6 +87,9 @@ def Info( directory=None,
 
     # ----------------------------------------------------------------------
     def Display(scm):
+        if verbose:
+            scm.Diagnostics = True
+
         is_available = scm.IsAvailable()
 
         return template.format( name=scm.Name,
@@ -121,12 +125,14 @@ def Info( directory=None,
 def Create( scm,
             output_dir,
             output_stream=sys.stdout,
+            verbose=False,
           ):
     return _Wrap( "Create",
                   lambda directory, scm: scm.Create(output_dir),
                   None,
                   scm,
                   output_stream,
+                  verbose=verbose,
                 )
 
 # ----------------------------------------------------------------------
@@ -143,12 +149,14 @@ def Clone( scm,
            output_dir,
            branch=None,
            output_stream=sys.stdout,
+           verbose=False,
          ):
     return _Wrap( "Clone",
                   lambda directory, scm: scm.Clone(uri, output_dir, branch=branch),
                   None,
                   scm,
                   output_stream,
+                  verbose=verbose,
                 )
 
 # ----------------------------------------------------------------------
@@ -161,12 +169,14 @@ def Clone( scm,
 def GetUniqueName( directory=None,
                    scm=None,
                    output_stream=sys.stdout,
+                   verbose=False,
                  ):
     return _Wrap( "GetUniqueName", 
                   lambda directory, scm: scm.GetUniqueName(directory), 
                   directory, 
                   scm, 
                   output_stream,
+                  verbose=verbose,
                 )
 
 # ----------------------------------------------------------------------
@@ -179,12 +189,14 @@ def GetUniqueName( directory=None,
 def Who( directory=None,
          scm=None,
          output_stream=sys.stdout,
+         verbose=False,
        ):
     return _Wrap( "Who", 
                   lambda directory, scm: scm.Who(directory), 
                   directory, 
                   scm, 
                   output_stream,
+                  verbose=verbose,
                 )
 
 # ----------------------------------------------------------------------
@@ -197,12 +209,14 @@ def Who( directory=None,
 def GetRoot( directory=None,
              scm=None,
              output_stream=sys.stdout,
+             verbose=False,
            ):
     return _Wrap( "GetRoot", 
                   lambda directory, scm: scm.GetRoot(directory), 
                   directory, 
                   scm, 
                   output_stream,
+                  verbose=verbose,
                 )
 
 # ----------------------------------------------------------------------
@@ -215,12 +229,14 @@ def GetRoot( directory=None,
 def IsRoot( directory=None,
             scm=None,
             output_stream=sys.stdout,
+            verbose=False,
           ):
     return _Wrap( "IsRoot", 
                   lambda directory, scm: scm.IsRoot(directory), 
                   directory, 
                   scm, 
                   output_stream,
+                  verbose=verbose,
                 )
 
 # ----------------------------------------------------------------------
@@ -234,12 +250,14 @@ def Clean( yes=False,
            directory=None,
            scm=None,
            output_stream=sys.stdout,
+           verbose=False,
          ):
     return _Wrap( "Clean", 
                   lambda directory, scm: scm.Clean(directory, no_prompt=yes), 
                   directory, 
                   scm, 
                   output_stream,
+                  verbose=verbose,
                 )
 
 # ----------------------------------------------------------------------
@@ -252,12 +270,14 @@ def Clean( yes=False,
 def GetBranches( directory=None,
                  scm=None,
                  output_stream=sys.stdout,
+                 verbose=False,
                ):
     return _Wrap( "GetBranches", 
                   lambda directory, scm: list(scm.GetBranches(directory)), 
                   directory, 
                   scm, 
                   output_stream,
+                  verbose=verbose,
                 )
 
 # ----------------------------------------------------------------------
@@ -270,12 +290,14 @@ def GetBranches( directory=None,
 def GetCurrentBranch( directory=None,
                       scm=None,
                       output_stream=sys.stdout,
+                      verbose=False,
                     ):
     return _Wrap( "GetCurrentBranch", 
                   lambda directory, scm: scm.GetCurrentBranch(directory), 
                   directory, 
                   scm, 
                   output_stream,
+                  verbose=verbose,
                 )
 
 # ----------------------------------------------------------------------
@@ -288,12 +310,14 @@ def GetCurrentBranch( directory=None,
 def GetCurrentNormalizedBranch( directory=None,
                                 scm=None,
                                 output_stream=sys.stdout,
+                                verbose=False,
                               ):
     return _Wrap( "GetCurrentNormalizedBranch", 
                   lambda directory, scm: scm.GetCurrentNormalizedBranch(directory), 
                   directory, 
                   scm, 
                   output_stream,
+                  verbose=verbose,
                 )
 
 # ----------------------------------------------------------------------
@@ -306,12 +330,14 @@ def GetCurrentNormalizedBranch( directory=None,
 def GetMostRecentBranch( directory=None,
                          scm=None,
                          output_stream=sys.stdout,
+                         verbose=False,
                        ):
     return _Wrap( "GetMostRecentBranch", 
                   lambda directory, scm: scm.GetMostRecentBranch(directory), 
                   directory, 
                   scm, 
                   output_stream,
+                  verbose=verbose,
                 )
 
 # ----------------------------------------------------------------------
@@ -326,12 +352,14 @@ def CreateBranch( branch_name,
                   directory=None,
                   scm=None,
                   output_stream=sys.stdout,
+                  verbose=False,
                 ):
     return _Wrap( "CreateBranch", 
                   lambda directory, scm: scm.CreateBranch(directory, branch_name), 
                   directory, 
                   scm, 
                   output_stream,
+                  verbose=verbose,
                 )
 
 # ----------------------------------------------------------------------
@@ -346,12 +374,14 @@ def SetBranch( branch_name,
                directory=None,
                scm=None,
                output_stream=sys.stdout,
+               verbose=False,
              ):
     return _Wrap( "SetBranch", 
                   lambda directory, scm: scm.SetBranch(directory, branch_name), 
                   directory, 
                   scm, 
                   output_stream,
+                  verbose=verbose,
                 )
 
 # ----------------------------------------------------------------------
@@ -366,12 +396,14 @@ def SetBranchOrDefault( branch_name,
                         directory=None,
                         scm=None,
                         output_stream=sys.stdout,
+                        verbose=False,
                       ):
     return _Wrap( "SetBranchOrDefault", 
                   lambda directory, scm: scm.SetBranchOrDefault(directory, branch_name), 
                   directory, 
                   scm, 
                   output_stream,
+                  verbose=verbose,
                 )
 
 # ----------------------------------------------------------------------
@@ -384,12 +416,14 @@ def SetBranchOrDefault( branch_name,
 def HasUntrackedWorkingChanges( directory=None,
                                 scm=None,
                                 output_stream=sys.stdout,
+                                verbose=False,
                               ):
     return _Wrap( "HasUntrackedWorkingChanges", 
                   lambda directory, scm: scm.HasUntrackedWorkingChanges(directory), 
                   directory, 
                   scm, 
                   output_stream,
+                  verbose=verbose,
                 )
 
 # ----------------------------------------------------------------------
@@ -402,12 +436,14 @@ def HasUntrackedWorkingChanges( directory=None,
 def HasWorkingChanges( directory=None,
                        scm=None,
                        output_stream=sys.stdout,
+                       verbose=False,
                      ):
     return _Wrap( "HasWorkingChanges", 
                   lambda directory, scm: scm.HasWorkingChanges(directory), 
                   directory, 
                   scm, 
                   output_stream,
+                  verbose=verbose,
                 )
 
 # ----------------------------------------------------------------------
@@ -420,12 +456,14 @@ def HasWorkingChanges( directory=None,
 def GetWorkingChangeStatus( directory=None,
                             scm=None,
                             output_stream=sys.stdout,
+                            verbose=False,
                           ):
     return _Wrap( "GetWorkingChangeStatus", 
                   lambda directory, scm: scm.GetWorkingChangeStatus(directory), 
                   directory, 
                   scm, 
                   output_stream,
+                  verbose=verbose,
                 )
 
 # ----------------------------------------------------------------------
@@ -440,12 +478,14 @@ def GetChangeInfo( change,
                    directory=None,
                    scm=None,
                    output_stream=sys.stdout,
+                   verbose=False,
                  ):
     return _Wrap( "GetChangeInfo", 
                   lambda directory, scm: scm.GetChangeInfo(directory, change), 
                   directory, 
                   scm, 
                   output_stream,
+                  verbose=verbose,
                 )
 
 # ----------------------------------------------------------------------
@@ -466,6 +506,7 @@ def AddFiles( file=None,
               directory=None,
               scm=None,
               output_stream=sys.stdout,
+              verbose=False,
             ):
     files = file; del file
     include_res = include_re; del include_re
@@ -507,6 +548,7 @@ def AddFiles( file=None,
                   directory, 
                   scm, 
                   output_stream,
+                  verbose=verbose,
                 )
 
 # ----------------------------------------------------------------------
@@ -523,12 +565,14 @@ def Commit( description,
             directory=None,
             scm=None,
             output_stream=sys.stdout,
+            verbose=False,
           ):
     return _Wrap( "Commit", 
                   lambda directory, scm: scm.Commit(directory, description, username=username), 
                   directory, 
                   scm, 
                   output_stream,
+                  verbose=verbose,
                 )
 
 # ----------------------------------------------------------------------
@@ -547,6 +591,7 @@ def Update( change=None,
             directory=None,
             scm=None,
             output_stream=sys.stdout,
+            verbose=False,
           ):
     return _Wrap( "Update", 
                   lambda directory, scm: scm.Update(directory, UpdateMergeArgs.FromCommandLine( change=change,
@@ -556,6 +601,7 @@ def Update( change=None,
                   directory, 
                   scm, 
                   output_stream,
+                  verbose=verbose,
                 )
 
 # ----------------------------------------------------------------------
@@ -574,6 +620,7 @@ def Merge( change=None,
            directory=None,
            scm=None,
            output_stream=sys.stdout,
+           verbose=False,
          ):
     return _Wrap( "Merge", 
                   lambda directory, scm: scm.Merge(directory, UpdateMergeArgs.FromCommandLine( change=change,
@@ -583,6 +630,7 @@ def Merge( change=None,
                   directory, 
                   scm, 
                   output_stream,
+                  verbose=verbose,
                 )
 
 # ----------------------------------------------------------------------
@@ -605,6 +653,7 @@ def GetChangesSinceLastMerge( dest_branch,
                               directory=None,
                               scm=None,
                               output_stream=sys.stdout,
+                              verbose=False,
                             ):
     return _Wrap( "GetChangesSinceLastMerge", 
                   lambda directory, scm: scm.GetChangesSinceLastMerge( directory,
@@ -618,6 +667,7 @@ def GetChangesSinceLastMerge( dest_branch,
                   directory, 
                   scm, 
                   output_stream,
+                  verbose=verbose,
                 )
 
 # ----------------------------------------------------------------------
@@ -632,6 +682,7 @@ def GetChangedFiles( change=None,
                      directory=None,
                      scm=None,
                      output_stream=sys.stdout,
+                     verbose=False,
                    ):
     changes = change; del change
     return _Wrap( "GetChangedFiles", 
@@ -639,6 +690,7 @@ def GetChangedFiles( change=None,
                   directory, 
                   scm, 
                   output_stream,
+                  verbose=verbose,
                 )
 
 # ----------------------------------------------------------------------
@@ -653,12 +705,14 @@ def EnumBlameInfo( filename,
                    directory=None,
                    scm=None,
                    output_stream=sys.stdout,
+                   verbose=False,
                  ):
     return _Wrap( "EnumBlameInfo", 
                   lambda directory, scm: list(scm.EnumBlameInfo(directory, filename)), 
                   directory, 
                   scm, 
                   output_stream,
+                  verbose=verbose,
                 )
 
 # ----------------------------------------------------------------------
@@ -671,12 +725,14 @@ def EnumBlameInfo( filename,
 def EnumTrackedFiles( directory=None,
                       scm=None,
                       output_stream=sys.stdout,
+                      verbose=False,
                     ):
     return _Wrap( "EnumTrackedFiles", 
                   lambda directory, scm: list(scm.EnumTrackedFiles(directory)), 
                   directory, 
                   scm, 
                   output_stream,
+                  verbose=verbose,
                 )
 
 # ----------------------------------------------------------------------
@@ -695,6 +751,7 @@ def CreatePatch( patch_filename,
                  directory=None,
                  scm=None,
                  output_stream=sys.stdout,
+                 verbose=False,
                ):
     return _Wrap( "CreatePatch", 
                   lambda directory, scm: scm.CreatePatch( directory, 
@@ -705,6 +762,7 @@ def CreatePatch( patch_filename,
                   directory, 
                   scm, 
                   output_stream,
+                  verbose=verbose,
                 )
 
 # ----------------------------------------------------------------------
@@ -720,12 +778,14 @@ def ApplyPatch( patch_filename,
                 directory=None,
                 scm=None,
                 output_stream=sys.stdout,
+                verbose=False,
               ):
     return _Wrap( "ApplyPatch", 
                   lambda directory, scm: scm.ApplyPatch(directory, patch_filename, commit=commit), 
                   directory, 
                   scm, 
                   output_stream,
+                  verbose=verbose,
                 )
 
 # ----------------------------------------------------------------------
@@ -740,6 +800,7 @@ def Reset( yes=False,
            directory=None,
            scm=None,
            output_stream=sys.stdout,
+           verbose=False,
          ):
     return _Wrap( "Reset", 
                   lambda directory, scm: scm.Reset( directory,
@@ -749,6 +810,7 @@ def Reset( yes=False,
                   directory, 
                   scm, 
                   output_stream,
+                  verbose=verbose,
                   requires_distributed=True,
                 )
 
@@ -762,12 +824,14 @@ def Reset( yes=False,
 def HasUpdateChanges( directory=None,
                       scm=None,
                       output_stream=sys.stdout,
+                      verbose=False,
                     ):
     return _Wrap( "HasUpdateChanges", 
                   lambda directory, scm: scm.HasUpdateChanges(directory), 
                   directory, 
                   scm, 
                   output_stream,
+                  verbose=verbose,
                   requires_distributed=True,
                 )
 
@@ -781,12 +845,14 @@ def HasUpdateChanges( directory=None,
 def HasLocalChanges( directory=None,
                      scm=None,
                      output_stream=sys.stdout,
+                     verbose=False,
                    ):
     return _Wrap( "HasLocalChanges", 
                   lambda directory, scm: scm.HasLocalChanges(directory), 
                   directory, 
                   scm, 
                   output_stream,
+                  verbose=verbose,
                   requires_distributed=True,
                 )
 
@@ -800,12 +866,14 @@ def HasLocalChanges( directory=None,
 def GetLocalChanges( directory=None,
                      scm=None,
                      output_stream=sys.stdout,
+                     verbose=False,
                    ):
     return _Wrap( "GetLocalChanges", 
                   lambda directory, scm: scm.GetLocalChanges(directory), 
                   directory, 
                   scm, 
                   output_stream,
+                  verbose=verbose,
                   requires_distributed=True,
                 )
 
@@ -819,12 +887,14 @@ def GetLocalChanges( directory=None,
 def HasRemoteChanges( directory=None,
                       scm=None,
                       output_stream=sys.stdout,
+                      verbose=False,
                     ):
     return _Wrap( "HasRemoteChanges", 
                   lambda directory, scm: scm.HasRemoteChanges(directory), 
                   directory, 
                   scm, 
                   output_stream,
+                  verbose=verbose,
                   requires_distributed=True,
                 )
 
@@ -838,12 +908,14 @@ def HasRemoteChanges( directory=None,
 def GetRemoteChanges( directory=None,
                       scm=None,
                       output_stream=sys.stdout,
+                      verbose=False,
                     ):
     return _Wrap( "GetRemoteChanges", 
                   lambda directory, scm: scm.GetRemoteChanges(directory), 
                   directory, 
                   scm, 
                   output_stream,
+                  verbose=verbose,
                   requires_distributed=True,
                 )
 
@@ -857,12 +929,14 @@ def GetRemoteChanges( directory=None,
 def GetChangeStatus( directory=None,
                      scm=None,
                      output_stream=sys.stdout,
+                     verbose=False,
                    ):
     return _Wrap( "GetChangeStatus", 
                   lambda directory, scm: scm.GetChangeStatus(directory), 
                   directory, 
                   scm, 
                   output_stream,
+                  verbose=verbose,
                   requires_distributed=True,
                 )
 
@@ -877,12 +951,14 @@ def Push( create_remote_branch=False,
           directory=None,
           scm=None,
           output_stream=sys.stdout,
+          verbose=False,
         ):
     return _Wrap( "Push", 
                   lambda directory, scm: scm.Push(directory, create_remote_branch=create_remote_branch), 
                   directory, 
                   scm, 
                   output_stream,
+                  verbose=verbose,
                   requires_distributed=True,
                 )
 
@@ -898,6 +974,7 @@ def Pull( branch=None,
           directory=None,
           scm=None,
           output_stream=sys.stdout,
+          verbose=False,
         ):
     branches = branch; del branch
 
@@ -906,6 +983,7 @@ def Pull( branch=None,
                   directory, 
                   scm, 
                   output_stream,
+                  verbose=verbose,
                   requires_distributed=True,
                 )
 
@@ -918,6 +996,7 @@ def Pull( branch=None,
 def PullAndUpdate( directory=None,
                    scm=None,
                    output_stream=sys.stdout,
+                   verbose=False,
                  ):
     """Pulls and Updates on the current branch"""
     
@@ -941,6 +1020,7 @@ def PullAndUpdate( directory=None,
                   directory, 
                   scm, 
                   output_stream,
+                  verbose=verbose,
                   requires_distributed=True,
                 )
 
@@ -1203,6 +1283,7 @@ def _Wrap( method_name,
            directory, 
            scm, 
            output_stream,
+           verbose=False,
            requires_distributed=False,
          ):
     directory = directory or os.getcwd()
@@ -1222,6 +1303,8 @@ def _Wrap( method_name,
     if requires_distributed and not scm.IsDistributed:
         output_stream.write("'{}' is not a distributes Source Control Management system, which is a requirement for this functionality.\n".format(scm.Name))
         return -1
+
+    scm.Diagnostics = verbose
 
     result = callback(directory, scm)
 
@@ -1257,7 +1340,7 @@ def _WrapAll( query_method_name,
               optional_action_callback,     # def Func(directory, scm); only invoked if query_callback returns True
               directory,
               output_stream,
-              verbose,
+              verbose=False,
               requires_distributed=False,
             ):
     directory = directory or os.getcwd()
