@@ -36,9 +36,10 @@ class InvocationQueryMixin(Interface):
       InvokeReason_MissingOutput,
       InvokeReason_DifferentOutput,
       InvokeReason_NewerInput,
+      InvokeReason_DifferentInput,
       InvokeReason_DifferentMetadata,
       InvokeReason_OptIn,
-    ) = range(9)
+    ) = range(10)
 
     # ----------------------------------------------------------------------
     # |  Methods defined in CompilerImpl; these methods forward to Impl

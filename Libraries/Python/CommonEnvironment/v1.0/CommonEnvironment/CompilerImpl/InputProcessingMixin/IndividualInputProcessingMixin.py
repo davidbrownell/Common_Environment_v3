@@ -43,5 +43,5 @@ class IndividualInputProcessingMixin(InputProcessingMixin):
 
     # ----------------------------------------------------------------------
     @classmethod
-    def _GetInputItemsImpl(cls, context):
+    def _GetInputItems(cls, context):
         return [ context[cls.AttributeName], ]

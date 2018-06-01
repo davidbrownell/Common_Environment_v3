@@ -34,8 +34,8 @@ class OutputMixin(Interface):
     # |  mixins.
     # ----------------------------------------------------------------------
     @classmethod
-    def _GetOutputFilenames(cls, *args, **kwargs):
-        return cls._GetOutputFilenamesImpl(*args, **kwargs)
+    def GetOutputItems(cls, *args, **kwargs):
+        return cls._GetOutputItems(*args, **kwargs)
 
     # ----------------------------------------------------------------------
     @classmethod
@@ -47,7 +47,7 @@ class OutputMixin(Interface):
     # ----------------------------------------------------------------------
     @staticmethod
     @abstractmethod
-    def _GetOutputFilenamesImpl(context):
+    def _GetOutputItems(context):
         raise Exception("Abstract method")
 
     # ----------------------------------------------------------------------

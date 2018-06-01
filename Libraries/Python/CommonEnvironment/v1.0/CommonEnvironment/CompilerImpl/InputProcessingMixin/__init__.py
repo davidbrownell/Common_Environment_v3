@@ -34,13 +34,13 @@ class InputProcessingMixin(Interface):
     # |  mixins.
     # ----------------------------------------------------------------------
     @classmethod
-    def _GenerateMetadataItems(cls, *args, **kwargs):
-        return cls._GenerateMetadataItemsImpl(*args, **kwargs)
+    def GetInputItems(cls, *args, **kwargs):
+        return cls._GetInputItems(*args, **kwargs)
 
     # ----------------------------------------------------------------------
     @classmethod
-    def _GetInputItems(cls, *args, **kwargs):
-        return cls._GetInputItemsImpl(*args, **kwargs)
+    def _GenerateMetadataItems(cls, *args, **kwargs):
+        return cls._GenerateMetadataItemsImpl(*args, **kwargs)
 
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
@@ -53,5 +53,5 @@ class InputProcessingMixin(Interface):
     # ----------------------------------------------------------------------
     @staticmethod
     @abstractmethod
-    def _GetInputItemsImpl(context):
+    def _GetInputItems(context):
         raise Exception("Abstract method")

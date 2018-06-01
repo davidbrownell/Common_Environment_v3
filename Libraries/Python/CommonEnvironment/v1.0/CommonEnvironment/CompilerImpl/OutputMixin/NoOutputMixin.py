@@ -29,7 +29,7 @@ class NoOutputMixin(OutputMixin):
 
     # ----------------------------------------------------------------------
     @staticmethod
-    def _GetOutputFilenamesImpl(context):
+    def _GetOutputItems(context):
         return []
 
     # ----------------------------------------------------------------------

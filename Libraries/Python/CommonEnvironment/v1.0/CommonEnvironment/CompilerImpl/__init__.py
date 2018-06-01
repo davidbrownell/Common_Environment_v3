@@ -304,7 +304,7 @@ class CompilerImpl(Interface):
 
             metadata = copy.deepcopy(metadata)
 
-            if not cls._GetInputItems(metadata):
+            if not cls.GetInputItems(metadata):
                 continue
 
             display_name = cls._GetDisplayName(metadata)
@@ -319,7 +319,7 @@ class CompilerImpl(Interface):
                 if required_name not in context:
                     raise Exception("'{}' is required for {} ({})".format( required_name,
                                                                            cls.Name,
-                                                                           ', '.join([ "'{}'".format(input) for input in cls._GetInputItems(context) ]),
+                                                                           ', '.join([ "'{}'".format(input) for input in cls.GetInputItems(context) ]),
                                                                          ))
 
             yield context
@@ -352,7 +352,7 @@ class CompilerImpl(Interface):
         assert context
         output_stream = StreamDecorator(optional_output_stream)
 
-        output_stream.write(cls._GetStatusText("Cleaning", context, cls._GetInputItems(context)))
+        output_stream.write(cls._GetStatusText("Cleaning", context, cls.GetInputItems(context)))
         with output_stream.DoneManager() as dm:
             dm.result = cls._CleanImpl(context, dm.stream) or 0
             return dm.result
@@ -374,13 +374,13 @@ class CompilerImpl(Interface):
             status_stream.write("No changes were detected.\n")
             return 0
 
-        input_items = cls._GetInputItems(context)
+        input_items = cls.GetInputItems(context)
         assert input_items
 
         status_stream.write(cls._GetStatusText(cls.InvokeVerb, context, input_items))
         with status_stream.DoneManager() as dm:
             if verbose:
-                output_items = cls._GetOutputFilenames(context)
+                output_items = cls.GetOutputItems(context)
 
                 if "display_name" in context or len(input_items) == 1:
                     indentation = 4
@@ -425,15 +425,17 @@ class CompilerImpl(Interface):
 
             return dm.result
 
-    # BugBug: ApplyExternalConfigurations
-    # BugBug: ShouldProcessConfigInfo
+    # BugBug: Move these methods to different mixing file
+    # - ApplyExternalConfigurations
+    # - ShouldProcessConfigInfo
     
     # ----------------------------------------------------------------------
+    # BugBug: Move this to mixin file
     @staticmethod
     def PopulateEnvironmentVars( s, 
                                  _placeholder_prefix="${",
                                  _placeholder_suffix="}",
-                                 **additional_args,
+                                 **additional_args
                                ):
         """
         Will replace placeholders in the form '${var}' in the given string with
@@ -479,24 +481,23 @@ class CompilerImpl(Interface):
         return s.replace(placeholder, _placeholder_prefix)
 
     # ----------------------------------------------------------------------
+    @staticmethod
+    @abstractmethod
+    def GetInputItems(contet):
+        """Implemented by an InputProcessingMixin"""
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @abstractmethod
+    def GetOutputItems(context):
+        """Implemented by an OutputMixin"""
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
     # |  
     # |  Private Methods
     # |  
-    # ----------------------------------------------------------------------
-
-    # BugBug: Move this
-    @staticmethod
-    @extensionmethod
-    def _GetAdditionalGeneratorFiles(context):
-        """
-        Specify a list of additional filenames that are used to implement compilation
-        functionality. Any changes to these files imply that all previously generated
-        content should be regenerated when invoked again.
-        """
-
-        # No additional generator files
-        return []
-
     # ----------------------------------------------------------------------
     @staticmethod
     @extensionmethod
@@ -553,20 +554,6 @@ class CompilerImpl(Interface):
     @abstractmethod
     def _GenerateMetadataItems(invocation_group_inputs, user_provided_metadata):
         """Implemented by an InputProcessingMixin"""
-        raise Exception("Abstract method")
-
-    # ----------------------------------------------------------------------
-    @staticmethod
-    @abstractmethod
-    def _GetInputItems(contet):
-        """Implemented by an InputProcessingMixin"""
-        raise Exception("Abstract method")
-
-    # ----------------------------------------------------------------------
-    @staticmethod
-    @abstractmethod
-    def _GetOutputFilenames(context):
-        """Implemented by an OutputMixin"""
         raise Exception("Abstract method")
 
     # ----------------------------------------------------------------------
