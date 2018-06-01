@@ -201,7 +201,7 @@ class StreamDecorator(object):
             if this_encoding is not None:
                 if encoding is None:
                     encoding = this_encoding
-                else:
+                elif encoding != this_encoding:
                     raise Exception("Encodings do not match ({}: {}, {})".format(index, encoding, this_encoding))
 
         self.encoding                       = encoding

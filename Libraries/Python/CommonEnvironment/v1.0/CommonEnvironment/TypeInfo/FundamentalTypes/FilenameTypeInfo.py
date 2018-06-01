@@ -38,7 +38,7 @@ class FilenameTypeInfo(TypeInfo):
     def __init__( self,
                   ensure_exists=True,
                   match_any=False,                      # Match files or directories
-                  validation_expression=None,           # Regex
+                  validation_expression=None,           # Regex string
                   **type_info_args
                 ):
         super(FilenameTypeInfo, self).__init__(**type_info_args)

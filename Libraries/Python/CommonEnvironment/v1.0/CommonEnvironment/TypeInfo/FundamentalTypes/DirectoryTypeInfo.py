@@ -36,7 +36,7 @@ class DirectoryTypeInfo(TypeInfo):
     # ----------------------------------------------------------------------
     def __init__( self,
                   ensure_exists=True,
-                  validation_expression=None,           # Regex
+                  validation_expression=None,           # Regex string
                   **type_info_args
                 ):
         super(DirectoryTypeInfo, self).__init__(**type_info_args)

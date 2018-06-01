@@ -97,7 +97,7 @@ class PythonActivationActivity(ActivationActivity):
              ):
         stats = [ 0, ] * cls.NormalizeScriptResult_NumItems
 
-        output_stream.write("Updating python scripts...")
+        output_stream.write("Normalizing python scripts...")
         with output_stream.DoneManager( done_suffixes=[ lambda: "{} modified".format(inflect.no("script", stats[cls.NormalizeScriptResult_Modified])),
                                                         lambda: "{} matched".format(inflect.no("script", stats[cls.NormalizeScriptResult_NoChange])),
                                                         lambda: "{} skipped".format(inflect.no("script", stats[cls.NormalizeScriptResult_NoMatch])),
@@ -167,7 +167,7 @@ class PythonActivationActivity(ActivationActivity):
                                      "Modified",
                                    ]
 
-    _NormalizeScript_script_shebang_regex               = re.compile(r"(#!.+?python.*)")
+    _NormalizeScript_script_shebang_regex               = re.compile(r"^\s*(#!.+?python.*)", re.DOTALL | re.MULTILINE)
 
     if sys.version_info[0] == 2:
         _NormalizeScript_executable_shebang_regex       = re.compile(r"(#!.+pythonw?\.exe)")
@@ -377,7 +377,9 @@ class PythonActivationActivity(ActivationActivity):
             python_version_dirs = [ "python2", "python3", ]
             python_version_dir = python_version_dirs[int(python_version.split('.')[0]) - 2]
 
-            libraries.update(cls._GetLibraries( dm.stream,
+            this_output_stream = dm.stream if dm.stream.IsSet else output_stream
+
+            libraries.update(cls._GetLibraries( this_output_stream,
                                                 repositories,
                                                 version_specs,
                                                 generated_dir,
@@ -414,7 +416,9 @@ class PythonActivationActivity(ActivationActivity):
             verbose_stream.write("Linking dynamic library scripts...")
             with verbose_stream.DoneManager( done_suffix=lambda: "{} found".format(inflect.no("script", len(scripts))),
                                            ) as dm:
-                scripts.update(cls._GetLibraryScripts( dm.stream,
+                this_output_stream = dm.stream if dm.stream.IsSet else output_stream
+
+                scripts.update(cls._GetLibraryScripts( this_output_stream,
                                                        libraries,
                                                        SCRIPTS_DIR_NAME,
                                                      ))

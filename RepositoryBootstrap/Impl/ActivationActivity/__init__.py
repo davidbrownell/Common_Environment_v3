@@ -305,20 +305,20 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
                         potential_names.append(shell.CategoryName)
                     potential_names.append(Constants.AGNOSTIC_OS_NAME)
 
-                    raise Exception("OS names were found in '{}', but no customization was found for '{}' (is one of {} missing?).".format( path,
-                                                                                                                                            shell.Name,
-                                                                                                                                            ', '.join([ "'{}'".format(name) for name in potential_names ]),
-                                                                                                                                          ))
+                    raise Exception("OS names were found in '{}', but no customization was found for '{}'.\n    Is one of {} missing?.".format( path,
+                                                                                                                                                shell.Name,
+                                                                                                                                                ', '.join([ "'{}'".format(name) for name in potential_names ]),
+                                                                                                                                              ))
             elif IsArchitectureDir(path, subdirs):
                 if shell.Architecture in subdirs:
                     path = os.path.join(path, shell.Architecture)
                 else:
-                    raise Exception("OS architectures were found in '{}', but no customization was found for '{}' (is one of {} missing?).".format( path,
-                                                                                                                                                    shell.Architecture,
-                                                                                                                                                    ', '.join([ "'{}'".format(name) for name in [ "x86",
-                                                                                                                                                                                                  "x64",
-                                                                                                                                                                                                ] ]),
-                                                                                                                                                  ))
+                    raise Exception("OS architectures were found in '{}', but no customization was found for '{}'.\n    Is one of {} missing?.".format( path,
+                                                                                                                                                        shell.Architecture,
+                                                                                                                                                        ', '.join([ "'{}'".format(name) for name in [ "x86",
+                                                                                                                                                                                                      "x64",
+                                                                                                                                                                                                    ] ]),
+                                                                                                                                                      ))
             else:
                 break
 
@@ -483,7 +483,9 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
                     libraries[item] = cls.LibraryInfo(repository, nonlocals.version, fullpath)
 
                 except Exception as ex:
-                    output_stream.write("WARNING: {}\n".format(ex))
+                    output_stream.write("WARNING: {}\n".format(CommonEnvironmentImports.StringHelpers.LeftJustify( str(ex),
+                                                                                                                   len("WARNING: "),
+                                                                                                                 )))
 
         if errors:
             raise Exception(''.join(errors))
