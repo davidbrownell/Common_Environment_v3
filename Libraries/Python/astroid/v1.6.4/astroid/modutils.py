@@ -287,7 +287,9 @@ def check_modpath_has_init(path, mod_path):
 
 def modpath_from_file_with_callback(filename, extrapath=None, is_package_cb=None):
     filename = _path_from_filename(filename)
-    filename = os.path.realpath(os.path.expanduser(filename))
+    # David Brownell; was: os.path.realpath(os.path.expanduser(filename))
+    #   Change based on https://github.com/PyCQA/pylint/issues/1470
+    filename = os.path.abspath(filename)
     base = os.path.splitext(filename)[0]
 
     if extrapath is not None:
