@@ -161,8 +161,14 @@ def Move( no_move=False,
         else:
             # ----------------------------------------------------------------------
             def Impl(source_dir_or_filename, dest_dir):
-                FileSystem.MakeDirs(dest_dir)
-                shutil.move(source_dir_or_filename, dest_dir)
+                # shutil.move won't overwrite files, so use distutils (which will)
+                if os.path.isdir(source_dir_or_filename):
+                    import distutils.dir_util
+
+                    distutils.dir_util.copy_tree(source_dir_or_filename, os.path.join(dest_dir, os.path.basename(source_dir_or_filename)))
+                    FileSystem.RemoveTree(source_dir_or_filename)
+                else:
+                    shutil.move(source_dir_or_filename, dest_dir)
                 
             # ----------------------------------------------------------------------
 
@@ -350,6 +356,8 @@ def Move( no_move=False,
         dm.stream.write("Moving content...")
         with dm.stream.DoneManager( suffix='\n',
                                   ) as move_dm:
+            # BugBug: Handle case where existing dest dir isn't os-specific but now needs to be with new changes
+
             # ----------------------------------------------------------------------
             def DestinationIsOSSpecific(dest_dir):
                 # BugBug: I don't think that this works. Should be looking for os-specific names and then python names.
@@ -394,16 +402,6 @@ def Move( no_move=False,
                         if new_content.HasOSSpecificLibraryExtensions(library_info.Fullpath) or DestinationIsOSSpecific(dest_dir):
                             dest_dir = os.path.join(dest_dir, CurrentShell.CategoryName, python_version_dir)
                             has_os_specific_dest_dir = True
-
-                        if os.path.isdir(dest_dir):
-                            # If here, it could be that the library already exists but we have os-specific script files to copy.
-                            # Don't bail if the contents are an exact match (minus any .pyc/.pyo files).
-                            # BugBug
-
-                            this_dm.result = -1
-                            this_dm.stream.write("ERROR: '{}' already exists.\n".format(dest_dir))
-
-                            continue
 
                         # Copy the library
                         library_dest_dir = dest_dir
