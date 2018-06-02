@@ -377,7 +377,7 @@ class PythonActivationActivity(ActivationActivity):
             python_version_dirs = [ "python2", "python3", ]
             python_version_dir = python_version_dirs[int(python_version.split('.')[0]) - 2]
 
-            this_output_stream = dm.stream if dm.stream.IsSet else output_stream
+            this_output_stream = dm.stream if dm.stream.IsSet or no_python_libraries else output_stream
 
             libraries.update(cls._GetLibraries( this_output_stream,
                                                 repositories,
