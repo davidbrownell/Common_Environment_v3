@@ -489,6 +489,8 @@ def extensionmethod(func):
 
     return func
 
+# TODO: Extending attribute that ensure the current method is named the same as an extension method
+
 # ----------------------------------------------------------------------
 def staticderived(cls):
     """

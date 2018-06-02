@@ -18,6 +18,7 @@ import os
 import sys
 
 from CommonEnvironment import FileSystem
+from CommonEnvironment.StreamDecorator import StreamDecorator
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -29,9 +30,9 @@ def CommandLineInvoke( compiler,
                        inputs,
                        output_stream,
                        verbose,
-                       output_via_stderr=False,
-                       output_start_line=None,
-                       output_end_line=None,
+                       _output_via_stderr=False,
+                       _output_start_line=None,
+                       _output_end_line=None,
                        **compiler_kwargs
                      ):
     # ----------------------------------------------------------------------
@@ -54,9 +55,9 @@ def CommandLineInvoke( compiler,
                              Invoke,
                              output_stream,
                              compiler_kwargs,
-                             output_via_stderr=output_via_stderr,
-                             output_start_line=output_start_line,
-                             output_end_line=output_end_line,
+                             output_via_stderr=_output_via_stderr,
+                             output_start_line=_output_start_line,
+                             output_end_line=_output_end_line,
                            )
 
 # ----------------------------------------------------------------------
@@ -74,6 +75,8 @@ def CommandLineClean( compiler,
 
 # ----------------------------------------------------------------------
 def CommandLineCleanOutputDir(output_dir, output_stream):
+    output_stream = StreamDecorator(output_stream)
+
     if not os.path.isdir(output_dir):
         output_stream.write("'{}' does not exist.\n".format(output_dir))
     else:
@@ -85,6 +88,8 @@ def CommandLineCleanOutputDir(output_dir, output_stream):
 
 # ----------------------------------------------------------------------
 def CommandLineCleanOutputFilename(output_filename, output_stream):
+    output_stream = StreamDecorator(output_stream)
+
     if not os.path.isfile(output_filename):
         output_stream.write("'{}' does not exist.\n".format(output_filename))
     else:
@@ -116,11 +121,11 @@ def _CommandLineImpl( compiler,
         return -1
 
     # Execute
-    with output_stream.DoneManager( line_prefix='',
-                                    prefix="\nResult: ",
-                                    suffix='\n',
-                                    display_exceptions=False,
-                                  ) as dm:
+    with StreamDecorator(output_stream).DoneManager( line_prefix='',
+                                                     prefix="\nResult: ",
+                                                     suffix='\n',
+                                                     display_exceptions=False,
+                                                   ) as dm:
         dm.stream.write("\nGenerating context...")
         with dm.stream.DoneManager() as this_dm:
             try:
