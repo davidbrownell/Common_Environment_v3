@@ -168,6 +168,7 @@ def Move( no_move=False,
                     distutils.dir_util.copy_tree(source_dir_or_filename, os.path.join(dest_dir, os.path.basename(source_dir_or_filename)))
                     FileSystem.RemoveTree(source_dir_or_filename)
                 else:
+                    FileSystem.MakeDirs(dest_dir)
                     shutil.move(source_dir_or_filename, dest_dir)
                 
             # ----------------------------------------------------------------------
