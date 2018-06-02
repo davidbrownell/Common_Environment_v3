@@ -26,6 +26,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 # ----------------------------------------------------------------------
+# <Method '<...>' is abstract in class '<...>' but is not overridden> pylint: disable = W0223
 class CodeGenerator(CompilerImpl):
 
     # ----------------------------------------------------------------------
