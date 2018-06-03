@@ -14,12 +14,15 @@
 # ----------------------------------------------------------------------
 """Utilities helpful when working with the file system."""
 
+import hashlib
 import os
 import sys
+import threading
 import time
 
 import six
 
+from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment.Shell.All import CurrentShell
 
 # ----------------------------------------------------------------------
@@ -360,6 +363,135 @@ def WalkFiles( directory,
 
             yield fullpath
 
+# ----------------------------------------------------------------------
+def CalculateHashes( filenames,
+                     optional_output_stream,
+                     no_status=False,
+                     hash_block_size=65536,
+                     hash_algorithm=hashlib.sha256,
+                     hash_digest_name="digest",
+                   ):
+    """Returns a list of hashe values calculated by each file"""
+
+    hashes = []
+
+    quit_event = threading.Event()
+    blocks_available_event = threading.Event()
+    blocks_queue = six.moves.queue.Queue(100)
+    hash_added_event = threading.Event()
+
+    # ----------------------------------------------------------------------
+    def ThreadReadProc():
+        while True:
+            if quit_event.is_set():
+                break
+
+            if not blocks_available_event.wait(0.5): # seconds
+                continue
+
+            # Process blocks in the queue
+            hash_added_event.clear()
+            hash = hash_algorithm()
+
+            while True:
+                try:
+                    block = blocks_queue.get(True, 0.25) # seconds
+                    
+                    hash.update(block)
+                    blocks_queue.task_done()
+                
+                except six.moves.queue.Empty:
+                    if blocks_available_event.is_set():
+                        # More blocks are coming
+                        continue
+
+                    hashes.append(getattr(hash, hash_digest_name)())
+                    hash_added_event.set()
+
+                    break
+
+    # ----------------------------------------------------------------------
+    reader_thread = threading.Thread(target=ThreadReadProc)
+    reader_thread.start()
+
+    with CallOnExit( quit_event.set,
+                     reader_thread.join,
+                   ):
+        # ----------------------------------------------------------------------
+        def ProcessFile(filename):
+            if CurrentShell.IsSymLink(filename):
+                hashes.append(None)
+                return
+
+            # Process "small" files inline
+            if os.path.getsize(filename) <= hash_block_size * 5:
+                hash = hash_algorithm()
+
+                # ----------------------------------------------------------------------
+                def ProcessBlock(block):
+                    hash.update(block)
+
+                # ----------------------------------------------------------------------
+                def Complete():
+                    hashes.append(getattr(hash, hash_digest_name)())
+
+                # ----------------------------------------------------------------------
+
+            else:
+                # Read blocks on one thread and process them on another. This can yield
+                # minor performance gains on systems with a high read latency and can 
+                # make a signifiant difference when processing thousands of files.
+                blocks_available_event.set()
+
+                # ----------------------------------------------------------------------
+                def ProcessBlock(block):
+                    blocks_queue.put(block)
+
+                # ----------------------------------------------------------------------
+                def Complete():
+                    blocks_available_event.clear()
+                    blocks_queue.join()
+                    hash_added_event.wait()
+
+                # ----------------------------------------------------------------------
+
+            with(CallOnExit(Complete)):
+                with open(filename, 'rb') as f:
+                    while True:
+                        block = f.read(hash_block_size)
+                        if not block:
+                            break
+
+                        ProcessBlock(block)
+
+        # ----------------------------------------------------------------------
+
+        if optional_output_stream is None:
+            for filename in filenames:
+                ProcessFile(filename)
+
+        else:
+            from CommonEnvironment import TaskPool
+
+            # ----------------------------------------------------------------------
+            def Impl(task_index, on_status_update):
+                filename = filenames[task_index]
+
+                if not no_status:
+                    on_status_update(GetSizeDisplay(os.path.getsize(filename)))
+
+                ProcessFile(filename)
+
+            # ----------------------------------------------------------------------
+
+            TaskPool.Execute( [ TaskPool.Task(filename, Impl) for filename in filenames ],
+                              optional_output_stream,
+                              num_concurrent_tasks=1,
+                              progress_bar=True,
+                            )
+
+        return hashes
+     
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
