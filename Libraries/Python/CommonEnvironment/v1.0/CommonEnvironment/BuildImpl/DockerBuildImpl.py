@@ -148,6 +148,9 @@ def CreateRepositoryBuildFunc( repository_name,
                             if scm.Name == "Mercurial":
                                 if "no changes found" in output:
                                     has_changes = False
+                            elif scm.Name == "Git":
+                                if "Already up-to-date" in output:
+                                    has_changes = False
                             else:
                                 assert False, "Unsupported SCM: {}".format(scm.Name)
                     
