@@ -456,9 +456,11 @@ class CompilerImpl(Interface):
     def _GetOptionalMetadata():
         """
         Metadata that should be applied if it doesn't already exist. 
+
+        [ ( key, value ), ... ]
         """
 
-        return {}
+        return []
 
     # ----------------------------------------------------------------------
     @staticmethod

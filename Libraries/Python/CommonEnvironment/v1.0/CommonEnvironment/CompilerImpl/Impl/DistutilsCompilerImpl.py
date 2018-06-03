@@ -68,37 +68,32 @@ class DistutilsCompilerImpl( AtomicInputProcessingMixin,
     # ----------------------------------------------------------------------
     @classmethod
     def _GetOptionalMetadata(cls):
-        d = super(DistutilsCompilerImpl, cls)._GetOptionalMetadata()
-        
-        for k, v in [ ( "preserve_temp_dir", False ),
+        return [ ( "preserve_temp_dir", False ),
 
-                      # General modifiers
-                      ( "build_type", cls.BuildType_Console ),
-                      ( "include_tcl", False ),
-                      ( "no_optimize", False ),
-                      ( "no_bundle", False ),
-                      ( "manifest_filename", None ),
-                      ( "icon_filename", None ),
-                      ( "paths", [] ),
-                      ( "includes", [] ),
-                      ( "excludes", [] ),
-                      ( "packages", [] ),
-                      ( "distutil_args", [] ),
-                      ( "output_name", None ),
+                 # General modifiers
+                 ( "build_type", cls.BuildType_Console ),
+                 ( "include_tcl", False ),
+                 ( "no_optimize", False ),
+                 ( "no_bundle", False ),
+                 ( "manifest_filename", None ),
+                 ( "icon_filename", None ),
+                 ( "paths", [] ),
+                 ( "includes", [] ),
+                 ( "excludes", [] ),
+                 ( "packages", [] ),
+                 ( "distutil_args", [] ),
+                 ( "output_name", None ),
 
-                      # Embedded metadata
-                      ( "comments", '' ),
-                      ( "company_name", '' ),
-                      ( "file_description", '' ),
-                      ( "internal_name", '' ),
-                      ( "copyright", '' ),
-                      ( "trademark", '' ),
-                      ( "name", '' ),
-                      ( "version", '' ),
-                    ]:
-            d[k] = v
-        
-        return d
+                 # Embedded metadata
+                 ( "comments", '' ),
+                 ( "company_name", '' ),
+                 ( "file_description", '' ),
+                 ( "internal_name", '' ),
+                 ( "copyright", '' ),
+                 ( "trademark", '' ),
+                 ( "name", '' ),
+                 ( "version", '' ),
+               ] +super(DistutilsCompilerImpl, cls)._GetOptionalMetadata()
 
     # ----------------------------------------------------------------------
     @classmethod
