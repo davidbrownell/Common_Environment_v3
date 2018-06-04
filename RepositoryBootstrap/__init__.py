@@ -31,11 +31,6 @@ def GetFundamentalRepository():
     if env_var:
         return env_var
 
-    # Try to get the value relative to this file
-    potential_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
-    if os.path.isdir(potential_dir) and os.path.isdir(os.path.join(potential_dir, "Generated")):
-        return potential_dir
-
     # Try to get the value relative to the working dir
     potential_generated_dir = os.path.join(os.getcwd(), "Generated")
     if os.path.isdir(potential_generated_dir):
@@ -58,6 +53,11 @@ def GetFundamentalRepository():
                 fundamental_root = os.path.realpath(os.path.join(os.getcwd(), fundamental_root))
                 if os.path.isdir(fundamental_root):
                     return fundamental_root
+
+    # Try to get the value relative to this file
+    potential_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
+    if os.path.isdir(potential_dir) and os.path.isdir(os.path.join(potential_dir, "Generated")):
+        return potential_dir
 
     raise Exception("The fundamental repository could not be found")
 

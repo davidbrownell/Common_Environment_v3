@@ -1,6 +1,6 @@
 # ----------------------------------------------------------------------
 # |  
-# |  HookImpl.py
+# |  HookScript.py
 # |  
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-05-06 10:09:50
@@ -55,14 +55,14 @@ def Commit( display_sentinel,
             first=False,
             output_stream=sys.stdout,
           ):
-    return _Impl( display_sentinel,
-                  json_filename,
-                  result_filename,
-                  first,
-                  output_stream,
-                  Constants.HOOK_ENVIRONMENT_COMMIT_METHOD_NAME,
-                  HooksImplParser.Commit_FromJson,
-                )
+    return _ImplConfiguration( display_sentinel,
+                               json_filename,
+                               result_filename,
+                               first,
+                               output_stream,
+                               Constants.HOOK_ENVIRONMENT_COMMIT_METHOD_NAME,
+                               HooksImplParser.Commit_FromJson,
+                             )
 
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint
@@ -77,14 +77,14 @@ def Push( display_sentinel,
           first=False,
           output_stream=sys.stdout,
         ):
-    return _Impl( display_sentinel,
-                  json_filename,
-                  result_filename,
-                  first,
-                  output_stream,
-                  Constants.HOOK_ENVIRONMENT_PUSH_METHOD_NAME,
-                  HooksImplParser.Push_FromJson,
-                )
+    return _ImplConfiguration( display_sentinel,
+                               json_filename,
+                               result_filename,
+                               first,
+                               output_stream,
+                               Constants.HOOK_ENVIRONMENT_PUSH_METHOD_NAME,
+                               HooksImplParser.Push_FromJson,
+                             )
 
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint
@@ -99,26 +99,26 @@ def Pull( display_sentinel,
           first=False,
           output_stream=sys.stdout,
         ):
-    return _Impl( display_sentinel,
-                  json_filename,
-                  result_filename,
-                  first,
-                  output_stream,
-                  Constants.HOOK_ENVIRONMENT_PULL_METHOD_NAME,
-                  HooksImplParser.Pull_FromJson,
-                )
+    return _ImplConfiguration( display_sentinel,
+                               json_filename,
+                               result_filename,
+                               first,
+                               output_stream,
+                               Constants.HOOK_ENVIRONMENT_PULL_METHOD_NAME,
+                               HooksImplParser.Pull_FromJson,
+                             )
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
-def _Impl( display_sentinel,
-           json_filename,
-           result_filename,
-           first,
-           output_stream,
-           method_name,
-           parser,
-         ):
+def _ImplConfiguration( display_sentinel,
+                        json_filename,
+                        result_filename,
+                        first,
+                        output_stream,
+                        method_name,
+                        parser,
+                      ):
     output_stream = StreamDecorator( output_stream,
                                      line_prefix=display_sentinel,
                                    )

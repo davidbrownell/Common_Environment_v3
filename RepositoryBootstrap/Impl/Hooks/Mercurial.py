@@ -26,50 +26,18 @@ _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
-# ----------------------------------------------------------------------
-def _GetFundamentalRoot():
-    """
-    Gets the fundamental repository root location. This can be tricky, as this
-    file may be called from an environment that isn't activated.
-    """
+try:
+    import mercurial 
 
-    if os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"):
-        return os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL")
+    mercurial.demandimport.disable()
+except:
+    pass
 
-    generated_dir = os.path.join(os.getcwd(), "Generated")
-    if not os.path.isdir(generated_dir):
-        raise Exception("'{}' is not a valid directory".format(generated_dir))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+from RepositoryBootstrap import GetFundamentalRepository as _GetFundamentalRepository
+sys.path.pop(0)
 
-    # Any configuration will do, as they all end up pointing to the same
-    # underlying file system.
-    for item in os.listdir(generated_dir):
-        fullpath = os.path.join(generated_dir, item)
-        if os.path.isdir(fullpath):
-            break
-
-    fullpath = os.path.join(fullpath, "EnvironmentBootstrap.data")
-    if not os.path.isfile(fullpath):
-        raise Exception("'{}' is not a valid file".format(fullpath))
-
-    fundamental_root = None
-
-    for line in open(fullpath).readlines():
-        if line.startswith("fundamental_repo="):
-            fundamental_root = line[len("fundamental_repo="):].strip()
-            break
-
-    if fundamental_root is None:
-        raise Exception("The fundamental root was not found")
-
-    fundamental_root = os.path.realpath(os.path.join(os.getcwd(), fundamental_root))
-    if not os.path.isdir(fundamental_root):
-        raise Exception("'{}' is not a valid fundamental root".format(fundamental_root))
-
-    return fundamental_root
-
-# ----------------------------------------------------------------------
-
-_fundamental_root                           = _GetFundamentalRoot()
+_fundamental_root                           = _GetFundamentalRepository()
 
 # ----------------------------------------------------------------------
 # |  
@@ -235,13 +203,6 @@ def _GetChangeInfo(repo, ctx):
 
 # ----------------------------------------------------------------------
 def _Impl(ui, verb, json_content, is_debug):
-    try:
-        import mercurial 
-
-        mercurial.demandimport.disable()
-    except:
-        pass
-
     # Imports here can be tricky
     try:
         sys.path.insert(0, _fundamental_root)
@@ -339,7 +300,7 @@ def _Impl(ui, verb, json_content, is_debug):
                                      shell.Commands.Call("{} {} /fast".format(os.path.basename(activation_script), configuration if configuration != "None" else '')),
                                      shell.Commands.ExitOnError(-1),
                                      shell.Commands.Augment("PYTHONPATH", _fundamental_root, update_memory=False),
-                                     shell.Commands.Raw('python -m RepositoryBootstrap.Impl.Hooks.HookImpl "{verb}" "{sentinel}" "{json_filename}" "{result_filename}"{first}' \
+                                     shell.Commands.Raw('python -m RepositoryBootstrap.Impl.Hooks.HookScript "{verb}" "{sentinel}" "{json_filename}" "{result_filename}"{first}' \
                                                           .format( verb=verb,
                                                                    sentinel=display_sentinel,
                                                                    json_filename=json_filename,
