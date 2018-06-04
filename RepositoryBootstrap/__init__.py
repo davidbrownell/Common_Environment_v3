@@ -26,23 +26,40 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 def GetFundamentalRepository():
     """Returns the location of the fundamental repository."""
 
-    from RepositoryBootstrap import Constants
+    # Try to get the value from the environment
+    env_var = os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL")
+    if env_var:
+        return env_var
 
-    value = os.getenv(Constants.DE_FUNDAMENTAL_ROOT_NAME)
-    if value is None:
-        # If here, we aren't running in a standard environment and are likely
-        # running as part of a frozen exe. See if we are running within a file
-        # system that is similar to Common_Environment.
-        assert "python" not in sys.executable.lower(), sys.executable
+    # Try to get the value relative to this file
+    potential_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
+    if os.path.isdir(potential_dir) and os.path.isdir(os.path.join(potential_dir, "Generated")):
+        return potential_dir
 
-        potential_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
-        if os.path.isdir(potential_dir):
-            value = potential_dir
+    # Try to get the value relative to the working dir
+    potential_generated_dir = os.path.join(os.getcwd(), "Generated")
+    if os.path.isdir(potential_generated_dir):
+        # Any configuration will do, as the values are relative within the file
+        for item in os.listdir(potential_generated_dir):
+            fullpath = os.path.join(potential_generated_dir, item)
+            if os.path.isdir(fullpath):
+                break
 
-    if value is not None and value.endswith(os.path.sep):
-        value = value[:-len(os.path.sep)]
+        potential_filename = os.path.join(fullpath, "EnvironmentBootstrap.data")
+        if os.path.isfile(potential_filename):
+            fundamental_root = None
 
-    return value
+            for line in open(potential_filename).readlines():
+                if line.startswith("fundamental_repo="):
+                    fundamental_repo = line[len("fundamental_repo="):].strip()
+                    break
+
+            if fundamental_root:
+                fundamental_root = os.path.realpath(os.path.join(os.getcwd(), fundamental_root))
+                if os.path.isdir(fundamental_root):
+                    return fundamental_root
+
+    raise Exception("The fundamental repository could not be found")
 
 # ----------------------------------------------------------------------
 
@@ -54,7 +71,7 @@ try:
     import inflect
     import six
     import wrapt
-
+    
     # If here, everything was found and all is good
 
 except ImportError:
@@ -67,7 +84,7 @@ except ImportError:
     # a part of all of them.
 
     fundamental_repo = GetFundamentalRepository()
-
+    
     python_root = os.path.join(fundamental_repo, "Tools", "Python", "v2.7.14")
     assert os.path.isdir(python_root), python_root
 
@@ -86,6 +103,7 @@ except ImportError:
     import six
     import wrapt
 
+    del fundamental_repo
     del sys.path[0]
 
 # ----------------------------------------------------------------------
