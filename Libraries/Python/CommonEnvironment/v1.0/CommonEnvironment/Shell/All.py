@@ -44,19 +44,31 @@ def _GetShell():
         if result:
             return result.lower()
 
-        try:
-            import distro
-            
-            result = distro.linux_distribution(full_distribution_name=False)[0].lower()
-            if result == "debian":
-                result = "ubuntu"
+        result = None
 
-            return result
+        if result is None:
+            try:
+                import distro
+                
+                result = distro.linux_distribution(full_distribution_name=False)[0].lower()
 
-        except ImportError:
-            pass
+            except ImportError:
+                pass
 
-        return os.name.lower()
+        if result is None:
+            import platform
+
+            dist_result = platform.dist()
+            if dist_result[0]:
+                result = dist_result[0].lower()
+
+        if result is None:
+            result = os.name.lower()
+
+        if result == "debian":
+            result = "ubuntu"
+
+        return result
 
     # ----------------------------------------------------------------------
 
@@ -64,7 +76,7 @@ def _GetShell():
     
     for shell in ALL_TYPES:
         if shell.IsActive(plat):
-            return shell.DecorateWithCommands()
+            return shell.DecorateObjectWithCommands()
 
     raise Exception("No shell found for '{}'".format(plat))
 
