@@ -180,3 +180,18 @@ def OnCommitting(data, output_stream):
 
                 dm.result = -1
                 return dm.result
+
+# ----------------------------------------------------------------------
+def OnPulled(data, output_stream): # , configuration):
+    """
+    Called when the repository is in the process of pulling (but has not 
+    yet committed the pulled changes); return -1 or raise an exception to 
+    prevent the remote change from being persisted.
+
+    If the method includes the 'configuration' argument, it will be called
+    once for each configuration defined by the repository. If the method
+    doesn't include the value, it will only be called once.
+    """
+
+    # TODO: Implement similar functionality as commit
+    return
