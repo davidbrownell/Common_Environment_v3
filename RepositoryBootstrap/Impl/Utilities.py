@@ -150,15 +150,6 @@ def CalculateFingerprint(repo_dirs, relative_root=None):
     return results
 
 # ----------------------------------------------------------------------
-def GetActivationDir(shell, repo_root, configuration):
-    """Returns the name of the activation dir"""
-    return os.path.join( repo_root,
-                         Constants.GENERATED_DIRECTORY_NAME,
-                         shell.CategoryName,
-                         configuration or "Default",
-                       )
-
-# ----------------------------------------------------------------------
 @contextmanager
 def CustomMethodManager(customization_filename, method_name):
     """Attempts to load a customization filename and extract the given method."""
