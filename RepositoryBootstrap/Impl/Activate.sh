@@ -1,3 +1,4 @@
+#!/bin/bash
 # ----------------------------------------------------------------------
 # |  
 # |  Activate.sh
@@ -18,25 +19,6 @@ set +v                                      # Disable output
 # repo's root. Because of this, we use the ugly 'should_continue hack.
 should_continue=1
 changed_dir=0
-
-# Ensure that the script is being invoked via source ( as it modifies the current environment).
-if [[ $should_continue == 1 && ${0##*/} == Activate.sh ]]
-then
-    echo ""
-    echo "ERROR: This script activates a console for development according to information specific to the repository."
-    echo ""
-    echo "       Because this process makes changes to environment variables, it must be run within the current context. To do this, please source (run) the script as follows:"
-    echo ""
-    echo "          source ./Activate.sh"
-    echo ""
-    echo "              - or -"
-    echo ""
-    echo "          . ./Activate.sh"
-    echo ""
-    echo ""
-
-    should_continue=0
-fi
 
 previous_fundamental=$DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL
 
@@ -126,6 +108,25 @@ then
     shift 1
 
     $python_binary -m RepositoryBootstrap.Impl.Activate ListConfigurations "`pwd`" "$@"
+    should_continue=0
+fi
+
+# Ensure that the script is being invoked via source ( as it modifies the current environment).
+if [[ $should_continue == 1 && ${0##*/} == Activate.sh ]]
+then
+    echo ""
+    echo "ERROR: This script activates a console for development according to information specific to the repository."
+    echo ""
+    echo "       Because this process makes changes to environment variables, it must be run within the current context. To do this, please source (run) the script as follows:"
+    echo ""
+    echo "          source ./Activate.sh"
+    echo ""
+    echo "              - or -"
+    echo ""
+    echo "          . ./Activate.sh"
+    echo ""
+    echo ""
+
     should_continue=0
 fi
 
