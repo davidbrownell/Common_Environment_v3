@@ -49,5 +49,6 @@ from CommonEnvironment import RegularExpression
 from CommonEnvironment.Shell.All import CurrentShell, ALL_TYPES as Shell_ALL_TYPES
 from CommonEnvironment.StreamDecorator import StreamDecorator
 from CommonEnvironment import StringHelpers
+from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import StringSerialization as FundamentalTypesStringSerialization
 
 del sys.path[0]

@@ -99,6 +99,7 @@ def Activate( output_filename_or_stdout,
 
             activation_data = ActivationData.Load( repository_root,
                                                    configuration,
+                                                   fast,
                                                    shell=shell,
                                                    force=force or not is_activated,
                                                  )
@@ -170,11 +171,7 @@ def Activate( output_filename_or_stdout,
             LoadToolLibrary(tool)
 
         # Ensure that the generated dir exists
-        generated_dir = Utilities.GetActivationDir(shell, repository_root, configuration)
-
-        if fast:
-            generated_dir += ".fast"
-
+        generated_dir = activation_data.GetActivationDir()
         CommonEnvironmentImports.FileSystem.MakeDirs(generated_dir)
 
         methods = [ _ActivateActivationData,

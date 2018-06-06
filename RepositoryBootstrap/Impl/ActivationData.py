@@ -80,6 +80,7 @@ class ActivationData(object):
     def Load( cls,
               repository_root,
               configuration,
+              is_fast_environment,
               shell=None,
               force=False,
             ):
@@ -89,7 +90,7 @@ class ActivationData(object):
             repository_root = os.getenv(Constants.DE_REPO_ROOT_NAME)
             configuration = os.getenv(Constants.DE_REPO_CONFIGURATION_NAME)
 
-        filename = cls._GetFilename(repository_root, configuration, shell=shell)
+        filename = cls._GetFilename(repository_root, configuration, is_fast_environment, shell=shell)
 
         if not force and os.path.isfile(filename):
             try:
@@ -354,6 +355,7 @@ class ActivationData(object):
                     repository_root,
                     this_bootstrap_info.IsToolRepo,
                     configuration,
+                    is_fast_environment,
                     [ repositories[id].Repo for id, _ in priority_values ],
                     Configuration.VersionSpecs(tool_version_info, library_version_info),
                   )
@@ -364,6 +366,7 @@ class ActivationData(object):
                   repository_root,
                   is_tool_repo,
                   configuration,
+                  is_fast_environment,
                   prioritized_repositories,
                   version_specs,
                 ):
@@ -371,12 +374,13 @@ class ActivationData(object):
         self.Root                           = repository_root
         self.IsToolRepo                     = is_tool_repo
         self.Configuration                  = configuration
+        self.IsFastEnvironment              = is_fast_environment
         self.PrioritizedRepositories        = prioritized_repositories
         self.VersionSpecs                   = version_specs
 
     # ----------------------------------------------------------------------
     def Save(self):
-        with open(self._GetFilename(self.Root, self.Configuration), 'w') as f:
+        with open(self._GetFilename(self.Root, self.Configuration, self.IsFastEnvironment), 'w') as f:
             # ----------------------------------------------------------------------
             class Encoder(json.JSONEncoder):
                 def default(self, obj):                 # <An attribute defined in <...> hides this method> pylint: disable = E0202
@@ -390,6 +394,10 @@ class ActivationData(object):
                      )
 
     # ----------------------------------------------------------------------
+    def GetActivationDir(self):
+        return self._GetActivationDir(self.Root, self.Configuration, self.IsFastEnvironment)
+
+    # ----------------------------------------------------------------------
     def __str__(self):
         return CommonEnvironmentImports.CommonEnvironment.ObjectStrImpl(self)
 
@@ -397,12 +405,27 @@ class ActivationData(object):
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
     @staticmethod
-    def _GetFilename(repository_root, configuration, shell=None):
+    def _GetActivationDir(repository_root, configuration, is_fast_environment, shell=None):
+
+        result = os.path.join( repository_root,
+                               Constants.GENERATED_DIRECTORY_NAME,
+                               (shell or CommonEnvironmentImports.CurrentShell).CategoryName,
+                               configuration or "Default",
+                             )
+        if is_fast_environment:
+            result += ".fast"
+
+        return result
+
+    # ----------------------------------------------------------------------
+    @classmethod
+    def _GetFilename(cls, repository_root, configuration, is_fast_environment, shell=None):
         shell = shell or CommonEnvironmentImports.CurrentShell
 
-        return os.path.join( Utilities.GetActivationDir( shell,
-                                                         repository_root,
-                                                         configuration,
-                                                       ),
+        return os.path.join( cls._GetActivationDir( repository_root,
+                                                    configuration,
+                                                    is_fast_environment,
+                                                    shell=shell,
+                                                  ),
                              Constants.GENERATED_ACTIVATION_FILENAME,
                            )
