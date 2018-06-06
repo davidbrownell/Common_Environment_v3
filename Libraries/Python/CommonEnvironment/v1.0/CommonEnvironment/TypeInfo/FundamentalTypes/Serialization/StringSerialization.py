@@ -27,6 +27,7 @@ from CommonEnvironment import RegularExpression
 
 from CommonEnvironment.TypeInfo import ValidationException
 from CommonEnvironment.TypeInfo.FundamentalTypes.DateTypeInfo import DateTypeInfo
+from CommonEnvironment.TypeInfo.FundamentalTypes.FloatTypeInfo import FloatTypeInfo
 from CommonEnvironment.TypeInfo.FundamentalTypes.TimeTypeInfo import TimeTypeInfo
 from CommonEnvironment.TypeInfo.FundamentalTypes.UriTypeInfo import UriTypeInfo
 from CommonEnvironment.TypeInfo.FundamentalTypes.Visitor import Visitor
@@ -55,6 +56,8 @@ class RegularExpressionVisitor(Visitor):
     # ----------------------------------------------------------------------
     @classmethod
     def OnDateTime(cls, type_info):
+        float_regex_string = cls.OnFloat(FloatTypeInfo(min=0))[0]
+
         return [ textwrap.dedent(
                     # <Wrong hanging indentation> pylint: disable = C0330
                    r"""(?#
@@ -65,14 +68,34 @@ class RegularExpressionVisitor(Visitor):
                       Header or...              )(?P<tz_utc>Z)|(?#
                       Offset <begin>            )(?:(?#
                         Sign                    )(?P<tz_sign>[\+\-])(?#
-                        Hour                    )(?P<tz_hour>\d{{2}}):(?#
+                        Hour                    )(?P<tz_hour>\d{{2}})(?#
+                        Sep [optional]          ):?(?#
                         Minute                  )(?P<tz_minute>[0-5][0-9])(?#
                       Offset <end>              ))(?#
                     Timezone [optional] <end>   ))?(?#
                     )""").format( date=cls.OnDate(DateTypeInfo())[0],
                                   time=cls.OnTime(TimeTypeInfo())[0],
                                 ),
-               ]
+
+                # Enhanced Unix timestamp: "@<stamp> <timezone>"
+                textwrap.dedent(
+                   r"""(?#
+                    At                          )@(?#
+                    Timestamp                   )(?P<stamp>{})(?#
+                    Timezone [optional] <begin> )(?:(?#
+                      Space                     ) (?#
+                      Offset <begin>            )(?:(?#
+                        Sign                    )(?P<tz_sign>[\+\-])?(?#
+                        Hour                    )(?P<tz_hour>\d{{2}})(?#
+                        Sep [optional]          ):?(?#
+                        Minute                  )(?P<tz_minute>[0-5][0-9])(?#
+                      Offset <end>              ))(?#
+                    Timezone [optional] <end>   ))?(?#
+                    )""").format(float_regex_string),
+
+                # Unix Timestamp
+                float_regex_string,
+              ]
 
     # ----------------------------------------------------------------------
     @staticmethod
@@ -396,26 +419,48 @@ class _DeserializationVisitor(Visitor):
     # ----------------------------------------------------------------------
     @classmethod
     def OnDateTime(cls, type_info, item, custom_kwargs, regex_match, regex_index):
-        item, time_format_string = cls._GetTimeExpr(item)
+        if regex_index == 0:
+            # ISO Format
+            item, time_format_string = cls._GetTimeExpr(item)
+            
+            has_timezone = True
+            groupdict = regex_match.groupdict()
+            
+            for attribute_name in [ "tz_hour", "tz_minute", ]:
+                if groupdict.get(attribute_name, None) is None:
+                    has_timezone = False
+                    break
+            
+            if not has_timezone:
+                if groupdict.get("tz_utc", None):
+                    assert item.endswith('Z'), item
+                    item = item[:-1]
+            
+            return datetime.datetime.strptime( item,
+                                               "%Y-%m-%d{sep}{time_format_string}".format( sep='T' if 'T' in item else ' ',
+                                                                                           time_format_string=time_format_string,
+                                                                                         ),
+                                             )
 
-        has_timezone = True
-        groupdict = regex_match.groupdict()
+        assert regex_index in [ 1, 2, ], regex_index
 
-        for attribute_name in [ "tz_hour", "tz_minute", ]:
-            if groupdict.get(attribute_name, None) is None:
-                has_timezone = False
-                break
+        if regex_index == 1:
+            stamp = regex_match.group("stamp")
+        else:
+            stamp = item
 
-        if not has_timezone:
-            if groupdict.get("tz_utc", None):
-                assert item.endswith('Z'), item
-                item = item[:-1]
+        # timestamp to date time
+        result = datetime.datetime.utcfromtimestamp(float(stamp))
 
-        return datetime.datetime.strptime( item,
-                                           "%Y-%m-%d{sep}{time_format_string}".format( sep='T' if 'T' in item else ' ',
-                                                                                       time_format_string=time_format_string,
-                                                                                     ),
-                                         )
+        if regex_index == 1 and regex_match.groupdict().get("tz_hour", None) is not None:
+            delta = datetime.timedelta(hours=int(regex_match.group("tz_hour")), minutes=int(regex_match.group("tz_minute")))
+
+            if regex_match.groupdict().get("tz_sign", None) != '-':
+                delta = -delta
+
+            result = result + delta
+
+        return result
 
     # ----------------------------------------------------------------------
     @staticmethod
