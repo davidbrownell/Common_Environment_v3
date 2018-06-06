@@ -55,10 +55,6 @@ AGNOSTIC_OS_NAME                                        = "Agnostic"
 SETUP_ENVIRONMENT_DEPENDENCIES_METHOD_NAME              = "GetDependencies"
 SETUP_ENVIRONMENT_ACTIONS_METHOD_NAME                   = "GetCustomActions"
 
-SETUP_ENVIRONMENT_COMMIT_HOOK_EVENT_HANDLER             = "Commit"
-SETUP_ENVIRONMENT_PUSH_HOOK_EVENT_HANDLER               = "Push"
-SETUP_ENVIRONMENT_PUSHED_HOOK_EVENT_HANDLER             = "Pushed"
-
 # ----------------------------------------------------------------------
 # |  Custom Activate Methods
 ACTIVATE_ENVIRONMENT_ACTIONS_METHOD_NAME                                    = "GetCustomActions"
