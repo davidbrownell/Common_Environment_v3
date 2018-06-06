@@ -55,14 +55,15 @@ def Commit( display_sentinel,
             first=False,
             output_stream=sys.stdout,
           ):
-    return _ImplConfiguration( display_sentinel,
-                               json_filename,
-                               result_filename,
-                               first,
-                               output_stream,
-                               Constants.HOOK_ENVIRONMENT_COMMIT_METHOD_NAME,
-                               HooksImplParser.Commit_FromJson,
-                             )
+    """Called prior to committing a change locally"""
+    return _Impl( display_sentinel,
+                  json_filename,
+                  result_filename,
+                  first,
+                  output_stream,
+                  Constants.HOOK_ENVIRONMENT_COMMIT_METHOD_NAME,
+                  HooksImplParser.Commit_FromJson,
+                )
 
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint
@@ -77,14 +78,15 @@ def Push( display_sentinel,
           first=False,
           output_stream=sys.stdout,
         ):
-    return _ImplConfiguration( display_sentinel,
-                               json_filename,
-                               result_filename,
-                               first,
-                               output_stream,
-                               Constants.HOOK_ENVIRONMENT_PUSH_METHOD_NAME,
-                               HooksImplParser.Push_FromJson,
-                             )
+    """Called prior to pushing a local change(s) to the remote repository"""
+    return _Impl( display_sentinel,
+                  json_filename,
+                  result_filename,
+                  first,
+                  output_stream,
+                  Constants.HOOK_ENVIRONMENT_PUSH_METHOD_NAME,
+                  HooksImplParser.Push_FromJson,
+                )
 
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint
@@ -99,26 +101,27 @@ def Pull( display_sentinel,
           first=False,
           output_stream=sys.stdout,
         ):
-    return _ImplConfiguration( display_sentinel,
-                               json_filename,
-                               result_filename,
-                               first,
-                               output_stream,
-                               Constants.HOOK_ENVIRONMENT_PULL_METHOD_NAME,
-                               HooksImplParser.Pull_FromJson,
-                             )
+    """Called prior to committing a change pushed from a client to the local repository"""
+    return _Impl( display_sentinel,
+                  json_filename,
+                  result_filename,
+                  first,
+                  output_stream,
+                  Constants.HOOK_ENVIRONMENT_PULL_METHOD_NAME,
+                  HooksImplParser.Pushed_FromJson,
+                )
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
-def _ImplConfiguration( display_sentinel,
-                        json_filename,
-                        result_filename,
-                        first,
-                        output_stream,
-                        method_name,
-                        parser,
-                      ):
+def _Impl( display_sentinel,
+           json_filename,
+           result_filename,
+           first,
+           output_stream,
+           method_name,
+           parser,
+         ):
     output_stream = StreamDecorator( output_stream,
                                      line_prefix=display_sentinel,
                                    )
@@ -132,7 +135,7 @@ def _ImplConfiguration( display_sentinel,
 
     output_stream.write("Parsing dependencies...")
     with output_stream.DoneManager():
-        dependencies = ActivationData.Load(None, None).PrioritizedRepositories
+        dependencies = ActivationData.Load(None, None, None).PrioritizedRepositories
 
     has_config_specific = False
 
