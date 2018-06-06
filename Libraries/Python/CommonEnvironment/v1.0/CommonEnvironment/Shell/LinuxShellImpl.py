@@ -145,14 +145,16 @@ class LinuxShellImpl(Shell):
                 """).format( success=textwrap.dedent(
                                         # <Wrong hanging indentation> pylint: disable = C0330
                                         """\
-                                        if [ $? -eq 0 ]; then
+                                        if [[ $? -eq 0 ]]
+                                        then
                                             read -p "Press [Enter] to continue"
                                         fi
                                         """) if command.PauseOnSuccess else '',
                              error=textwrap.dedent(
                                         # <Wrong hanging indentation> pylint: disable = C0330
                                         """\
-                                        if [ $? -ne 0]; then
+                                        if [[ $? -ne 0]] 
+                                        then
                                             read -p "Press [Enter] to continue"
                                         fi
                                         """) if command.PauseOnError else '',
@@ -165,8 +167,9 @@ class LinuxShellImpl(Shell):
             return textwrap.dedent(
                 """\
                 error_code=$?
-                if [ $error_code -ne 0 ]; then
-                    return $error_code
+                if [[ $error_code -ne 0 ]]
+                then
+                    exit $error_code
                 fi
                 """)
     
