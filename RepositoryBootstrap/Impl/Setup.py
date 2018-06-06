@@ -577,8 +577,8 @@ def _SetupScmHooks( shell,
                     verbose,
                     explict_configurations,
                   ):
-    # Mercurial
-    if os.path.isdir(os.path.join(repository_root, ".hg")):
+    # ----------------------------------------------------------------------
+    def Mercurial():
         hooks_filename = os.path.normpath(os.path.join(_script_dir, "Hooks", "Mercurial.py"))
         assert os.path.isfile(hooks_filename), hooks_filename
 
@@ -607,6 +607,50 @@ def _SetupScmHooks( shell,
 
         with open(potential_hg_filename, 'w') as f:
             config.write(f)
+
+    # ----------------------------------------------------------------------
+    def Git():
+        hooks_dir = os.path.join(repository_root, ".git", "hooks")
+        CommonEnvironmentImports.FileSystem.MakeDirs(hooks_dir)
+
+        hooks_impl_filename = os.path.normpath(os.path.join(_script_dir, "Hooks", "Git.py"))
+        assert os.path.isfile(hooks_impl_filename), hooks_impl_filename
+        
+        relative_hooks_impl_filename = CommonEnvironmentImports.FileSystem.GetRelativePath(repository_root, hooks_impl_filename).replace(os.path.sep, '/')
+        
+        import io
+
+        for name in [ "commit-msg",
+                      "pre-push",
+                      "pre-receive",
+                    ]:
+            with io.open( os.path.join(hooks_dir, name),
+                          'w',
+                          newline='\n',
+                        ) as f:
+                if name == "pre-receive":
+                    # This hook is run from the .git dir on the server. The relative path is
+                    # based on the root dir, so we need to move up an additional level to compensate
+                    # for the .git dir.
+                    this_relative_hooks_impl_filename = "../{}".format(relative_hooks_impl_filename)
+                else:
+                    this_relative_hooks_impl_filename = relative_hooks_impl_filename
+
+                f.write(textwrap.dedent(
+                    """\
+                    #!/bin/sh
+                    python {} {} "$*"
+                    exit $?
+                    """).format( this_relative_hooks_impl_filename, 
+                                 name.replace('-', '_'),
+                               ))
+
+    # ----------------------------------------------------------------------
+
+    if os.path.isdir(os.path.join(repository_root, ".hg")):
+        return Mercurial()
+    if os.path.isdir(os.path.join(repository_root, ".git")):
+        return Git()
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
