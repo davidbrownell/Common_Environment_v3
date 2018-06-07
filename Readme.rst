@@ -89,27 +89,27 @@ Definitions
 .. _Tool:
 
 Tool
-  BugBug
+  A folder available in the environment's path after activation. A specific tool version can be specified using `Version Specs`_.
 
 .. _Script:
 
 Script
-  BugBug
+  Content available in the environment's path after activation. Scripts do not have specific versions.
   
 .. _Library:
 
 Library
-  BugBug
+  A language-specific library available after activation; where the specifics of "availability" are based on the corresponding language. In Python, this means that the library is made available within the Python's site-packages directory. A specific library version can be specified using `Version Specs`_.
 
 .. _Repository:
 
 Repository
-  BugBug
+  A collection of code based on Common_Environment. A repository and those that it depends on are activated within an environment.
   
 .. _Environment:
 
 Environment
-  BugBug
+  A repository that has been activated within a command window. Environments leverage Tools_, Scripts_, and Libraries_ it defines or are defined in any repository that it depends on.
 
 .. _`Version Spec`:
 
@@ -123,8 +123,15 @@ Version Specs
 .. _Dependency:
 
 Dependencies
-  BugBug
-    
+  Repositories can be dependent upon other repositories. During activation, all Tools_, Scripts_, and Libraries_ from those repositories will be made available in addition to any Tools_, Scripts_, and Libraries_ made available by the current repository.
+
+.. _Configuration:
+  
+Configuration
+  A repository may support configurations, where an individual configuration customizes `Version Specs`_ for the Tools_, Scripts_, and Libraries_ made available during activation. For example, the Common_Environment repository makes 2 configurations available: ``python36`` and ``python27``. 
+  
+  Configurations are defined in a repository's ``Setup_custom.py`` file.
+  
 .. _Tools: Tool_
 .. _Scripts: Script_
 .. _Libraries: Library_
@@ -132,28 +139,61 @@ Dependencies
 .. _Environments: Environment_
 .. _`Version Specs`: `Version Spec`_
 .. _Dependencies: Dependency_
+.. _Configurations : Configuration_
 
 Functionality
 =============
 .. _`Python Bootstrap`:
 
 Python Bootstrap
-  BugBug
+  Support for environment-specific instances of Python, each with distinct Libraries_. Different environments with different Python library `Version Specs`_ can safely coexist on the same system. 
+  
+  This functionality is similar to a dynamic virtualenv.
 
 .. _`Build Tools`:
 
 Build Tools
-  BugBug
+  Plugin-based system for the arbitrary building of applications. For more information, see:
+  
+  * `Builder.py <Scripts/Builder.py>`_ to invoke a build
+  * `BuildImpl/__init__.py <Libraries/Python/CommonEnvironment/v1.0/CommonEnvironment/BuildImpl/__init__.py>`_ to implement a build
 
+  ====================================  =====================================================
+  Linux                                 ``Builder.sh /?``
+  Windows                               ``Builder.cmd /?``
+  Windows (PowerShell)                  ``Builder.ps1 /?``
+  ====================================  =====================================================
+  
  .. _`Test Tools`:
  
 Test Tools
-  BugBug
-
+  Plugin-based system for the arbitrary testing of applications. For more information, see:
+  
+  * `Tester.py <Scripts/Tester.py>`_ to execute tests
+  * `Compilers/PythonVerifier.py <Scripts/Compilers/PythonVerifier.py>`_ for an example of a test compiler plugin
+  * `TestParsers/PyUnittestTestParser.py <Scripts/TestParsers/PyUnittestTestParser.py>`_ for an example of a test framework plugin
+  * `TestParserImpl/__init__.py <Libraries/Python/CommonEnvironment/v1.0/CommonEnvironment/TestParserImpl/__init__.py>`_ to implement a test parser plugin
+  
+  ====================================  =====================================================
+  Linux                                 ``Tester.sh /?``
+  Windows                               ``Tester.cmd /?``
+  Windows (PowerShell)                  ``Tester.ps1 /?``
+  ====================================  =====================================================
+  
 .. _`Code Coverage Tools`:
 
 Code Coverage Tools
-  BugBug
+  Plugin-based system for the arbitrary extraction of code coverage information. For more information, see:
+  
+  * `Tester.py <Scripts/Tester.py>`_ to execute tests
+  * `TestExecutor/PyCoverageTestExecutor.py <Scripts/TestExecutor/PyCoverageTestExecutor.py>`_ for an example of a code coverage / test executor plugin
+  * `TestExecutorImpl/__init__.py <Libraries/Python/CommonEnvironment/v1.0/CommonEnvironment/TestExecutorImpl/__init__.py>`_ to implement a test executor / code coverage extractor plugin
+  
+  ====================================  =====================================================
+  Linux                                 ``Tester.sh /?``
+  Windows                               ``Tester.cmd /?``
+  Windows (PowerShell)                  ``Tester.ps1 /?``
+  ====================================  =====================================================
 
 Docker Images
 =============
