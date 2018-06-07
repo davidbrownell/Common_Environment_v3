@@ -58,7 +58,7 @@ del sys.path[0]
 # Tool repositories are designed to augment other repositories. They cannot
 # have configurations or dependencies and may not be activated on their own. 
 # 
-# These difference are summerized in this table: 
+# These difference are summarized in this table: 
 # 
 #                                                       Standard  Tool
 #                                                       --------  ----
