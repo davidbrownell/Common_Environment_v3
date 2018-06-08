@@ -2,12 +2,12 @@
 # |  
 # |  WindowsPowerShell.py
 # |  
-# |  David Brownell <db@DavidBrownell.com>
-# |      2018-05-07 07:18:00
+# |  Michael Sharp <ms@MichaelGSharp.com>
+# |      2018-06-07 16:38:31
 # |  
 # ----------------------------------------------------------------------
 # |  
-# |  Copyright David Brownell 2018.
+# |  Copyright Michael Sharp 2018.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 # |  
@@ -18,9 +18,9 @@ import os
 import sys
 
 from CommonEnvironment.Interface import staticderived
+from CommonEnvironment.Shell import *
 from CommonEnvironment.Shell.Commands import *
 from CommonEnvironment.Shell.Commands.Visitor import Visitor
-
 from CommonEnvironment.Shell.WindowsShell import WindowsShell
 
 # ----------------------------------------------------------------------
@@ -40,13 +40,12 @@ class WindowsPowerShell(WindowsShell):
     # Powershell will be used in Windows environment when this environment variable is set to "1"
     ENVIRONMENT_NAME                        = "DEVELOPMENT_ENVIRONMENT_USE_WINDOWS_POWERSHELL"
 
-    # TODO: Update the visitor for powershell (this is a copy of the WindowsShell CommandVisitor here for reference)
     @staticderived
     class CommandVisitor(Visitor):
         # ----------------------------------------------------------------------
         @staticmethod
         def OnComment(command):
-            return "REM {}".format(command.Value)
+            return "# {}".format(command.Value)
 
         # ----------------------------------------------------------------------
         @staticmethod
@@ -70,19 +69,19 @@ class WindowsPowerShell(WindowsShell):
             
             for line in command.Value.split('\n'):
                 if not line.strip():
-                    output.append("echo.")
+                    output.append("Write-Information ''")
                 else:
                     for old_char, new_char in replacement_chars:
                         line = line.replace(old_char, new_char)
                         
-                    output.append("echo {}".format(line))
+                    output.append("Write-Information '{}".format(line) + "'")
                     
             return '\n'.join(output)
 
         # ----------------------------------------------------------------------
         @staticmethod
         def OnCall(command):
-            return "call {}".format(command.CommandLine)
+            return 'Invoke-Expression "{}"'.format(command.CommandLine)
 
         # ----------------------------------------------------------------------
         @staticmethod
@@ -98,8 +97,8 @@ class WindowsPowerShell(WindowsShell):
 
             return textwrap.dedent(
                 """\
-                {remove}mklink{dir_flag} "{link}" "{target}" > NUL
-                """).format( remove='' if not command.RemoveExisting else 'if exist "{link}" ({remove} "{link}")\n'.format( remove="rmdir" if command.IsDir else "del /Q",
+                {remove}cmd /c mklink{dir_flag} "{link}" "{target}" > NULL
+                """).format( remove='' if not command.RemoveExisting else 'if exist "{link}" ({remove} "{link}")\r\n'.format( remove="rmdir" if command.IsDir else "del /Q",
                                                                                                                             **d
                                                                                                                           ),
                              dir_flag=" /D /J" if command.IsDir else '',
@@ -120,11 +119,11 @@ class WindowsPowerShell(WindowsShell):
         @staticmethod
         def OnSet(command):
             if command.Values is None:
-                return "SET {}=".format(command.Name)
+                return "$env:{}=".format(command.Name)
 
             assert command.Values
 
-            return "SET {}={}".format(command.Name, WindowsShell.EnvironmentVariableDelimiter.join(command.Values))
+            return "$env:{}='{}'".format(command.Name, WindowsShell.EnvironmentVariableDelimiter.join(command.Values))
 
         # ----------------------------------------------------------------------
         @classmethod
@@ -140,7 +139,7 @@ class WindowsPowerShell(WindowsShell):
             if not new_values:
                 return
 
-            return "SET {name}={values};%{name}%".format( name=command.Name,
+            return "$env:{name}='{values};' + $env:{name}".format( name=command.Name,
                                                           values=WindowsShell.EnvironmentVariableDelimiter.join(command.Values),
                                                         )
             
@@ -151,16 +150,16 @@ class WindowsPowerShell(WindowsShell):
                 """\
                 {success}
                 {error}
-                exit /B {return_code}
-                """).format( success="if %ERRORLEVEL% EQ 0 ( pause )" if command.PauseOnSuccess else '',
-                             error="if %ERRORLEVEL% NEQ 0 ( pause )" if command.PauseOnError else '',
+                exit {return_code}
+                """).format( success="if ($?) { pause }" if command.PauseOnSuccess else '',
+                             error="if (-not $?) { pause }" if command.PauseOnError else '',
                              return_code=command.ReturnCode or 0,
                            )
 
         # ----------------------------------------------------------------------
         @staticmethod
         def OnExitOnError(command):
-            return "if %ERRORLEVEL% NEQ 0 (exit /B {})".format(command.ReturnCode or "%ERRORLEVEL%")
+            return "if (-not $?){{ exit {}}}".format(command.ReturnCode or "$?")
 
         # ----------------------------------------------------------------------
         @staticmethod
@@ -170,12 +169,12 @@ class WindowsPowerShell(WindowsShell):
         # ----------------------------------------------------------------------
         @staticmethod
         def OnEchoOff(command):
-            return "@echo off"
+            return '$InformationPreference = "Continue"'
 
         # ----------------------------------------------------------------------
         @staticmethod
         def OnCommandPrompt(command):
-            return "set PROMPT=({}) $P$G".format(command.Prompt)
+            return 'function Global:prompt {{"PS: ({})  $($(Get-Location).path)>"}}'.format(command.Prompt)
 
         # ----------------------------------------------------------------------
         @staticmethod
@@ -205,20 +204,9 @@ class WindowsPowerShell(WindowsShell):
     # |  
     # ----------------------------------------------------------------------
 
-    # TODO: Verify these settings are correct. Remove those prefied with "Same as base: " that aren't necessary.
-
     Name                                    = "WindowsPowerShell"
-    # Same as base: CategoryName                            = "Windows"
-    # Same as base: ScriptExtension                         = ".cmd"
     ScriptExtension                         = ".ps1"
-    # Same as base: ExecutableExtension                     = ".exe"
-    # Same as base: CompressionExtensions                   = [ ".zip", ]
     AllArgumentsScriptVariable              = "$args"
-    # Same as base: EnvironmentVariableDelimiter            = ";"
-    # Same as base: HasCaseSensitiveFileSystem              = False
-    # Same as base: Architecture                            = "x64" if os.getenv("ProgramFiles(x86)") else "x86"
-    # Same as base: UserDirectory                           = None      # Set in __clsinit__
-    # Same as base: TempDirectory                           = os.getenv("TMP")
     
     # ----------------------------------------------------------------------
     # |  
@@ -226,24 +214,11 @@ class WindowsPowerShell(WindowsShell):
     # |  
     # ----------------------------------------------------------------------
 
-    # TODO: The environment variable thing is a hack; is there a better way to detect that we are in a powershell environment?
+
     @classmethod
     def IsActive(cls, platform_name):
         return ("windows" in platform_name or platform_name == "nt") and os.getenv(cls.ENVIRONMENT_NAME, None) == "1"
 
-
-    # TODO: Use the methods below if necessary, delete them if not used
-
-    # ----------------------------------------------------------------------
-    # |  
-    # |  Private Methods
-    # |  
-    # ----------------------------------------------------------------------
     @staticmethod
-    def _GeneratePrefixCommand():
-        return
-
-    # ----------------------------------------------------------------------
-    @staticmethod
-    def _GenerateSuffixCommand():
-        return
+    def DecorateInvokeScriptCommandLine(command_line):
+        return "powershell " + command_line
