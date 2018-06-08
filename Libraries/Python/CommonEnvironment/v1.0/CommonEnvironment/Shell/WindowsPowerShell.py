@@ -28,6 +28,7 @@ _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
+# ----------------------------------------------------------------------
 @staticderived
 class WindowsPowerShell(WindowsShell):
 
@@ -203,7 +204,6 @@ class WindowsPowerShell(WindowsShell):
     # |  Public Properties
     # |  
     # ----------------------------------------------------------------------
-
     Name                                    = "WindowsPowerShell"
     ScriptExtension                         = ".ps1"
     AllArgumentsScriptVariable              = "$args"
@@ -213,8 +213,6 @@ class WindowsPowerShell(WindowsShell):
     # |  Public Methods
     # |  
     # ----------------------------------------------------------------------
-
-
     @classmethod
     def IsActive(cls, platform_name):
         return ("windows" in platform_name or platform_name == "nt") and os.getenv(cls.ENVIRONMENT_NAME, None) == "1"

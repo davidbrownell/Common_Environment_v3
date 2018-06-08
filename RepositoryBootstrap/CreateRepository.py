@@ -85,8 +85,8 @@ def EntryPoint( repo_dir,
 
         if support_windows:
             filenames.append("Setup.cmd")
-        # TODO: if support_powershell:
-        # TODO:     filenames.append("Setup.ps1")
+        if support_powershell:
+            filenames.append("Setup.ps1")
         if support_linux:
             filenames.append("Setup.sh")
 
