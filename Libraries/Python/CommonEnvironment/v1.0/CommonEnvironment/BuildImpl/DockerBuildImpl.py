@@ -321,7 +321,7 @@ def CreateRepositoryBuildFunc( repository_name,
                                 # Activate the image so we can extract the changes
                                 activated_dm.stream.write("Activating...")
                                 with activated_dm.stream.DoneManager(suffix='\n') as this_dm:
-                                    command_line = 'docker run -it --name "{container_name}" "{image_name}:base_latest" /sbin/my_init -- /sbin/setuser "{username}" bash -c "cd {image_code_dir} && . ./Activate.sh {configuration} && pushd {image_code_base}/Common/Environment && python -m RepositoryBootstrap.EnvironmentDiffs /decorate' \
+                                    command_line = 'docker run -it --name "{container_name}" "{image_name}:base_latest" /sbin/my_init -- /sbin/setuser "{username}" bash -c "cd {image_code_dir} && . ./Activate.sh {configuration} && pushd {image_code_base}/Common/Environment && python -m RepositoryBootstrap.EnvironmentDiffs After /decorate' \
                                                         .format( container_name=temp_container_name,
                                                                  image_name=docker_image_name,
                                                                  configuration=configuration or '',

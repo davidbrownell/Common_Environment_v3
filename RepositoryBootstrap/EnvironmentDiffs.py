@@ -35,18 +35,20 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 @CommandLine.EntryPoint
 @CommandLine.Constraints( output_stream=None,
                         )
-def EntryPoint( decorate=False,
-                output_stream=sys.stdout,
-              ):
-    # Get the original environment
-    generated_dir = os.getenv(Constants.DE_REPO_GENERATED_NAME)
-    assert os.path.isdir(generated_dir), generated_dir
+def Before( decorate=False,
+            output_stream=sys.stdout,
+          ):
+    _Display(_GetOriginalEnvironment(), output_stream, decorate)
+    return 0
 
-    original_environment_filename = os.path.join(generated_dir, Constants.GENERATED_ACTIVATION_ORIGINAL_ENVIRONMENT_FILENAME)
-    assert os.path.isfile(original_environment_filename), original_environment_filename
-
-    with open(original_environment_filename) as f:
-        original_env = json.load(f)
+# ----------------------------------------------------------------------
+@CommandLine.EntryPoint
+@CommandLine.Constraints( output_stream=None,
+                        )
+def After( decorate=False,
+           output_stream=sys.stdout,
+         ):
+    original_env = _GetOriginalEnvironment()
 
     # Compare to the current environment
     this_env = dict(os.environ)
@@ -59,7 +61,27 @@ def EntryPoint( decorate=False,
            ):
             differences[k] = v
 
-    differences = json.dumps(differences)
+    _Display(differences, output_stream, decorate)
+    return 0
+
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+def _GetOriginalEnvironment():
+    # Get the original environment
+    generated_dir = os.getenv(Constants.DE_REPO_GENERATED_NAME)
+    assert os.path.isdir(generated_dir), generated_dir
+
+    original_environment_filename = os.path.join(generated_dir, Constants.GENERATED_ACTIVATION_ORIGINAL_ENVIRONMENT_FILENAME)
+    assert os.path.isfile(original_environment_filename), original_environment_filename
+
+    with open(original_environment_filename) as f:
+        return json.load(f)
+
+# ----------------------------------------------------------------------
+def _Display(content, output_stream, decorate):
+    if not isinstance(content, six.string_types):
+        content = json.dumps(content)
 
     if decorate:
         output_stream.write(textwrap.dedent(
@@ -67,11 +89,9 @@ def EntryPoint( decorate=False,
             //--//--//--//--//--//--//--//--//--//--//--//--//--//--//--//
             {}
             //--//--//--//--//--//--//--//--//--//--//--//--//--//--//--//
-            """).format(differences))
+            """).format(content))
     else:
-        output_stream.write(differences)
-
-    return 0
+        output_stream.write(content)
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
