@@ -71,17 +71,14 @@ def EntryPoint( repo_dir,
         filenames = [ "Activate_custom.py",
                       "ScmHook_custom.py",
                       "Setup_custom.py",
+                      "Readme.rst",
                     ] 
 
         if support_git:                     
-            filenames += [ ".gitignore", 
-                           "Readme.md", 
-                         ]
+            filenames += [ ".gitignore", ]
 
         if support_hg:                      
-            filenames += [ ".hgignore",
-                           "Readme.rst",
-                         ]
+            filenames += [ ".hgignore", ]
 
         if support_windows:
             filenames.append("Setup.cmd")
