@@ -22,15 +22,15 @@
 
 $env:DEVELOPMENT_ENVIRONMENT_USE_WINDOWS_POWERSHELL=1
 
-# Begin bootstrap customization
-$env:DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=$PSScriptRoot
-
-Invoke-Expression "$env:DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL\RepositoryBootstrap\Impl\Fundamental\Setup.cmd $args" 
-
 function ExitScript {
     Remove-Item "NULL" -ErrorAction SilentlyContinue
     exit
 }
+
+# Begin bootstrap customization
+$env:DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=$PSScriptRoot
+
+Invoke-Expression "$env:DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL\RepositoryBootstrap\Impl\Fundamental\Setup.cmd $args" 
 
 if( -not $? ){
     $msg = $Error[0].Exception.Message
