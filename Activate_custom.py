@@ -68,7 +68,7 @@ def GetCustomActions( output_stream,
         # Reset any existing values
         os.environ["DEVELOPMENT_ENVIRONMENT_COMPILERS"] = ''
         os.environ["DEVELOPMENT_ENVIRONMENT_TEST_EXECUTORS"] = ''
-        os.environ["DEVELOPMENT_ENVIRONMENT_TEST_PARSER"] = ''
+        os.environ["DEVELOPMENT_ENVIRONMENT_TEST_PARSERS"] = ''
         os.environ["DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_VALIDATORS"] = ''
         os.environ["DEVELOPMENT_ENVIRONMENT_TESTER_CONFIGURATIONS"] = ''
 

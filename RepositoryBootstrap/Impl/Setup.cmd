@@ -26,7 +26,7 @@ call :CreateTempScriptName
 REM Generate...
 set PYTHONPATH=%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%
 
-python -m RepositoryBootstrap.Impl.Setup "%_SETUP_TEMP_SCRIPT_NAME%" %*
+%~dp0\..\..\Tools\Python\v3.6.5\Windows\python -m RepositoryBootstrap.Impl.Setup "%_SETUP_TEMP_SCRIPT_NAME%" %*
 set _SETUP_GENERATION_ERROR_LEVEL=%ERRORLEVEL%
 
 set PYTHONPATH=

@@ -49,16 +49,16 @@ def EntryPoint( repo_dir,
                                                      suffix='\n',
                                                    ) as dm:
         # Prompt for the files to copy
-        support_git = _Prompt("Support Git? ", "yes").lower() == "yes"
-        support_hg = _Prompt("Support Hg? ", "yes").lower() == "yes"
-        support_windows = _Prompt("Support Windows? ", "yes").lower() == "yes"
+        support_git = _Prompt("Support Git? ", "yes").lower() in [ "yes", "y", ]
+        support_hg = _Prompt("Support Hg? ", "yes").lower() in [ "yes", "y", ]
+        support_windows = _Prompt("Support Windows? ", "yes").lower() in [ "yes", "y", ]
 
         if support_windows:
-            support_powershell = _Prompt("Support PowerShell on Windows? ", "yes").lower() == "yes"
+            support_powershell = _Prompt("Support PowerShell on Windows? ", "yes").lower() in [ "yes", "y", ]
         else:
             support_powershell = False
 
-        support_linux = _Prompt("Support Linux? ", "yes").lower() == "yes"
+        support_linux = _Prompt("Support Linux? ", "yes").lower() in [ "yes", "y", ]
 
         include_boost_license = _Prompt("Include the boost software license (https://www.boost.org/users/license.html)? ", "no").lower() in [ "yes", "y", ]
 

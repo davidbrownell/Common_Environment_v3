@@ -51,31 +51,20 @@ class WindowsPowerShell(WindowsShell):
         # ----------------------------------------------------------------------
         @staticmethod
         def OnMessage(command):
-            replacement_chars = [ ( '%', '%%' ),
-                                  ( '^', '^^' ),
-                                  ( '&', '^&' ),
-                                  ( '<', '^<' ),
-                                  ( '>', '^>' ),
-                                  ( '|', '^|' ),
-                                  ( ',', '^,' ),
-                                  ( ';', '^;' ),
-                                  ( '(', '^(' ),
-                                  ( ')', '^)' ),
-                                  ( '[', '^[' ),
-                                  ( ']', '^]' ),
-                                  ( '"', '\"' ),
+            replacement_chars = [ ( '`', '``' ),
+                                  ( "'", "''" ),
                                 ]
                                 
             output = []
             
             for line in command.Value.split('\n'):
                 if not line.strip():
-                    output.append("Write-Information ''")
+                    output.append("Write-Output ''")
                 else:
                     for old_char, new_char in replacement_chars:
                         line = line.replace(old_char, new_char)
                         
-                    output.append("Write-Information '{}".format(line) + "'")
+                    output.append("Write-Output '{}'".format(line))
                     
             return '\n'.join(output)
 
@@ -120,11 +109,11 @@ class WindowsPowerShell(WindowsShell):
         @staticmethod
         def OnSet(command):
             if command.Values is None:
-                return "$env:{}=".format(command.Name)
+                return "if (Test-Path env:{name}) {{ Remove-Item env:{name} }}".format(name=command.Name)
 
             assert command.Values
 
-            return "$env:{}='{}'".format(command.Name, WindowsShell.EnvironmentVariableDelimiter.join(command.Values))
+            return '$env:{}="{}"'.format(command.Name, WindowsShell.EnvironmentVariableDelimiter.join(command.Values))
 
         # ----------------------------------------------------------------------
         @classmethod
@@ -140,9 +129,9 @@ class WindowsPowerShell(WindowsShell):
             if not new_values:
                 return
 
-            return "$env:{name}='{values};' + $env:{name}".format( name=command.Name,
-                                                          values=WindowsShell.EnvironmentVariableDelimiter.join(command.Values),
-                                                        )
+            return '$env:{name}="{values};" + $env:{name}'.format( name=command.Name,
+                                                                   values=WindowsShell.EnvironmentVariableDelimiter.join(command.Values),
+                                                                 )
             
         # ----------------------------------------------------------------------
         @staticmethod

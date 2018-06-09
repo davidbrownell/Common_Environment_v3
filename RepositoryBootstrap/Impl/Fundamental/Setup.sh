@@ -29,12 +29,10 @@ echo ""
 echo "------------------------  Python 2.7.14  -----------------------------"
 
 source $this_dir/../../../Tools/openssl/v1.0.2o/Linux/Setup.sh
-
 $this_dir/../../../Tools/Python/v2.7.14/Linux/Setup.sh
-export PATH=/opt/CommonEnvironment/python/2.7.14/bin:$PATH
 
 echo "Installing python dependencies for v2.7.14..."
-python -m pip install --quiet --no-cache-dir -r $this_dir/python_requirements.txt -r $this_dir/python_linux_requirements.txt 
+/opt/CommonEnvironment/python/2.7.14/bin/python -m pip install --quiet --no-cache-dir -r $this_dir/python_requirements.txt -r $this_dir/python_linux_requirements.txt 
 echo "DONE!"
 
 # ----------------------------------------------------------------------
@@ -43,12 +41,10 @@ echo ""
 echo "------------------------  Python 3.6.5  ------------------------------"
 
 source $this_dir/../../../Tools/openssl/v1.1.0h/Linux/Setup.sh
-
 $this_dir/../../../Tools/Python/v3.6.5/Linux/Setup.sh
-export PATH=/opt/CommonEnvironment/python/3.6.5/bin:$PATH
 
 echo "Installing python dependencies for v3.6.5..."
-python -m pip install --quiet --no-cache-dir -r $this_dir/python_requirements.txt -r $this_dir/python_linux_requirements.txt 
+/opt/CommonEnvironment/python/3.6.5/bin/python -m pip install --quiet --no-cache-dir -r $this_dir/python_requirements.txt -r $this_dir/python_linux_requirements.txt 
 echo "DONE!"
 echo
 echo
@@ -56,7 +52,7 @@ echo
 echo "----------------------------------------------------------------------"
 
 # Invoke fundamental setup activities
-python $this_dir/Setup.py "$@"
+/opt/CommonEnvironment/python/3.6.5/bin/python $this_dir/Setup.py "$@"
 
 echo "----------------------------------------------------------------------"
 echo "----------------------------------------------------------------------"

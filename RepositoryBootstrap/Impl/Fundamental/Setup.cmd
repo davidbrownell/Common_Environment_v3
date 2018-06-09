@@ -27,14 +27,18 @@ echo ----------------------------------------------------------------------
 echo.
 echo ------------------------  Python 2.7.14  -----------------------------
 
-call %~dp0\..\..\..\Tools\Python\v2.7.14\Windows\Setup.cmd
-set PATH=%~dp0..\..\..\Tools\Python\v2.7.14\Windows;%PATH%
+pushd %~dp0\..\..\..\Tools\Python\v2.7.14\Windows
+
+call Setup.cmd
 
 echo Installing Python dependencies for 2.7.14...
-call :CreateTempScriptName
 
+call :CreateTempScriptName
 python -m pip install -r "%~dp0python_requirements.txt" -r "%~dp0python_windows_requirements.txt" 1> "%_SETUP_FUNDAMENTAL_TEMP_SCRIPT_NAME%" 2>&1
-if "%ERRORLEVEL%" NEQ "0" (
+set _error=%ERRORLEVEL%
+popd
+
+if "%_error%" NEQ "0" (
     echo.
     type %_SETUP_FUNDAMENTAL_TEMP_SCRIPT_NAME%
     exit /B -1
@@ -47,14 +51,18 @@ echo DONE!
 echo.
 echo ------------------------  Python 3.6.5  ------------------------------
 
-call %~dp0\..\..\..\Tools\Python\v3.6.5\Windows\Setup.cmd
-set PATH=%~dp0..\..\..\Tools\Python\v3.6.5\Windows;%PATH%
+pushd %~dp0\..\..\..\Tools\Python\v3.6.5\Windows
+
+call Setup.cmd
 
 echo Installing Python dependencies for 3.6.5...
-call :CreateTempScriptName
 
+call :CreateTempScriptName
 python -m pip install -r "%~dp0python_requirements.txt" -r "%~dp0python_windows_requirements.txt" 1> "%_SETUP_FUNDAMENTAL_TEMP_SCRIPT_NAME%" 2>&1
-if "%ERRORLEVEL%" NEQ "0" (
+set _error=%ERRORLEVEL%
+popd
+
+if "%_error%" NEQ "0" (
     echo.
     type %_SETUP_FUNDAMENTAL_TEMP_SCRIPT_NAME%
     exit /B -1
@@ -62,12 +70,11 @@ if "%ERRORLEVEL%" NEQ "0" (
 del %_SETUP_FUNDAMENTAL_TEMP_SCRIPT_NAME%
 echo DONE!
 
-REM Use the most recent version of python for the rest of the bootstrap process
 echo.
 echo ----------------------------------------------------------------------
 
 REM Invoke fundamental setup activities
-python %~dp0\Setup.py %*
+%~dp0\..\..\..\Tools\Python\v3.6.5\Windows\python %~dp0\Setup.py %*
 if "%ERRORLEVEL%" NEQ "0" (
     exit /B -1
 )

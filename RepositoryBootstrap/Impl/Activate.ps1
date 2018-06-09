@@ -128,7 +128,7 @@ if ($env:_ACTIVATE_ENVIRONMENT_IS_TOOL_REPOSITORY -eq "1" -and $env:DEVELOPMENT_
 # ----------------------------------------------------------------------
 # |  Prepare the args
 if ($env:_ACTIVATE_ENVIRONMENT_IS_CONFIGURABLE_REPOSITORY -ne "0")  {
-    if ($args[0] -eq "") {
+    if ([string]::IsNullOrEmpty($args[0])) {
         Write-Host  ""
         Write-Error "This repository is configurable, which means that it can be activated in a variety of different ways. Please run this script again with a configuration name provided on the command line."
         Write-Host  ""
@@ -194,11 +194,12 @@ if ($env:_ACTIVATE_ENVIRONMENT_SCRIPT_EXECUTION_ERROR_LEVEL -ne "0" ){
 
 # Cleanup
 
-Write-Host "^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^"
-Write-Host "^<                                                                                           ^>"
-Write-Host "^>   The environment has been activated for this repository and is ready for development.    ^<"
-Write-Host "^<                                                                                           ^>"
-Write-Host "^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^"
+Write-Host ""
+Write-Host "                    v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^"
+Write-Host "                    <                                                                                          >"
+Write-Host "                    >   The environment has been activated for this repository and is ready for development.   <"
+Write-Host "                    <                                                                                          >"
+Write-Host "                    ^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v"
 Write-Host ""
 Write-Host ""
 
