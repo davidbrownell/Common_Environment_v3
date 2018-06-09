@@ -112,11 +112,11 @@ except ImportError:
 # |  
 # ----------------------------------------------------------------------
 @wrapt.decorator
-def ToolRepository(wrapped, instance, args, kwargs):
+def MixinRepository(wrapped, instance, args, kwargs):
     """
-    Signals that a repository is a tool repository (a repository that
+    Signals that a repository is a mixin repository (a repository that
     contains items that help in the development process but doesn't contain
-    primitives used by other dependent repositories). Tool repositories
+    primitives used by other dependent repositories). Mixin repositories
     must be activated on top of other repositories and make not may any 
     assumptions about the state of the repository on which they are activated.
     """

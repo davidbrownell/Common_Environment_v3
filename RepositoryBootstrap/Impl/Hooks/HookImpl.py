@@ -49,13 +49,13 @@ def Invoke(repo_root, output_stream, method, json_content, is_debug):
 
     output_stream.write("Getting configurations...")
     with output_stream.DoneManager() as dm:
-        # Is this a tool repo?
+        # Is this a mixin repo?
         bootstrap_filename = os.path.join(repo_root, Constants.GENERATED_DIRECTORY_NAME, CommonEnvironmentImports.CurrentShell.CategoryName, Constants.GENERATED_BOOTSTRAP_JSON_FILENAME)
         if os.path.isfile(bootstrap_filename):
             with open(bootstrap_filename) as f:
                 bootstrap_data = json.load(f)
 
-            if bootstrap_data["is_tool_repo"]:
+            if bootstrap_data["is_mixin_repo"]:
                 repo_root = fundamental_root
 
         activation_script = os.path.join(repo_root, CommonEnvironmentImports.CurrentShell.CreateScriptName(Constants.ACTIVATE_ENVIRONMENT_NAME))

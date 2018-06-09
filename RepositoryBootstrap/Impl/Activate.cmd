@@ -31,7 +31,7 @@ if not exist "%~dp0Generated\Windows\EnvironmentBootstrap.data" (
 
 for /f "tokens=1,2 delims==" %%a in (%~dp0Generated\Windows\EnvironmentBootstrap.data) do (
     if "%%a"=="fundamental_repo" set DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=%%~fb
-    if "%%a"=="is_tool_repo" set _ACTIVATE_ENVIRONMENT_IS_TOOL_REPOSITORY=%%b
+    if "%%a"=="is_mixin_repo" set _ACTIVATE_ENVIRONMENT_IS_MIXIN_REPOSITORY=%%b
     if "%%a"=="is_configurable" set _ACTIVATE_ENVIRONMENT_IS_CONFIGURABLE_REPOSITORY=%%b
 )
 
@@ -71,8 +71,8 @@ goto Exit
 set _ACTIVATE_ENVIRONMENT_PREVIOUS_FUNDAMENTAL=%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%
 
 @REM ----------------------------------------------------------------------
-@REM |  Only allow one activated environment at a time (unless we are activating a tool repo)
-if "%_ACTIVATE_ENVIRONMENT_IS_TOOL_REPOSITORY%" NEQ "1" if "%DEVELOPMENT_ENVIRONMENT_REPOSITORY%" NEQ "" if /i "%DEVELOPMENT_ENVIRONMENT_REPOSITORY%\" NEQ "%~dp0" (
+@REM |  Only allow one activated environment at a time (unless we are activating a mixin repo)
+if "%_ACTIVATE_ENVIRONMENT_IS_MIXIN_REPOSITORY%" NEQ "1" if "%DEVELOPMENT_ENVIRONMENT_REPOSITORY%" NEQ "" if /i "%DEVELOPMENT_ENVIRONMENT_REPOSITORY%\" NEQ "%~dp0" (
     @echo.
     @echo ERROR: Only one repository can be activated within an environment at a time, and it appears as if one is already active. Please open a new console and run this script again.
     @echo.
@@ -83,10 +83,10 @@ if "%_ACTIVATE_ENVIRONMENT_IS_TOOL_REPOSITORY%" NEQ "1" if "%DEVELOPMENT_ENVIRON
 )
 
 @REM ----------------------------------------------------------------------
-@REM |  A tool repository can't be activated in isolation
-if "%_ACTIVATE_ENVIRONMENT_IS_TOOL_REPOSITORY%"=="1" if "%DEVELOPMENT_ENVIRONMENT_REPOSITORY_ACTIVATED_FLAG%" NEQ "1" (
+@REM |  A mixin repository can't be activated in isolation
+if "%_ACTIVATE_ENVIRONMENT_IS_MIXIN_REPOSITORY%"=="1" if "%DEVELOPMENT_ENVIRONMENT_REPOSITORY_ACTIVATED_FLAG%" NEQ "1" (
     @echo.
-    @echo ERROR: A tool repository cannot be activated in isolation. Activate another repository before activating this one.
+    @echo ERROR: A mixin repository cannot be activated in isolation. Activate another repository before activating this one.
     @echo.
 
     goto :ErrorExit
@@ -191,7 +191,7 @@ set _ACTIVATE_ENVIRONMENT_CLA=
 set _ACTIVATE_ENVIRONMENT_WORKING_DIR=
 set _ACTIVATE_ENVIRONMENT_PYTHON_BINARY=
 set _ACTIVATE_ENVIRONMENT_IS_CONFIGURABLE_REPOSITORY=
-set _ACTIVATE_ENVIRONMENT_IS_TOOL_REPOSITORY=
+set _ACTIVATE_ENVIRONMENT_IS_MIXIN_REPOSITORY=
 set _ACTIVATE_ENVIRONMENT_PREVIOUS_FUNDAMENTAL=
 set _ACTIVATE_ENVIRONMENT_TEMP_SCRIPT_NAME=
 set PYTHONPATH=

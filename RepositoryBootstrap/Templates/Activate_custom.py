@@ -40,7 +40,7 @@ def GetCustomActions( output_stream,
                       verbose,
                       fast,
                       repositories,
-                      is_tool_repo,
+                      is_mixin_repo,
                     ):
     """
     Returns an action or list of actions that should be invoked as part of the activaation process.

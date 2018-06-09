@@ -54,13 +54,13 @@ inflect                                     = inflect_mod.engine()
                                                   version_spec=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Overrides version specifications for tools and/or libraries. Example: '/version_spec=Tools/Python:v3.6.0'."),
                                                   no_python_libraries=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Disables the import of python libraries, which can be useful when pip installing python libraries for Library inclusion."),
                                                   fast=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Activate the environment as quickly as possible; in some cases, the environment activated may not have all functionality enabled as a result."),
-                                                  tool=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Activate a tool library at the specified folder location along with this library"),
+                                                  mixin=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Activate a mixin repository at the specified folder location along with this repository"),
                                                 )
 @CommonEnvironmentImports.CommandLine.Constraints( output_filename_or_stdout=CommonEnvironmentImports.CommandLine.StringTypeInfo(),
                                                    repository_root=CommonEnvironmentImports.CommandLine.DirectoryTypeInfo(),
                                                    configuration=CommonEnvironmentImports.CommandLine.StringTypeInfo(),
                                                    version_spec=CommonEnvironmentImports.CommandLine.DictTypeInfo(require_exact_match=False, arity='?'),
-                                                   tool=CommonEnvironmentImports.CommandLine.DirectoryTypeInfo(arity='*'),
+                                                   mixin=CommonEnvironmentImports.CommandLine.DirectoryTypeInfo(arity='*'),
                                                    output_stream=None,
                                                  )
 def Activate( output_filename_or_stdout,
@@ -72,14 +72,14 @@ def Activate( output_filename_or_stdout,
               no_python_libraries=False,
               force=False,
               fast=False,
-              tool=None,
+              mixin=None,
               output_stream=sys.stdout,
             ):
     """Activates a respository for development activities."""
 
     configuration = configuration if configuration.lower() != "none" else None
     version_specs = version_spec or {}; del version_spec
-    tools = tool or []; del tool
+    mixins = mixin or []; del mixin
 
     if debug:
         verbose = True
@@ -136,39 +136,39 @@ def Activate( output_filename_or_stdout,
                 version_infos.append(Configuration.VersionInfo(name, v))
 
         # ----------------------------------------------------------------------
-        def LoadToolLibrary(tool_path):
-            tool_activation_data = ActivationData.Load( tool_path,
-                                                        configuration=None,
-                                                        shell=shell,
-                                                        force=True,
-                                                      )
-            if not tool_activation_data.IsToolRepo:
-                raise Exception("The repository at '{}' is not a tool repository".format(tool_path))
+        def LoadMixinLibrary(mixin_path):
+            mixin_activation_data = ActivationData.Load( mixin_path,
+                                                         configuration=None,
+                                                         shell=shell,
+                                                         force=True,
+                                                       )
+            if not mixin_activation_data.IsMixinRepo:
+                raise Exception("The repository at '{}' is not a mixin repository".format(mixin_path))
 
-            assert not tool_activation_data.VersionSpecs.Tool
-            assert not tool_activation_data.VersionSpecs.Libraries
-            assert len(tool_activation_data.PrioritizedRepositories) == 1
+            assert not mixin_activation_data.VersionSpecs.Tool
+            assert not mixin_activation_data.VersionSpecs.Libraries
+            assert len(mixin_activation_data.PrioritizedRepositories) == 1
 
-            tool_repo = tool_activation_data.PrioritizedRepositories[0]
-            tool_repo.IsToolRepo = True
+            mixin_repo = mixin_activation_data.PrioritizedRepositories[0]
+            mixin_repo.IsMixinRepo = True
 
             # Add this repo as a repo to be activated if it isn't already in the list
-            if not any(r.Id == tool_repo.Id for r in activation_data.PrioritizedRepositories):
-                activation_data.PrioritizedRepositories.append(tool_repo)
+            if not any(r.Id == mixin_repo.Id for r in activation_data.PrioritizedRepositories):
+                activation_data.PrioritizedRepositories.append(mixin_repo)
 
         # ----------------------------------------------------------------------
 
-        # Are we activating a tool repository?
-        is_tool_repo = EnvironmentBootstrap.Load(repository_root, shell=shell).IsToolRepo
+        # Are we activating a mixin repository?
+        is_mixin_repo = EnvironmentBootstrap.Load(repository_root, shell=shell).IsMixinRepo
 
-        if is_tool_repo:
+        if is_mixin_repo:
             if force:
-                raise Exception("'force' cannot be used with tool repositories")
+                raise Exception("'force' cannot be used with mixin repositories")
 
-            LoadToolLibrary(repository_root)
+            LoadMixinLibrary(repository_root)
 
-        for tool in tools:
-            LoadToolLibrary(tool)
+        for mixin in mixins:
+            LoadMixinLibrary(mixin)
 
         # Ensure that the generated dir exists
         generated_dir = activation_data.GetActivationDir()
@@ -183,7 +183,7 @@ def Activate( output_filename_or_stdout,
                     _ActivatePrompt,
                   ]
 
-        if not is_tool_repo:
+        if not is_mixin_repo:
             methods = [ _ActivateOriginalEnvironment,
                         _ActivateRepoEnvironmentVars,
                       ] + methods
@@ -199,7 +199,7 @@ def Activate( output_filename_or_stdout,
                              ( "no_python_libraries", no_python_libraries ),
                              ( "fast", fast ),
                              ( "repositories", activation_data.PrioritizedRepositories ),
-                             ( "is_tool_repo", is_tool_repo ),
+                             ( "is_mixin_repo", is_mixin_repo ),
                            ])
 
         # Invoke the methods
@@ -335,7 +335,7 @@ def _ActivateNames(output_stream, repositories):
     for repo in repositories:
         names.append("{}{}{}".format( repo.Name,
                                       " ({})".format(repo.Configuration) if repo.Configuration else '',
-                                      " [Tool]" if repo.IsToolRepo else '',
+                                      " [Mixin]" if repo.IsMixinRepo else '',
                                     ))
         max_length = max(max_length, len(names[-1]))
 
@@ -429,24 +429,24 @@ def _ActivateCustom(**kwargs):
     return actions
 
 # ----------------------------------------------------------------------
-def _ActivatePrompt(shell, repositories, configuration, is_tool_repo, fast):
-    if is_tool_repo and os.getenv(Constants.DE_REPO_CONFIGURATION_NAME):
+def _ActivatePrompt(shell, repositories, configuration, is_mixin_repo, fast):
+    if is_mixin_repo and os.getenv(Constants.DE_REPO_CONFIGURATION_NAME):
         assert configuration is None, configuration
         configuration = os.getenv(Constants.DE_REPO_CONFIGURATION_NAME)
 
-    tool_names = []
+    mixin_names = []
 
     index = -1
-    while repositories[index].IsToolRepo:
-        tool_names.insert(0, repositories[index].Name)
+    while repositories[index].IsMixinRepo:
+        mixin_names.insert(0, repositories[index].Name)
         index -= 1
 
     prompt = repositories[index].Name
     if configuration:
         prompt += " - {}".format(configuration)
 
-    if tool_names:
-        prompt += " [{}]".format(', '.join(tool_names))
+    if mixin_names:
+        prompt += " [{}]".format(', '.join(mixin_names))
 
     if fast:
         prompt += " ** FAST **"

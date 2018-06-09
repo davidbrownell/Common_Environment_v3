@@ -299,7 +299,7 @@ def _SetupBootstrap( shell,
 
     # Get the configurations from the setup script
     configurations = None
-    is_tool_repository = False
+    is_mixin_repository = False
 
     if customization_mod:
         dependencies_func = getattr(customization_mod, Constants.SETUP_ENVIRONMENT_DEPENDENCIES_METHOD_NAME, None)
@@ -309,11 +309,11 @@ def _SetupBootstrap( shell,
             if configurations and not isinstance(configurations, dict):
                 configurations = { None : configurations, }
 
-            # Is this a tool repo? Tool repos are specified via the ToolRepository 
+            # Is this a mixin repo? Mixin repos are specified via the MixinRepository 
             # decorator.
-            is_tool_repository = ( hasattr(dependencies_func, "_self_wrapper") and
-                                   dependencies_func._self_wrapper.__name__ == "ToolRepository"
-                                 )
+            is_mixin_repository = ( hasattr(dependencies_func, "_self_wrapper") and
+                                    dependencies_func._self_wrapper.__name__ == "MixinRepository"
+                                  )
 
     if not configurations:
         configurations = { None : Configuration("Default Configuration"),
@@ -321,15 +321,15 @@ def _SetupBootstrap( shell,
 
     has_configurations = len(configurations) > 1 or next(six.iterkeys(configurations)) is not None
 
-    # A tool repository cannot have configurations, dependencies, or version specs
-    if ( is_tool_repository and 
+    # A mixin repository cannot have configurations, dependencies, or version specs
+    if ( is_mixin_repository and 
          ( has_configurations or
            next(six.itervalues(configurations)).Dependencies or
            next(six.itervalues(configurations)).VersionSpecs.Tools or
            next(six.itervalues(configurations)).VersionSpecs.Libraries
          )
        ):
-        raise Exception("A tool repository cannot have any configurations, dependencies, or version specs.")
+        raise Exception("A mixin repository cannot have any configurations, dependencies, or version specs.")
 
     # Remove any configurations that shouldn't be setup
     if explict_configurations:
@@ -509,7 +509,7 @@ def _SetupBootstrap( shell,
                                                                 )
 
     EnvironmentBootstrap( fundamental_repo,
-                          is_tool_repository,
+                          is_mixin_repository,
                           has_configurations,
                           configurations,
                         ).Save( repository_root,

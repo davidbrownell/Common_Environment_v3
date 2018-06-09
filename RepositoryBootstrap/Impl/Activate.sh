@@ -74,9 +74,9 @@ then
         if [[ $line == fundamental_repo* ]]
         then
             export DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=`readlink -f ${line#fundamental_repo=}`
-        elif [[ $line == is_tool_repo* ]]
+        elif [[ $line == is_mixin_repo* ]]
         then
-            is_tool_repo=${line#is_tool_repo=}
+            is_mixin_repo=${line#is_mixin_repo=}
         elif [[ $line == is_configurable* ]]
         then
             is_configurable=${line#is_configurable=}
@@ -135,7 +135,7 @@ fi
 previous_fundamental=$DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL
  
 # ----------------------------------------------------------------------
-# |  Only allow one activated environment at a time (unless we are activating a tool repo)
+# |  Only allow one activated environment at a time (unless we are activating a mixin repo)
 if [[ $should_continue == 1 && "$DEVELOPMENT_ENVIRONMENT_REPOSITORY" != "" && "$DEVELOPMENT_ENVIRONMENT_REPOSITORY" != "`pwd`" ]]
 then
     echo ""
@@ -148,11 +148,11 @@ then
 fi
 
 # ----------------------------------------------------------------------
-# |  A tool repository can't be activated in isolation
-if [[ $should_continue == 1 && $is_tool_repo == "1" && "$DEVELOPMENT_ENVIRONMENT_REPOSITORY_ACTIVATED_FLAG" != "1" ]]
+# |  A mixin repository can't be activated in isolation
+if [[ $should_continue == 1 && $is_mixin_repo == "1" && "$DEVELOPMENT_ENVIRONMENT_REPOSITORY_ACTIVATED_FLAG" != "1" ]]
 then
     echo ""
-    echo "ERROR: A tool repository cannot be activated in isolation. Activate another repository before activating this one."
+    echo "ERROR: A mixin repository cannot be activated in isolation. Activate another repository before activating this one."
     echo ""
     echo ""
     

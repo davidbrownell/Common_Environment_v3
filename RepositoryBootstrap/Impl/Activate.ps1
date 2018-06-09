@@ -26,7 +26,7 @@ function ExitScript {
     $env:_ACTIVATE_ENVIRONMENT_WORKING_DIR=''
     $env:_ACTIVATE_ENVIRONMENT_PYTHON_BINARY=''
     $env:_ACTIVATE_ENVIRONMENT_IS_CONFIGURABLE_REPOSITORY=''
-    $env:_ACTIVATE_ENVIRONMENT_IS_TOOL_REPOSITORY=''
+    $env:_ACTIVATE_ENVIRONMENT_IS_MIXIN_REPOSITORY=''
     $env:_ACTIVATE_ENVIRONMENT_PREVIOUS_FUNDAMENTAL=''
     $env:_ACTIVATE_ENVIRONMENT_TEMP_SCRIPT_NAME=''
     $env:PYTHONPATH=''
@@ -66,8 +66,8 @@ Get-Content "$PSScriptRoot\Generated\Windows\EnvironmentBootstrap.data" | ForEac
     $key, $value = $_.split('=')
     if($key -eq 'fundamental_repo') {
         $env:DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL = (Get-Item $value).FullName
-    } elseif ($key -eq 'is_tool_repo' ){
-        $env:_ACTIVATE_ENVIRONMENT_IS_TOOL_REPOSITORY = $value
+    } elseif ($key -eq 'is_mixin_repo' ){
+        $env:_ACTIVATE_ENVIRONMENT_IS_MIXIN_REPOSITORY = $value
     } elseif ($key -eq 'is_configurable') {
         $env:_ACTIVATE_ENVIRONMENT_IS_CONFIGURABLE_REPOSITORY = $value
     }
@@ -104,8 +104,8 @@ if ($args[0] -eq "ListConfigurations"){
 $env:_ACTIVATE_ENVIRONMENT_PREVIOUS_FUNDAMENTAL=$env:DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL
 
 # ----------------------------------------------------------------------
-# |  Only allow one activated environment at a time (unless we are activating a tool repo)
-if ($env:_ACTIVATE_ENVIRONMENT_IS_TOOL_REPOSITORY -ne "1" -and $env:DEVELOPMENT_ENVIRONMENT_REPOSITORY -ne "" -and $env:DEVELOPMENT_ENVIRONMENT_REPOSITORY -ne $PSScriptRoot -and $null -ne $env:DEVELOPMENT_ENVIRONMENT_REPOSITORY) {
+# |  Only allow one activated environment at a time (unless we are activating a mixin repo)
+if ($env:_ACTIVATE_ENVIRONMENT_IS_MIXIN_REPOSITORY -ne "1" -and $env:DEVELOPMENT_ENVIRONMENT_REPOSITORY -ne "" -and $env:DEVELOPMENT_ENVIRONMENT_REPOSITORY -ne $PSScriptRoot -and $null -ne $env:DEVELOPMENT_ENVIRONMENT_REPOSITORY) {
     Write-Host  ""
     Write-Error "Only one repository can be activated within an environment at a time, and it appears as if one is already active. Please open a new console and run this script again."
     Write-Host  ""
@@ -116,10 +116,10 @@ if ($env:_ACTIVATE_ENVIRONMENT_IS_TOOL_REPOSITORY -ne "1" -and $env:DEVELOPMENT_
 }
 
 # ----------------------------------------------------------------------
-# |  A tool repository can't be activated in isolation
-if ($env:_ACTIVATE_ENVIRONMENT_IS_TOOL_REPOSITORY -eq "1" -and $env:DEVELOPMENT_ENVIRONMENT_REPOSITORY_ACTIVATED_FLAG -ne "1") {
+# |  A mixin repository can't be activated in isolation
+if ($env:_ACTIVATE_ENVIRONMENT_IS_MIXIN_REPOSITORY -eq "1" -and $env:DEVELOPMENT_ENVIRONMENT_REPOSITORY_ACTIVATED_FLAG -ne "1") {
     Write-Host  ""
-    Write-Error "A tool repository cannot be activated in isolation. Activate another repository before activating this one."
+    Write-Error "A mixin repository cannot be activated in isolation. Activate another repository before activating this one."
     Write-Host  ""
 
     ErrorExit

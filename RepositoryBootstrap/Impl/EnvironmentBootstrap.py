@@ -82,7 +82,7 @@ class EnvironmentBootstrap(object):
             data = json.load(f)
 
         fundamental_repo = RestoreRelativePath(data["fundamental_repo"])
-        is_tool_repo = data["is_tool_repo"]
+        is_mixin_repo = data["is_mixin_repo"]
         is_configurable = data["is_configurable"]
 
         configurations = {}
@@ -121,7 +121,7 @@ class EnvironmentBootstrap(object):
             del configurations[cls.NoneJsonKeyReplacementName]
 
         return cls( fundamental_repo,
-                    is_tool_repo,
+                    is_mixin_repo,
                     is_configurable,
                     configurations,
                   )
@@ -129,14 +129,14 @@ class EnvironmentBootstrap(object):
     # ----------------------------------------------------------------------
     def __init__( self,
                   fundamental_repo,
-                  is_tool_repo,
+                  is_mixin_repo,
                   is_configurable,
                   configurations,
                 ):
         assert os.path.isdir(fundamental_repo), fundamental_repo
 
         self.FundamentalRepo                = fundamental_repo
-        self.IsToolRepo                     = is_tool_repo
+        self.IsMixinRepo                    = is_mixin_repo
         self.IsConfigurable                 = is_configurable
         self.Configurations                 = configurations
 
@@ -180,7 +180,7 @@ class EnvironmentBootstrap(object):
             # ----------------------------------------------------------------------
 
             json.dump( { "fundamental_repo" : fundamental_repo,
-                         "is_tool_repo" : self.IsToolRepo,
+                         "is_mixin_repo" : self.IsMixinRepo,
                          "is_configurable" : self.IsConfigurable,
                          "configurations" : configurations,
                        },
@@ -195,10 +195,10 @@ class EnvironmentBootstrap(object):
             f.write(textwrap.dedent(
                 """\
                 fundamental_repo={fundamental_repo}
-                is_tool_repo={is_tool_repo}
+                is_mixin_repo={is_mixin_repo}
                 is_configurable={is_configurable}
                 """).format( fundamental_repo=fundamental_repo,
-                             is_tool_repo="1" if self.IsToolRepo else "0",
+                             is_mixin_repo="1" if self.IsMixinRepo else "0",
                              is_configurable="1" if self.IsConfigurable else "0",
                            ))
 

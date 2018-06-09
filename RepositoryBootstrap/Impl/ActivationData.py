@@ -59,13 +59,13 @@ class Repository(object):
                   name,
                   root,
                   configuration=None,
-                  is_tool_repo=False,
+                  is_mixin_repo=False,
                 ):
         self.Id                             = id
         self.Name                           = name
         self.Root                           = root
         self.Configuration                  = configuration
-        self.IsToolRepo                     = is_tool_repo # Overridden during activation
+        self.IsMixinRepo                    = is_mixin_repo # Overridden during activation
 
     # ----------------------------------------------------------------------
     def __str__(self):
@@ -115,13 +115,13 @@ class ActivationData(object):
 
                 return cls( data["Id"],
                             data["Root"],
-                            data["IsToolRepo"],
+                            data["IsMixinRepo"],
                             data["Configuration"],
                             [ Repository( repo_data["Id"],
                                           repo_data["Name"],
                                           repo_data["Root"],
                                           repo_data["Configuration"],
-                                          repo_data["IsToolRepo"],
+                                          repo_data["IsMixinRepo"],
                                         )
                               for repo_data in data["PrioritizedRepositories"]
                             ],
@@ -353,7 +353,7 @@ class ActivationData(object):
         # Create the object
         return cls( this_repository.Id,
                     repository_root,
-                    this_bootstrap_info.IsToolRepo,
+                    this_bootstrap_info.IsMixinRepo,
                     configuration,
                     is_fast_environment,
                     [ repositories[id].Repo for id, _ in priority_values ],
@@ -364,7 +364,7 @@ class ActivationData(object):
     def __init__( self,
                   id,
                   repository_root,
-                  is_tool_repo,
+                  is_mixin_repo,
                   configuration,
                   is_fast_environment,
                   prioritized_repositories,
@@ -372,7 +372,7 @@ class ActivationData(object):
                 ):
         self.Id                             = id
         self.Root                           = repository_root
-        self.IsToolRepo                     = is_tool_repo
+        self.IsMixinRepo                    = is_mixin_repo
         self.Configuration                  = configuration
         self.IsFastEnvironment              = is_fast_environment
         self.PrioritizedRepositories        = prioritized_repositories
