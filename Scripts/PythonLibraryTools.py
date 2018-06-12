@@ -132,10 +132,8 @@ def Display( output_stream=sys.stdout,
 
     # ----------------------------------------------------------------------
 
-    shell = CurrentShell
-
     Write("Libraries", new_content.Libraries, new_content.HasOSSpecificLibraryExtensions)
-    Write("Scripts", new_content.Scripts, lambda fullpath: os.path.splitext(_script_fullpath)[1] in [ ".pyd", ".so", shell.ScriptExtension, shell.ExecutableExtension, ])
+    Write("Scripts", new_content.Scripts, lambda fullpath: os.path.splitext(_script_fullpath)[1] in [ ".pyd", ".so", CurrentShell.ScriptExtension, CurrentShell.ExecutableExtension, ])
     WriteExtensions("Library Extensions", new_content.LibraryExtensions)
     WriteExtensions("Script Extensions", new_content.ScriptExtensions)
 
@@ -669,8 +667,6 @@ class _NewLibraryContent(object):
     # ----------------------------------------------------------------------
     @classmethod
     def Create(cls, settings):
-        shell = CurrentShell
-
         # ----------------------------------------------------------------------
         def GetItems(directory, ignore_set):
             items = []
@@ -683,8 +679,8 @@ class _NewLibraryContent(object):
                     continue
 
                 fullpath = os.path.join(directory, item)
-                if not shell.IsSymLink(fullpath):
-                    if ( shell.CategoryName == "Linux" and 
+                if not CurrentShell.IsSymLink(fullpath):
+                    if ( CurrentShell.CategoryName == "Linux" and 
                          is_bin_dir and 
                          item.startswith("python")
                        ):
@@ -703,9 +699,9 @@ class _NewLibraryContent(object):
         new_libraries = [ item for item in new_libraries if not os.path.splitext(item)[1] == ".pyc" ]
 
         # Get os-specific library extensions 
-        os_specific_extensions = [ ".pyd", ".so", shell.ScriptExtension, ]
-        if shell.ExecutableExtension:
-            os_specific_extensions.append(shell.ExecutableExtension)
+        os_specific_extensions = [ ".pyd", ".so", CurrentShell.ScriptExtension, ]
+        if CurrentShell.ExecutableExtension:
+            os_specific_extensions.append(CurrentShell.ExecutableExtension)
 
         new_library_extensions = []
 
