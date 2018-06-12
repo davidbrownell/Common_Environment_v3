@@ -58,7 +58,6 @@ class ScriptsActivationActivity(ActivationActivity):
     def _CreateCommandsImpl( cls,
                              output_stream,
                              verbose_stream,
-                             shell,
                              configuration,
                              repositories,
                              version_specs,
@@ -119,8 +118,7 @@ class ScriptsActivationActivity(ActivationActivity):
                                                          lambda: "{} found".format(inflect.no("generator", len(dir_generators))),
                                                        ],
                                        ):
-            args = { "shell" : shell,
-                     "repositories" : repositories,
+            args = { "repositories" : repositories,
                      "version_specs" : version_specs,
                    }
 
@@ -275,7 +273,7 @@ class ScriptsActivationActivity(ActivationActivity):
                         while True:
                             potential_filename = os.path.join(dest_dir, "{}{}{}".format( base_name,
                                                                                          len(conflicts) + 1 if conflicts else '',
-                                                                                         shell.ScriptExtension,
+                                                                                         CommonEnvironmentImports.CurrentShell.ScriptExtension,
                                                                                        ))
 
                             if potential_filename in wrappers:
@@ -296,9 +294,9 @@ class ScriptsActivationActivity(ActivationActivity):
                                            ))
 
                         with open(potential_filename, 'w') as f:
-                            f.write(shell.GenerateCommands(these_commands))
+                            f.write(CommonEnvironmentImports.CurrentShell.GenerateCommands(these_commands))
 
-                        shell.MakeFileExecutable(potential_filename)
+                        CommonEnvironmentImports.CurrentShell.MakeFileExecutable(potential_filename)
 
                         assert script_info.Filename.startswith(script_info.Repo.Root), (script_info.Filename, script_info.Repo.Root)
                         display_location = script_info.Filename[len(script_info.Repo.Root):].lstrip(os.path.sep)
@@ -315,8 +313,8 @@ class ScriptsActivationActivity(ActivationActivity):
                 if wrappers:
                     verbose_stream.write("Creating '{}'...".format(Constants.SCRIPT_LIST_NAME))
                     with verbose_stream.DoneManager():
-                        these_commands = [ shell.Commands.EchoOff(),
-                                           shell.Commands.Message("\nAvailable scripts are:\n"),
+                        these_commands = [ CommonEnvironmentImports.CurrentShell.Commands.EchoOff(),
+                                           CommonEnvironmentImports.CurrentShell.Commands.Message("\nAvailable scripts are:\n"),
                                          ]
 
                         prev_repo = None
@@ -332,7 +330,7 @@ class ScriptsActivationActivity(ActivationActivity):
                                                                              location=wrapper_info.ScriptInfo.Repo.Root,
                                                                            )
 
-                                these_commands.append(shell.Commands.Message(textwrap.dedent(
+                                these_commands.append(CommonEnvironmentImports.CurrentShell.Commands.Message(textwrap.dedent(
                                     """\
                                     {sep}
                                     {header}
@@ -343,20 +341,20 @@ class ScriptsActivationActivity(ActivationActivity):
 
                                 prev_repo = wrapper_info.ScriptInfo.Repo
 
-                            content = "{0:<68} {1:>78}".format(shell.CreateScriptName(wrapper_info.Name), wrapper_info.DisplayName)
+                            content = "{0:<68} {1:>78}".format(CommonEnvironmentImports.CurrentShell.CreateScriptName(wrapper_info.Name), wrapper_info.DisplayName)
                             content += "\n{}\n".format('-' * len(content))
 
                             if wrapper_info.Desc:
                                 content += "{}\n".format(CommonEnvironmentImports.StringHelpers.LeftJustify(wrapper_info.Desc, 2, skip_first_line=False))
 
-                            these_commands.append(shell.Commands.Message(CommonEnvironmentImports.StringHelpers.LeftJustify(content, 4, skip_first_line=False)))
+                            these_commands.append(CommonEnvironmentImports.CurrentShell.Commands.Message(CommonEnvironmentImports.StringHelpers.LeftJustify(content, 4, skip_first_line=False)))
 
-                        filename = os.path.join(dest_dir, shell.CreateScriptName(Constants.SCRIPT_LIST_NAME))
+                        filename = os.path.join(dest_dir, CommonEnvironmentImports.CurrentShell.CreateScriptName(Constants.SCRIPT_LIST_NAME))
 
                         with open(filename, 'w') as f:
-                            f.write(shell.GenerateCommands(these_commands))
+                            f.write(CommonEnvironmentImports.CurrentShell.GenerateCommands(these_commands))
 
-                        shell.MakeFileExecutable(filename)
+                        CommonEnvironmentImports.CurrentShell.MakeFileExecutable(filename)
 
                     # Write output
                     lines = textwrap.dedent(
@@ -387,5 +385,5 @@ class ScriptsActivationActivity(ActivationActivity):
                                      content='\n'.join([ centered_template.format(line) for line in lines ]),
                                    ))
                         
-        return [ shell.Commands.AugmentPath(dest_dir),
+        return [ CommonEnvironmentImports.CurrentShell.Commands.AugmentPath(dest_dir),
                ]

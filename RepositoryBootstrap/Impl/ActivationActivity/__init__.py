@@ -83,7 +83,6 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
     def CreateCommands( cls,
                         output_stream,
                         verbose,
-                        shell,
                         configuration,
                         repositories,
                         version_specs,
@@ -95,7 +94,6 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
 
         if cls.DelayExecute:
             commands += cls._DelayExecute( cls,
-                                           shell,
                                            configuration,
                                            repositories,
                                            version_specs,
@@ -103,11 +101,11 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
                                          )
 
             for command in commands:
-                if isinstance(command, shell.Commands.Message):
+                if isinstance(command, CommonEnvironmentImports.CurrentShell.Commands.Message):
                     command.Value = "  {}".format(command.Value)
 
-            commands.insert(0, shell.Commands.Message("Delay invoking '{}'...".format(cls.Name)))
-            commands.append(shell.Commands.Message("DONE!"))
+            commands.insert(0, CommonEnvironmentImports.CurrentShell.Commands.Message("Delay invoking '{}'...".format(cls.Name)))
+            commands.append(CommonEnvironmentImports.CurrentShell.Commands.Message("DONE!"))
 
         else:
             output_stream.write("Activating '{}'...".format(cls.Name))
@@ -117,7 +115,6 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
                                           ) as dm:
                 commands += cls._CreateCommandsImpl( dm.stream,
                                                      CommonEnvironmentImports.StreamDecorator(dm.stream if verbose else None),
-                                                     shell,
                                                      configuration,
                                                      repositories,
                                                      version_specs,
@@ -236,10 +233,7 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
     _GetCustomizedFullpath_PotentialOSNames = None
 
     @classmethod
-    def GetCustomizedFullpath( cls, 
-                               path,
-                               shell=None,
-                             ):
+    def GetCustomizedFullpath(cls, path):
         # Lazy init the set of potential os names
         if cls._GetCustomizedFullpath_PotentialOSNames is None:
             potential_names = set([ Constants.AGNOSTIC_OS_NAME,
@@ -287,34 +281,32 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
 
         # ----------------------------------------------------------------------
 
-        shell = shell or CommonEnvironmentImports.CurrentShell
-        
         while True:
             subdirs = os.listdir(path)
 
             if IsOSNamesDir(path, subdirs):
-                if shell.Name in subdirs:
-                    path = os.path.join(path, shell.Name)
-                elif shell.CategoryName in subdirs:
-                    path = os.path.join(path, shell.CategoryName)
+                if CommonEnvironmentImports.CurrentShell.Name in subdirs:
+                    path = os.path.join(path, CommonEnvironmentImports.CurrentShell.Name)
+                elif CommonEnvironmentImports.CurrentShell.CategoryName in subdirs:
+                    path = os.path.join(path, CommonEnvironmentImports.CurrentShell.CategoryName)
                 elif Constants.AGNOSTIC_OS_NAME in subdirs:
                     path = os.path.join(path, Constants.AGNOSTIC_OS_NAME)
                 else:
-                    potential_names = [ shell.Name, ]
-                    if shell.CategoryName != shell.Name:
-                        potential_names.append(shell.CategoryName)
+                    potential_names = [ CommonEnvironmentImports.CurrentShell.Name, ]
+                    if CommonEnvironmentImports.CurrentShell.CategoryName != CommonEnvironmentImports.CurrentShell.Name:
+                        potential_names.append(CommonEnvironmentImports.CurrentShell.CategoryName)
                     potential_names.append(Constants.AGNOSTIC_OS_NAME)
 
                     raise Exception("OS names were found in '{}', but no customization was found for '{}'.\n    Is one of {} missing?.".format( path,
-                                                                                                                                                shell.Name,
+                                                                                                                                                CommonEnvironmentImports.CurrentShell.Name,
                                                                                                                                                 ', '.join([ "'{}'".format(name) for name in potential_names ]),
                                                                                                                                               ))
             elif IsArchitectureDir(path, subdirs):
-                if shell.Architecture in subdirs:
-                    path = os.path.join(path, shell.Architecture)
+                if CommonEnvironmentImports.CurrentShell.Architecture in subdirs:
+                    path = os.path.join(path, CommonEnvironmentImports.CurrentShell.Architecture)
                 else:
                     raise Exception("OS architectures were found in '{}', but no customization was found for '{}'.\n    Is one of {} missing?.".format( path,
-                                                                                                                                                        shell.Architecture,
+                                                                                                                                                        CommonEnvironmentImports.CurrentShell.Architecture,
                                                                                                                                                         ', '.join([ "'{}'".format(name) for name in [ "x86",
                                                                                                                                                                                                       "x64",
                                                                                                                                                                                                     ] ]),
@@ -605,7 +597,6 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
     @CommonEnvironmentImports.Interface.abstractmethod
     def _CreateCommandsImpl( output_stream,
                              verbose_stream,
-                             shell,
                              configuration,
                              repositories,
                              version_specs,
@@ -616,108 +607,109 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
         """Returns commands returned to the activation script."""
         raise Exception("Abstract method")
 
-    # ----------------------------------------------------------------------
-    @classmethod
-    def _DelayExecute( cls,
-                       shell,
-                       *args,
-                       **kwargs
-                     ):
-        script_tempfile = shell.CreateTempFilename(shell.ScriptExtension)
-        python_tempfile = shell.CreateTempFilename(".py")
-        pickle_tempfile = shell.CreateTempFilename(".pickle")
-
-        # Write the arguments
-        with open(pickle_tempfile, 'wb') as f:
-            pickle.dump((args, kwargs), f)
-
-        # Write the python code
-        with open(python_tempfile, 'w') as f:
-            f.write(textwrap.dedent(
-                """\
-                import os
-                import sys
-
-                import six
-                import six.moves.cPickle as pickle
-
-                sys.path.insert(0, r"{fundamental_path}")
-                from RepositoryBootstrap.Impl import CommonEnvironmentImports
-                from RepositoryBootstrap.Impl import ActivationActivity
-                del sys.path[0]
-
-                shell = CommonEnvironmentImports.CurrentShell
-
-                # Read the arguments
-                with open(r"{pickle_tempfile}", 'rb') as f:
-                    args, kwargs = pickle.load(f)
-
-                try:
-                    result = ActivationActivity._DelayExecuteCallback(*args, **kwargs)
-
-                    if isinstance(result, tuple):
-                        result, commans = result
-                    elif result is None:
-                        result = 0
-                        commands = []
-                    else:
-                        commands = result
-                        result = 0
-
-                except:
-                    result = -1
-                    commands = []
-
-                    import traceback
-                    sys.stderr.write("ERROR: {{}}".format(CommonEnvironmentImports.StringHelpers.LeftJustify(traceback.format_exc(), len("ERROR: "))))
-
-                if result != 0:
-                    for command in commands:
-                        if isinstance(command, shell.Commands.Message):
-                            sys.stderr.write(command.Value)
-
-                    sys.stderr.write('\\n')
-                    sys.exit(result)
-
-                # Prep for execution
-                while open(r"{script_tempfile}", 'w') as f:
-                    f.write(shell.GenerateCommands(commands))
-
-                shell.MakeFileExecutable(r"{script_tempfile}")
-
-                """).format( fundamental_path=RepositoryBootstrap.GetFundamentalRepository(),
-                             pickle_tempfile=pickle_tempfile,
-                             script_tempfile=script_tempfile,
-                           ))
-
-        return [ shell.Commands.Comment("-- Delay executing '{}'".format(cls.Name)),
-
-                 shell.Commands.Execute('python "{}"'.format(python_tempfile)),
-                 shell.Commands.ExitOnError(),
-                 shell.Commands.Call(script_tempfile),
-                 shell.Commands.ExitOnError(),
-                 
-                 shell.Commands.RemoveFile(python_tempfile),
-                 shell.Commands.RemoveFile(pickle_tempfile),
-                 shell.Commands.RemoveFile(script_tempfile),
-                 
-                 shell.Commands.Comment("-- End delay execution"),
-               ]
-
-# ----------------------------------------------------------------------
-# ----------------------------------------------------------------------
-# ----------------------------------------------------------------------
-def _DelayExecuteCallback( configuration,
-                           repositories,
-                           version_specs,
-                           generated_dir,
-                           delay_execute_context,
-                         ):
-    return delay_execute_context._CreateCommandsImpl( None, # output_stream
-                                                      CommonEnvironmentImports.CurrentShell,
-                                                      configuration,
-                                                      repositories,
-                                                      version_specs,
-                                                      generated_dir,
-                                                    )
-                           
+# TODO: The following code may not be necessary. Remove it once Common_ContinuousIntegration
+#       and Common_cpp_Common repositories are complete.
+#
+#     # ----------------------------------------------------------------------
+#     @classmethod
+#     def _DelayExecute( cls,
+#                        shell,
+#                        *args,
+#                        **kwargs
+#                      ):
+#         script_tempfile = shell.CreateTempFilename(shell.ScriptExtension)
+#         python_tempfile = shell.CreateTempFilename(".py")
+#         pickle_tempfile = shell.CreateTempFilename(".pickle")
+#     
+#         # Write the arguments
+#         with open(pickle_tempfile, 'wb') as f:
+#             pickle.dump((args, kwargs), f)
+#     
+#         # Write the python code
+#         with open(python_tempfile, 'w') as f:
+#             f.write(textwrap.dedent(
+#                 """\
+#                 import os
+#                 import sys
+#     
+#                 import six
+#                 import six.moves.cPickle as pickle
+#     
+#                 sys.path.insert(0, r"{fundamental_path}")
+#                 from RepositoryBootstrap.Impl import CommonEnvironmentImports
+#                 from RepositoryBootstrap.Impl import ActivationActivity
+#                 del sys.path[0]
+#     
+#                 shell = CommonEnvironmentImports.CurrentShell
+#     
+#                 # Read the arguments
+#                 with open(r"{pickle_tempfile}", 'rb') as f:
+#                     args, kwargs = pickle.load(f)
+#     
+#                 try:
+#                     result = ActivationActivity._DelayExecuteCallback(*args, **kwargs)
+#     
+#                     if isinstance(result, tuple):
+#                         result, commans = result
+#                     elif result is None:
+#                         result = 0
+#                         commands = []
+#                     else:
+#                         commands = result
+#                         result = 0
+#     
+#                 except:
+#                     result = -1
+#                     commands = []
+#     
+#                     import traceback
+#                     sys.stderr.write("ERROR: {{}}".format(CommonEnvironmentImports.StringHelpers.LeftJustify(traceback.format_exc(), len("ERROR: "))))
+#     
+#                 if result != 0:
+#                     for command in commands:
+#                         if isinstance(command, shell.Commands.Message):
+#                             sys.stderr.write(command.Value)
+#     
+#                     sys.stderr.write('\\n')
+#                     sys.exit(result)
+#     
+#                 # Prep for execution
+#                 while open(r"{script_tempfile}", 'w') as f:
+#                     f.write(shell.GenerateCommands(commands))
+#     
+#                 shell.MakeFileExecutable(r"{script_tempfile}")
+#     
+#                 """).format( fundamental_path=RepositoryBootstrap.GetFundamentalRepository(),
+#                              pickle_tempfile=pickle_tempfile,
+#                              script_tempfile=script_tempfile,
+#                            ))
+#     
+#         return [ shell.Commands.Comment("-- Delay executing '{}'".format(cls.Name)),
+#     
+#                  shell.Commands.Execute('python "{}"'.format(python_tempfile)),
+#                  shell.Commands.ExitOnError(),
+#                  shell.Commands.Call(script_tempfile),
+#                  shell.Commands.ExitOnError(),
+#                  
+#                  shell.Commands.RemoveFile(python_tempfile),
+#                  shell.Commands.RemoveFile(pickle_tempfile),
+#                  shell.Commands.RemoveFile(script_tempfile),
+#                  
+#                  shell.Commands.Comment("-- End delay execution"),
+#                ]
+# 
+# # ----------------------------------------------------------------------
+# # ----------------------------------------------------------------------
+# # ----------------------------------------------------------------------
+# def _DelayExecuteCallback( configuration,
+#                            repositories,
+#                            version_specs,
+#                            generated_dir,
+#                            delay_execute_context,
+#                          ):
+#     return delay_execute_context._CreateCommandsImpl( None, # output_stream
+#                                                       configuration,
+#                                                       repositories,
+#                                                       version_specs,
+#                                                       generated_dir,
+#                                                     )

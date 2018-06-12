@@ -41,9 +41,9 @@ class Repository(object):
 
     # ----------------------------------------------------------------------
     @classmethod
-    def Create(cls, shell, repo_root, configuration=None):
-        if shell.IsSymLink(repo_root):
-            repo_root = shell.ResolveSymLink(repo_root)
+    def Create(cls, repo_root, configuration=None):
+        if CommonEnvironmentImports.CurrentShell.IsSymLink(repo_root):
+            repo_root = CommonEnvironmentImports.CurrentShell.ResolveSymLink(repo_root)
 
         repo_name, repo_guid = Utilities.GetRepositoryUniqueId(repo_root)
 
@@ -81,16 +81,13 @@ class ActivationData(object):
               repository_root,
               configuration,
               is_fast_environment,
-              shell=None,
               force=False,
             ):
-        shell = shell or CommonEnvironmentImports.CurrentShell
-
         if not force and os.getenv(Constants.DE_REPO_ROOT_NAME):
             repository_root = os.getenv(Constants.DE_REPO_ROOT_NAME)
             configuration = os.getenv(Constants.DE_REPO_CONFIGURATION_NAME)
 
-        filename = cls._GetFilename(repository_root, configuration, is_fast_environment, shell=shell)
+        filename = cls._GetFilename(repository_root, configuration, is_fast_environment)
 
         if not force and os.path.isfile(filename):
             try:
@@ -149,7 +146,7 @@ class ActivationData(object):
                   priority_modifier,
                 ):
             if repo.Id not in repositories:
-                bootstrap_info = EnvironmentBootstrap.Load(repo.Root, shell=shell)
+                bootstrap_info = EnvironmentBootstrap.Load(repo.Root)
 
                 bootstrap_info.Repo = repo
                 bootstrap_info.ReferencingRepo = referencing_repo
@@ -249,7 +246,7 @@ class ActivationData(object):
                     Item:                       {name} <{type_}>
         
                     New Version:                {new_value}
-                    Specified By:               {new_name} ({new_config)} <{new_id}> [{new_root}]
+                    Specified By:               {new_name} ({new_config}) <{new_id}> [{new_root}]
         
                     Original Version:           {original_value}
                     Specified By:               {original_name} ({original_config}) <{original_id}> [{original_root}]
@@ -296,13 +293,13 @@ class ActivationData(object):
             if recurse:
                 for dependency_info in bootstrap_info.Configurations[repo.Configuration].Dependencies:
                     Walk( repo,
-                          Repository.Create(shell, dependency_info.RepositoryRoot, dependency_info.Configuration),
+                          Repository.Create(dependency_info.RepositoryRoot, dependency_info.Configuration),
                           priority_modifier + 1,
                         )
 
         # ----------------------------------------------------------------------
 
-        this_repository = Repository.Create(shell, repository_root, configuration)
+        this_repository = Repository.Create(repository_root, configuration)
 
         Walk(None, this_repository, 1)
 
@@ -346,7 +343,7 @@ class ActivationData(object):
         
                 ********************************************************************************
                 ********************************************************************************
-                """).format( setup=shell.CreateScriptName(Constants.SETUP_ENVIRONMENT_NAME),
+                """).format( setup=CommonEnvironmentImports.CurrentShell.CreateScriptName(Constants.SETUP_ENVIRONMENT_NAME),
                              status=CommonEnvironmentImports.StringHelpers.LeftJustify('\n'.join(lines), 4),
                            ))
 
@@ -405,11 +402,11 @@ class ActivationData(object):
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
     @staticmethod
-    def _GetActivationDir(repository_root, configuration, is_fast_environment, shell=None):
+    def _GetActivationDir(repository_root, configuration, is_fast_environment):
 
         result = os.path.join( repository_root,
                                Constants.GENERATED_DIRECTORY_NAME,
-                               (shell or CommonEnvironmentImports.CurrentShell).CategoryName,
+                               CommonEnvironmentImports.CurrentShell.CategoryName,
                                configuration or "Default",
                              )
         if is_fast_environment:
@@ -419,13 +416,10 @@ class ActivationData(object):
 
     # ----------------------------------------------------------------------
     @classmethod
-    def _GetFilename(cls, repository_root, configuration, is_fast_environment, shell=None):
-        shell = shell or CommonEnvironmentImports.CurrentShell
-
+    def _GetFilename(cls, repository_root, configuration, is_fast_environment):
         return os.path.join( cls._GetActivationDir( repository_root,
                                                     configuration,
                                                     is_fast_environment,
-                                                    shell=shell,
                                                   ),
                              Constants.GENERATED_ACTIVATION_FILENAME,
                            )

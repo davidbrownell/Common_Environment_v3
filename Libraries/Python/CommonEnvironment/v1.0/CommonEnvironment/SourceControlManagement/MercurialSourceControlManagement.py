@@ -496,7 +496,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
 
         commands = [ 'hg update --clean',
                      'hg purge',
-                     'hg strip{backup} "roots(outgoing())"'.format(no_backup=" --no-backup" if no_backup else ''),
+                     'hg strip{no_backup} "roots(outgoing())"'.format(no_backup=" --no-backup" if no_backup else ''),
                    ]
 
         empty_revision_set_notice = "abort: empty revision set"

@@ -45,12 +45,7 @@ class EnvironmentBootstrap(object):
 
     # ----------------------------------------------------------------------
     @classmethod
-    def Load( cls,
-              repo_root,
-              shell=None,
-            ):
-        shell = shell or CommonEnvironmentImports.CurrentShell
-
+    def Load(cls, repo_root):
         # ----------------------------------------------------------------------
         def RestoreRelativePath(value):
             fullpath = os.path.normpath(os.path.join(repo_root, value))
@@ -68,14 +63,14 @@ class EnvironmentBootstrap(object):
                                         {}
 
                                     """).format( fullpath,
-                                                 shell.CreateScriptName(Constants.SETUP_ENVIRONMENT_NAME),
+                                                 CommonEnvironmentImports.CurrentShell.CreateScriptName(Constants.SETUP_ENVIRONMENT_NAME),
                                                ))
 
             return fullpath
 
         # ----------------------------------------------------------------------
 
-        filename = os.path.join(repo_root, Constants.GENERATED_DIRECTORY_NAME, shell.CategoryName, Constants.GENERATED_BOOTSTRAP_JSON_FILENAME)
+        filename = os.path.join(repo_root, Constants.GENERATED_DIRECTORY_NAME, CommonEnvironmentImports.CurrentShell.CategoryName, Constants.GENERATED_BOOTSTRAP_JSON_FILENAME)
         assert os.path.isfile(filename), filename
         
         with open(filename) as f:
@@ -141,12 +136,7 @@ class EnvironmentBootstrap(object):
         self.Configurations                 = configurations
 
     # ----------------------------------------------------------------------
-    def Save( self,
-              repo_root,
-              shell=None,
-            ):
-        shell = shell or CommonEnvironmentImports.CurrentShell
-
+    def Save(self, repo_root):
         fundamental_repo = CommonEnvironmentImports.FileSystem.GetRelativePath(repo_root, self.FundamentalRepo)
         
         configurations = copy.deepcopy(self.Configurations)
@@ -159,7 +149,7 @@ class EnvironmentBootstrap(object):
                     dependencies_converted.add(dependency)
 
         # Write the output files
-        output_dir = os.path.join(repo_root, Constants.GENERATED_DIRECTORY_NAME, shell.CategoryName)
+        output_dir = os.path.join(repo_root, Constants.GENERATED_DIRECTORY_NAME, CommonEnvironmentImports.CurrentShell.CategoryName)
         CommonEnvironmentImports.FileSystem.MakeDirs(output_dir)
 
         # Write the json file

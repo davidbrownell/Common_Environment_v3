@@ -84,7 +84,6 @@ def Activate( output_filename_or_stdout,
     if debug:
         verbose = True
 
-    shell = CommonEnvironmentImports.CurrentShell
     output_stream = CommonEnvironmentImports.StreamDecorator(output_stream)
 
     # ----------------------------------------------------------------------
@@ -100,7 +99,6 @@ def Activate( output_filename_or_stdout,
             activation_data = ActivationData.Load( repository_root,
                                                    configuration,
                                                    fast,
-                                                   shell=shell,
                                                    force=force or not is_activated,
                                                  )
 
@@ -139,7 +137,6 @@ def Activate( output_filename_or_stdout,
         def LoadMixinLibrary(mixin_path):
             mixin_activation_data = ActivationData.Load( mixin_path,
                                                          configuration=None,
-                                                         shell=shell,
                                                          force=True,
                                                        )
             if not mixin_activation_data.IsMixinRepo:
@@ -159,7 +156,7 @@ def Activate( output_filename_or_stdout,
         # ----------------------------------------------------------------------
 
         # Are we activating a mixin repository?
-        is_mixin_repo = EnvironmentBootstrap.Load(repository_root, shell=shell).IsMixinRepo
+        is_mixin_repo = EnvironmentBootstrap.Load(repository_root).IsMixinRepo
 
         if is_mixin_repo:
             if force:
@@ -189,7 +186,6 @@ def Activate( output_filename_or_stdout,
                       ] + methods
 
         args = OrderedDict([ ( "output_stream", output_stream ),
-                             ( "shell", shell ),
                              ( "configuration", configuration ),
                              ( "activation_data", activation_data ),
                              ( "version_specs", activation_data.VersionSpecs ),
@@ -217,7 +213,7 @@ def Activate( output_filename_or_stdout,
 
     # ----------------------------------------------------------------------
 
-    result, commands = Utilities.GenerateCommands(Execute, debug, shell)
+    result, commands = Utilities.GenerateCommands(Execute, debug)
 
     if output_filename_or_stdout == "stdout":
         output_stream = sys.stdout
@@ -227,7 +223,7 @@ def Activate( output_filename_or_stdout,
         close_stream_func = output_stream.close
 
     with CommonEnvironmentImports.CallOnExit(close_stream_func):
-        output_stream.write(shell.GenerateCommands(commands))
+        output_stream.write(CommonEnvironmentImports.CurrentShell.GenerateCommands(commands))
 
     return result
 
@@ -311,14 +307,16 @@ def _ActivateOriginalEnvironment(generated_dir):
         json.dump(original_environment, f)
 
 # ----------------------------------------------------------------------
-def _ActivateRepoEnvironmentVars(shell, generated_dir, configuration):
-    commands = [ shell.Commands.Set(Constants.DE_REPO_ACTIVATED_FLAG, "1"),
-                 shell.Commands.Set(Constants.DE_REPO_ROOT_NAME, os.path.realpath(os.path.join(generated_dir, "..", "..", ".."))),
-                 shell.Commands.Set(Constants.DE_REPO_GENERATED_NAME, generated_dir),
+def _ActivateRepoEnvironmentVars(generated_dir, configuration):
+    Commands = CommonEnvironmentImports.CurrentShell.Commands
+
+    commands = [ Commands.Set(Constants.DE_REPO_ACTIVATED_FLAG, "1"),
+                 Commands.Set(Constants.DE_REPO_ROOT_NAME, os.path.realpath(os.path.join(generated_dir, "..", "..", ".."))),
+                 Commands.Set(Constants.DE_REPO_GENERATED_NAME, generated_dir),
                ]
 
     if configuration:
-        commands.append(shell.Commands.Set(Constants.DE_REPO_CONFIGURATION_NAME, configuration))
+        commands.append(Commands.Set(Constants.DE_REPO_CONFIGURATION_NAME, configuration))
     return commands
 
 # ----------------------------------------------------------------------
@@ -370,7 +368,7 @@ def _ActivateNames(output_stream, repositories):
                                        ))
 
 # ----------------------------------------------------------------------
-def _ActivatePython(output_stream, shell, configuration, repositories, version_specs, generated_dir, no_python_libraries, fast, verbose):
+def _ActivatePython(output_stream, configuration, repositories, version_specs, generated_dir, no_python_libraries, fast, verbose):
     if fast:
         output_stream.write("** FAST: Activating python without libraries ({}) **\n\n".format(_script_fullpath))
 
@@ -378,7 +376,6 @@ def _ActivatePython(output_stream, shell, configuration, repositories, version_s
 
     return PythonActivationActivity.CreateCommands( output_stream,
                                                     verbose,
-                                                    shell,
                                                     configuration,
                                                     repositories,
                                                     version_specs,
@@ -387,13 +384,12 @@ def _ActivatePython(output_stream, shell, configuration, repositories, version_s
                                                   )
 
 # ----------------------------------------------------------------------
-def _ActivateScripts(output_stream, shell, configuration, repositories, version_specs, generated_dir, fast, verbose):
+def _ActivateScripts(output_stream, configuration, repositories, version_specs, generated_dir, fast, verbose):
     if fast:
         output_stream.write("** FAST: Activating scripts without displaying conflicts ({}) **\n\n".format(_script_fullpath))
 
     return ScriptsActivationActivity.CreateCommands( output_stream,
                                                      verbose,
-                                                     shell,
                                                      configuration,
                                                      repositories,
                                                      version_specs,
@@ -402,10 +398,9 @@ def _ActivateScripts(output_stream, shell, configuration, repositories, version_
                                                    )
 
 # ----------------------------------------------------------------------
-def _ActivateTools(output_stream, shell, configuration, repositories, version_specs, generated_dir, verbose):
+def _ActivateTools(output_stream, configuration, repositories, version_specs, generated_dir, verbose):
     return ToolsActivationActivity.CreateCommands( output_stream,
                                                    verbose,
-                                                   shell,
                                                    configuration,
                                                    repositories,
                                                    version_specs,
@@ -429,7 +424,7 @@ def _ActivateCustom(**kwargs):
     return actions
 
 # ----------------------------------------------------------------------
-def _ActivatePrompt(shell, repositories, configuration, is_mixin_repo, fast):
+def _ActivatePrompt(repositories, configuration, is_mixin_repo, fast):
     if is_mixin_repo and os.getenv(Constants.DE_REPO_CONFIGURATION_NAME):
         assert configuration is None, configuration
         configuration = os.getenv(Constants.DE_REPO_CONFIGURATION_NAME)
@@ -451,7 +446,7 @@ def _ActivatePrompt(shell, repositories, configuration, is_mixin_repo, fast):
     if fast:
         prompt += " ** FAST **"
 
-    return shell.Commands.CommandPrompt(prompt)
+    return CommonEnvironmentImports.CurrentShell.Commands.CommandPrompt(prompt)
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------

@@ -63,12 +63,10 @@ class CommandLineInvocationMixin(InvocationMixin):
     # ----------------------------------------------------------------------
     @staticmethod
     def QuoteArguments( command_line_groups,            # list of lists
-                        shell=None,
                       ):
         """Quotes all arguments"""
 
-        shell = shell or CurrentShell
-        is_windows = shell.CategoryName == "Windows"
+        is_windows = CurrentShell.CategoryName == "Windows"
 
         new_command_line_groups = []
 

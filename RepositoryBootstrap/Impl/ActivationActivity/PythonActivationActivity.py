@@ -69,16 +69,14 @@ class PythonActivationActivity(ActivationActivity):
     # ----------------------------------------------------------------------
     @classmethod
     def __clsinit__(cls):
-        shell = CommonEnvironmentImports.CurrentShell
-
-        if shell.CategoryName == "Windows":
+        if CommonEnvironmentImports.CurrentShell.CategoryName == "Windows":
             cls.LibrarySubdirs = [ "Lib", "site-packages", ]
             cls.ScriptSubdirs = [ "Scripts", ]
 
             cls.BinSubdirs = None
             cls.BinExtension = ".exe"
 
-        elif shell.CategoryName == "Linux":
+        elif CommonEnvironmentImports.CurrentShell.CategoryName == "Linux":
             cls.LibrarySubdirs = [ "lib", "python{python_version_short}", "site-packages", ]
             cls.ScriptSubdirs = [ "bin", ]
 
@@ -86,15 +84,11 @@ class PythonActivationActivity(ActivationActivity):
             cls.BinExtension = ''
 
         else:
-            assert False, shell.CategoryName
+            assert False, CommonEnvironmentImports.CurrentShell.CategoryName
 
     # ----------------------------------------------------------------------
     @classmethod
-    def Setup( cls, 
-               output_stream,
-               verbose,
-               shell,
-             ):
+    def Setup(cls, output_stream, verbose):
         stats = [ 0, ] * cls.NormalizeScriptResult_NumItems
 
         output_stream.write("Normalizing python scripts...")
@@ -122,7 +116,7 @@ class PythonActivationActivity(ActivationActivity):
                                                                       ))
                 with dm.stream.DoneManager( suffix='\n' if verbose else '',
                                           ) as this_dm:
-                    fullpath = os.path.join(fullpath, shell.CategoryName)
+                    fullpath = os.path.join(fullpath, CommonEnvironmentImports.CurrentShell.CategoryName)
                     assert os.path.isdir(fullpath), fullpath
 
                     # Get the script dir with its populated values
@@ -237,7 +231,6 @@ class PythonActivationActivity(ActivationActivity):
     def _CreateCommandsImpl( cls,
                              output_stream,
                              verbose_stream,
-                             shell,
                              configuration,
                              repositories,
                              version_specs,
@@ -252,25 +245,25 @@ class PythonActivationActivity(ActivationActivity):
 
         CommonEnvironmentImports.FileSystem.MakeDirs(dest_dir)
 
-        actions = [ shell.Commands.AugmentPath(dest_dir),
+        actions = [ CommonEnvironmentImports.CurrentShell.Commands.AugmentPath(dest_dir),
                   ]
 
         # Add the binary
         bin_dir = dest_dir
         if cls.BinSubdirs:
             bin_dir = os.path.join(bin_dir, *cls.BinSubdirs)
-            actions.append(shell.Commands.AugmentPath(bin_dir))
+            actions.append(CommonEnvironmentImports.CurrentShell.Commands.AugmentPath(bin_dir))
 
         # Add the script dir environment var
         script_dir = dest_dir
         if cls.ScriptSubdirs:
             script_dir = os.path.join(script_dir, *cls.ScriptSubdirs)
             
-            actions += [ shell.Commands.Set("PYTHON_SCRIPT_DIR", script_dir),
-                         shell.Commands.AugmentPath(script_dir),
+            actions += [ CommonEnvironmentImports.CurrentShell.Commands.Set("PYTHON_SCRIPT_DIR", script_dir),
+                         CommonEnvironmentImports.CurrentShell.Commands.AugmentPath(script_dir),
                        ]
 
-        actions.append(shell.Commands.Set("PYTHONUNBUFFERED", "1"))
+        actions.append(CommonEnvironmentImports.CurrentShell.Commands.Set("PYTHONUNBUFFERED", "1"))
 
         # Get the python version
         tools_dir = os.path.realpath(os.path.join(_script_dir, "..", "..", "..", Constants.TOOLS_SUBDIR, cls.Name))
@@ -288,7 +281,7 @@ class PythonActivationActivity(ActivationActivity):
         sub_dict = cls._CreateSubDict(python_version)
 
         for k, v in six.iteritems(sub_dict):
-            actions.append(shell.Commands.Set("DEVELOPMENT_ENVIRONMENT_{}".format(k.upper()), v))
+            actions.append(CommonEnvironmentImports.CurrentShell.Commands.Set("DEVELOPMENT_ENVIRONMENT_{}".format(k.upper()), v))
 
         # Copy all of the python content that doesn't change based on libraries
         # (basically, this is everything except the library and script directories).
@@ -333,7 +326,7 @@ class PythonActivationActivity(ActivationActivity):
                             elif os.path.splitext(item)[1] in [ ".pyc", ".pyo", ]:
                                 continue
 
-                            elif is_bin_dir and item.startswith("python") and shell.CategoryName == "Linux":
+                            elif is_bin_dir and item.startswith("python") and CommonEnvironmentImports.CurrentShell.CategoryName == "Linux":
                                 # Pip uses the python binary to determine the default install path. On Linux,
                                 # pip will also resolve the symbolic link we are creating here. This means that
                                 # it will install libraries relative to the Tools version of python rather than
@@ -341,10 +334,10 @@ class PythonActivationActivity(ActivationActivity):
                                 # than creating a link to them.
                                 continue
 
-                            link_commands.append(shell.Commands.SymbolicLink( os.path.join(dest, item), 
-                                                                              os.path.join(source, item),
-                                                                              remove_existing=False,
-                                                                            ))
+                            link_commands.append(CommonEnvironmentImports.CurrentShell.Commands.SymbolicLink( os.path.join(dest, item), 
+                                                                                                              os.path.join(source, item),
+                                                                                                              remove_existing=False,
+                                                                                                            ))
 
                 # This is counter-intuitive, but we don't need to walk all folders as
                 # the ones that aren't dynamic have already been linked. Walk the dynamic 
@@ -357,7 +350,7 @@ class PythonActivationActivity(ActivationActivity):
             TraverseTree(tools_dir, dest_dir, dynamic_subdirs)
 
             # Copy the python binaries on Linux
-            if shell.CategoryName == "Linux":
+            if CommonEnvironmentImports.CurrentShell.CategoryName == "Linux":
                 assert cls.BinSubdirs
                 bin_source_dir = os.path.join(tools_dir, *cls.BinSubdirs)
                 bin_dest_dir = os.path.join(dest_dir, *cls.BinSubdirs)
@@ -404,10 +397,10 @@ class PythonActivationActivity(ActivationActivity):
                                    ]:
                             continue
 
-                        link_commands.append(shell.Commands.SymbolicLink( os.path.join(library_dest_dir, item), 
-                                                                          os.path.join(library_info.Fullpath, item),
-                                                                          remove_existing=False,
-                                                                        ))
+                        link_commands.append(CommonEnvironmentImports.CurrentShell.Commands.SymbolicLink( os.path.join(library_dest_dir, item), 
+                                                                                                          os.path.join(library_info.Fullpath, item),
+                                                                                                          remove_existing=False,
+                                                                                                        ))
 
         if libraries:
             # Apply scripts
@@ -428,13 +421,13 @@ class PythonActivationActivity(ActivationActivity):
                     assert os.path.isdir(script_dest_dir), script_dest_dir
         
                     for name, script_info in six.iteritems(scripts):
-                        link_commands.append(shell.Commands.SymbolicLink( os.path.join(script_dest_dir, name), 
-                                                                          script_info.Fullpath,
-                                                                          remove_existing=False,
-                                                                        ))
+                        link_commands.append(CommonEnvironmentImports.CurrentShell.Commands.SymbolicLink( os.path.join(script_dest_dir, name), 
+                                                                                                          script_info.Fullpath,
+                                                                                                          remove_existing=False,
+                                                                                                        ))
 
             # Create wrappers to make it easier to invoke python files on Windows
-            if scripts and shell.CategoryName == "Windows":
+            if scripts and CommonEnvironmentImports.CurrentShell.CategoryName == "Windows":
                 wrappers = []
 
                 verbose_stream.write("Creating script wrappers...")
@@ -444,18 +437,18 @@ class PythonActivationActivity(ActivationActivity):
                         if os.path.splitext(name)[1] != ".py":
                             continue
 
-                        wrapper_filename = os.path.join(script_dest_dir, "{}{}".format(name, shell.ScriptExtension))
+                        wrapper_filename = os.path.join(script_dest_dir, "{}{}".format(name, CommonEnvironmentImports.CurrentShell.ScriptExtension))
                         if not os.path.isfile(wrapper_filename):
                             wrappers.append(os.path.basename(wrapper_filename))
 
-                            wrapper_commands = [ shell.Commands.EchoOff(),
-                                                 shell.Commands.Execute('python "{}" {}'.format(os.path.join(script_dest_dir, name), shell.AllArgumentsScriptVariable)),
+                            wrapper_commands = [ CommonEnvironmentImports.CurrentShell.Commands.EchoOff(),
+                                                 CommonEnvironmentImports.CurrentShell.Commands.Execute('python "{}" {}'.format(os.path.join(script_dest_dir, name), CommonEnvironmentImports.CurrentShell.AllArgumentsScriptVariable)),
                                                ]
 
                             with open(wrapper_filename, 'w') as f:
-                                f.write(shell.GenerateCommands(wrapper_commands))
+                                f.write(CommonEnvironmentImports.CurrentShell.GenerateCommands(wrapper_commands))
 
-                            shell.MakeFileExecutable(wrapper_filename)
+                            CommonEnvironmentImports.CurrentShell.MakeFileExecutable(wrapper_filename)
 
                     if wrappers:
                         with open(os.path.join(script_dest_dir, WRAPPERS_FILENAME), 'w') as f:
@@ -464,7 +457,7 @@ class PythonActivationActivity(ActivationActivity):
         if link_commands:
             verbose_stream.write("Applying {}...".format(inflect.no("link", len(link_commands))))
             with verbose_stream.DoneManager() as dm:
-                dm.result, output = shell.ExecuteCommands(link_commands, output_stream=None)
+                dm.result, output = CommonEnvironmentImports.CurrentShell.ExecuteCommands(link_commands, output_stream=None)
                 if dm.result != 0:
                     raise Exception(textwrap.dedent(
                         """\

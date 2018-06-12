@@ -35,7 +35,6 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 def GenerateCommands( functor,              # def Func() -> []
                       is_debug,
-                      shell,
                     ):
     """
     Generates shell-specific commands as returned by the provided functor.
@@ -45,7 +44,6 @@ def GenerateCommands( functor,              # def Func() -> []
     """
 
     assert functor
-    assert shell
     
     commands = []
 
@@ -69,17 +67,17 @@ def GenerateCommands( functor,              # def Func() -> []
         if not error.endswith('.'):
             error += '.'
 
-        commands = [ shell.Commands.Message("ERROR: {}".format(CommonEnvironmentImports.StringHelpers.LeftJustify(error, len("ERROR: ")))),
-                     shell.Commands.Exit(return_code=-1),
+        commands = [ CommonEnvironmentImports.CurrentShell.Commands.Message("ERROR: {}".format(CommonEnvironmentImports.StringHelpers.LeftJustify(error, len("ERROR: ")))),
+                     CommonEnvironmentImports.CurrentShell.Commands.Exit(return_code=-1),
                    ]
 
         result = -1
 
     if is_debug:
-        commands = [ shell.Commands.Message("{}\n".format(CommonEnvironmentImports.StringHelpers.Prepend( "Debug: ", 
-                                                                                                                                  shell.GenerateCommands(commands),
-                                                                                                                                  skip_first_line=False,
-                                                                                                                                ))),
+        commands = [ CommonEnvironmentImports.CurrentShell.Commands.Message("{}\n".format(CommonEnvironmentImports.StringHelpers.Prepend( "Debug: ", 
+                                                                                                                                          CommonEnvironmentImports.CurrentShell.GenerateCommands(commands),
+                                                                                                                                          skip_first_line=False,
+                                                                                                                                        ))),
                    ] + commands
 
     return result, commands

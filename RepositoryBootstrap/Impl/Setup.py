@@ -85,8 +85,6 @@ def EntryPoint( output_filename_or_stdout,
     if debug:
         verbose = True
 
-    shell = CommonEnvironmentImports.CurrentShell
-    
     # Get the setup customization module
     potential_customization_filename = os.path.join(repository_root, Constants.SETUP_ENVIRONMENT_CUSTOMIZATION_FILENAME)
     if os.path.isfile(potential_customization_filename):
@@ -107,8 +105,7 @@ def EntryPoint( output_filename_or_stdout,
                       _SetupGeneratedPermissions,
                       _SetupScmHooks,
                     ]:
-            these_commands = func( shell,
-                                   repository_root,
+            these_commands = func( repository_root,
                                    customization_mod,
                                    debug,
                                    verbose,
@@ -121,7 +118,7 @@ def EntryPoint( output_filename_or_stdout,
 
     # ----------------------------------------------------------------------
 
-    result, commands = Utilities.GenerateCommands(Execute, debug, shell)
+    result, commands = Utilities.GenerateCommands(Execute, debug)
     
     if output_filename_or_stdout == "stdout":
         output_stream = sys.stdout
@@ -131,15 +128,14 @@ def EntryPoint( output_filename_or_stdout,
         close_stream_func = output_stream.close
     
     with CommonEnvironmentImports.CallOnExit(close_stream_func):
-        output_stream.write(shell.GenerateCommands(commands))
+        output_stream.write(CommonEnvironmentImports.CurrentShell.GenerateCommands(commands))
     
     return result
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
-def _SetupBootstrap( shell,
-                     repository_root,
+def _SetupBootstrap( repository_root,
                      customization_mod,
                      debug,
                      verbose,
@@ -149,7 +145,7 @@ def _SetupBootstrap( shell,
     # Look for all dependencies by intelligently enumerating through the file system
 
     search_depth += repository_root.count(os.path.sep)
-    if shell.CategoryName == "Windows":
+    if CommonEnvironmentImports.CurrentShell.CategoryName == "Windows":
         # Remove the slash assocaited with the drive name
         assert search_depth
         search_depth -= 1
@@ -265,7 +261,7 @@ def _SetupBootstrap( shell,
 
         PushSearchItem(repository_root)
 
-        if shell.CategoryName == "Windows":
+        if CommonEnvironmentImports.CurrentShell.CategoryName == "Windows":
             # ----------------------------------------------------------------------
             def ItemPreprocessor(item):
                 drive, suffix = os.path.splitdrive(item)
@@ -512,14 +508,11 @@ def _SetupBootstrap( shell,
                           is_mixin_repository,
                           has_configurations,
                           configurations,
-                        ).Save( repository_root,
-                                shell=shell,
-                              )
+                        ).Save(repository_root)
 
 # ----------------------------------------------------------------------
 # <Unused argument> pylint: disable = W0613
-def _SetupCustom( shell,
-                  repository_root,
+def _SetupCustom( repository_root,
                   customization_mod,
                   debug,
                   verbose,
@@ -537,41 +530,38 @@ def _SetupCustom( shell,
 
 # ----------------------------------------------------------------------
 # <Unused argument> pylint: disable = W0613
-def _SetupShortcuts( shell,
-                     repository_root,
+def _SetupShortcuts( repository_root,
                      customization_mod,
                      debug,
                      verbose,
                      explict_configurations,
                    ):
-    activate_script = shell.CreateScriptName(Constants.ACTIVATE_ENVIRONMENT_NAME)
+    activate_script = CommonEnvironmentImports.CurrentShell.CreateScriptName(Constants.ACTIVATE_ENVIRONMENT_NAME)
 
     shortcut_target = os.path.join(_script_dir, activate_script)
     assert os.path.isfile(shortcut_target), shortcut_target
 
-    return [ shell.Commands.SymbolicLink( os.path.join(repository_root, activate_script),
-                                          shortcut_target,
-                                        ),
+    return [ CommonEnvironmentImports.CurrentShell.Commands.SymbolicLink( os.path.join(repository_root, activate_script),
+                                                                          shortcut_target,
+                                                                        ),
            ]
 
 # ----------------------------------------------------------------------
 # <Unused argument> pylint: disable = W0613
-def _SetupGeneratedPermissions( shell,
-                                repository_root,
+def _SetupGeneratedPermissions( repository_root,
                                 customization_mod,
                                 debug,
                                 verbose,
                                 explict_configurations,
                               ):
-    generated_dir = os.path.join(repository_root, Constants.GENERATED_DIRECTORY_NAME, shell.CategoryName)
+    generated_dir = os.path.join(repository_root, Constants.GENERATED_DIRECTORY_NAME, CommonEnvironmentImports.CurrentShell.CategoryName)
     assert os.path.isdir(generated_dir), generated_dir
 
     os.chmod(generated_dir, 0x777)
 
 # ----------------------------------------------------------------------
 # <Unused argument> pylint: disable = W0613
-def _SetupScmHooks( shell,
-                    repository_root,
+def _SetupScmHooks( repository_root,
                     customization_mod,
                     debug,
                     verbose,

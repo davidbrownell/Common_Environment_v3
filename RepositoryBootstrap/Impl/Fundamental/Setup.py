@@ -39,5 +39,4 @@ for arg in sys.argv[1:]:
 
 PythonActivationActivity.Setup( CommonEnvironmentImports.StreamDecorator(sys.stdout),
                                 verbose=verbose,
-                                shell=CommonEnvironmentImports.CurrentShell,
                               )

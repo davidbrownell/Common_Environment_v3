@@ -54,7 +54,6 @@ class ToolsActivationActivity(ActivationActivity):
     def _CreateCommandsImpl( cls,
                              output_stream,
                              verbose_stream,
-                             shell,
                              configuration,
                              repositories,
                              version_specs,
@@ -102,9 +101,9 @@ class ToolsActivationActivity(ActivationActivity):
                     nonlocals.tools += 1
 
                     # Look for an activation customization script here. If it exists, invoke that rather than our custom activities
-                    potential_activate_fullpath = os.path.join(fullpath, shell.CreateScriptName(Constants.ACTIVATE_ENVIRONMENT_NAME))
+                    potential_activate_fullpath = os.path.join(fullpath, CommonEnvironmentImports.CurrentShell.CreateScriptName(Constants.ACTIVATE_ENVIRONMENT_NAME))
                     if os.path.isfile(potential_activate_fullpath):
-                        actions.append(shell.Commands.Call(potential_activate_fullpath))
+                        actions.append(CommonEnvironmentImports.CurrentShell.Commands.Call(potential_activate_fullpath))
                         continue
 
                     # Add well-known suffixes to the path if they exist
@@ -125,6 +124,6 @@ class ToolsActivationActivity(ActivationActivity):
                     paths += existing_paths
 
         if paths:
-            actions.append(shell.Commands.AugmentPath(paths))
+            actions.append(CommonEnvironmentImports.CurrentShell.Commands.AugmentPath(paths))
 
         return actions

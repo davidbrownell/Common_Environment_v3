@@ -39,7 +39,6 @@ del sys.path[0]
 
 # ----------------------------------------------------------------------
 def GetCustomActions( output_stream,
-                      shell,
                       configuration,
                       version_specs,
                       generated_dir,
@@ -72,11 +71,11 @@ def GetCustomActions( output_stream,
         os.environ["DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_VALIDATORS"] = ''
         os.environ["DEVELOPMENT_ENVIRONMENT_TESTER_CONFIGURATIONS"] = ''
 
-        actions += [ CurrentShell.Commands.Set("DEVELOPMENT_ENVIRONMENT_COMPILERS", None),
-                     CurrentShell.Commands.Set("DEVELOPMENT_ENVIRONMENT_TEST_EXECUTORS", None),
-                     CurrentShell.Commands.Set("DEVELOPMENT_ENVIRONMENT_TEST_PARSERS", None),
-                     CurrentShell.Commands.Set("DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_VALIDATORS", None),
-                     CurrentShell.Commands.Set("DEVELOPMENT_ENVIRONMENT_TESTER_CONFIGURATIONS", None),
+        actions += [ Commands.Set("DEVELOPMENT_ENVIRONMENT_COMPILERS", None),
+                     Commands.Set("DEVELOPMENT_ENVIRONMENT_TEST_EXECUTORS", None),
+                     Commands.Set("DEVELOPMENT_ENVIRONMENT_TEST_PARSERS", None),
+                     Commands.Set("DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_VALIDATORS", None),
+                     Commands.Set("DEVELOPMENT_ENVIRONMENT_TESTER_CONFIGURATIONS", None),
                    ]
 
         actions += DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_COMPILERS",
@@ -110,18 +109,20 @@ def GetCustomActions( output_stream,
     return actions
 
 # ----------------------------------------------------------------------
-def GetCustomScriptExtractors(shell):
+def GetCustomScriptExtractors():
     """Returns script parsers used during activation."""
+
+    Commands = CurrentShell.Commands
 
     # ----------------------------------------------------------------------
     def PythonWrapper(script_filename):
         if os.path.basename(script_filename) == "__init__.py":
             return
 
-        return [ shell.Commands.EchoOff(),
-                 shell.Commands.Execute('python "{}" {}'.format( script_filename,
-                                                                 shell.AllArgumentsScriptVariable,
-                                                               )),
+        return [ Commands.EchoOff(),
+                 Commands.Execute('python "{}" {}'.format( script_filename,
+                                                           CurrentShell.AllArgumentsScriptVariable,
+                                                         )),
                ]
 
     # ----------------------------------------------------------------------
@@ -133,16 +134,16 @@ def GetCustomScriptExtractors(shell):
 
     # ----------------------------------------------------------------------
     def PowershellScriptWrapper(script_filename):
-        return shell.Commands.Execute('powershell -executionpolicy unrestricted "{}" {}'.format(script_filename, shell.AllArgumentsScriptVariable))
+        return Commands.Execute('powershell -executionpolicy unrestricted "{}" {}'.format(script_filename, CurrentShell.AllArgumentsScriptVariable))
 
     # ----------------------------------------------------------------------
     def EnvironmentScriptWrapper(script_filename):
-        return shell.Commands.Execute('"{}" {}'.format(script_filename, shell.AllArgumentsScriptVariable))
+        return Commands.Execute('"{}" {}'.format(script_filename, CurrentShell.AllArgumentsScriptVariable))
 
     # ----------------------------------------------------------------------
 
     return OrderedDict([ ( ".py", ( PythonWrapper, PythonDocs ) ),
                          ( ".ps1", PowershellScriptWrapper ),
-                         ( shell.ScriptExtension, EnvironmentScriptWrapper ),
+                         ( CurrentShell.ScriptExtension, EnvironmentScriptWrapper ),
                        ])
 

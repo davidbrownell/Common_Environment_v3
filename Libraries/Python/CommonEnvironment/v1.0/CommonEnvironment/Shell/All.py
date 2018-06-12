@@ -40,7 +40,7 @@ ALL_TYPES                                   = [ WindowsPowerShell,
 def _GetShell():
     # ----------------------------------------------------------------------
     def GetPlatform():
-        result = os.getenv("DEVELOPMENT_ENVIRONMENT_LINUX_NAME_OVERRIDE")
+        result = os.getenv("DEVELOPMENT_ENVIRONMENT_SHELL_NAME")
         if result:
             return result.lower()
 
