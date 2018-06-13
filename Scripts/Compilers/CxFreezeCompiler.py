@@ -26,7 +26,9 @@ from CommonEnvironment import Process
 from CommonEnvironment.Shell.All import CurrentShell
 from CommonEnvironment import StringHelpers
 
-from CommonEnvironment.CompilerImpl.Impl.DistutilsCompilerImpl import *
+from CommonEnvironment.CompilerImpl.Impl.DistutilsCompilerImpl import DistutilsCompilerImpl, \
+                                                                      CreateCompileMethod, \
+                                                                      CreateCleanMethod
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable

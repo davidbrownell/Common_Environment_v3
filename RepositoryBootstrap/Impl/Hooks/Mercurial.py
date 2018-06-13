@@ -15,7 +15,6 @@
 """Hook functionality for Mercurial"""
 
 import datetime
-import json
 import os
 import sys
 import textwrap
@@ -27,14 +26,14 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 try:
-    import mercurial 
+    import mercurial                        # <Unable to import> pylint: disable = F0401
 
     mercurial.demandimport.disable()
 except:
     pass
 
 sys.path.insert(0, os.path.dirname(__file__))
-import HookImpl
+import HookImpl                             # <Unable to import> pylint: disable = F0401
 sys.path.pop(0)
 
 # ----------------------------------------------------------------------
@@ -115,6 +114,7 @@ def PreOutgoing(ui, repo, source, *args, **kwargs):
                           )
 
 # ----------------------------------------------------------------------
+# <Keyword argument before variable positional arguments list in the definition of function> pylint: disable = W1113
 def PreTxnChangeGroup(ui, repo, source, node, node_last=None, *args, **kwargs):
     """Called after a pull has been downloaded but before it has been applied locally"""
 
