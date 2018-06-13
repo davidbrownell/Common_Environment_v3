@@ -64,7 +64,7 @@ def commit_msg( description_filename,
     result, output = Process.Execute('git status --porcelain --branch --untracked-files=no')
     assert result == 0, output
 
-    pfr = _ProcessFileResult(repo_root, output)
+    pfr = _ProcessFileList(repo_root, output)
     
     return HookImpl.Invoke( repo_root,
                             output_stream,
@@ -193,7 +193,7 @@ def _GetRepoRoot():
 # ----------------------------------------------------------------------
 _ProcessFile_regex                          = re.compile(r"(?P<prefix>\S+)\s+(?P<filename>.+)")
 
-_ProcessFileResult                          = namedtuple( "_ProcessFileResult",
+_ProcessFileListResult                      = namedtuple( "_ProcessFileListResult",
                                                           [ "Branch",
                                                             "Added",
                                                             "Modified",
@@ -245,11 +245,11 @@ def _ProcessFileList(repo_root, output):
         else:
             assert False, (prefix, filename)
 
-    return _ProcessFileResult( branch,
-                               added,
-                               modified,
-                               removed,
-                             )
+    return _ProcessFileListResult( branch,
+                                   added,
+                                   modified,
+                                   removed,
+                                 )
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
