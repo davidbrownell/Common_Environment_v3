@@ -6,12 +6,6 @@
 # |      2018-06-07 16:38:31
 # |  
 # ----------------------------------------------------------------------
-# |  
-# |  Copyright Michael Sharp 2018.
-# |  Distributed under the Boost Software License, Version 1.0.
-# |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
-# ----------------------------------------------------------------------
 
 function ExitScript {
     if($env:_ACTIVATE_ENVIRONMENT_TEMP_SCRIPT_NAME){
@@ -20,17 +14,17 @@ function ExitScript {
     Remove-Item "NULL" -ErrorAction SilentlyContinue
 
     $env:DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=$env:_ACTIVATE_ENVIRONMENT_PREVIOUS_FUNDAMENTAL
-    $env:_ACTIVATE_ENVIRONMENT_SCRIPT_EXECUTION_ERROR_LEVEL=''
-    $env:_ACTIVATE_ENVIRONMENT_SCRIPT_GENERATION_ERROR_LEVEL=''
-    $env:_ACTIVATE_ENVIRONMENT_CLA=''
-    $env:_ACTIVATE_ENVIRONMENT_WORKING_DIR=''
-    $env:_ACTIVATE_ENVIRONMENT_PYTHON_BINARY=''
-    $env:_ACTIVATE_ENVIRONMENT_IS_CONFIGURABLE_REPOSITORY=''
-    $env:_ACTIVATE_ENVIRONMENT_IS_MIXIN_REPOSITORY=''
-    $env:_ACTIVATE_ENVIRONMENT_PREVIOUS_FUNDAMENTAL=''
-    $env:_ACTIVATE_ENVIRONMENT_TEMP_SCRIPT_NAME=''
-    $env:PYTHONPATH=''
-    $env:PYTHONUNBUFFERED=''
+    Remove-Item "Env:\_ACTIVATE_ENVIRONMENT_SCRIPT_EXECUTION_ERROR_LEVEL" -ErrorAction SilentlyContinue
+    Remove-Item "Env:\_ACTIVATE_ENVIRONMENT_SCRIPT_GENERATION_ERROR_LEVEL" -ErrorAction SilentlyContinue
+    Remove-Item "Env:\_ACTIVATE_ENVIRONMENT_CLA" -ErrorAction SilentlyContinue
+    Remove-Item "Env:\_ACTIVATE_ENVIRONMENT_WORKING_DIR" -ErrorAction SilentlyContinue
+    Remove-Item "Env:\_ACTIVATE_ENVIRONMENT_PYTHON_BINARY" -ErrorAction SilentlyContinue
+    Remove-Item "Env:\_ACTIVATE_ENVIRONMENT_IS_CONFIGURABLE_REPOSITORY" -ErrorAction SilentlyContinue
+    Remove-Item "Env:\_ACTIVATE_ENVIRONMENT_IS_MIXIN_REPOSITORY" -ErrorAction SilentlyContinue
+    Remove-Item "Env:\_ACTIVATE_ENVIRONMENT_PREVIOUS_FUNDAMENTAL" -ErrorAction SilentlyContinue
+    Remove-Item "Env:\_ACTIVATE_ENVIRONMENT_TEMP_SCRIPT_NAME" -ErrorAction SilentlyContinue
+    Remove-Item "Env:\PYTHONPATH" -ErrorAction SilentlyContinue
+    Remove-Item "Env:\PYTHONUNBUFFERED" -ErrorAction SilentlyContinue
     
     Pop-Location 
     
@@ -45,6 +39,10 @@ function ErrorExit {
 function CreateTempScriptName {
     $env:_filename = "$PSScriptRoot\ActivateEnvironment-$(Get-Random -Maximum 99999)-$(Get-Date -Format mm-ss).ps1"
     $env:_ACTIVATE_ENVIRONMENT_TEMP_SCRIPT_NAME = $env:_filename
+}
+
+function echo. {
+    echo "`n"
 }
 
 Push-Location $PSScriptRoot
@@ -105,7 +103,7 @@ $env:_ACTIVATE_ENVIRONMENT_PREVIOUS_FUNDAMENTAL=$env:DEVELOPMENT_ENVIRONMENT_FUN
 
 # ----------------------------------------------------------------------
 # |  Only allow one activated environment at a time (unless we are activating a mixin repo)
-if ($env:_ACTIVATE_ENVIRONMENT_IS_MIXIN_REPOSITORY -ne "1" -and $env:DEVELOPMENT_ENVIRONMENT_REPOSITORY -ne "" -and $env:DEVELOPMENT_ENVIRONMENT_REPOSITORY -ne $PSScriptRoot -and $null -ne $env:DEVELOPMENT_ENVIRONMENT_REPOSITORY) {
+if ($env:_ACTIVATE_ENVIRONMENT_IS_MIXIN_REPOSITORY -ne "1" -and (![string]::IsNullOrEmpty($env:DEVELOPMENT_ENVIRONMENT_REPOSITORY)) -and $env:DEVELOPMENT_ENVIRONMENT_REPOSITORY -ne $PSScriptRoot -and (![string]::IsNullOrEmpty($env:DEVELOPMENT_ENVIRONMENT_REPOSITORY))) {
     Write-Host  ""
     Write-Error "Only one repository can be activated within an environment at a time, and it appears as if one is already active. Please open a new console and run this script again."
     Write-Host  ""
