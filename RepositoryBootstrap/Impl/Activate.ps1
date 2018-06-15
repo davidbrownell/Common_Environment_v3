@@ -41,7 +41,7 @@ function CreateTempScriptName {
     $env:_ACTIVATE_ENVIRONMENT_TEMP_SCRIPT_NAME = $env:_filename
 }
 
-function echo. {
+function global:echo. {
     echo "`n"
 }
 

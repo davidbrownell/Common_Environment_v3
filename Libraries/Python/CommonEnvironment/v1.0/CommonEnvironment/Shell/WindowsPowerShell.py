@@ -59,7 +59,7 @@ class WindowsPowerShell(WindowsShell):
                     for old_char, new_char in replacement_chars:
                         line = line.replace(old_char, new_char)
                         
-                    output.append("echo {}".format(line))
+                    output.append("echo '{}'".format(line))
                     
             return '\n'.join(output)
 

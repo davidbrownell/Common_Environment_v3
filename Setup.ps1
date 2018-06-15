@@ -22,7 +22,7 @@ function ExitScript {
     exit
 }
 
-function echo. {
+function global:echo. {
     echo "`n"
 }
 
