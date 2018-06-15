@@ -226,7 +226,7 @@ From an activated_ environment_, run:
   Windows (PowerShell)       ``python $env:DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL\RepositoryBootstrap\CreateRepository.py <Destination Repository Dir> <Repository Name>``
   =========================  =======================================
   
-  The script will prompt you for information and then generated the necessary files in ``<Destination Repository Dir>``.
+  The script will prompt you for information and then generate the necessary files in ``<Destination Repository Dir>``.
   
 Support
 =======
