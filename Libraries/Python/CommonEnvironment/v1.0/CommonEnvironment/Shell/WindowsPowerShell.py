@@ -6,12 +6,7 @@
 # |      2018-06-07 16:38:31
 # |  
 # ----------------------------------------------------------------------
-# |  
-# |  Copyright Michael Sharp 2018.
-# |  Distributed under the Boost Software License, Version 1.0.
-# |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
-# ----------------------------------------------------------------------
+
 """Contains the WindowsPowerShell object."""
 
 import os
@@ -59,12 +54,12 @@ class WindowsPowerShell(WindowsShell):
             
             for line in command.Value.split('\n'):
                 if not line.strip():
-                    output.append("Write-Output ''")
+                    output.append("echo.")
                 else:
                     for old_char, new_char in replacement_chars:
                         line = line.replace(old_char, new_char)
                         
-                    output.append("Write-Output '{}'".format(line))
+                    output.append("echo {}".format(line))
                     
             return '\n'.join(output)
 

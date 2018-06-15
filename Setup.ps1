@@ -6,12 +6,7 @@
 # |      2018-06-07 11:21:37
 # |  
 # ----------------------------------------------------------------------
-# |  
-# |  Copyright Michael Sharp 2018.
-# |  Distributed under the Boost Software License, Version 1.0.
-# |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
-# ----------------------------------------------------------------------
+
 
 # ----------------------------------------------------------------------
 # |  
@@ -27,12 +22,16 @@ function ExitScript {
     exit
 }
 
+function echo. {
+    echo "`n"
+}
+
 # Begin bootstrap customization
 $env:DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=$PSScriptRoot
 
-Invoke-Expression "$env:DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL\RepositoryBootstrap\Impl\Fundamental\Setup.cmd $args" 
+$success = Invoke-Expression "$env:DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL\RepositoryBootstrap\Impl\Fundamental\Setup.cmd $args;`$?"
 
-if( -not $? ){
+if( -not $success ){
     $msg = $Error[0].Exception.Message
     Write-Host  ""
     Write-Host  ""
@@ -45,7 +44,7 @@ if( -not $? ){
 }
 # End bootstrap customization
 
-if ($env:DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL -eq "") {
+if ([string]::IsNullOrEmpty($env:DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL)) {
     Write-Host  ""
     Write-Error "ERROR: Please run Activate.ps1 within a repository before running this script. It may be necessary to Setup and Activate the Common_Environment repository before setting up this one."
     Write-Host  ""
@@ -56,6 +55,6 @@ if ($env:DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL -eq "") {
 Invoke-Expression "$env:DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL\RepositoryBootstrap\Impl\Setup.cmd $env:DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL $args"
 
 # Bootstrap customization
-$env:DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL = ""
+Remove-Item "Env:\DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"
 
 ExitScript
