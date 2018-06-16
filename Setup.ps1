@@ -33,22 +33,30 @@ $success = Invoke-Expression "$env:DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL\Repositor
 
 if( -not $success ){
     $msg = $Error[0].Exception.Message
-    Write-Host  ""
-    Write-Host  ""
-    Write-Error "ERROR: Errors were encountered and the repository has not been setup for development. Error is $msg."
-    Write-Host  ""
-    Write-Error "[Fundamental Setup]"
-    Write-Host  ""
+
+    Write-Error `
+(@"
+ 
+ 
+Errors were encountered and the repository has not been setup for development.
+ 
+    [Fundamental Setup: {0}]
+ 
+"@ -f $msg)
 
     ExitScript
 }
 # End bootstrap customization
 
 if ([string]::IsNullOrEmpty($env:DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL)) {
-    Write-Host  ""
-    Write-Error "ERROR: Please run Activate.ps1 within a repository before running this script. It may be necessary to Setup and Activate the Common_Environment repository before setting up this one."
-    Write-Host  ""
-    
+    Write-Error `
+(@"
+ 
+ 
+Please run Activate.ps1 within a repository before running this script. It may be necessary to Setup and Activate the Common_Environment repository before setting up this one.
+ 
+"@)
+
     ExitScript
 }
 

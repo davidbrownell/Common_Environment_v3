@@ -22,10 +22,14 @@ function ExitScript {
 }
 
 if ([string]::IsNullOrEmpty($env:DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL)) {
-    Write-Host  ""
-    Write-Error "ERROR: Please run Activate.ps1 within a repository before running this script. It may be necessary to Setup and Activate the Common_Environment repository before setting up this one."
-    Write-Host  ""
-    
+    Write-Error `
+(@"
+ 
+ 
+Please run Activate.ps1 within a repository before running this script. It may be necessary to Setup and Activate the Common_Environment repository before setting up this one.
+ 
+"@)
+
     ExitScript
 }
 

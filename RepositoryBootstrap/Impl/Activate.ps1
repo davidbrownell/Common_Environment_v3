@@ -8,7 +8,7 @@
 # ----------------------------------------------------------------------
 
 function ExitScript {
-    if($env:_ACTIVATE_ENVIRONMENT_TEMP_SCRIPT_NAME){
+    if($env:_ACTIVATE_ENVIRONMENT_TEMP_SCRIPT_NAME -and $env:_ACTIVATE_ERROR_LEVEL -eq 0) {
         Remove-Item $env:_ACTIVATE_ENVIRONMENT_TEMP_SCRIPT_NAME -ErrorAction SilentlyContinue
     }
     Remove-Item "NULL" -ErrorAction SilentlyContinue
@@ -51,12 +51,17 @@ $env:_ACTIVATE_ENVIRONMENT_PREVIOUS_FUNDAMENTAL=$env:DEVELOPMENT_ENVIRONMENT_FUN
 $env:DEVELOPMENT_ENVIRONMENT_USE_WINDOWS_POWERSHELL=1
 # Read the bootstrap data
 if( !(Test-Path "$PSScriptRoot\Generated\Windows\EnvironmentBootstrap.data")) {
-    Write-Host  ""
-    Write-Error "It appears that Setup.cmd has not been run for this repository. Please run Setup.ps1 and run this script again."
-    Write-Host  ""
-    Write-Error "[$PSScriptRoot\Windows\EnvironmentBootstrap.data was not found]"
-    Write-Host  ""
 
+    Write-Error `
+(@"
+ 
+ 
+It appears that Setup.cmd has not been run for this repository. Please run Setup.ps1 and run this script again.
+ 
+    [$PSScriptRoot\Windows\EnvironmentBootstrap.data was not found]
+ 
+"@)
+    
     ErrorExit
 }
 
@@ -104,11 +109,15 @@ $env:_ACTIVATE_ENVIRONMENT_PREVIOUS_FUNDAMENTAL=$env:DEVELOPMENT_ENVIRONMENT_FUN
 # ----------------------------------------------------------------------
 # |  Only allow one activated environment at a time (unless we are activating a mixin repo)
 if ($env:_ACTIVATE_ENVIRONMENT_IS_MIXIN_REPOSITORY -ne "1" -and (![string]::IsNullOrEmpty($env:DEVELOPMENT_ENVIRONMENT_REPOSITORY)) -and $env:DEVELOPMENT_ENVIRONMENT_REPOSITORY -ne $PSScriptRoot -and (![string]::IsNullOrEmpty($env:DEVELOPMENT_ENVIRONMENT_REPOSITORY))) {
-    Write-Host  ""
-    Write-Error "Only one repository can be activated within an environment at a time, and it appears as if one is already active. Please open a new console and run this script again."
-    Write-Host  ""
-    Write-Error "[DEVELOPMENT_ENVIRONMENT_REPOSITORY is already defined as '$env:DEVELOPMENT_ENVIRONMENT_REPOSITORY']"
-    Write-Host  ""
+    Write-Error `
+(@"
+ 
+ 
+Only one repository can be activated within an environment at a time, and it appears as if one is already active. Please open a new console and run this script again.
+ 
+    [DEVELOPMENT_ENVIRONMENT_REPOSITORY is already defined as '{0}']
+ 
+"@ -f $env:DEVELOPMENT_ENVIRONMENT_REPOSITORY)
 
     ErrorExit
 }
@@ -116,9 +125,13 @@ if ($env:_ACTIVATE_ENVIRONMENT_IS_MIXIN_REPOSITORY -ne "1" -and (![string]::IsNu
 # ----------------------------------------------------------------------
 # |  A mixin repository can't be activated in isolation
 if ($env:_ACTIVATE_ENVIRONMENT_IS_MIXIN_REPOSITORY -eq "1" -and $env:DEVELOPMENT_ENVIRONMENT_REPOSITORY_ACTIVATED_FLAG -ne "1") {
-    Write-Host  ""
-    Write-Error "A mixin repository cannot be activated in isolation. Activate another repository before activating this one."
-    Write-Host  ""
+    Write-Error `
+(@"
+ 
+ 
+A mixin repository cannot be activated in isolation. Activate another repository before activating this one.
+ 
+"@ -f $env:DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL)
 
     ErrorExit
 }
@@ -127,25 +140,31 @@ if ($env:_ACTIVATE_ENVIRONMENT_IS_MIXIN_REPOSITORY -eq "1" -and $env:DEVELOPMENT
 # |  Prepare the args
 if ($env:_ACTIVATE_ENVIRONMENT_IS_CONFIGURABLE_REPOSITORY -ne "0")  {
     if ([string]::IsNullOrEmpty($args[0])) {
-        Write-Host  ""
-        Write-Error "This repository is configurable, which means that it can be activated in a variety of different ways. Please run this script again with a configuration name provided on the command line."
-        Write-Host  ""
-        Write-Error "Available configurations are:"
-        Write-Host  ""
-        Invoke-Expression "$env:_ACTIVATE_ENVIRONMENT_PYTHON_BINARY -m RepositoryBootstrap.Impl.Activate ListConfigurations $PSScriptRoot command_line"
-        Write-Host  ""
-    
+        Write-Error `
+(@"
+ 
+ 
+This repository is configurable, which means that it can be activated in a variety of different ways. Please run this script again with a configuration name provided on the command line.
+ 
+"@)
+
+        Invoke-Expression "$env:_ACTIVATE_ENVIRONMENT_PYTHON_BINARY -m RepositoryBootstrap.Impl.Activate ListConfigurations $PSScriptRoot"
+        
         ErrorExit
     }
     
     if (![string]::IsNullOrEmpty($env:DEVELOPMENT_ENVIRONMENT_REPOSITORY_CONFIGURATION)) {
         if ($env:DEVELOPMENT_ENVIRONMENT_REPOSITORY_CONFIGURATION -ne $args[0]) {
-            Write-Host  ""
-            Write-Error "The environment was previously activated with this repository but using a different configuration. Please open a new console window and activate this repository with the new configuration."
-            Write-Host  ""
-            Write-Error "[$env:DEVELOPMENT_ENVIRONMENT_REPOSITORY_CONFIGURATION != $args[0]]"
-            Write-Host  ""
-        
+            Write-Error `
+(@"
+ 
+ 
+The environment was previously activated with this repository but using a different configuration. Please open a new console window and activate this repository with the new configuration.
+ 
+    [{0} != {1}]
+ 
+"@ -f $env:DEVELOPMENT_ENVIRONMENT_REPOSITORY_CONFIGURATION, $args[0])
+
             ErrorExit
         }
     }
@@ -171,21 +190,29 @@ $env:_ACTIVATE_ENVIRONMENT_SCRIPT_EXECUTION_ERROR_LEVEL = $LASTEXITCODE
 
 # Process errors...
 if ($env:_ACTIVATE_ENVIRONMENT_SCRIPT_GENERATION_ERROR_LEVEL -ne "0") {
-    Write-Host  ""
-    Write-Error "Errors were encountered and the environment has not been successfully activated for development."
-    Write-Host  ""
-    Write-Error "[$env:DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL\RepositoryBootstrap\Impl\Activate.py failed]"
-    Write-Host  ""
+    Write-Error `
+(@"
+ 
+ 
+Errors were encountered and the environment has not been successfully activated for development.
+ 
+    [{0}\RepositoryBootstrap\Impl\Activate.py failed]
+ 
+"@ -f $env:DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL)
 
     ErrorExit
 }
 
-if ($env:_ACTIVATE_ENVIRONMENT_SCRIPT_EXECUTION_ERROR_LEVEL -ne "0" ){
-    Write-Debug ""
-    Write-Error "Errors were encountered and the environment has not been successfully activated for development."
-    Write-Host  ""
-    Write-Error "[$env:_ACTIVATE_ENVIRONMENT_TEMP_SCRIPT_NAME failed]"
-    Write-Host  ""
+if ($env:_ACTIVATE_ENVIRONMENT_SCRIPT_EXECUTION_ERROR_LEVEL -ne "0" ) {
+    Wrie-Error `
+(@"
+ 
+ 
+Errors were encountered and the environment has not been successfully activated for development.
+
+    [{0} failed]
+ 
+"@ -f $env:_ACTIVATE_ENVIRONMENT_TEMP_SCRIPT_NAME)
 
     ErrorExit
 }

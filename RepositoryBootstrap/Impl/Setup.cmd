@@ -14,10 +14,12 @@
 @REM ----------------------------------------------------------------------
 @echo off
 
-pushd %1
-
 REM The following environment variables must be set prior to invoking this batch file:
 REM     - DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL
+
+set _SETUP_REPO_DIR=%1
+
+pushd %_SETUP_REPO_DIR%
 
 REM Create a temporary file that contains output produced by the python script. This lets us quickly bootstrap
 REM to the python environment while still executing OS-specific commands.
@@ -82,6 +84,7 @@ goto Exit
 set _SETUP_GENERATION_ERROR_LEVEL=
 set _SETUP_EXECUTION_ERROR_LEVEL=
 set _SETUP_TEMP_SCRIPT_NAME=
+set _SETUP_REPO_DIR=
 
 popd
 
@@ -94,7 +97,7 @@ exit /B %_SETUP_ERROR_LEVEL%
 @REM ----------------------------------------------------------------------
 :CreateTempScriptName
 setlocal EnableDelayedExpansion
-set _filename=%~dp0Setup-!RANDOM!-!Time:~6,5!.cmd
+set _filename=%_SETUP_REPO_DIR%\Setup-!RANDOM!-!Time:~6,5!.cmd
 endlocal & set _SETUP_TEMP_SCRIPT_NAME=%_filename%
 
 if exist "%_SETUP_TEMP_SCRIPT_NAME%" goto :CreateTempScriptName
