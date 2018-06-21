@@ -22,6 +22,7 @@ import sys
 import textwrap
 import uuid
 
+from CommonEnvironment import FileSystem
 from CommonEnvironment.Interface import staticderived
 from CommonEnvironment import RegularExpression
 
@@ -543,7 +544,7 @@ class _DeserializationVisitor(Visitor):
         item = item.replace('/', os.path.sep)
 
         if custom_kwargs.get("normalize", True) and not item.startswith("\\\\"):
-            item = os.path.realpath(os.path.normpath(item))
+            item = FileSystem.Normalize(item)
 
         return item
 
