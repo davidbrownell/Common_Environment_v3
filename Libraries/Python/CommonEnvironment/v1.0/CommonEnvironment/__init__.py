@@ -116,7 +116,7 @@ def Describe( item,                         # str, dict, iterable, obj
             def Display():
                 try:
                     # Is the item iterable?
-                    potential_attribute_name = next(item(item))
+                    potential_attribute_name = next(iter(item))
 
                     # Is the item dict-like?
                     try:
