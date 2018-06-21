@@ -1383,11 +1383,11 @@ def _WrapAll( query_method_name,
                                 scm,
                                 output_stream,
                               )
-                if not result:
-                    return 0
+                if result:
+                    return result
             
                 on_status_update(optional_action_method_name)
-            
+                
                 if optional_action_callback:
                     result = _Wrap( optional_action_method_name,
                                     lambda directory, scm: optional_action_callback(OrderedDict([ ( "directory", directory ),
