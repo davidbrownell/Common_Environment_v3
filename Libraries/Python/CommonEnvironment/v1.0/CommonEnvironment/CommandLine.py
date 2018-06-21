@@ -106,8 +106,8 @@ class EntryPoint(object):
             self.Ignore                     = ignore
 
         # ----------------------------------------------------------------------
-        def __str__(self):
-            return CommonEnvironment.ObjectStrImpl(self)
+        def __repr__(self):
+            return CommonEnvironment.ObjectReprImpl(self)
 
     # ----------------------------------------------------------------------
     # |  Public Methods
@@ -133,8 +133,8 @@ class EntryPoint(object):
         return wrapped(*args, **kwargs)
 
     # ----------------------------------------------------------------------
-    def __str__(self):
-        return CommonEnvironment.ObjectStrImpl(self)
+    def __repr__(self):
+        return CommonEnvironment.ObjectReprImpl(self)
 
 # ----------------------------------------------------------------------
 class EntryPointInformation(object):
@@ -175,8 +175,8 @@ class EntryPointInformation(object):
                 raise Exception("Parameters with default values should have an optional arity ({})".format(self.Name))
 
         # ----------------------------------------------------------------------
-        def __str__(self):
-            return CommonEnvironment.ObjectStrImpl(self)
+        def __repr__(self):
+            return CommonEnvironment.ObjectReprImpl(self)
 
     # ----------------------------------------------------------------------
     # |  Public Methods
@@ -393,8 +393,8 @@ class EntryPointInformation(object):
         return self.Function(*args, **kwargs)
 
     # ----------------------------------------------------------------------
-    def __str__(self):
-        return CommonEnvironment.ObjectStrImpl(self)
+    def __repr__(self):
+        return CommonEnvironment.ObjectReprImpl(self)
 
     # ----------------------------------------------------------------------
     # |  Private Methods
@@ -464,8 +464,8 @@ class Executor(object):
                                                          ))
 
     # ----------------------------------------------------------------------
-    def __str__(self):
-        return CommonEnvironment.ObjectStrImpl(self)
+    def __repr__(self):
+        return CommonEnvironment.ObjectReprImpl(self)
 
     # ----------------------------------------------------------------------
     def Invoke( self,

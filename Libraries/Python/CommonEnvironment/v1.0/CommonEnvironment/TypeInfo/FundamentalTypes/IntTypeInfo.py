@@ -74,8 +74,8 @@ class IntTypeInfo(TypeInfo):
         self.Unsigned                       = min is not None and min >= 0
 
     # ----------------------------------------------------------------------
-    def __str__(self):
-        return CommonEnvironment.ObjectStrImpl(self, include_private=False)
+    def __repr__(self):
+        return CommonEnvironment.ObjectReprImpl(self, include_private=False)
 
     # ----------------------------------------------------------------------
     @property

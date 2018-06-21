@@ -71,8 +71,8 @@ class Uri(object):
         self.Port                           = port
 
     # ----------------------------------------------------------------------
-    def __str__(self):
-        return CommonEnvironment.ObjectStrImpl(self, include_private=False)
+    def __repr__(self):
+        return CommonEnvironment.ObjectReprImpl(self, include_private=False)
 
     # ----------------------------------------------------------------------
     def ToString(self):

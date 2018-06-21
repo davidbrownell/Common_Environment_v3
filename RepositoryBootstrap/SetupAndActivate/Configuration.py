@@ -36,8 +36,8 @@ class VersionInfo(object):
         self.Version                        = version
 
     # ----------------------------------------------------------------------
-    def __str__(self):
-        return CommonEnvironmentImports.CommonEnvironment.ObjectStrImpl(self)
+    def __repr__(self):
+        return CommonEnvironmentImports.CommonEnvironment.ObjectReprImpl(self)
 
 # ----------------------------------------------------------------------
 class VersionSpecs(object):
@@ -57,8 +57,8 @@ class VersionSpecs(object):
         self.Libraries                      = libraries
 
     # ----------------------------------------------------------------------
-    def __str__(self):
-        return CommonEnvironmentImports.CommonEnvironment.ObjectStrImpl(self)
+    def __repr__(self):
+        return CommonEnvironmentImports.CommonEnvironment.ObjectReprImpl(self)
 
 # ----------------------------------------------------------------------
 class Dependency(object):
@@ -83,8 +83,8 @@ class Dependency(object):
         self.RepositoryRoot                 = None      # Populated during setup
 
     # ----------------------------------------------------------------------
-    def __str__(self):
-        return CommonEnvironmentImports.CommonEnvironment.ObjectStrImpl(self)
+    def __repr__(self):
+        return CommonEnvironmentImports.CommonEnvironment.ObjectReprImpl(self)
 
 # ----------------------------------------------------------------------
 class Configuration(object):
@@ -113,5 +113,5 @@ class Configuration(object):
         self.Fingerprint                    = None      # Populated during setup
 
     # ----------------------------------------------------------------------
-    def __str__(self):
-        return CommonEnvironmentImports.CommonEnvironment.ObjectStrImpl(self)
+    def __repr__(self):
+        return CommonEnvironmentImports.CommonEnvironment.ObjectReprImpl(self)

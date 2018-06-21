@@ -713,7 +713,7 @@ class _RepoData(object):
 
     # ----------------------------------------------------------------------
     def __repr__(self):
-        return CommonEnvironmentImports.CommonEnvironment.ObjectStrImpl(self)
+        return CommonEnvironmentImports.CommonEnvironment.ObjectReprImpl(self)
 
     # ----------------------------------------------------------------------
     @property
@@ -741,7 +741,7 @@ class _RepositoriesMap(OrderedDict):
 
         # ----------------------------------------------------------------------
         def __repr__(self):
-            return CommonEnvironmentImports.CommonEnvironment.ObjectStrImpl(self)
+            return CommonEnvironmentImports.CommonEnvironment.ObjectReprImpl(self)
 
     # ----------------------------------------------------------------------
     # |  Public Methods

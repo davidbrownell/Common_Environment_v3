@@ -34,8 +34,8 @@ class Comment(object):
         self.Value                          = value
 
     # ----------------------------------------------------------------------
-    def __str__(self):
-        return CommonEnvironment.ObjectStrImpl(self)
+    def __repr__(self):
+        return CommonEnvironment.ObjectReprImpl(self)
 
 # ----------------------------------------------------------------------
 class Message(object):
@@ -44,8 +44,8 @@ class Message(object):
         self.Value                          = value
 
     # ----------------------------------------------------------------------
-    def __str__(self):
-        return CommonEnvironment.ObjectStrImpl(self)
+    def __repr__(self):
+        return CommonEnvironment.ObjectReprImpl(self)
 
 # ----------------------------------------------------------------------
 class Call(object):
@@ -54,8 +54,8 @@ class Call(object):
         self.CommandLine                    = command_line
 
     # ----------------------------------------------------------------------
-    def __str__(self):
-        return CommonEnvironment.ObjectStrImpl(self)
+    def __repr__(self):
+        return CommonEnvironment.ObjectReprImpl(self)
 
 # ----------------------------------------------------------------------
 class Execute(object):
@@ -64,8 +64,8 @@ class Execute(object):
         self.CommandLine                    = command_line
 
     # ----------------------------------------------------------------------
-    def __str__(self):
-        return CommonEnvironment.ObjectStrImpl(self)
+    def __repr__(self):
+        return CommonEnvironment.ObjectReprImpl(self)
 
 # ----------------------------------------------------------------------
 class SymbolicLink(object):
@@ -82,8 +82,8 @@ class SymbolicLink(object):
         self.RemoveExisting                 = remove_existing
 
     # ----------------------------------------------------------------------
-    def __str__(self):
-        return CommonEnvironment.ObjectStrImpl(self)
+    def __repr__(self):
+        return CommonEnvironment.ObjectReprImpl(self)
 
 # ----------------------------------------------------------------------
 class Set(object):
@@ -101,8 +101,8 @@ class Set(object):
                 os.environ[self.Name] = CurrentShell.EnvironmentVariableDelimiter.join(self.Values)
 
     # ----------------------------------------------------------------------
-    def __str__(self):
-        return CommonEnvironment.ObjectStrImpl(self)
+    def __repr__(self):
+        return CommonEnvironment.ObjectReprImpl(self)
 
 # ----------------------------------------------------------------------
 class Augment(object):
@@ -128,8 +128,8 @@ class Augment(object):
             os.environ[self.Name] = CurrentShell.EnvironmentVariableDelimiter.join(itertools.chain(new_values, existing_values))
 
     # ----------------------------------------------------------------------
-    def __str__(self):
-        return CommonEnvironment.ObjectStrImpl(self)
+    def __repr__(self):
+        return CommonEnvironment.ObjectReprImpl(self)
 
 # ----------------------------------------------------------------------
 class Path(Set):
@@ -138,8 +138,8 @@ class Path(Set):
         super(Path, self).__init__("PATH", value_or_values, update_memory=update_memory)
 
     # ----------------------------------------------------------------------
-    def __str__(self):
-        return CommonEnvironment.ObjectStrImpl(self)
+    def __repr__(self):
+        return CommonEnvironment.ObjectReprImpl(self)
 
 # ----------------------------------------------------------------------
 class AugmentPath(Augment):
@@ -148,8 +148,8 @@ class AugmentPath(Augment):
         super(AugmentPath, self).__init__("PATH", value_or_values, update_memory=update_memory)
 
     # ----------------------------------------------------------------------
-    def __str__(self):
-        return CommonEnvironment.ObjectStrImpl(self)
+    def __repr__(self):
+        return CommonEnvironment.ObjectReprImpl(self)
 
 # ----------------------------------------------------------------------
 class Exit(object):
@@ -160,8 +160,8 @@ class Exit(object):
         self.ReturnCode                     = return_code
 
     # ----------------------------------------------------------------------
-    def __str__(self):
-        return CommonEnvironment.ObjectStrImpl(self)
+    def __repr__(self):
+        return CommonEnvironment.ObjectReprImpl(self)
 
 # ----------------------------------------------------------------------
 class ExitOnError(object):
@@ -174,8 +174,8 @@ class ExitOnError(object):
         self.VariableName                   = variable_name
 
     # ----------------------------------------------------------------------
-    def __str__(self):
-        return CommonEnvironment.ObjectStrImpl(self)
+    def __repr__(self):
+        return CommonEnvironment.ObjectReprImpl(self)
 
 # ----------------------------------------------------------------------
 class Raw(object):
@@ -184,8 +184,8 @@ class Raw(object):
         self.Value                          = value
 
     # ----------------------------------------------------------------------
-    def __str__(self):
-        return CommonEnvironment.ObjectStrImpl(self)
+    def __repr__(self):
+        return CommonEnvironment.ObjectReprImpl(self)
 
 # ----------------------------------------------------------------------
 class EchoOff(object):
@@ -194,8 +194,8 @@ class EchoOff(object):
         pass
 
     # ----------------------------------------------------------------------
-    def __str__(self):
-        return CommonEnvironment.ObjectStrImpl(self)
+    def __repr__(self):
+        return CommonEnvironment.ObjectReprImpl(self)
 
 # ----------------------------------------------------------------------
 class CommandPrompt(object):
@@ -204,8 +204,8 @@ class CommandPrompt(object):
         self.Prompt                         = prompt
 
     # ----------------------------------------------------------------------
-    def __str__(self):
-        return CommonEnvironment.ObjectStrImpl(self)
+    def __repr__(self):
+        return CommonEnvironment.ObjectReprImpl(self)
 
 # ----------------------------------------------------------------------
 class Delete(object):
@@ -215,8 +215,8 @@ class Delete(object):
         self.IsDir                          = is_dir
 
     # ----------------------------------------------------------------------
-    def __str__(self):
-        return CommonEnvironment.ObjectStrImpl(self)
+    def __repr__(self):
+        return CommonEnvironment.ObjectReprImpl(self)
 
 # ----------------------------------------------------------------------
 class Copy(object):
@@ -227,8 +227,8 @@ class Copy(object):
         self.IsDir                          = is_dir
 
     # ----------------------------------------------------------------------
-    def __str__(self):
-        return CommonEnvironment.ObjectStrImpl(self)
+    def __repr__(self):
+        return CommonEnvironment.ObjectReprImpl(self)
 
 # ----------------------------------------------------------------------
 class Move(object):
@@ -239,8 +239,8 @@ class Move(object):
         self.IsDir                          = is_dir
 
     # ----------------------------------------------------------------------
-    def __str__(self):
-        return CommonEnvironment.ObjectStrImpl(self)
+    def __repr__(self):
+        return CommonEnvironment.ObjectReprImpl(self)
 
 # ----------------------------------------------------------------------
 class PersistError(object):
@@ -249,8 +249,8 @@ class PersistError(object):
         self.VariableName                   = var_name
 
     # ----------------------------------------------------------------------
-    def __str__(self):
-        return CommonEnvironment.ObjectStrImpl(self)
+    def __repr__(self):
+        return CommonEnvironment.ObjectReprImpl(self)
     
 # ----------------------------------------------------------------------
 class PushDirectory(object):
@@ -259,8 +259,8 @@ class PushDirectory(object):
         self.Directory                      = directory
 
     # ----------------------------------------------------------------------
-    def __str__(self):
-        return CommonEnvironment.ObjectStrImpl(self)
+    def __repr__(self):
+        return CommonEnvironment.ObjectReprImpl(self)
 
 # ----------------------------------------------------------------------
 class PopDirectory(object):
@@ -269,5 +269,5 @@ class PopDirectory(object):
         pass
 
     # ----------------------------------------------------------------------
-    def __str__(self):
-        return CommonEnvironment.ObjectStrImpl(self)
+    def __repr__(self):
+        return CommonEnvironment.ObjectReprImpl(self)

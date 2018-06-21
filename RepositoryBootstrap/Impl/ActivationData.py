@@ -68,8 +68,8 @@ class Repository(object):
         self.IsMixinRepo                    = is_mixin_repo # Overridden during activation
 
     # ----------------------------------------------------------------------
-    def __str__(self):
-        return CommonEnvironmentImports.CommonEnvironment.ObjectStrImpl(self)
+    def __repr__(self):
+        return CommonEnvironmentImports.CommonEnvironment.ObjectReprImpl(self)
 
 # ----------------------------------------------------------------------
 class ActivationData(object):
@@ -395,8 +395,8 @@ class ActivationData(object):
         return self._GetActivationDir(self.Root, self.Configuration, self.IsFastEnvironment)
 
     # ----------------------------------------------------------------------
-    def __str__(self):
-        return CommonEnvironmentImports.CommonEnvironment.ObjectStrImpl(self)
+    def __repr__(self):
+        return CommonEnvironmentImports.CommonEnvironment.ObjectReprImpl(self)
 
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------

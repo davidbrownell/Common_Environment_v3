@@ -91,7 +91,7 @@ class Arity(object):
         self.Max                            = max_or_none
 
     # ----------------------------------------------------------------------
-    def __str__(self):
+    def __repr__(self):
         return "Arity({}, {})".format(self.Min, self.Max)
 
     # ----------------------------------------------------------------------

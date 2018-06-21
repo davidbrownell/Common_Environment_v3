@@ -157,10 +157,10 @@ def ObjectToDict(obj):
     return { k : getattr(obj, k) for k in keys }
 
 # ----------------------------------------------------------------------
-def ObjectStrImpl( obj, 
-                   include_methods=False,
-                   include_private=True,
-                 ):
+def ObjectReprImpl( obj, 
+                    include_methods=False,
+                    include_private=True,
+                  ):
     """\
     Implementation of an object's __str__ method.
 

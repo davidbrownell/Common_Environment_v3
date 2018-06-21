@@ -54,8 +54,8 @@ class TestTypeMetadata(object):
         self.Description                    = description
 
     # ----------------------------------------------------------------------
-    def __str__(self):
-        return CommonEnvironment.ObjectStrImpl(self)
+    def __repr__(self):
+        return CommonEnvironment.ObjectReprImpl(self)
 
 # ----------------------------------------------------------------------
 # <Line too long> pylint: disable = C0301

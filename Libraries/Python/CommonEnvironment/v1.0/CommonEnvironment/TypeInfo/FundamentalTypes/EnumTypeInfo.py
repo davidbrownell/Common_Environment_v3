@@ -58,8 +58,8 @@ class EnumTypeInfo(TypeInfo):
         self.FriendlyValues                 = friendly_values
 
     # ----------------------------------------------------------------------
-    def __str__(self):
-        return CommonEnvironment.ObjectStrImpl(self, include_private=False)
+    def __repr__(self):
+        return CommonEnvironment.ObjectReprImpl(self, include_private=False)
 
     # ----------------------------------------------------------------------
     @property

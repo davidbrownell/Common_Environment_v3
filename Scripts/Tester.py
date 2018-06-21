@@ -30,7 +30,7 @@ import colorama
 import six
 import inflect as inflect_mod
 
-from CommonEnvironment import Nonlocals, ObjectStrImpl
+from CommonEnvironment import Nonlocals, ObjectReprImpl
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CommandLine
 from CommonEnvironment import FileSystem
@@ -256,8 +256,8 @@ class Results(object):
         self.coverage_validation_results    = []        # CoverageValidationResult
                 
     # ----------------------------------------------------------------------
-    def __str__(self):
-        return ObjectStrImpl(self)
+    def __repr__(self):
+        return ObjectReprImpl(self)
 
     # ----------------------------------------------------------------------
     def ResultCode(self):
@@ -486,8 +486,8 @@ class CompleteResult(object):
         self.release                        = Results()
 
     # ----------------------------------------------------------------------
-    def __str__(self):
-        return ObjectStrImpl(self)
+    def __repr__(self):
+        return ObjectReprImpl(self)
 
     # ----------------------------------------------------------------------
     def ResultCode(self):

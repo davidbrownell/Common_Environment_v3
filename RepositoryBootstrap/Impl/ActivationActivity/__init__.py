@@ -354,8 +354,8 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
             self.Fullpath                   = fullpath
 
         # ----------------------------------------------------------------------
-        def __str__(self):
-            return CommonEnvironmentImports.CommonEnvironment.ObjectStrImpl(self)
+        def __repr__(self):
+            return CommonEnvironmentImports.CommonEnvironment.ObjectReprImpl(self)
 
     # ----------------------------------------------------------------------
     class ScriptInfo(object):
@@ -365,8 +365,8 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
             self.Fullpath                   = fullpath
 
         # ----------------------------------------------------------------------
-        def __str__(self):
-            return CommonEnvironmentImports.CommonEnvironment.ObjectStrImpl(self)
+        def __repr__(self):
+            return CommonEnvironmentImports.CommonEnvironment.ObjectReprImpl(self)
 
     # ----------------------------------------------------------------------
     # |  

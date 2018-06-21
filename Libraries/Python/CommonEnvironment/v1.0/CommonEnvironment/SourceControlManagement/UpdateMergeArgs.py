@@ -32,7 +32,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 class EmptyUpdateMergeArg(object):
     """Tip on the current branch"""
 
-    def __str__(self):
+    def __repr__(self):
         return "<SCM-specific tip>"
 
 # ----------------------------------------------------------------------
@@ -42,7 +42,7 @@ class ChangeUpdateMergeArg(object):
     def __init__(self, change):
         self.Change                         = change
 
-    def __str__(self):
+    def __repr__(self):
         return self.Change
 
 # ----------------------------------------------------------------------
@@ -53,7 +53,7 @@ class DateUpdateMergeArg(object):
         self.Date                           = date
         self.GreaterThan                    = greater_than
 
-    def __str__(self):
+    def __repr__(self):
         operator = ''
         if self.GreaterThan is not None:
             operator = '>' if self.GreaterThan else '<'
@@ -67,7 +67,7 @@ class BranchUpdateMergeArg(object):
     def __init__(self, branch):
         self.Branch                         = branch
 
-    def __str__(self):
+    def __repr__(self):
         return self.Branch
 
 # ----------------------------------------------------------------------
@@ -78,9 +78,9 @@ class BranchAndDateUpdateMergeArg(DateUpdateMergeArg):
         self.Branch                         = branch
         super(BranchAndDateUpdateMergeArg, self).__init__(date, greater_than=greater_than)
 
-    def __str__(self):
+    def __repr__(self):
         return "{} ({})".format( self.Branch,
-                                 super(BranchAndDateUpdateMergeArg, self).__str__(),
+                                 super(BranchAndDateUpdateMergeArg, self).__repr__(),
                                )
 
 # ----------------------------------------------------------------------

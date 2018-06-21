@@ -162,7 +162,7 @@ class ObjectToDictSuite(unittest.TestCase):
         self.assertEqual(CommonEnvironment.ObjectToDict(obj), { "a" : obj.a, "b" : obj.b, "c" : obj.c, "Method" : obj.Method, "StaticMethod" : obj.StaticMethod, "ClassMethod" : obj.ClassMethod, })
 
 # ----------------------------------------------------------------------
-class ObjectStrImpl(unittest.TestCase):
+class ObjectReprImpl(unittest.TestCase):
     def test_Standard(self):
         # ----------------------------------------------------------------------
         def CreateObj(include_methods):
@@ -180,8 +180,8 @@ class ObjectStrImpl(unittest.TestCase):
                 @classmethod
                 def ClassMethod(cls): pass
 
-                def __str__(self):
-                    return CommonEnvironment.ObjectStrImpl(self, include_methods=include_methods)
+                def __repr__(self):
+                    return CommonEnvironment.ObjectReprImpl(self, include_methods=include_methods)
 
             return Object("one", 2, Object(3.0, "four", True))
 
@@ -189,10 +189,10 @@ class ObjectStrImpl(unittest.TestCase):
 
         self.assertEqual(str(CreateObj(False)), textwrap.dedent(
             """\
-            <class '__main__.ObjectStrImpl.test_Standard.<locals>.CreateObj.<locals>.Object'>
+            <class '__main__.ObjectReprImpl.test_Standard.<locals>.CreateObj.<locals>.Object'>
             a : one
             b : 2 <class 'int'>
-            c : <class '__main__.ObjectStrImpl.test_Standard.<locals>.CreateObj.<locals>.Object'>
+            c : <class '__main__.ObjectReprImpl.test_Standard.<locals>.CreateObj.<locals>.Object'>
                 a : 3.0 <class 'float'>
                 b : four
                 c : True <class 'bool'>
@@ -207,16 +207,16 @@ class ObjectStrImpl(unittest.TestCase):
         self.maxDiff = None
         self.assertEqual(output, textwrap.dedent(
             """\
-            <class '__main__.ObjectStrImpl.test_Standard.<locals>.CreateObj.<locals>.Object'>
-            ClassMethod  : <bound method ObjectStrImpl.test_Standard.<locals>.CreateObj.<locals>.Object.ClassMethod of <class '__main__.ObjectStrImpl.test_Standard.<locals>.CreateObj.<locals>.Object'>>
-            Method       : <bound method ObjectStrImpl.test_Standard.<locals>.CreateObj.<locals>.Object.Method of <__main__.ObjectStrImpl.test_Standard.<locals>.CreateObj.<locals>.Object object at 0x________>> <class 'method'>
-            StaticMethod : <function ObjectStrImpl.test_Standard.<locals>.CreateObj.<locals>.Object.StaticMethod at 0x________> <class 'function'>
+            <class '__main__.ObjectReprImpl.test_Standard.<locals>.CreateObj.<locals>.Object'>
+            ClassMethod  : <bound method ObjectReprImpl.test_Standard.<locals>.CreateObj.<locals>.Object.ClassMethod of <class '__main__.ObjectReprImpl.test_Standard.<locals>.CreateObj.<locals>.Object'>>
+            Method       : <bound method ObjectReprImpl.test_Standard.<locals>.CreateObj.<locals>.Object.Method of <__main__.ObjectReprImpl.test_Standard.<locals>.CreateObj.<locals>.Object object at 0x________>> <class 'method'>
+            StaticMethod : <function ObjectReprImpl.test_Standard.<locals>.CreateObj.<locals>.Object.StaticMethod at 0x________> <class 'function'>
             a            : one
             b            : 2 <class 'int'>
-            c            : <class '__main__.ObjectStrImpl.test_Standard.<locals>.CreateObj.<locals>.Object'>
-                           ClassMethod  : <bound method ObjectStrImpl.test_Standard.<locals>.CreateObj.<locals>.Object.ClassMethod of <class '__main__.ObjectStrImpl.test_Standard.<locals>.CreateObj.<locals>.Object'>>
-                           Method       : <bound method ObjectStrImpl.test_Standard.<locals>.CreateObj.<locals>.Object.Method of <__main__.ObjectStrImpl.test_Standard.<locals>.CreateObj.<locals>.Object object at 0x________>> <class 'method'>
-                           StaticMethod : <function ObjectStrImpl.test_Standard.<locals>.CreateObj.<locals>.Object.StaticMethod at 0x________> <class 'function'>
+            c            : <class '__main__.ObjectReprImpl.test_Standard.<locals>.CreateObj.<locals>.Object'>
+                           ClassMethod  : <bound method ObjectReprImpl.test_Standard.<locals>.CreateObj.<locals>.Object.ClassMethod of <class '__main__.ObjectReprImpl.test_Standard.<locals>.CreateObj.<locals>.Object'>>
+                           Method       : <bound method ObjectReprImpl.test_Standard.<locals>.CreateObj.<locals>.Object.Method of <__main__.ObjectReprImpl.test_Standard.<locals>.CreateObj.<locals>.Object object at 0x________>> <class 'method'>
+                           StaticMethod : <function ObjectReprImpl.test_Standard.<locals>.CreateObj.<locals>.Object.StaticMethod at 0x________> <class 'function'>
                            a            : 3.0 <class 'float'>
                            b            : four
                            c            : True <class 'bool'>
