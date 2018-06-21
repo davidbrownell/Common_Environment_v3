@@ -162,11 +162,11 @@ def ObjectReprImpl( obj,
                     include_private=True,
                   ):
     """\
-    Implementation of an object's __str__ method.
+    Implementation of an object's __repr__ method.
 
     Example:
-        def __str__(self):
-            return CommonEnvironment.ObjStrImpl(self)
+        def __repr__(self):
+            return CommonEnvironment.ObjReprImpl(self)
     """
 
     d = ObjectToDict(obj)
