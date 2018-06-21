@@ -22,7 +22,20 @@
 @REM ----------------------------------------------------------------------
 
 REM Begin bootstrap customization
+set _PREV_DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%
 set DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=%~dp0
+
+REM Only run the fundamental setup if we are in a standard setup scenario
+set _SETUP_FIRST_ARG=%1
+
+if "%_SETUP_FIRST_ARG%" NEQ "" (
+    if "%_SETUP_FIRST_ARG:~,1%" NEQ "/" (
+        if "%_SETUP_FIRST_ARG:~,1%" NEQ "-" (
+            goto :AfterFundamentalSetup
+        )
+    )
+)
+
 call %DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\RepositoryBootstrap\Impl\Fundamental\Setup.cmd %*
 if %ERRORLEVEL% NEQ 0 (
     @echo.
@@ -35,6 +48,8 @@ if %ERRORLEVEL% NEQ 0 (
 
     goto end
 )
+
+:AfterFundamentalSetup
 REM End bootstrap customization
 
 if "%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%"=="" (
@@ -47,6 +62,7 @@ if "%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%"=="" (
 call %DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\RepositoryBootstrap\Impl\Setup.cmd %~dp0 %*
 
 REM Bootstrap customization
-set DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=
+set DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=%_PREV_DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%
+set _PREV_DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=
 
 :end

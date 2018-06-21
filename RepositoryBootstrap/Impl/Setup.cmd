@@ -12,26 +12,50 @@
 @REM |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 @REM |  
 @REM ----------------------------------------------------------------------
-@echo off
 
 REM The following environment variables must be set prior to invoking this batch file:
 REM     - DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL
+set PYTHONPATH=%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%
 
 set _SETUP_REPO_DIR=%1
+shift /1
 
 pushd %_SETUP_REPO_DIR%
+
+set _SETUP_FIRST_ARG=%1
+shift /1
+
+set _SETUP_CLA=
+
+:GetRemainingArgs
+if "%1" NEQ "" (
+    set _SETUP_CLA=%_SETUP_CLA% %1
+    shift /1
+    goto :GetRemainingArgs
+)
+
+REM Invoke custom functionality if the first arg is a positional argument
+if "%_SETUP_FIRST_ARG%" NEQ "" (
+    if "%_SETUP_FIRST_ARG:~,1%" NEQ "/" (
+        if "%_SETUP_FIRST_ARG:~,1%" NEQ "-" (
+
+            REM If here, we are invoking special functionality within the setup file; pass all arguments as they 
+            REM were originally provided.
+            %~dp0\..\..\Tools\Python\v3.6.5\Windows\python -m RepositoryBootstrap.Impl.Setup %_SETUP_FIRST_ARG% %_SETUP_REPO_DIR% %_SETUP_CLA%
+            set _SETUP_ERROR_LEVEL=%ERRORLEVEL%
+
+            goto :Exit
+        )
+    )
+)
 
 REM Create a temporary file that contains output produced by the python script. This lets us quickly bootstrap
 REM to the python environment while still executing OS-specific commands.
 call :CreateTempScriptName
 
 REM Generate...
-set PYTHONPATH=%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%
-
-%~dp0\..\..\Tools\Python\v3.6.5\Windows\python -m RepositoryBootstrap.Impl.Setup "%_SETUP_TEMP_SCRIPT_NAME%" %*
+%~dp0\..\..\Tools\Python\v3.6.5\Windows\python -m RepositoryBootstrap.Impl.Setup Setup "%_SETUP_TEMP_SCRIPT_NAME%" %_SETUP_REPO_DIR% %_SETUP_FIRST_ARG% %_SETUP_CLA%
 set _SETUP_GENERATION_ERROR_LEVEL=%ERRORLEVEL%
-
-set PYTHONPATH=
 
 REM Invoke...
 if exist "%_SETUP_TEMP_SCRIPT_NAME%" (
@@ -40,7 +64,7 @@ if exist "%_SETUP_TEMP_SCRIPT_NAME%" (
 set _SETUP_EXECUTION_ERROR_LEVEL=%ERRORLEVEL%
 
 REM Process errors...
-if %_SETUP_GENERATION_ERROR_LEVEL% NEQ 0 (
+if "%_SETUP_GENERATION_ERROR_LEVEL%" NEQ "0" (
     @echo.
     @echo ERROR: Errors were encountered and the repository has not been setup for development.
     @echo.
@@ -50,7 +74,7 @@ if %_SETUP_GENERATION_ERROR_LEVEL% NEQ 0 (
     goto ErrorExit
 )
 
-if %_SETUP_EXECUTION_ERROR_LEVEL% NEQ 0 (
+if "%_SETUP_EXECUTION_ERROR_LEVEL%" NEQ "0" (
     @echo.
     @echo ERROR: Errors were encountered and the repository has not been setup for development.
     @echo.
@@ -84,8 +108,11 @@ goto Exit
 set _SETUP_GENERATION_ERROR_LEVEL=
 set _SETUP_EXECUTION_ERROR_LEVEL=
 set _SETUP_TEMP_SCRIPT_NAME=
+set _SETUP_FIRST_ARG=
+set _SETUP_CLA=
 set _SETUP_REPO_DIR=
 
+set PYTHONPATH=
 popd
 
 exit /B %_SETUP_ERROR_LEVEL%
