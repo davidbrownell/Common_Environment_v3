@@ -52,12 +52,12 @@ REM Get the remaining args
 set _ACTIVATE_ENVIRONMENT_WORKING_DIR=%~dp0
 set _ACTIVATE_ENVIRONMENT_CLA=
 
-shift
+shift /1
 
 :GetRemainingArgs_ListConfigurations
 if "%1" NEQ "" (
     set _ACTIVATE_ENVIRONMENT_CLA=%_ACTIVATE_ENVIRONMENT_CLA% %1
-    shift
+    shift /1
     goto :GetRemainingArgs_ListConfigurations
 )
 
