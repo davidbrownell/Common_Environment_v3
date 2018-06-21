@@ -73,10 +73,13 @@ class Dependency(object):
                   repository_id,
                   friendly_name,
                   configuration=None,
+                  get_clone_uri_func=None,  # def Func(scm_or_none) -> string
                 ):
         self.RepositoryId                   = repository_id
         self.FriendlyName                   = friendly_name
         self.Configuration                  = configuration
+        self.GetCloneUri                    = get_clone_uri_func or (lambda scm_or_none: None)
+
         self.RepositoryRoot                 = None      # Populated during setup
 
     # ----------------------------------------------------------------------

@@ -93,9 +93,10 @@ def GetDependencies():
 
     # To support multiple configurations...
     return OrderedDict([ ( "Config1", Configuration( "A description of Config1; this configuration uses python36",
-                                                     [ Dependency( "0EAA1DCF22804F90AD9F5A3B85A5D706",  # Id for Common_Environment; found in <Common_Environment>/__RepositoryId__
-                                                                   "Common_Environment",                # Name used if Common_Environment cannot be found during setup
-                                                                   "python36",                          # Configuration value used when activating Common_Environment
+                                                     [ Dependency( "0EAA1DCF22804F90AD9F5A3B85A5D706",                              # Id for Common_Environment; found in <Common_Environment>/__RepositoryId__
+                                                                   "Common_Environment",                                            # Name used if Common_Environment cannot be found during setup
+                                                                   "python36",                                                      # Configuration value used when activating Common_Environment (can be None or skipped for repos that only support a single configuration)
+                                                                   "https://github.com/davidbrownell/Common_Environment_v3.git",    # Uri for repo
                                                                  ),
                                                        # Other dependencies go here (if any)    
                                                      ],
@@ -110,9 +111,10 @@ def GetDependencies():
                                                                  ),
                                                     ) ),
                          ( "Config2", Configuration( "A descrption of Config2; this configuration uses python27",
-                                                     [ Dependency( "0EAA1DCF22804F90AD9F5A3B85A5D706",  # Id for Common_Environment; found in <Common_Environment>/__RepositoryId__
-                                                                  "Common_Environment",                # Name used if Common_Environment cannot be found during setup
-                                                                  "python27",                          # Configuration value used when activating Common_Environment
+                                                     [ Dependency( "0EAA1DCF22804F90AD9F5A3B85A5D706",                              # Id for Common_Environment; found in <Common_Environment>/__RepositoryId__
+                                                                  "Common_Environment",                                             # Name used if Common_Environment cannot be found during setup
+                                                                  "python27",                                                       # Configuration value used when activating Common_Environment (can be None or skipped for repos that only support a single configuration)
+                                                                  "https://github.com/davidbrownell/Common_Environment_v3.git",     # Uri for repo
                                                                 ),
                                                        # Other dependencies go here (if any)
                                                      ],
@@ -130,9 +132,10 @@ def GetDependencies():
 
     # To support a single (unnamed) configuration...
     return Configuration( "A description of Config1; this configuration uses python36",
-                          [ Dependency( "0EAA1DCF22804F90AD9F5A3B85A5D706",  # Id for Common_Environment; found in <Common_Environment>/__RepositoryId__
-                                        "Common_Environment",                # Name used if Common_Environment cannot be found during setup
-                                        "python36",                          # Configuration value used when activating Common_Environment
+                          [ Dependency( "0EAA1DCF22804F90AD9F5A3B85A5D706",                             # Id for Common_Environment; found in <Common_Environment>/__RepositoryId__
+                                        "Common_Environment",                                           # Name used if Common_Environment cannot be found during setup
+                                        "python36",                                                     # Configuration value used when activating Common_Environment (can be None or skipped for repos that only support a single configuration)
+                                        "https://github.com/davidbrownell/Common_Environment_v3.git",   # Uri for repo
                                       ),
                             # Other dependencies go here (if any)    
                           ],
