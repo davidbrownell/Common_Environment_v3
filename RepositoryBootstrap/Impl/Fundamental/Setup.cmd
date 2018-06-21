@@ -26,7 +26,7 @@ echo ----------------------------------------------------------------------
 echo.
 echo ------------------------  Python 2.7.14  -----------------------------
 
-pushd %~dp0\..\..\..\Tools\Python\v2.7.14\Windows
+pushd %DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\Tools\Python\v2.7.14\Windows
 
 call Setup.cmd
 
@@ -50,7 +50,7 @@ echo DONE!
 echo.
 echo ------------------------  Python 3.6.5  ------------------------------
 
-pushd %~dp0\..\..\..\Tools\Python\v3.6.5\Windows
+pushd %DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\Tools\Python\v3.6.5\Windows
 
 call Setup.cmd
 
@@ -73,7 +73,7 @@ echo.
 echo ----------------------------------------------------------------------
 
 REM Invoke fundamental setup activities
-%~dp0\..\..\..\Tools\Python\v3.6.5\Windows\python %~dp0\Setup.py %*
+%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\Tools\Python\v3.6.5\Windows\python %~dp0\Setup.py %*
 if "%ERRORLEVEL%" NEQ "0" (
     exit /B -1
 )

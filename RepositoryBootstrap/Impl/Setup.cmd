@@ -41,7 +41,7 @@ if "%_SETUP_FIRST_ARG%" NEQ "" (
 
             REM If here, we are invoking special functionality within the setup file; pass all arguments as they 
             REM were originally provided.
-            %~dp0\..\..\Tools\Python\v3.6.5\Windows\python -m RepositoryBootstrap.Impl.Setup %_SETUP_FIRST_ARG% %_SETUP_REPO_DIR% %_SETUP_CLA%
+            %DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\Tools\Python\v3.6.5\Windows\python -m RepositoryBootstrap.Impl.Setup %_SETUP_FIRST_ARG% %_SETUP_REPO_DIR% %_SETUP_CLA%
             set _SETUP_ERROR_LEVEL=%ERRORLEVEL%
 
             goto :Exit
@@ -54,7 +54,7 @@ REM to the python environment while still executing OS-specific commands.
 call :CreateTempScriptName
 
 REM Generate...
-%~dp0\..\..\Tools\Python\v3.6.5\Windows\python -m RepositoryBootstrap.Impl.Setup Setup "%_SETUP_TEMP_SCRIPT_NAME%" %_SETUP_REPO_DIR% %_SETUP_FIRST_ARG% %_SETUP_CLA%
+%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\Tools\Python\v3.6.5\Windows\python -m RepositoryBootstrap.Impl.Setup Setup "%_SETUP_TEMP_SCRIPT_NAME%" %_SETUP_REPO_DIR% %_SETUP_FIRST_ARG% %_SETUP_CLA%
 set _SETUP_GENERATION_ERROR_LEVEL=%ERRORLEVEL%
 
 REM Invoke...
