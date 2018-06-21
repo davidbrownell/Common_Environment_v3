@@ -64,16 +64,13 @@ def GenerateCommands( functor,              # def Func() -> []
         else:
             error = str(ex)
 
-        if not error.endswith('.'):
-            error += '.'
-
         commands = [ CommonEnvironmentImports.CurrentShell.Commands.Message("ERROR: {}".format(CommonEnvironmentImports.StringHelpers.LeftJustify(error, len("ERROR: ")))),
                      CommonEnvironmentImports.CurrentShell.Commands.Exit(return_code=-1),
                    ]
 
         result = -1
 
-    if is_debug:
+    if is_debug and commands:
         commands = [ CommonEnvironmentImports.CurrentShell.Commands.Message("{}\n".format(CommonEnvironmentImports.StringHelpers.Prepend( "Debug: ", 
                                                                                                                                           CommonEnvironmentImports.CurrentShell.GenerateCommands(commands),
                                                                                                                                           skip_first_line=False,
@@ -100,7 +97,10 @@ def GetRepositoryUniqueId( repo_root,
     if os.path.isfile(filename):
         match = _GetRepositoryUniqueId_regex.match(open(filename).read())
         if not match:
-            raise Exception("The content in '{}' appears to be corrupt.".format(filename))
+            if raise_on_error:
+                raise Exception("The content in '{}' appears to be corrupt.".format(filename))
+            
+            return None
 
         name = match.group("name")
         unique_id = match.group("id").upper()
