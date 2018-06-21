@@ -25,8 +25,15 @@ set +v                                      # Disable output
 # Note that sudo is necessary because the process will create symbolic links
 
 # Begin bootstrap customization
+export _PREV_DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=$DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL
 export DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL="$(cd "$(dirname "$0")" && pwd)"
-source $DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL/RepositoryBootstrap/Impl/Fundamental/Setup.sh "$@"
+
+# Only run the fundamental setup if we are in a standard setup scenario
+initial_char="$(echo $1 | head -c 1)"
+if [[ "$initial_char" == "" || "$initial_char" == "/" || $initial_char == "-" ]]
+then
+    source $DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL/RepositoryBootstrap/Impl/Fundamental/Setup.sh "$@"
+fi
 # End bootstrap customization
 
 if [[ "$DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL" = "" ]]
@@ -41,4 +48,4 @@ fi
 source $DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL/RepositoryBootstrap/Impl/Setup.sh "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )" "$@"
 
 # Bootstrap customization
-export DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=
+export DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=$_PREV_DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL
