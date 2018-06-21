@@ -417,6 +417,7 @@ class Executor(object):
                   command_line_keyword_separator='=',
                   command_line_dict_tag_value_separator=':',
                   args_in_a_file_prefix='@',
+                  secondary_command_line_keyword_separator="_EQ_",          # Used the the standard keyword sep has special meaning within some environments and cannot be used in some cases
                   script_name=None,
                   script_description=None,
                   script_description_prefix=None,
@@ -430,6 +431,7 @@ class Executor(object):
         self.CommandLineKeywordSeparator                = command_line_keyword_separator
         self.CommandLineDictTagValueSeparator           = command_line_dict_tag_value_separator
         self.ArgsInAFilePrefix                          = args_in_a_file_prefix
+        self.SecondaryCommandLineKeywordSeparator       = secondary_command_line_keyword_separator
         self.ScriptName                                 = script_name or (mod.CommandLineScriptName() if hasattr(mod, "CommandLineScriptName") else os.path.basename(self.Args[0]))
         self.ScriptDescription                          = script_description or (mod.CommandLineScriptDescription() if hasattr(mod, "CommandLineScriptDescription") else mod.__doc__) or ''
         self.ScriptDescriptionPrefix                    = script_description_prefix or (mod.CommandLinePrefix() if hasattr(mod, "CommandLinePrefix") else '')
@@ -472,7 +474,9 @@ class Executor(object):
                 print_results=False,
                 allow_exceptions=False,
               ):
-        arg_strings = list(self.Args)
+        # Some command line processors do not allow the command line keyword separator in 
+        # its natural form. Convert those placeholders if necessary.
+        arg_strings = [ arg.replace(self.SecondaryCommandLineKeywordSeparator, self.CommandLineKeywordSeparator) for arg in self.Args ]
         
         debug_mode = False
         if len(arg_strings) > 1 and arg_strings[1].lower() == DEBUG_COMMAND_LINE_ARG:
