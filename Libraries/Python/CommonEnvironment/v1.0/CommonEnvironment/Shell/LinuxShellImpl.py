@@ -164,14 +164,18 @@ class LinuxShellImpl(Shell):
         # ----------------------------------------------------------------------
         @staticmethod
         def OnExitOnError(command):
+            variable_name = "${}".format(command.variable_name) if command.variable_name else "$?"
+
             return textwrap.dedent(
                 """\
-                error_code=$?
+                error_code={}
                 if [[ $error_code -ne 0 ]]
                 then
-                    exit $error_code
+                    exit {}
                 fi
-                """)
+                """).format( variable_name,
+                             command.ReturnCode or "$error_code",
+                           )
     
         # ----------------------------------------------------------------------
         @staticmethod
@@ -210,6 +214,21 @@ class LinuxShellImpl(Shell):
                                                     dest=command.Dest,
                                                   )
     
+        # ----------------------------------------------------------------------
+        @staticmethod
+        def OnPersistError(command):
+            return "{}=$?".format(command.VariableName)
+
+        # ----------------------------------------------------------------------
+        @staticmethod
+        def OnPushDirectory(command):
+            return 'pushd "{}" > /dev/null'.format(command.Directory)
+
+        # ----------------------------------------------------------------------
+        @staticmethod
+        def OnPopDirectory(command):
+            return "popd > /dev/null"
+
     # ----------------------------------------------------------------------
     # |  
     # |  Public Properties

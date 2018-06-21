@@ -144,7 +144,11 @@ class WindowsPowerShell(WindowsShell):
         # ----------------------------------------------------------------------
         @staticmethod
         def OnExitOnError(command):
-            return "if (-not $?){{ exit {}}}".format(command.ReturnCode or "$?")
+            variable_name = "$env:{}".format(command.VariableName) if command.VariableName else "$?"
+
+            return "if (-not {}){{ exit {}}}".format( variable_name,
+                                                      command.ReturnCode or variable_name,
+                                                    )
 
         # ----------------------------------------------------------------------
         @staticmethod
@@ -182,6 +186,21 @@ class WindowsPowerShell(WindowsShell):
             return 'move /Y "{source}" "{dest}"'.format( source=command.Source,
                                                          dest=command.Dest,
                                                        )
+
+        # ----------------------------------------------------------------------
+        @staticmethod
+        def OnPersistError(command):
+            return '$env:{}=$?'.format(command.VariableName)
+
+        # ----------------------------------------------------------------------
+        @staticmethod
+        def OnPushDirectory(command):
+            return 'pushd "{}"'.format(command.Directory)
+
+        # ----------------------------------------------------------------------
+        @staticmethod
+        def OnPopDirectory(command):
+            return "popd"
 
     # ----------------------------------------------------------------------
     # |  

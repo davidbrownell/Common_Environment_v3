@@ -139,6 +139,24 @@ class Visitor(Interface):
         raise Exception("Abstract method")
 
     # ----------------------------------------------------------------------
+    @staticmethod
+    @abstractmethod
+    def OnPersistError(command, *args, **kwargs):
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @abstractmethod
+    def OnPushDirectory(command, *args, **kwargs):
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @abstractmethod
+    def OnPopDirectory(command, *args, **kwargs):
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
     @classmethod
     def Accept(cls, command, *args, **kwargs):
         lookup = { Comment                  : cls.OnComment,
@@ -158,6 +176,9 @@ class Visitor(Interface):
                    Delete                   : cls.OnDelete,
                    Copy                     : cls.OnCopy,
                    Move                     : cls.OnMove,
+                   PersistError             : cls.OnPersistError,
+                   PushDirectory            : cls.OnPushDirectory,
+                   PopDirectory             : cls.OnPopDirectory,
                  }
 
         typ = type(command)
@@ -198,6 +219,9 @@ def CreateSimpleVisitor( on_comment_func=None,          # def Func(command, *arg
                          on_delete_func=None,           # def Func(command, *args, **kwargs)
                          on_copy_func=None,             # def Func(command, *args, **kwargs)
                          on_move_func=None,             # def Func(command, *args, **kwargs)
+                         on_persist_error_func=None,    # def Func(command, *args, **kwargs)
+                         on_push_directory_func=None,   # def Func(command, *args, **kwargs)
+                         on_pop_directory_func=None,    # def Func(command, *args, **kwargs)
                          on_default_func=None,          # def Func(command, *args, **kwargs)
                        ):
     """Creates a CommandVisitor instance implemented in terms of the non-None function arguments."""
@@ -221,6 +245,9 @@ def CreateSimpleVisitor( on_comment_func=None,          # def Func(command, *arg
     on_delete_func = on_delete_func or on_default_func
     on_copy_func = on_copy_func or on_default_func
     on_move_func = on_move_func or on_default_func
+    on_persist_error_func = on_persist_error_func or on_default_func
+    on_push_directory_func = on_push_directory_func or on_default_func
+    on_pop_directory_func = on_pop_directory_func or on_default_func
     
     # ----------------------------------------------------------------------
     @staticderived
@@ -309,6 +336,21 @@ def CreateSimpleVisitor( on_comment_func=None,          # def Func(command, *arg
         @staticmethod
         def OnMove(command, *args, **kwargs):
             return on_move_func(command, *args, **kwargs)
+
+        # ----------------------------------------------------------------------
+        @staticmethod
+        def OnPersistError(command, *args, **kwargs):
+            return on_persist_error_func(command, *args, **kwargs)
+
+        # ----------------------------------------------------------------------
+        @staticmethod
+        def OnPushDirectory(command, *args, **kwargs):
+            return on_push_directory_func(command, *args, **kwargs)
+
+        # ----------------------------------------------------------------------
+        @staticmethod
+        def OnPopDirectory(command, *args, **kwargs):
+            return on_pop_directory_func(command, *args, **kwargs)
 
     # ----------------------------------------------------------------------
 

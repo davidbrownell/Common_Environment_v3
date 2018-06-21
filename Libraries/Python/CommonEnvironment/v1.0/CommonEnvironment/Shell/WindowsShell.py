@@ -159,7 +159,11 @@ class WindowsShell(Shell):
         # ----------------------------------------------------------------------
         @staticmethod
         def OnExitOnError(command):
-            return "if %ERRORLEVEL% NEQ 0 (exit /B {})".format(command.ReturnCode or "%ERRORLEVEL%")
+            variable_name = command.VariableName or "ERRORLEVEL"
+
+            return "if %{}% NEQ 0 (exit /B {})".format( variable_name,
+                                                        command.ReturnCode or "%{}%".format(variable_name),
+                                                      )
 
         # ----------------------------------------------------------------------
         @staticmethod
@@ -197,6 +201,21 @@ class WindowsShell(Shell):
             return 'move /Y "{source}" "{dest}"'.format( source=command.Source,
                                                          dest=command.Dest,
                                                        )
+
+        # ----------------------------------------------------------------------
+        @staticmethod
+        def OnPersistError(command):
+            return 'set {}=%ERRORLEVEL%'.format(command.VariableName)
+
+        # ----------------------------------------------------------------------
+        @staticmethod
+        def OnPushDirectory(command):
+            return 'pushd "{}"'.format(command.Directory)
+
+        # ----------------------------------------------------------------------
+        @staticmethod
+        def OnPopDirectory(command):
+            return "popd"
 
     # ----------------------------------------------------------------------
     # |  

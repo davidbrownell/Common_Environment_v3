@@ -43,4 +43,7 @@ ALL_COMMANDS                                = [ Comment,
                                                 Delete,
                                                 Copy,
                                                 Move,
+                                                PersistError,
+                                                PushDirectory,
+                                                PopDirectory,
                                               ]
