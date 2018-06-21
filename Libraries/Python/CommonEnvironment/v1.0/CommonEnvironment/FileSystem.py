@@ -170,7 +170,7 @@ def RemoveTrailingSep(value):
 def Normalize(path):
     """Normalizes a path, including ensuring case consistency."""
 
-    path = os.path.normpath(path)
+    path = os.path.realpath(os.path.normpath(path))
     
     if not CurrentShell.HasCaseSensitiveFileSystem:
         if os.path.exists(path) and CurrentShell.Name == "Windows":
