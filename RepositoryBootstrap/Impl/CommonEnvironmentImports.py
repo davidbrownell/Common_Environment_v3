@@ -47,6 +47,7 @@ from CommonEnvironment import Interface
 from CommonEnvironment import Process
 from CommonEnvironment import RegularExpression
 from CommonEnvironment.Shell.All import CurrentShell, ALL_TYPES as Shell_ALL_TYPES
+from CommonEnvironment.SourceControlManagement.All import GetSCM, ALL_TYPES as SourceControlManagement_ALL_TYPES
 from CommonEnvironment.StreamDecorator import StreamDecorator
 from CommonEnvironment import StringHelpers
 from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import StringSerialization as FundamentalTypesStringSerialization
