@@ -321,13 +321,13 @@ class ActivationData(object):
 
             for k, v in six.iteritems(calculated_fingerprint):
                 if k not in this_configuration.Fingerprint:
-                    lines.append(line_template.format(k[0], "Added"))
+                    lines.append(line_template.format(k, "Added"))
                 else:
                     lines.append(line_template.format(k, "Identical" if v == this_configuration.Fingerprint[k] else "Modified"))
 
-            for k in six.iteritems(this_configuration.Fingerprint):
+            for k in six.iterkeys(this_configuration.Fingerprint):
                 if k not in calculated_fingerprint:
-                    lines.append(line_template.format(k[0], "Removed"))
+                    lines.append(line_template.format(k, "Removed"))
 
             assert lines
             raise Exception(textwrap.dedent(
