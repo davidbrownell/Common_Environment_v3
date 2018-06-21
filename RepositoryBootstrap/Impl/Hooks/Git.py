@@ -14,7 +14,6 @@
 # ----------------------------------------------------------------------
 """Hook functionality for Git"""
 
-import datetime
 import os
 import re
 import sys
