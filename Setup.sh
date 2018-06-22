@@ -30,7 +30,7 @@ export DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL="$(cd "$(dirname "$0")" && pwd)"
 
 # Only run the fundamental setup if we are in a standard setup scenario
 initial_char="$(echo $1 | head -c 1)"
-if [[ "$initial_char" == "" || "$initial_char" == "/" || $initial_char == "-" ]]
+if [[ "$initial_char" == "" || "$initial_char" == "/" || "$initial_char" == "-" ]]
 then
     source $DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL/RepositoryBootstrap/Impl/Fundamental/Setup.sh "$@"
 fi

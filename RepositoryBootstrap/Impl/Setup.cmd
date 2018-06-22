@@ -12,6 +12,7 @@
 @REM |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 @REM |  
 @REM ----------------------------------------------------------------------
+@echo off
 
 REM The following environment variables must be set prior to invoking this batch file:
 REM     - DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL

@@ -7,7 +7,6 @@
 # |  
 # ----------------------------------------------------------------------
 
-
 # ----------------------------------------------------------------------
 # |  
 # |  Run as:
@@ -22,19 +21,18 @@ function ExitScript {
     exit
 }
 
-function global:echo. {
-    echo "`n"
-}
-
 # Begin bootstrap customization
+$env:_PREV_DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=$env:DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL
 $env:DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=$PSScriptRoot
 
-$success = Invoke-Expression "$env:DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL\RepositoryBootstrap\Impl\Fundamental\Setup.cmd $args;`$?"
+# Only run the fundamental setup if we are in a standard setup scenario
+if ( ([string]::IsNullOrEmpty($args[0])) -or $args[0].Substring(0,1) -eq "/" -or $args[0].Substring(0,1) -eq "-" ) {
+    $success = Invoke-Expression "$env:DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL\RepositoryBootstrap\Impl\Fundamental\Setup.cmd $args;`$?"
 
-if( -not $success ){
-    $msg = $Error[0].Exception.Message
+    if( -not $success ){
+        $msg = $Error[0].Exception.Message
 
-    Write-Error `
+        Write-Error `
 (@"
  
  
@@ -44,7 +42,8 @@ Errors were encountered and the repository has not been setup for development.
  
 "@ -f $msg)
 
-    ExitScript
+        ExitScript
+    }
 }
 # End bootstrap customization
 
@@ -63,6 +62,7 @@ Please run Activate.ps1 within a repository before running this script. It may b
 Invoke-Expression "$env:DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL\RepositoryBootstrap\Impl\Setup.cmd $env:DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL $args"
 
 # Bootstrap customization
-Remove-Item "Env:\DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"
+$env:DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=$env:_PREV_DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL
+Remove-Item "Env:\_PREV_DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"
 
 ExitScript
