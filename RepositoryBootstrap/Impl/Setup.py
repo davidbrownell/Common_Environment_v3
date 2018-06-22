@@ -256,6 +256,11 @@ def Enlist( repository_root,
                     to_clone.append(( value, clone_uri ))
                
         if not to_clone:
+            if repo_map:
+                output_stream.write("All repositories were found.\n")
+            else:
+                output_stream.write("No repositories were found.\n")
+
             return 0
 
         output_stream.write("\n\nCloning {}...".format(inflect.no("repository", len(to_clone))))
