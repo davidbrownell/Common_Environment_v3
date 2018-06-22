@@ -153,6 +153,8 @@ def Setup( output_filename_or_stdout,
                                                   configuration=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Specific configurations to list for this repository; configurations not provided with be omitted"),
                                                   max_num_searches=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Limit the number of directories searched when looking for dependencies; this value can be used to reduce the overall time it takes to search for dependencies that ultimately can't be found"),
                                                   required_ancestor_dir=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("When searching for dependencies, limit the search to directories that are descenendants of this ancestor"),
+                                                  json=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Output data as JSON"),
+                                                  decorate=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Decorate output so that it can be easily extracted from output"),
                                                 )
 @CommonEnvironmentImports.CommandLine.Constraints( repository_root=CommonEnvironmentImports.CommandLine.DirectoryTypeInfo(),
                                                    scm=_ScmConstraint,
@@ -169,6 +171,7 @@ def List( repository_root,
           required_ancestor_dir=None,
           use_ascii=False,
           json=False,
+          decorate=False,
           output_stream=sys.stdout,
           verbose=False,
         ):
@@ -176,49 +179,66 @@ def List( repository_root,
     
     scm = _ScmParameterToScm(scm, repository_root)
 
-    if json:
-        repo_map = _CreateRepoMap( repository_root,
-                                   configuration,
-                                   recurse,
-                                   CommonEnvironmentImports.StreamDecorator(None),
-                                   verbose,
-                                   max_num_searches=max_num_searches,
-                                   required_ancestor_dir=required_ancestor_dir,
-                                 )
-        if isinstance(repo_map, int):
-            return repo_map
+    if decorate:
+        output_stream.write("//--//--//--//--//--//--//--//--//--//--//--//--//--//--//--//\n")
 
-        output_stream.write(json_mod.dumps([ { "name" : value.Name,
-                                               "id" : value.Id,
-                                               "root" : value.root,
-                                               "clone_uri" : value.get_clone_uri_func(scm) if value.get_clone_uri_func else None,
-                                             }
-                                             for value in six.itervalues(repo_map)
-                                           ]))
-        return 0
+        # ----------------------------------------------------------------------
+        def OnExit():
+            output_stream.write("\n//--//--//--//--//--//--//--//--//--//--//--//--//--//--//--//\n")
 
-    # ----------------------------------------------------------------------
-    def Callback(output_stream, repo_map):
-        for value in six.itervalues(repo_map):
-            if value.root is None:
-                return -1
+        # ----------------------------------------------------------------------
 
-        return 0
+    else:
+        # ----------------------------------------------------------------------
+        def OnExit():
+            pass
 
-    # ----------------------------------------------------------------------
+        # ----------------------------------------------------------------------
 
-    return _SimpleFuncImpl( Callback,
-                            repository_root,
-                            recurse,
-                            _ScmParameterToScm(scm, repository_root),
-                            configuration,
-                            output_stream,
-                            verbose,
-                            search_depth=None,
-                            max_num_searches=max_num_searches,
-                            required_ancestor_dir=required_ancestor_dir,
-                            use_ascii=use_ascii,
-                          )
+    with CommonEnvironmentImports.CallOnExit(OnExit):
+        if json:
+            repo_map = _CreateRepoMap( repository_root,
+                                       configuration,
+                                       recurse,
+                                       CommonEnvironmentImports.StreamDecorator(None),
+                                       verbose,
+                                       max_num_searches=max_num_searches,
+                                       required_ancestor_dir=required_ancestor_dir,
+                                     )
+            if isinstance(repo_map, int):
+                return repo_map
+        
+            output_stream.write(json_mod.dumps([ { "name" : value.Name,
+                                                   "id" : value.Id,
+                                                   "root" : value.root,
+                                                   "clone_uri" : value.get_clone_uri_func(scm) if value.get_clone_uri_func else None,
+                                                 }
+                                                 for value in six.itervalues(repo_map)
+                                               ]))
+            return 0
+        
+        # ----------------------------------------------------------------------
+        def Callback(output_stream, repo_map):
+            for value in six.itervalues(repo_map):
+                if value.root is None:
+                    return -1
+        
+            return 0
+        
+        # ----------------------------------------------------------------------
+        
+        return _SimpleFuncImpl( Callback,
+                                repository_root,
+                                recurse,
+                                scm,
+                                configuration,
+                                output_stream,
+                                verbose,
+                                search_depth=None,
+                                max_num_searches=max_num_searches,
+                                required_ancestor_dir=required_ancestor_dir,
+                                use_ascii=use_ascii,
+                              )
 
 # ----------------------------------------------------------------------
 @CommonEnvironmentImports.CommandLine.EntryPoint( repository_root=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Root of the repository"),
