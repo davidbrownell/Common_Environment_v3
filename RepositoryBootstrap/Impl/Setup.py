@@ -309,13 +309,15 @@ def Enlist( repository_root,
             if missing:
                 output_stream.write(textwrap.dedent(
                     """\
+
+
                     WARNING: Unable to clone these repositories:
                     {}
                     """).format('\n'.join([ "    - {} ({})".format(value.Name, value.Id) for value in missing ])))
                 
                 return 1
 
-            output_stream.write("All repositories were found.\n")
+            output_stream.write("\n\nAll repositories were found.\n")
             return 0
 
         output_stream.write("\n\nCloning {}...".format(inflect.no("repository", len(to_clone))))
