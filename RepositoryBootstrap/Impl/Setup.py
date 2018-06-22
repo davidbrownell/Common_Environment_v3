@@ -1233,7 +1233,7 @@ def _SimpleFuncImpl( callback,              # def Func(output_stream, repo_map) 
                                                                             display_infos[index].Configuration or "<default>",
                                                                             display_infos[index].Id,
                                                                             display_infos[index].Root or "N/A",
-                                                                            display_infos[index].GetCloneUri(scm) if display_infos[index].GetCloneUri else "N/A",
+                                                                            (display_infos[index].GetCloneUri(scm) if display_infos[index].GetCloneUri else None) or "N/A",
                                                                           )
                                          for index, line in enumerate(lines)
                                        ]),
