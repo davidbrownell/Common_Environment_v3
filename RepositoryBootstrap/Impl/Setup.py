@@ -81,6 +81,7 @@ def Setup( output_filename_or_stdout,
            debug=False,
            verbose=False,
            configuration=None,
+           use_ascii=False,
            output_stream=sys.stdout,
          ):
     """Perform setup activities for this repository"""
@@ -96,10 +97,20 @@ def Setup( output_filename_or_stdout,
 
     # ----------------------------------------------------------------------
     def Execute():
+        args = [ output_stream,
+                 repository_root,
+                 customization_mod,
+                 debug,
+                 verbose,
+                 configurations,
+               ]
+
         if recurse:
             # If here, invoke setup on this repo and all of its dependencies
             activities = [ _SetupRecursive,
                          ]
+
+            args.append(use_ascii)
         else:
             # If here, setup this specific repo
             activities = [ _SetupBootstrap,
@@ -112,13 +123,7 @@ def Setup( output_filename_or_stdout,
         commands = []
 
         for func in activities:
-            these_commands = func( output_stream,
-                                   repository_root,
-                                   customization_mod,
-                                   debug,
-                                   verbose,
-                                   configurations,
-                                 )
+            these_commands = func(*args)
             if these_commands:
                 commands += these_commands
 
@@ -161,6 +166,7 @@ def List( repository_root,
           configuration=None,
           max_num_searches=None,
           required_ancestor_dir=None,
+          use_ascii=False,
           output_stream=sys.stdout,
           verbose=False,
         ):
@@ -186,6 +192,7 @@ def List( repository_root,
                             search_depth=None,
                             max_num_searches=max_num_searches,
                             required_ancestor_dir=required_ancestor_dir,
+                            use_ascii=use_ascii,
                           )
 
 # ----------------------------------------------------------------------
@@ -212,6 +219,7 @@ def Enlist( repository_root,
             uri_dict=None,
             configuration=None,
             max_num_searches=None,
+            use_ascii=False,
             output_stream=sys.stdout,
             verbose=False,
           ):
@@ -285,6 +293,7 @@ def Enlist( repository_root,
                                   verbose,
                                   max_num_searches=max_num_searches,
                                   required_ancestor_dir=repositories_root,
+                                  use_ascii=use_ascii,
                                 )
         
         if result != 0 or not nonlocals.should_continue:
@@ -301,6 +310,7 @@ def _SetupRecursive( output_stream,
                      debug,
                      verbose,
                      explicit_configurations,
+                     use_ascii,
                    ):
     # ----------------------------------------------------------------------
     def Callback(output_stream, repo_map):
@@ -356,6 +366,7 @@ def _SetupRecursive( output_stream,
                      explicit_configurations=explicit_configurations,
                      output_stream=output_stream,
                      verbose=verbose,
+                     use_ascii=use_ascii,
                    )
 
 # ----------------------------------------------------------------------
@@ -1133,6 +1144,7 @@ def _SimpleFuncImpl( callback,              # def Func(output_stream, repo_map) 
                      search_depth=None,
                      max_num_searches=None,
                      required_ancestor_dir=None,
+                     use_ascii=False,
                    ):
     with CommonEnvironmentImports.StreamDecorator(output_stream).DoneManager( line_prefix='',
                                                                               prefix="\nResults: ",
@@ -1207,9 +1219,9 @@ def _SimpleFuncImpl( callback,              # def Func(output_stream, repo_map) 
                 added_line = False
 
             from asciitree import LeftAligned
-            from asciitree.drawing import BoxStyle, BOX_LIGHT
+            from asciitree.drawing import BoxStyle, BOX_LIGHT, BOX_ASCII
 
-            create_tree_func = LeftAligned(draw=BoxStyle(gfx=BOX_LIGHT, horiz_len=1))
+            create_tree_func = LeftAligned(draw=BoxStyle(gfx=(BOX_ASCII if use_ascii else BOX_LIGHT), horiz_len=1))
 
             lines = create_tree_func(tree).split('\n')
 
