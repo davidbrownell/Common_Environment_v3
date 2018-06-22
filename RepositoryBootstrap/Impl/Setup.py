@@ -15,6 +15,7 @@
 """One-time environment preparation for a repository."""
 
 import importlib
+import json as json_mod
 import os
 import shutil
 import sys
@@ -167,11 +168,35 @@ def List( repository_root,
           max_num_searches=None,
           required_ancestor_dir=None,
           use_ascii=False,
+          json=False,
           output_stream=sys.stdout,
           verbose=False,
         ):
     """Lists repository information"""
     
+    scm = _ScmParameterToScm(scm, repository_root)
+
+    if json:
+        repo_map = _CreateRepoMap( repository_root,
+                                   configuration,
+                                   recurse,
+                                   CommonEnvironmentImports.StreamDecorator(None),
+                                   verbose,
+                                   max_num_searches=max_num_searches,
+                                   required_ancestor_dir=required_ancestor_dir,
+                                 )
+        if isinstance(repo_map, int):
+            return repo_map
+
+        output_stream.write(json_mod.dumps([ { "name" : value.Name,
+                                               "id" : value.Id,
+                                               "root" : value.root,
+                                               "clone_uri" : value.get_clone_uri_func(scm) if value.get_clone_uri_func else None,
+                                             }
+                                             for value in six.itervalues(repo_map)
+                                           ]))
+        return 0
+
     # ----------------------------------------------------------------------
     def Callback(output_stream, repo_map):
         for value in six.itervalues(repo_map):
@@ -239,28 +264,38 @@ def Enlist( repository_root,
     # ----------------------------------------------------------------------
     def Callback(output_stream, repo_map):
         to_clone = []
+        missing = []
 
         for value in six.itervalues(repo_map):
-            if value.root is None and value.get_clone_uri_func is not None:
-                clone_uri = value.get_clone_uri_func(scm)
-                if clone_uri is not None:
-                    try:
-                        clone_uri = clone_uri.format(**uri_dict)
-                    except KeyError as ex:
-                        output_stream.write("\nERROR: The key {} is used in the clone uri '{}' (defined in '{}') and must be provided on the command line using the 'uri_dict' argument.\n".format( str(ex), 
-                                                                                                                                                                                                    clone_uri,
-                                                                                                                                                                                                    value.root,
-                                                                                                                                                                                                  ))
-                        return -1
+            if value.root is None:
+                if value.get_clone_uri_func is not None:
+                    clone_uri = value.get_clone_uri_func(scm)
+                    if clone_uri is not None:
+                        try:
+                            clone_uri = clone_uri.format(**uri_dict)
+                        except KeyError as ex:
+                            output_stream.write("\nERROR: The key {} is used in the clone uri '{}' (defined in '{}') and must be provided on the command line using the 'uri_dict' argument.\n".format( str(ex), 
+                                                                                                                                                                                                        clone_uri,
+                                                                                                                                                                                                        value.root,
+                                                                                                                                                                                                      ))
+                            return -1
 
-                    to_clone.append(( value, clone_uri ))
-               
+                        to_clone.append(( value, clone_uri ))
+                        continue
+
+                missing.append(value)
+
         if not to_clone:
-            if repo_map:
-                output_stream.write("All repositories were found.\n")
-            else:
-                output_stream.write("No repositories were found.\n")
+            if missing:
+                output_stream.write(textwrap.dedent(
+                    """\
+                    WARNING: Unable to clone these repositories:
+                    {}
+                    """).format('\n'.join([ "    - {} ({})".format(value.Name, value.Id) for value in missing ])))
+                
+                return 1
 
+            output_stream.write("All repositories were found.\n")
             return 0
 
         output_stream.write("\n\nCloning {}...".format(inflect.no("repository", len(to_clone))))
@@ -1139,6 +1174,32 @@ def _GetCustomizationMod(repository_root):
     return None
 
 # ----------------------------------------------------------------------
+def _CreateRepoMap( repository_root,
+                    supported_configurations,
+                    recurse,
+                    output_stream,
+                    verbose,
+                    max_num_searches=None,
+                    required_ancestor_dir=None,
+                  ):
+    customization_mod = _GetCustomizationMod(repository_root)
+    if customization_mod is None:
+        output_stream.write("ERROR: '{}' is not a valid repository root.\n".format(repository_root))
+        return -1
+
+    return _RepositoriesMap.Create( repository_root,
+                                    _RepoData.Create( customization_mod,
+                                                      supported_configurations=supported_configurations,
+                                                    ),
+                                    recurse,
+                                    output_stream,
+                                    verbose,
+                                    search_depth=None,
+                                    max_num_searches=max_num_searches,
+                                    required_ancestor_dir=required_ancestor_dir,
+                                  )
+                                                      
+# ----------------------------------------------------------------------
 def _SimpleFuncImpl( callback,              # def Func(output_stream, repo_map) -> result code
                      repository_root,
                      recurse,
@@ -1155,24 +1216,16 @@ def _SimpleFuncImpl( callback,              # def Func(output_stream, repo_map) 
                                                                               prefix="\nResults: ",
                                                                               suffix='\n',
                                                                             ) as dm:
-        customization_mod = _GetCustomizationMod(repository_root)
-        if customization_mod is None:
-            dm.stream.write("ERROR: '{}' is not a valid repository root.\n".format(repository_root))
-            dm.result = -1
-
-            return dm.result
-
-        repo_map = _RepositoriesMap.Create( repository_root,
-                                            _RepoData.Create( customization_mod, 
-                                                              supported_configurations=explicit_configurations,
-                                                            ),
-                                            recurse,
-                                            dm.stream,
-                                            verbose,
-                                            search_depth=search_depth,
-                                            max_num_searches=max_num_searches,
-                                            required_ancestor_dir=required_ancestor_dir,
-                                          )
+        repo_map = _CreateRepoMap( repository_root,
+                                   explicit_configurations,
+                                   recurse,
+                                   dm.stream,
+                                   verbose,
+                                   max_num_searches=max_num_searches,
+                                   required_ancestor_dir=required_ancestor_dir,
+                                 )
+        if isinstance(repo_map, int):
+            return repo_map
 
         # ----------------------------------------------------------------------
         nonlocals = CommonEnvironmentImports.CommonEnvironment.Nonlocals( display_template=None,
