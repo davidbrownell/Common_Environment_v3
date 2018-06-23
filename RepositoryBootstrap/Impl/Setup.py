@@ -318,7 +318,7 @@ def Enlist( repository_root,
 
                     WARNING: Unable to clone these repositories:
                     {}
-                    """).format('\n'.join([ "    - {} ({})".format(value.Name, value.Id) for value in missing ])))
+                    """).format('\n'.join([ "    - {} <{}>".format(value.Name, value.Id) for value in missing ])))
                 
                 return 1
 
@@ -395,10 +395,10 @@ def _SetupRecursive( output_stream,
 
             setup_error_variable_name = "_setup_error"
 
-            values = [ value for value in six.itervalues(repo_map) if value.dependents ]
+            values = [ value for value in six.itervalues(repo_map) if value.root ]
 
             for index, value in enumerate(values):
-                dm.stream.write("Setting up '{} ({})' ({} of {})...".format( value.Name,
+                dm.stream.write("Setting up '{} <{}>' ({} of {})...".format( value.Name,
                                                                              value.Id,
                                                                              index + 1, 
                                                                              len(values),
@@ -552,7 +552,7 @@ def _SetupBootstrap( output_stream,
             Unable to find {repository}
             {repos}
             """).format( repository=inflect.no("repository", len(remaining_repos)),
-                         repos='\n'.join([ "    - {} ({})".format(ri.Name, ri.Id) for ri in remaining_repos ]),
+                         repos='\n'.join([ "    - {} <{}>".format(ri.Name, ri.Id) for ri in remaining_repos ]),
                        ))
 
     output_stream.write(textwrap.dedent(
@@ -978,6 +978,32 @@ class _RepositoriesMap(OrderedDict):
                                                                                               ]),
                                                                                     4,
                                                                                   )))
+
+        # The map now has every possible dependency, regardless of what configurations were specified.
+        # Walk the actual roots and configurations and remove any repo that cannot be accessed.
+        visited = set()
+
+        # ----------------------------------------------------------------------
+        def Traverse(value, configuration):
+            visited.add(value.Id)
+
+            if configuration in value.dependencies:
+                for child_guid, child_configuration in value.dependencies[configuration]:
+                    assert child_guid in self, child_guid
+                    child_value = self[child_guid]
+
+                    Traverse(child_value, child_configuration)
+
+        # ----------------------------------------------------------------------
+
+        for root in [ value for value in six.itervalues(self) if not value.dependents ]:
+            for configuration in six.iterkeys(root.dependencies):
+                Traverse(root, configuration)
+
+        # Remove values that were not visited
+        for id in list(six.iterkeys(self)):
+            if id not in visited:
+                del self[id]
 
         return self
 
