@@ -395,7 +395,7 @@ def _SetupRecursive( output_stream,
 
             setup_error_variable_name = "_setup_error"
 
-            values = list(six.itervalues(repo_map))
+            values = [ value for value in six.itervalues(repo_map) if value.dependents ]
 
             for index, value in enumerate(values):
                 dm.stream.write("Setting up '{} ({})' ({} of {})...".format( value.Name,
