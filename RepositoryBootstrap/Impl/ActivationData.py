@@ -23,6 +23,7 @@ from collections import OrderedDict
 
 import six
 
+import RepositoryBootstrap
 from RepositoryBootstrap import Constants
 
 from RepositoryBootstrap.Impl import CommonEnvironmentImports
@@ -45,7 +46,7 @@ class Repository(object):
         if CommonEnvironmentImports.CurrentShell.IsSymLink(repo_root):
             repo_root = CommonEnvironmentImports.CurrentShell.ResolveSymLink(repo_root)
 
-        repo_name, repo_guid = Utilities.GetRepositoryUniqueId(repo_root)
+        repo_name, repo_guid = RepositoryBootstrap.GetRepositoryInfo(repo_root)
 
         return cls( repo_guid,
                     repo_name,

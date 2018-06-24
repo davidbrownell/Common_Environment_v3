@@ -902,7 +902,7 @@ class _RepositoriesMap(OrderedDict):
 
         # ----------------------------------------------------------------------
 
-        root_repo_name, root_repo_id = Utilities.GetRepositoryUniqueId(repository_root)
+        root_repo_name, root_repo_id = RepositoryBootstrap.GetRepositoryInfo(repository_root)
 
         AddRepo( root_repo_name,
                  root_repo_id,
@@ -1201,12 +1201,14 @@ class _RepositoriesMap(OrderedDict):
         for directory in Enumerate():
             verbose_stream.write("Searching in '{}'\n".format(directory))
     
-            result = Utilities.GetRepositoryUniqueId(directory, raise_on_error=False)
+            result = RepositoryBootstrap.GetRepositoryInfo(directory, raise_on_error=False)
             if result is None:
                 continue
     
-            yield cls._EnumerateResult( result[0],
-                                        result[1],
+            repo_name, repo_id = result
+
+            yield cls._EnumerateResult( repo_name,
+                                        repo_id,
                                         directory,
                                       )
     

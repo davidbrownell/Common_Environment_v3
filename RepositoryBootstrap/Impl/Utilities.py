@@ -80,40 +80,6 @@ def GenerateCommands( functor,              # def Func() -> []
     return result, commands
 
 # ----------------------------------------------------------------------
-_GetRepositoryUniqueId_regex                = None
-
-def GetRepositoryUniqueId( repo_root,
-                           scm=None,
-                           raise_on_error=True,
-                         ):
-    """Returns the name and unique id of the repository associated with the provided root."""
-
-    global _GetRepositoryUniqueId_regex
-
-    if _GetRepositoryUniqueId_regex is None:
-        _GetRepositoryUniqueId_regex = CommonEnvironmentImports.RegularExpression.TemplateStringToRegex(Constants.REPOSITORY_ID_CONTENT_TEMPLATE)
-
-    filename = os.path.join(repo_root, Constants.REPOSITORY_ID_FILENAME)
-    if os.path.isfile(filename):
-        match = _GetRepositoryUniqueId_regex.match(open(filename).read())
-        if not match:
-            if raise_on_error:
-                raise Exception("The content in '{}' appears to be corrupt.".format(filename))
-            
-            return None
-
-        name = match.group("name")
-        unique_id = match.group("id").upper()
-
-    else:
-        if raise_on_error:
-            raise Exception("Unable to find repository information for '{}'".format(repo_root))
-
-        return None
-
-    return name, unique_id
-
-# ----------------------------------------------------------------------
 def CalculateFingerprint(repo_dirs, relative_root=None):
     """
     Returns a value that can be used to determine if any configuration info

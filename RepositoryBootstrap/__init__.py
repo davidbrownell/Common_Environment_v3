@@ -62,6 +62,42 @@ def GetFundamentalRepository():
     raise Exception("The fundamental repository could not be found")
 
 # ----------------------------------------------------------------------
+_GetRepositoryInfo_regex                    = None
+
+def GetRepositoryInfo( repo_root,
+                       raise_on_error=True,
+                     ):
+    """Returns that name and unique id of the repository as the specified root."""
+
+    from RepositoryBootstrap import Constants
+    from RepositoryBootstrap.Impl import CommonEnvironmentImports
+
+    global _GetRepositoryInfo_regex
+
+    if _GetRepositoryInfo_regex is None:
+        _GetRepositoryInfo_regex = CommonEnvironmentImports.RegularExpression.TemplateStringToRegex(Constants.REPOSITORY_ID_CONTENT_TEMPLATE)
+
+    filename = os.path.join(repo_root, Constants.REPOSITORY_ID_FILENAME)
+    if os.path.isfile(filename):
+        match = _GetRepositoryInfo_regex.match(open(filename).read())
+        if not match:
+            if raise_on_error:
+                raise Exception("The content in '{}' appears to be corrupt.".format(filename))
+
+            return None
+
+        name = match.group("name")
+        unique_id = match.group("id").upper()
+
+    else:
+        if raise_on_error:
+            raise Exception("Unable to find repository information for '{}'".format(repo_root))
+
+        return None
+
+    return name, unique_id
+    
+# ----------------------------------------------------------------------
 
 # This file may be invoked by our included version of python; if so, all imports
 # will work as expected. However, this file may be invoked by a frozen executable.
