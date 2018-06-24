@@ -215,6 +215,8 @@ def List( repository_root,
                                                    "id" : value.Id,
                                                    "root" : value.root,
                                                    "clone_uri" : value.get_clone_uri_func(scm) if value.get_clone_uri_func else None,
+                                                   "dependents" : value.dependents,
+                                                   "dependencies" : value.dependencies,
                                                  }
                                                  for value in six.itervalues(repo_map)
                                                ]))
