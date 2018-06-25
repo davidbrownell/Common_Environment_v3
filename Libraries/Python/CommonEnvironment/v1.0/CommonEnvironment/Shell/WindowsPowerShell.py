@@ -220,6 +220,8 @@ class WindowsPowerShell(WindowsShell):
     def IsActive(cls, platform_name):
         return ("windows" in platform_name or platform_name == "nt") and os.getenv(cls.ENVIRONMENT_NAME, None) == "1"
 
-    @staticmethod
-    def DecorateInvokeScriptCommandLine(command_line):
-        return "powershell " + command_line
+    # ----------------------------------------------------------------------
+    @classmethod
+    def CreateScriptName(cls, name):
+        return 'powershell "{}"'.format(super(WindowsPowerShell, cls).CreateScriptName(name))
+    

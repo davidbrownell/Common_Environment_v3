@@ -110,7 +110,7 @@ def GetRepoMapFromSetup( repository_root,
     from RepositoryBootstrap import Constants
     from RepositoryBootstrap.Impl import CommonEnvironmentImports
 
-    result, output = CommonEnvironmentImports.Process.Execute("{} List /recurse /json /decorate{}".format( os.path.join(repository_root, CommonEnvironmentImports.CurrentShell.DecorateInvokeScriptCommandLine(CommonEnvironmentImports.CurrentShell.CreateScriptName(Constants.SETUP_ENVIRONMENT_NAME))),
+    result, output = CommonEnvironmentImports.Process.Execute("{} List /recurse /json /decorate{}".format( os.path.join(repository_root, CommonEnvironmentImports.CurrentShell.CreateScriptName(Constants.SETUP_ENVIRONMENT_NAME)),
                                                                                                            '' if not max_repo_search_depth else " /search_depth_EQ_{}".format(max_repo_search_depth),
                                                                                                          ))
     if result != 0:

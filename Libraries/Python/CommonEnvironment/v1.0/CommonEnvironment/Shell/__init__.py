@@ -213,19 +213,10 @@ class Shell(Interface):
         with CallOnExit(lambda: FileSystem.RemoveFile(temp_filename)):
             cls.MakeFileExecutable(temp_filename)
             
-            return Process.Execute( cls.DecorateInvokeScriptCommandLine(temp_filename),
+            return Process.Execute( temp_filename,
                                     output_stream,
                                     environment=environment,
                                   )
-
-    # ----------------------------------------------------------------------
-    @staticmethod
-    @extensionmethod
-    def DecorateInvokeScriptCommandLine(command_line):
-        """Apply any decoration necessary to invoke a script on the command line."""
-
-        # No decoration required by default
-        return command_line
 
     # ----------------------------------------------------------------------
     @classmethod

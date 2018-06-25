@@ -156,7 +156,7 @@ def Invoke(repo_root, output_stream, method, json_content, is_debug):
 
                             # ----------------------------------------------------------------------
 
-                            this_dm.result = CommonEnvironmentImports.Process.Execute( CommonEnvironmentImports.CurrentShell.DecorateInvokeScriptCommandLine(script_filename),
+                            this_dm.result = CommonEnvironmentImports.Process.Execute( script_filename,
                                                                                        Display,
                                                                                        line_delimited_output=True,
                                                                                        environment=original_environment,
