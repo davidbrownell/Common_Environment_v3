@@ -94,3 +94,4 @@ DE_REPO_ACTIVATED_FLAG                                  = "DEVELOPMENT_ENVIRONME
 
 # ----------------------------------------------------------------------
 TEMPORARY_FILE_EXTENSION                                = ".SourceRepositoryTools"
+DEFAULT_FUNDAMENTAL_CONFIGURATION                       = "python36"

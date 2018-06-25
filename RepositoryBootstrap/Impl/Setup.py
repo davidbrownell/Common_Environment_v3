@@ -33,7 +33,7 @@ from RepositoryBootstrap.Impl import CommonEnvironmentImports
 from RepositoryBootstrap.Impl.EnvironmentBootstrap import EnvironmentBootstrap
 from RepositoryBootstrap.Impl import Utilities
 
-from RepositoryBootstrap.SetupAndActivate.Configuration import Configuration
+from RepositoryBootstrap.SetupAndActivate.Configuration import Configuration, Dependency
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -215,8 +215,8 @@ def List( repository_root,
                                                    "id" : value.Id,
                                                    "root" : value.root,
                                                    "clone_uri" : value.get_clone_uri_func(scm) if value.get_clone_uri_func else None,
-                                                   "dependents" : value.dependents,
-                                                   "dependencies" : value.dependencies,
+                                                   "dependents" : OrderedDict([ ( k or "<None>", v ) for k, v in six.iteritems(value.dependents) ]),
+                                                   "dependencies" : OrderedDict([ ( k or "<None>", v ) for k, v in six.iteritems(value.dependencies) ]),
                                                  }
                                                  for value in six.itervalues(repo_map)
                                                ]))
@@ -818,8 +818,8 @@ class _RepositoriesMap(OrderedDict):
             self.root                       = None
             self.get_clone_uri_func         = None
 
-            self.dependents                 = OrderedDict()                 # { <config_name> : [ ( <dependent_repo_guid>, <dependent_config_name> ), ... ], ... }
-            self.dependencies               = OrderedDict()                 # { <config_name> : [ ( <dependency_repo_guid>, <dependency_config_name> ), ... ], ... }
+            self.dependents                 = OrderedDict()                 # { <config_name> : [ ( <dependent_repo_id>, <dependent_config_name> ), ... ], ... }
+            self.dependencies               = OrderedDict()                 # { <config_name> : [ ( <dependency_repo_id>, <dependency_config_name> ), ... ], ... }
 
         # ----------------------------------------------------------------------
         def __repr__(self):
@@ -843,12 +843,14 @@ class _RepositoriesMap(OrderedDict):
         self = cls()
         repo_cache = {}
 
+        fundamental_repo_name, fundamental_repo_id = RepositoryBootstrap.GetRepositoryInfo(RepositoryBootstrap.GetFundamentalRepository())
+
         nonlocals = CommonEnvironmentImports.CommonEnvironment.Nonlocals( remaining_repos=0,
                                                                         )
 
         # ----------------------------------------------------------------------
         def AddRepo( name,
-                     guid,
+                     id,
                      directory,
                      configurations=None,
                    ):
@@ -856,13 +858,13 @@ class _RepositoriesMap(OrderedDict):
             if customization_mod is None:
                 return
 
-            if guid not in self:
-                value = cls.Value(name, guid, directory)
+            if id not in self:
+                value = cls.Value(name, id, directory)
                 value.root = directory
 
-                self[guid] = value
+                self[id] = value
 
-            value = self[guid]
+            value = self[id]
 
             if configurations is None:
                 configurations = _RepoData.Create(customization_mod).Configurations
@@ -870,9 +872,17 @@ class _RepositoriesMap(OrderedDict):
                     return
 
             for config_name, config_info in six.iteritems(configurations):
+                config_dependencies = config_info.Dependencies
+
+                if not config_dependencies and id != fundamental_repo_id:
+                    config_dependencies.append(Dependency( fundamental_repo_id, 
+                                                           fundamental_repo_name,
+                                                           Constants.DEFAULT_FUNDAMENTAL_CONFIGURATION,
+                                                        ))
+
                 these_dependencies = []
 
-                for dependency_info in config_info.Dependencies:
+                for dependency_info in config_dependencies:
                     these_dependencies.append(( dependency_info.RepositoryId, dependency_info.Configuration ))
 
                     if dependency_info.RepositoryId not in self:
@@ -893,10 +903,15 @@ class _RepositoriesMap(OrderedDict):
 
                     that_value = self[dependency_info.RepositoryId]
 
-                    that_value.dependents.setdefault(dependency_info.Configuration, []).append(( guid, config_name ))
+                    that_value.dependents.setdefault(dependency_info.Configuration, []).append(( id, config_name ))
 
                     if that_value.get_clone_uri_func is None:
-                        that_value.get_clone_uri_func = dependency_info.GetCloneUri
+                        func = dependency_info.GetCloneUri
+                        if isinstance(func, six.string_types):
+                            original_value = func
+                            func = lambda *args, **kwargs: original_value
+
+                        that_value.get_clone_uri_func = func
 
                 value.dependencies[config_name] = these_dependencies
 
@@ -984,24 +999,24 @@ class _RepositoriesMap(OrderedDict):
         # The map now has every possible dependency, regardless of what configurations were specified.
         # Walk the actual roots and configurations and remove any repo that cannot be accessed.
         visited = set()
-
+        
         # ----------------------------------------------------------------------
         def Traverse(value, configuration):
             visited.add(value.Id)
-
+        
             if configuration in value.dependencies:
-                for child_guid, child_configuration in value.dependencies[configuration]:
-                    assert child_guid in self, child_guid
-                    child_value = self[child_guid]
-
+                for child_id, child_configuration in value.dependencies[configuration]:
+                    assert child_id in self, child_id
+                    child_value = self[child_id]
+        
                     Traverse(child_value, child_configuration)
-
+        
         # ----------------------------------------------------------------------
-
+        
         for root in [ value for value in six.itervalues(self) if not value.dependents ]:
             for configuration in six.iterkeys(root.dependencies):
                 Traverse(root, configuration)
-
+        
         # Remove values that were not visited
         for id in list(six.iterkeys(self)):
             if id not in visited:
@@ -1313,9 +1328,9 @@ def _SimpleFuncImpl( callback,              # def Func(output_stream, repo_map) 
                                             ))
 
             if configuration in value.dependencies:
-                for child_guid, child_configuration in value.dependencies[configuration]:
-                    assert child_guid in repo_map, child_guid
-                    child_value = repo_map[child_guid]
+                for child_id, child_configuration in value.dependencies[configuration]:
+                    assert child_id in repo_map, child_id
+                    child_value = repo_map[child_id]
 
                     child_tree, child_display_infos = Traverse(child_value, child_configuration)
 
@@ -1384,7 +1399,7 @@ def _SimpleFuncImpl( callback,              # def Func(output_stream, repo_map) 
         display_infos = []
 
         for root in roots:
-            for index, (config_name, dependnecies) in enumerate(six.iteritems(root.dependencies)):
+            for index, config_name in enumerate(six.iterkeys(root.dependencies)):
                 this_result_tree, this_display_infos = Traverse(root, config_name)
 
                 key_name = CreateTreeKey(root.Name, index)
