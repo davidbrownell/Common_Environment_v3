@@ -64,6 +64,8 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
     WorkingDirectories                      = [ ".hg", ]
     IgnoreFilename                          = ".hgignore"
 
+    # Diagnostics                             = True
+
     # ----------------------------------------------------------------------
     # |  
     # |  Public Methods
