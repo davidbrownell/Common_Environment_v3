@@ -1539,14 +1539,14 @@ def MatchAllTests( input_dir,
                                                      suffix='\n',
                                                    ) as dm:
         for index, configuration in enumerate(six.itervalues(CONFIGURATIONS)):
-            dm.stream.write("Matching '{}' ({} of {})...".format( configuration.compiler,
+            dm.stream.write("Matching '{}' ({} of {})...".format( configuration.Compiler.Name,
                                                                   index + 1,
                                                                   len(COMPILERS),
                                                                 ))
             with dm.stream.DoneManager(line_prefix="    ") as this_dm:
                 this_dm.result = MatchTests( input_dir,
                                              test_type,
-                                             configuration.compiler,
+                                             configuration.Compiler.Name,
                                              output_stream=this_dm.stream,
                                              verbose=verbose,
                                            )
