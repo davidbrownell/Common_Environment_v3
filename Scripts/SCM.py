@@ -25,7 +25,7 @@ from collections import OrderedDict, namedtuple
 import inflect as inflect_mod
 import six
 
-from CommonEnvironment import Describe
+from CommonEnvironment import Describe, Nonlocals
 from CommonEnvironment import CommandLine
 from CommonEnvironment import Interface
 from CommonEnvironment.StreamDecorator import StreamDecorator
@@ -1285,6 +1285,7 @@ def _Wrap( method_name,
            output_stream,
            verbose=False,
            requires_distributed=False,
+           on_output_func=None,             # def Func(output)
          ):
     directory = directory or os.getcwd()
 
@@ -1314,6 +1315,9 @@ def _Wrap( method_name,
         output = result
         result = 0
     
+    if on_output_func:
+        on_output_func(output)
+
     sink = six.moves.StringIO()
     Describe(output, sink)
     sink = sink.getvalue()
@@ -1367,8 +1371,14 @@ def _WrapAll( query_method_name,
         query_callback = Interface.CreateCulledCallable(query_callback)
         optional_action_callback = Interface.CreateCulledCallable(optional_action_callback) if optional_action_callback else None
 
+        nonlocals = Nonlocals( processed=0,
+                             )
+        nonlocals_lock = threading.Lock()
+
         with dm.stream.SingleLineDoneManager( "Running...",
-                                              done_suffix=lambda: "{} processed".format(inflect.no("repository", len(repositories))),
+                                              done_suffixes=[ lambda: "{} queried".format(inflect.no("repository", len(repositories))),
+                                                              lambda: "{} processed".format(inflect.no("repository", nonlocals.processed)),
+                                                            ],
                                             ) as this_dm:
             # ----------------------------------------------------------------------
             def Impl(task_index, output_stream, on_status_update):
@@ -1376,6 +1386,15 @@ def _WrapAll( query_method_name,
             
                 on_status_update(query_method_name)
                 
+                impl_nonlocals = Nonlocals( output=None,
+                                          )
+
+                # ----------------------------------------------------------------------
+                def OnOutput(output):
+                    impl_nonlocals.output = output
+
+                # ----------------------------------------------------------------------
+
                 result = _Wrap( query_method_name,
                                 lambda directory, scm: query_callback(OrderedDict([ ( "directory", directory ),
                                                                                     ( "scm", scm ),
@@ -1384,13 +1403,20 @@ def _WrapAll( query_method_name,
                                 directory,
                                 scm,
                                 output_stream,
+                                on_output_func=OnOutput,
                               )
-                if result:
+                if result != 0:
                     return result
             
+                if isinstance(impl_nonlocals.output, bool) and not impl_nonlocals.output:
+                    return 0
+
                 on_status_update(optional_action_method_name)
                 
                 if optional_action_callback:
+                    with nonlocals_lock:
+                        nonlocals.processed += 1
+
                     result = _Wrap( optional_action_method_name,
                                     lambda directory, scm: optional_action_callback(OrderedDict([ ( "directory", directory ),
                                                                                                   ( "scm", scm ),
