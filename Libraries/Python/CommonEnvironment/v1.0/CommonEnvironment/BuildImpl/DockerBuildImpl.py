@@ -78,6 +78,8 @@ def CreateRepositoryBuildFunc( repository_name,
                output_stream=sys.stdout,
                preserve_ansi_escape_sequences=False,
              ):
+        """Builds a docker image"""
+
         with StreamDecorator.GenerateAnsiSequenceStream( output_stream,
                                                          preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
                                                        ) as output_stream:
@@ -236,7 +238,7 @@ def CreateRepositoryBuildFunc( repository_name,
                                             . {image_code_base}/Common/Environment/Activate.sh python36
                                             cd {image_code_dir}
                                             {setup_statement}
-                                            rm --recursive {image_code_base}/Common/Environment/Generated/Linux/Default
+                                            rm --recursive {image_code_base}/Common/Environment/Generated/Linux/python36
                                             """).format( image_code_base=image_code_base,
                                                          image_code_dir=image_code_dir,
                                                          setup_statement=setup_statement,
@@ -284,7 +286,6 @@ def CreateRepositoryBuildFunc( repository_name,
                     base_dm.stream.write("Building Docker image...")
                     with base_dm.stream.DoneManager() as this_dm:
                         tags = [ "base",
-                                 "base_latest",
                                ]
 
                         if now_tag:
@@ -321,7 +322,7 @@ def CreateRepositoryBuildFunc( repository_name,
                                 # Activate the image so we can extract the changes
                                 activated_dm.stream.write("Activating...")
                                 with activated_dm.stream.DoneManager(suffix='\n') as this_dm:
-                                    command_line = 'docker run -it --name "{container_name}" "{image_name}:base_latest" /sbin/my_init -- /sbin/setuser "{username}" bash -c "cd {image_code_dir} && . ./Activate.sh {configuration} && pushd {image_code_base}/Common/Environment && python -m RepositoryBootstrap.EnvironmentDiffs After /decorate' \
+                                    command_line = 'docker run -it --name "{container_name}" "{image_name}:base" /sbin/my_init -- /sbin/setuser "{username}" bash -c "cd {image_code_dir} && . ./Activate.sh {configuration} && pushd {image_code_base}/Common/Environment && python -m RepositoryBootstrap.EnvironmentDiffs After /decorate' \
                                                         .format( container_name=temp_container_name,
                                                                  image_name=docker_image_name,
                                                                  configuration=configuration or '',
@@ -416,8 +417,7 @@ def CreateRepositoryBuildFunc( repository_name,
 
                                         activated_dm.stream.write("Building Docker image...")
                                         with activated_dm.stream.DoneManager() as this_dm:
-                                            tags = [ "latest",
-                                                   ]
+                                            tags = []
 
                                             if now_tag:
                                                 tags.append(now_tag)
@@ -453,7 +453,7 @@ def CreateRepositoryCleanFunc():
                             )
     def Clean( output_stream=sys.stdout,
              ):
-        """Cleans previously build content."""
+        """Cleans previously built content."""
 
         potential_dir = os.path.join(calling_dir, "Generated")
 
