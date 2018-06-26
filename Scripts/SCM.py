@@ -1367,7 +1367,9 @@ def _WrapAll( query_method_name,
         query_callback = Interface.CreateCulledCallable(query_callback)
         optional_action_callback = Interface.CreateCulledCallable(optional_action_callback) if optional_action_callback else None
 
-        with dm.stream.SingleLineDoneManager("Running...") as this_dm:
+        with dm.stream.SingleLineDoneManager( "Running...",
+                                              done_suffix=lambda: "{} processed".format(inflect.no("repository", len(repositories))),
+                                            ) as this_dm:
             # ----------------------------------------------------------------------
             def Impl(task_index, output_stream, on_status_update):
                 scm, directory = repositories[task_index]
