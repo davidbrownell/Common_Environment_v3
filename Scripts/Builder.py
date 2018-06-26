@@ -58,6 +58,8 @@ def Execute( root_dir,
              mode=None,
              debug_only=False,
              release_only=False,
+             build_filename=BUILD_FILENAME,
+             build_filename_ignore=BUILD_FILENAME_IGNORE,
              output_stream=sys.stdout,
              verbose=False,
            ):
@@ -72,7 +74,11 @@ def Execute( root_dir,
                                                      prefix="\nResults: ",
                                                      suffix='\n',
                                                    ) as dm:
-        build_infos = _GetBuildInfos(root_dir, dm.stream)
+        build_infos = _GetBuildInfos( root_dir, 
+                                      dm.stream,
+                                      build_filename,
+                                      build_filename_ignore,
+                                    )
         if not build_infos:
             return dm.result
 
@@ -164,6 +170,8 @@ def Execute( root_dir,
                           output_stream=None,
                         )
 def List( root_dir,
+          build_filename=BUILD_FILENAME,
+          build_filename_ignore=BUILD_FILENAME_IGNORE,
           output_stream=sys.stdout,
         ):
     assert os.path.isdir(root_dir), root_dir
@@ -173,7 +181,11 @@ def List( root_dir,
                                                      prefix="\nResults: ",
                                                      suffix='\n',
                                                    ) as dm:
-        for build_info in _GetBuildInfos(root_dir, dm.stream):
+        for build_info in _GetBuildInfos( root_dir, 
+                                          dm.stream,
+                                          build_filename,
+                                          build_filename_ignore,
+                                        ):
             dm.stream.write("{filename:<120}  {priority}\n".format( filename="{}:".format(build_info.filename),
                                                                     priority=build_info.configuration.Priority,
                                                                   ))
@@ -192,21 +204,26 @@ _BuildInfo                                  = namedtuple( "_BuildInfo",
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
-def _GetBuildInfos(root_dir, output_stream):
+def _GetBuildInfos( root_dir, 
+                    output_stream,
+                    build_filename,
+                    build_filename_ignore,
+                  ):
     root_dir = os.path.realpath(root_dir)
 
     build_infos = []
 
     output_stream.write("\nSearching for build files...")
     with output_stream.DoneManager( done_suffix=lambda: "{} found".format(inflect.no("build file", len(build_infos))),
+                                    suffix='\n',
                                   ):
-        name, ext = os.path.splitext(BUILD_FILENAME)
+        name, ext = os.path.splitext(build_filename)
 
         for fullpath in FileSystem.WalkFiles( root_dir,
                                               include_file_base_names=[ name, ],
                                               include_file_extensions=[ ext, ],
                                             ):
-            if os.path.exists(os.path.join(os.path.dirname(fullpath), BUILD_FILENAME_IGNORE)):
+            if os.path.exists(os.path.join(os.path.dirname(fullpath), build_filename_ignore)):
                 continue
 
             build_infos.append(_BuildInfo( fullpath,
