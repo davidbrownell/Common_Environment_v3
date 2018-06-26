@@ -18,6 +18,8 @@ import json
 import os
 import sys
 
+from collections import OrderedDict
+
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
@@ -66,8 +68,8 @@ def Invoke(repo_root, output_stream, method, json_content, is_debug):
         result, output = CommonEnvironmentImports.Process.Execute("{} ListConfigurations json".format(activation_script))
         assert result == 0, output
 
-        data = json.loads(output)
-
+        data = json.loads(output, object_pairs_hook=OrderedDict)
+    
         configurations = list(data.keys())
         if not configurations:
             configurations = [ None, ]
@@ -183,5 +185,4 @@ def Invoke(repo_root, output_stream, method, json_content, is_debug):
                                 terminate = True        # 0 is returned if a configuration was not used
                             else:
                                 assert False, result
-
     return 0

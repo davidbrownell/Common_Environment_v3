@@ -126,7 +126,7 @@ def GetRepoMapFromSetup( repository_root,
     match = match.group("content")
 
     try:
-        content = json.loads(match)
+        content = json.loads(match, object_pairs_hook=OrderedDict)
     except:
         raise Exception("The JSON content is not valid:\n\n{}\n".format(match))
 
