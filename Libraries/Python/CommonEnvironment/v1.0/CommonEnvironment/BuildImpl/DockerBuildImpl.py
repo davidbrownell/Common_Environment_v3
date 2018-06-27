@@ -50,6 +50,9 @@ def CreateRepositoryBuildFunc( repository_name,
                                repository_setup_configurations=None,
                                repository_activation_configurations=None,
                                repository_source_excludes=None,
+                               expose_ports=None,                           # { "<activation name>" : [ port, ... ], ... }
+                               commands=None,                               # { "<activation name>" : [ "<cmd>", ... ], ... }
+                               post_build_func=None,                        # def Func(output_stream) -> result code
                              ):
     """
     Creates a Build function that is able to build a docker image for Common_Environment-
@@ -209,7 +212,7 @@ def CreateRepositoryBuildFunc( repository_name,
                         setup_statement = "./Setup.sh{}".format('' if not repository_setup_configurations else ' {}'.format(' '.join([ '"/configuration={}"'.format(configuration) for configuration in repository_setup_configurations ])))
                     
                         if repository_name == "Common_Environment":
-                            commands = textwrap.dedent(
+                            statements = textwrap.dedent(
                                             """\
                                             RUN link /usr/bin/python3 /usr/bin/python
                     
@@ -244,7 +247,7 @@ def CreateRepositoryBuildFunc( repository_name,
                                                          setup_statement=setup_statement,
                                                        ))
                     
-                            commands = textwrap.dedent(
+                            statements = textwrap.dedent(
                                             """\
                                             COPY SetupEnvironmentImpl.sh /tmp/SetupEnvironmentImpl.sh
                     
@@ -259,7 +262,7 @@ def CreateRepositoryBuildFunc( repository_name,
                     
                                 COPY FilteredSource {image_code_dir}
                     
-                                {commands}
+                                {statements}
                     
                                 RUN chown -R {username}:{groupname} {image_code_dir} \\
                                  && chmod g-s {image_code_dir}/Generated/Linux \\
@@ -276,7 +279,7 @@ def CreateRepositoryBuildFunc( repository_name,
                                 CMD [ "/sbin/my_init", "/sbin/setuser", "{username}", "bash" ]
                     
                                 """).format( base_image=base_docker_image,
-                                             commands=commands,
+                                             statements=statements,
                                              username=image_username,
                                              groupname=image_groupname,
                                              image_code_dir=image_code_dir,
@@ -393,7 +396,8 @@ def CreateRepositoryBuildFunc( repository_name,
 
                                     with CallOnExit(RemoveTempImage):
                                         # Create a new dockerfile. The temp image has all the harddrive changes
-                                        # made during activation, but doesn't have the environment changes.
+                                        # made during activation, but doesn't have the environment changes -
+                                        # add those now.
                                         activated_dm.stream.write("Creating dockerfile...")
                                         with activated_dm.stream.DoneManager() as this_dm:
                                             with open(os.path.join(this_activated_dir, "Dockerfile"), 'w') as f:
@@ -404,7 +408,7 @@ def CreateRepositoryBuildFunc( repository_name,
                                                     ENV {env}
 
                                                     # By default, run a bash prompt as the source code user
-                                                    CMD [ "/sbin/my_init", "/sbin/setuser", "{username}", "bash" ]
+                                                    CMD [ "/sbin/my_init", "/sbin/setuser", "{username}", {commands} ]
 
                                                     LABEL maintainer="{maintainer}"
 
@@ -413,7 +417,11 @@ def CreateRepositoryBuildFunc( repository_name,
                                                                  image_code_dir=image_code_dir,
                                                                  maintainer=maintainer,
                                                                  username=image_username,
+                                                                 commands=', '.join([ '"{}"'.format(command) for command in (commands[configuration] if commands and configuration in commands else [ "bash", ]) ]),
                                                                ))
+
+                                                if expose_ports and configuration in expose_ports:
+                                                    f.write("{}\n".format('\n'.join([ "EXPOSE {}".format(port) for port in expose_ports[configuration] ])))
 
                                         activated_dm.stream.write("Building Docker image...")
                                         with activated_dm.stream.DoneManager() as this_dm:
@@ -437,6 +445,9 @@ def CreateRepositoryBuildFunc( repository_name,
                                             if this_dm.result != 0:
                                                 return this_dm.result
                                 
+                if post_build_func:
+                    dm.result = post_build_func(dm.stream) or 0
+
                 return dm.result
 
     # ----------------------------------------------------------------------
