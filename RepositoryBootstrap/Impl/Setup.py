@@ -816,8 +816,11 @@ class _RepositoriesMap(OrderedDict):
 
             # Calculated values
             self.root                       = None
+            self.configurations             = []
+
             self.get_clone_uri_func         = None
 
+            # The following will only be populated when recurse is True
             self.dependents                 = OrderedDict()                 # { <config_name> : [ ( <dependent_repo_id>, <dependent_config_name> ), ... ], ... }
             self.dependencies               = OrderedDict()                 # { <config_name> : [ ( <dependency_repo_id>, <dependency_config_name> ), ... ], ... }
 
@@ -849,29 +852,30 @@ class _RepositoriesMap(OrderedDict):
                                                                         )
 
         # ----------------------------------------------------------------------
+        def CreateRepoData(directory):
+            customization_mod = _GetCustomizationMod(directory)
+            if customization_mod is None:
+                return None
+
+            return _RepoData.Create(customization_mod)
+
+        # ----------------------------------------------------------------------
         def AddRepo( name,
                      id,
                      directory,
-                     configurations=None,
+                     repo_data,
                    ):
-            customization_mod = _GetCustomizationMod(directory)
-            if customization_mod is None:
-                return
-
             if id not in self:
                 value = cls.Value(name, id, directory)
+                
                 value.root = directory
+                value.configurations = list(six.iterkeys(repo_data.Configurations))
 
                 self[id] = value
 
             value = self[id]
 
-            if configurations is None:
-                configurations = _RepoData.Create(customization_mod).Configurations
-                if not configurations:
-                    return
-
-            for config_name, config_info in six.iteritems(configurations):
+            for config_name, config_info in six.iteritems(repo_data.Configurations):
                 config_dependencies = config_info.Dependencies
 
                 if not config_dependencies and id != fundamental_repo_id:
@@ -893,6 +897,7 @@ class _RepositoriesMap(OrderedDict):
                             AddRepo( enum_result.Name,
                                      enum_result.Id,
                                      enum_result.Root,
+                                     CreateRepoData(enum_result.Root),
                                    )
                         else:
                             self[dependency_info.RepositoryId] = cls.Value( dependency_info.FriendlyName,
@@ -922,7 +927,7 @@ class _RepositoriesMap(OrderedDict):
         AddRepo( root_repo_name,
                  root_repo_id,
                  repository_root,
-                 configurations=repo_data.Configurations,
+                 repo_data,
                )
 
         if on_search_begin_func and not on_search_begin_func(self):
@@ -957,18 +962,23 @@ class _RepositoriesMap(OrderedDict):
                     if value.root is not None:
                         continue
                 
+                    enum_repo_data = CreateRepoData(enum_result.Root)
+
                     if value.Name != enum_result.Name:
                         warnings.append(( enum_result.Name, value.Name, value.Source ))
                         
                     value.Name = enum_result.Name
+
                     value.root = enum_result.Root
-                    
+                    value.configurations = list(six.iterkeys(enum_repo_data.Configurations))
+
                     if recurse:
                         AddRepo( enum_result.Name,
                                  enum_result.Id,
                                  enum_result.Root,
+                                 enum_repo_data,
                                )
-                
+
                     assert nonlocals.remaining_repos
                     nonlocals.remaining_repos -= 1
                 
@@ -1001,11 +1011,19 @@ class _RepositoriesMap(OrderedDict):
         visited = set()
         
         # ----------------------------------------------------------------------
-        def Traverse(value, configuration):
+        def Traverse(value, config_name):
             visited.add(value.Id)
         
-            if configuration in value.dependencies:
-                for child_id, child_configuration in value.dependencies[configuration]:
+            if config_name not in value.configurations:
+                raise Exception("The configuration '{}' specified by '{}' is not valid for '{} <{}>' in '{}'".format( config_name,
+                                                                                                                      value.Source,
+                                                                                                                      value.Name,
+                                                                                                                      value.Id,
+                                                                                                                      value.root,
+                                                                                                                    ))
+
+            if config_name in value.dependencies:
+                for child_id, child_configuration in value.dependencies[config_name]:
                     assert child_id in self, child_id
                     child_value = self[child_id]
         
@@ -1014,8 +1032,8 @@ class _RepositoriesMap(OrderedDict):
         # ----------------------------------------------------------------------
         
         for root in [ value for value in six.itervalues(self) if not value.dependents ]:
-            for configuration in six.iterkeys(root.dependencies):
-                Traverse(root, configuration)
+            for config_name in six.iterkeys(root.dependencies):
+                Traverse(root, config_name)
         
         # Remove values that were not visited
         for id in list(six.iterkeys(self)):
