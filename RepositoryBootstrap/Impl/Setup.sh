@@ -85,5 +85,3 @@ else
 fi
 
 popd > /dev/null                            # -this_dir
-
-exit 0
