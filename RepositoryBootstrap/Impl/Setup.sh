@@ -85,3 +85,4 @@ else
 fi
 
 popd > /dev/null                            # -this_dir
+unset PYTHONPATH
