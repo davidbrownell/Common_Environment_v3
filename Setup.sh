@@ -26,7 +26,7 @@ set +v                                      # Disable output
 
 # Begin bootstrap customization
 export _PREV_DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=$DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL
-export DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL="$(cd "$(dirname "$0")" && pwd)"
+export DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=`dirname "$(readlink -f "${BASH_SOURCE[0]}")"`
 
 # Only run the fundamental setup if we are in a standard setup scenario
 initial_char="$(echo $1 | head -c 1)"
