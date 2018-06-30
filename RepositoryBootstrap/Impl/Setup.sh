@@ -37,6 +37,8 @@ else
     # to the python environment while still executing OS-specific commands.
     temp_script_name=`mktemp`
     
+    set +e
+
     # Generate
     /opt/CommonEnvironment/python/3.6.5/bin/python -m RepositoryBootstrap.Impl.Setup Setup "$temp_script_name" "$setup_repo_dir" "$@"
     generation_error=$?
@@ -46,9 +48,11 @@ else
     then
         chmod u+x $temp_script_name
         source $temp_script_name
+        execution_error=$?
     fi
-    execution_error=$?
     
+    set -e
+
     # Process errors...
     if [[ $generation_error != 0 ]]
     then 
