@@ -1014,7 +1014,7 @@ class _RepositoriesMap(OrderedDict):
         def Traverse(value, config_name):
             visited.add(value.Id)
         
-            if config_name not in value.configurations:
+            if value.root and config_name not in value.configurations:
                 raise Exception("The configuration '{}' specified by '{}' is not valid for '{} <{}>' in '{}'".format( config_name,
                                                                                                                       value.Source,
                                                                                                                       value.Name,
