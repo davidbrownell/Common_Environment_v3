@@ -447,6 +447,26 @@ def HasWorkingChanges( directory=None,
                 )
 
 # ----------------------------------------------------------------------
+@_SCMDocstringDecorator(SourceControlManagement.HasWorkingChanges)
+@CommandLine.EntryPoint
+@CommandLine.Constraints( directory=CommandLine.DirectoryTypeInfo(arity='?'),
+                          scm=CommandLine.EnumTypeInfo(_SCM_NAMES, arity='?'),
+                          output_stream=None,
+                        )
+def GetWorkingChanges( directory=None,
+                       scm=None,
+                       output_stream=sys.stdout,
+                       verbose=False,
+                     ):
+    return _Wrap( "GetWorkingChanges", 
+                  lambda directory, scm: scm.GetWorkingChanges(directory), 
+                  directory, 
+                  scm, 
+                  output_stream,
+                  verbose=verbose,
+                )
+
+# ----------------------------------------------------------------------
 @_SCMDocstringDecorator(SourceControlManagement.GetWorkingChangeStatus)
 @CommandLine.EntryPoint
 @CommandLine.Constraints( directory=CommandLine.DirectoryTypeInfo(arity='?'),
@@ -1371,13 +1391,12 @@ def _WrapAll( query_method_name,
         query_callback = Interface.CreateCulledCallable(query_callback)
         optional_action_callback = Interface.CreateCulledCallable(optional_action_callback) if optional_action_callback else None
 
-        nonlocals = Nonlocals( processed=0,
-                             )
-        nonlocals_lock = threading.Lock()
+        processed_repositories = []
+        processed_repositories_lock = threading.Lock()
 
         with dm.stream.SingleLineDoneManager( "Running...",
                                               done_suffixes=[ lambda: "{} queried".format(inflect.no("repository", len(repositories))),
-                                                              lambda: "{} processed".format(inflect.no("repository", nonlocals.processed)),
+                                                              lambda: "{} processed".format(inflect.no("repository", len(processed_repositories))),
                                                             ],
                                             ) as this_dm:
             # ----------------------------------------------------------------------
@@ -1386,12 +1405,12 @@ def _WrapAll( query_method_name,
             
                 on_status_update(query_method_name)
                 
-                impl_nonlocals = Nonlocals( output=None,
-                                          )
+                nonlocals = Nonlocals( output=None,
+                                     )
 
                 # ----------------------------------------------------------------------
                 def OnOutput(output):
-                    impl_nonlocals.output = output
+                    nonlocals.output = output
 
                 # ----------------------------------------------------------------------
 
@@ -1408,14 +1427,14 @@ def _WrapAll( query_method_name,
                 if result != 0:
                     return result
             
-                if isinstance(impl_nonlocals.output, bool) and not impl_nonlocals.output:
+                if isinstance(nonlocals.output, bool) and not nonlocals.output:
                     return 0
 
                 on_status_update(optional_action_method_name)
                 
                 if optional_action_callback:
-                    with nonlocals_lock:
-                        nonlocals.processed += 1
+                    with processed_repositories_lock:
+                        processed_repositories.append(directory)
 
                     result = _Wrap( optional_action_method_name,
                                     lambda directory, scm: optional_action_callback(OrderedDict([ ( "directory", directory ),
@@ -1444,6 +1463,18 @@ def _WrapAll( query_method_name,
                                                progress_bar=True,
                                              )
 
+        if processed_repositories:
+            dm.stream.write(textwrap.dedent(
+                """\
+
+                {this} {repository} {was} processed:
+                {results}
+                """).format( this=inflect.plural("This", len(processed_repositories)),
+                             repository=inflect.plural("repository", len(processed_repositories)),
+                             was=inflect.plural("was", len(processed_repositories)),
+                             results='\n'.join([ "    - {}".format(processed_repository) for processed_repository in processed_repositories ]),
+                           ))
+        
         return dm.result
               
 # ----------------------------------------------------------------------
