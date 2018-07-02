@@ -18,11 +18,13 @@ import inspect
 import json
 import os
 import re
+import shutil
 import sys
 import textwrap
 import time
 import uuid
 
+import inflect as inflect_mod
 import six
 
 from CommonEnvironment.CallOnExit import CallOnExit
@@ -37,6 +39,8 @@ from CommonEnvironment.StreamDecorator import StreamDecorator
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
+
+inflect                                     = inflect_mod.engine()
 
 # ----------------------------------------------------------------------
 def CreateRepositoryBuildFunc( repository_name,
@@ -165,6 +169,20 @@ def CreateRepositoryBuildFunc( repository_name,
                                     this_dm.stream.write(output)
                                     return this_dm.result
                     
+                    if os.path.isdir(repository_uri):
+                        # Copy any working changes as well
+                        changed_filenames = scm.GetWorkingChanges(repository_uri)
+                        if changed_filenames:
+                            has_changes = True
+
+                            base_dm.stream.write("Copying {}...".format(inflect.no("working change", len(changed_filenames))))
+                            with base_dm.stream.DoneManager():
+                                for changed_filename in changed_filenames:
+                                    assert changed_filename.startswith(repository_uri), (changed_filename, repository_uri)
+                                    dest_filename = os.path.join(source_dir, changed_filename[len(repository_uri):].lstrip(os.path.sep))
+
+                                    shutil.copyfile(changed_filename, dest_filename)
+
                     # Filter the source
                     filtered_source_dir = os.path.join(base_image_dir, "FilteredSource")
 
