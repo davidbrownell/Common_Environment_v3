@@ -20,10 +20,6 @@ pushd $setup_python_dir > /dev/null         # +dir
 
 echo "Setting up Python v2.7.14..."
 
-# Link to the originally compiled location
-[[ -d /opt/CommonEnvironment/python ]] || mkdir -p "/opt/CommonEnvironment/python"
-ln -fsd $setup_python_dir /opt/CommonEnvironment/python/2.7.14
-
 if [[ ! -d ./bin ]]
 then
     echo "  Unpacking content..."
@@ -47,13 +43,24 @@ echo "  Finalizing..."
 # Convert sep in '-', then remove the initial '-'
 conf_file=$(echo $(pwd)/bin/python2.7 | tr / - | cut -c 2-).conf
 
+if [[ ! -d /etc/ld.so.conf.d/$conf_file ]]
+then
+    
 cat > /etc/ld.so.conf.d/$conf_file << END
 `pwd`/lib
 END
+    
+    ldconfig
+fi
 
-ldconfig
+# Link to the originally compiled location
+if [[ ! -e /opt/CommonEnvironment/python/2.7.14 ]]
+then
+    [[ -d /opt/CommonEnvironment/python ]] || mkdir -p "/opt/CommonEnvironment/python"
+    ln -fsd $setup_python_dir /opt/CommonEnvironment/python/2.7.14
+fi
 
 echo "DONE!"
-echo
+echo ""
 
 popd > /dev/null                            # -dir

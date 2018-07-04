@@ -170,17 +170,20 @@ def CreateRepositoryBuildFunc( repository_name,
                                     return this_dm.result
                     
                     if os.path.isdir(repository_uri):
+                        repository_dir = os.path.realpath(repository_uri)
+                        
                         # Copy any working changes as well
-                        changed_filenames = scm.GetWorkingChanges(repository_uri)
+                        changed_filenames = scm.GetWorkingChanges(repository_dir)
                         if changed_filenames:
                             has_changes = True
 
                             base_dm.stream.write("Copying {}...".format(inflect.no("working change", len(changed_filenames))))
                             with base_dm.stream.DoneManager():
                                 for changed_filename in changed_filenames:
-                                    assert changed_filename.startswith(repository_uri), (changed_filename, repository_uri)
-                                    dest_filename = os.path.join(source_dir, changed_filename[len(repository_uri):].lstrip(os.path.sep))
+                                    assert changed_filename.startswith(repository_dir), (changed_filename, repository_dir)
+                                    dest_filename = os.path.join(source_dir, changed_filename[len(repository_dir):].lstrip(os.path.sep))
 
+                                    FileSystem.MakeDirs(os.path.dirname(dest_filename))
                                     shutil.copyfile(changed_filename, dest_filename)
 
                     # Filter the source
@@ -234,10 +237,16 @@ def CreateRepositoryBuildFunc( repository_name,
                                             """\
                                             RUN link /usr/bin/python3 /usr/bin/python
                     
+                                            # Create a new user
                                             RUN adduser --disabled-password --disabled-login --gecos "" "{username}" \\
                                              && addgroup "{groupname}" \\
                                              && adduser "{username}" "{groupname}"
                     
+                                            # Create a new group that has permissions to modify /etc/ld.so.conf.d
+                                            RUN addgroup "ldconfig_owners" \\
+                                             && adduser root ldconfig_owners \\
+                                             && adduser "{username}" ldconfig_owners
+
                                             RUN cd {image_code_dir} \\
                                              && {setup_statement}
                     
@@ -282,11 +291,22 @@ def CreateRepositoryBuildFunc( repository_name,
                     
                                 {statements}
                     
+                                # Set permissions on the source
                                 RUN chown -R {username}:{groupname} {image_code_dir} \\
                                  && chmod g-s {image_code_dir}/Generated/Linux \\
                                  && chmod 0750 {image_code_dir}/Generated/Linux \\
                                  && chmod -R o-rwx {image_code_dir}
                     
+                                # Set permissions ldconfig dir
+                                RUN chown root:ldconfig_owners /etc \\
+                                 && chown -R root:ldconfig_owners /etc/ld.so.conf.d \\
+                                 && chown root:ldconfig_owners /etc/ld.so.cache \\
+                                 && chown root:ldconfig_owners /etc/ld.so.conf \\
+                                 && chmod g+rw /etc \\
+                                 && chmod -R g+rw /etc/ld.so.conf.d \\
+                                 && chmod g+rw /etc/ld.so.cache \\
+                                 && chmod g+rw /etc/ld.so.conf
+
                                 # Cleanup
                                 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
                     
