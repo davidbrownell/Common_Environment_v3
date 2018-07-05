@@ -1213,17 +1213,18 @@ class _RepositoriesMap(OrderedDict):
                 for result in Impl(True):
                     yield result
             
-                # If here, look at other drive locations
-                import win32api
-                import win32file
+                if not required_ancestor_dir:
+                    # If here, look at other drive locations
+                    import win32api
+                    import win32file
             
-                # <Module 'win32api' has not 'GetLogicalDriveStrings' member, but source is unavailable. Consider adding this module to extension-pkg-whitelist if you want to perform analysis based on run-time introspection of living objects.> pylint: disable = I1101
+                    # <Module 'win32api' has not 'GetLogicalDriveStrings' member, but source is unavailable. Consider adding this module to extension-pkg-whitelist if you want to perform analysis based on run-time introspection of living objects.> pylint: disable = I1101
             
-                for drive in [ drive for drive in win32api.GetLogicalDriveStrings().split('\000') if drive and win32file.GetDriveType(drive) == win32file.DRIVE_FIXED ]:
-                    PushSearchItem(drive)
+                    for drive in [ drive for drive in win32api.GetLogicalDriveStrings().split('\000') if drive and win32file.GetDriveType(drive) == win32file.DRIVE_FIXED ]:
+                        PushSearchItem(drive)
             
-                for result in Impl(False):
-                    yield result
+                    for result in Impl(False):
+                        yield result
             
             else:
                 for result in Impl(False):
