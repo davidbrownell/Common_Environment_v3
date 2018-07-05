@@ -205,7 +205,7 @@ class PythonActivationActivity(ActivationActivity):
 
                 content = cls._NormalizeScript_script_shebang_regex.split(content, maxsplit=1)
 
-            except UnicodeDecodeError:
+            except (UnicodeDecodeError, OSError):
                 content = []
 
             if len(content) != 3:
@@ -357,9 +357,12 @@ class PythonActivationActivity(ActivationActivity):
 
                 for item in os.listdir(bin_source_dir):
                     if item.startswith("python"):
-                        shutil.copy2( os.path.join(bin_source_dir, item),
-                                      os.path.join(bin_dest_dir, item),
-                                    )
+                        try:
+                            shutil.copy2( os.path.join(bin_source_dir, item),
+                                          os.path.join(bin_dest_dir, item),
+                                        )
+                        except OSError:
+                            dm.stream.write("WARNING: Unable to copy '{}'\n".format(os.path.join(bin_source_dir, item)))
 
         # Get the libraries
         libraries = OrderedDict()
