@@ -125,6 +125,9 @@ def CreateRepositoryBuildFunc( repository_name,
                     # Get the source
                     scm = GetAnySCM(calling_dir)
                     
+                    if force:
+                        FileSystem.RemoveTree(source_dir)
+
                     if not os.path.isdir(source_dir):
                         base_dm.stream.write("Cloning source...")
                         with base_dm.stream.DoneManager() as this_dm:
