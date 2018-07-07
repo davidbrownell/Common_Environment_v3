@@ -50,7 +50,7 @@ cat > /etc/ld.so.conf.d/$conf_file << END
 `pwd`/lib
 END
     
-    ldconfig
+    ldconfig -N
 fi
 
 # Link to the originally compiled location
