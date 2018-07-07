@@ -182,7 +182,7 @@ except ImportError:
     assert os.path.isdir(python_root), python_root
 
     for suffix in [ os.path.join("Windows", "Lib", "site-packages"),
-                    os.path.join("Ubuntu", "lib", "python2.7", "site-packages"),
+                    os.path.join("Linux", "lib", "python2.7", "site-packages"),
                   ]:
         potential_dir = os.path.join(python_root, suffix)
         if os.path.isdir(potential_dir):
