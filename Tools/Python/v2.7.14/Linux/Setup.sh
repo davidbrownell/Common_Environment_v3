@@ -49,8 +49,9 @@ then
 cat > /etc/ld.so.conf.d/$conf_file << END
 `pwd`/lib
 END
-    
-    ldconfig -N
+    set +e
+    ldconfig
+    set -e
 fi
 
 # Link to the originally compiled location
