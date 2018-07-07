@@ -67,6 +67,7 @@ _ScmConstraint                              = CommonEnvironmentImports.CommandLi
 @CommonEnvironmentImports.CommandLine.EntryPoint( output_filename_or_stdout=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Filename for generated content or standard output if the value is 'stdout'"),
                                                   repository_root=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Root of the repository"),
                                                   recurse=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Invoke Setup on this repository and its dependencies"),
+                                                  all_configurations=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Setup all configurations, not just the ones used by this repository and those that it depends upon"),
                                                   debug=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Write additional debug information to the console"),
                                                   verbose=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Write additional verbose information to the console"),
                                                   configuration=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Configurations to setup; all configurations defined will be setup if explicit values are not provided"),
@@ -83,6 +84,7 @@ def Setup( output_filename_or_stdout,
            verbose=False,
            configuration=None,
            use_ascii=False,
+           all_configurations=False,
            output_stream=sys.stdout,
          ):
     """Perform setup activities for this repository"""
@@ -111,7 +113,9 @@ def Setup( output_filename_or_stdout,
             activities = [ _SetupRecursive,
                          ]
 
-            args.append(use_ascii)
+            args += [ use_ascii,
+                      all_configurations,
+                    ]
         else:
             # If here, setup this specific repo
             activities = [ _SetupBootstrap,
@@ -381,6 +385,7 @@ def _SetupRecursive( output_stream,
                      verbose,
                      explicit_configurations,
                      use_ascii,
+                     all_configurations,
                    ):
     # ----------------------------------------------------------------------
     def Callback(output_stream, repo_map):
@@ -413,9 +418,14 @@ def _SetupRecursive( output_stream,
 
                         continue
 
+                    if all_configurations:
+                        configurations = []
+                    else:
+                        configurations = [ configuration for configuration in six.iterkeys(value.dependents) if configuration is not None ]
+
                     commands = [ Commands.EchoOff(),
                                  Commands.PushDirectory(value.root),
-                                 Commands.Call(command_line_template.format(' '.join([ "/configuration_EQ_{}".format(configuration) for configuration in six.iterkeys(value.dependents) if configuration is not None ]))),
+                                 Commands.Call(command_line_template.format('' if not configurations else ' '.join([ "/configuration_EQ_{}".format(configuration) for configuration in configurations ]))),
                                  Commands.PersistError(setup_error_variable_name),
                                  Commands.PopDirectory(),
                                  Commands.ExitOnError(variable_name=setup_error_variable_name),
