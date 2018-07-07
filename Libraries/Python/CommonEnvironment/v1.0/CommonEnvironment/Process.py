@@ -161,10 +161,11 @@ def Execute( command_line,
 
             for codec in [ "utf-8",
                            "ansi",
+                           "ascii",
                          ]:
                 try:
                     return result.decode(codec)
-                except UnicodeDecodeError:
+                except (UnicodeDecodeError, LookupError):
                     pass
 
             raise UnicodeDecodeError()
