@@ -108,13 +108,19 @@ def Execute( command_line,
 
         # ----------------------------------------------------------------------
 
-    if environment and sys.version_info[0] == 2:
+    if not environment: 
+        environment = dict(os.environ)
+    
+    if "PYTHONIOENCODING" not in environment:
+        environment["PYTHONIOENCODING"] = "UTF_8"
+
+    if sys.version_info[0] == 2:
         # Keys and values must be strings, which can be a problem if the environment was extraced from unicode data
         import unicodedata
 
         # ----------------------------------------------------------------------
-        def ConvertToString(item):
-            return unicodedata.normalize('NFKD', item).encode('ascii', 'ignore')
+        def ConvertUnicodeToAsciiString(item, errors="ignore"):
+            return unicodedata.normalize('NFKD', item).encode('ascii', errors)
 
         # ----------------------------------------------------------------------
 
@@ -123,10 +129,10 @@ def Execute( command_line,
 
             if isinstance(key, unicode):                # <Undefined variable> pylint: disable = E0602
                 del environment[key]
-                key = ConvertToString(key)
+                key = ConvertUnicodeToAsciiString(key)
 
             if isinstance(value, unicode):              # <Undefined variable> pylint: disable = E0602
-                value = ConvertToString(value)
+                value = ConvertUnicodeToAsciiString(value)
 
             environment[key] = value
 
@@ -137,44 +143,53 @@ def Execute( command_line,
                                env=environment,
                              )
     
-    ( CharacterStack_Escape,
-      CharacterStack_LineReset,
-      CharacterStack_Buffered,
-    ) = range(3)
-
-    # Handle differences between bytes and strings in Python 3
-    if sys.version_info[0] == 2:
-        char_to_value = lambda c: c
-        is_ascii_letter = lambda c: c in string.ascii_letters
-        is_newline = lambda c: c in [ '\r', '\n', ]
-        is_esc = lambda c: c == '\033'
-        to_ascii_string = lambda c: ''.join(c)
-    else:
-        char_to_value = lambda c: ord(c)
-        is_ascii_letter = lambda c: (c >= ord('a') and c <= ord('z')) or (c >= ord('A') and c <= ord('Z'))
-        is_newline = lambda c: c in [ 10, 13, ]
-        is_esc = lambda c: c == 27
+    with CallOnExit(Flush):
+        # ----------------------------------------------------------------------
+        ( CharacterStack_Escape,
+          CharacterStack_LineReset,
+          CharacterStack_Buffered,
+          CharacterStack_MultiByte,
+        ) = range(4)
 
         # ----------------------------------------------------------------------
-        def ToAsciiString(c):
+        def IsAsciiLetter(value):
+            return (value >= ord('a') and value <= ord('z')) or (value >= ord('A') and value <= ord('Z'))
+
+        # ----------------------------------------------------------------------
+        def IsNewlineish(value):
+            return value in [ 10, 13, ]
+
+        # ----------------------------------------------------------------------
+        def IsEscape(value):
+            return value == 27
+
+        # ----------------------------------------------------------------------
+        def ToString(c):
             result = bytearray(c)
+            s = None
 
             for codec in [ "utf-8",
                            "ansi",
                            "ascii",
                          ]:
                 try:
-                    return result.decode(codec)
+                    s = result.decode(codec)
+                    break
+
                 except (UnicodeDecodeError, LookupError):
                     pass
 
-            raise UnicodeDecodeError()
+            if s is None:
+                raise Exception("The content '{}' could not be decoded".format(result))
+
+            if sys.version_info[0] == 2:
+                # Convert the unicode string back into an ascii string
+                s = ConvertUnicodeToAsciiString(s, "replace")
+
+            return s
 
         # ----------------------------------------------------------------------
 
-        to_ascii_string = ToAsciiString
-
-    with CallOnExit(Flush):
         try:
             character_stack = []
             character_stack_type = None
@@ -193,14 +208,14 @@ def Execute( command_line,
                     if not c:
                         break
 
-                    value = char_to_value(c)
+                    value = ord(c)
 
                 content = None
 
                 if character_stack_type == CharacterStack_Escape:
                     character_stack.append(value)
 
-                    if not is_ascii_letter(value):
+                    if not IsAsciiLetter(value):
                         continue
 
                     content = character_stack
@@ -209,7 +224,18 @@ def Execute( command_line,
                     character_stack_type = None
 
                 elif character_stack_type == CharacterStack_LineReset:
-                    if is_newline(value):
+                    if IsNewlineish(value):
+                        character_stack.append(value)
+                        continue
+
+                    content = character_stack
+
+                    character_stack = [ value, ]
+                    character_stack_type = CharacterStack_Buffered
+
+                elif character_stack_type == CharacterStack_MultiByte:
+                    if value >> 6 == 0b10: 
+                        # Continuation char
                         character_stack.append(value)
                         continue
 
@@ -221,15 +247,22 @@ def Execute( command_line,
                 else:
                     assert character_stack_type is None, character_stack_type
 
-                    if is_esc(value):
+                    if IsEscape(value):
                         character_stack.append(value)
                         character_stack_type = CharacterStack_Escape
 
                         continue
 
-                    elif is_newline(value):
+                    elif IsNewlineish(value):
                         character_stack.append(value)
                         character_stack_type = CharacterStack_LineReset
+
+                        continue
+
+                    elif value >> 6 == 0b11:
+                        # If the high bit is set, this is the first part of a multi-byte character set.
+                        character_stack.append(value)
+                        character_stack_type = CharacterStack_MultiByte
 
                         continue
 
@@ -237,12 +270,12 @@ def Execute( command_line,
 
                 assert content
 
-                if output(to_ascii_string(content)) == False:
+                if output(ToString(content)) == False:
                     hard_stop = True
                     break
 
             if not hard_stop and character_stack:
-                output(to_ascii_string(character_stack))
+                output(ToString(character_stack))
 
             result = result.wait() or 0
 
