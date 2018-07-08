@@ -1472,7 +1472,7 @@ def _WrapAll( query_method_name,
                 """).format( this=inflect.plural("This", len(processed_repositories)),
                              repository=inflect.plural("repository", len(processed_repositories)),
                              was=inflect.plural("was", len(processed_repositories)),
-                             results='\n'.join([ "    - {}".format(processed_repository) for processed_repository in processed_repositories ]),
+                             results='\n'.join([ "    - {}".format(processed_repository) for processed_repository in sorted(processed_repositories) ]),
                            ))
         
         return dm.result
