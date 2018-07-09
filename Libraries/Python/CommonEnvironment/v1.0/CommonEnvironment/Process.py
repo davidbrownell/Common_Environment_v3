@@ -45,6 +45,38 @@ def Execute( command_line,
 
     assert command_line
 
+    # Prepare the environment
+
+    # if not environment: 
+    #     environment = dict(os.environ)
+    # 
+    # if "PYTHONIOENCODING" not in environment:
+    #     environment["PYTHONIOENCODING"] = "UTF_8"
+
+    if sys.version_info[0] == 2:
+        import unicodedata
+
+        # ----------------------------------------------------------------------
+        def ConvertUnicodeToAsciiString(item, errors="ignore"):
+            return unicodedata.normalize('NFKD', item).encode('ascii', errors)
+
+        # ----------------------------------------------------------------------
+
+        if environment:
+            # Keys and values must be strings, which can be a problem if the environment was extraced from unicode data
+            for key in list(six.iterkeys(environment)):
+                value = environment[key]
+
+                if isinstance(key, unicode):                # <Undefined variable> pylint: disable = E0602
+                    del environment[key]
+                    key = ConvertUnicodeToAsciiString(key)
+
+                if isinstance(value, unicode):              # <Undefined variable> pylint: disable = E0602
+                    value = ConvertUnicodeToAsciiString(value)
+
+                environment[key] = value
+
+    # Prepare the output
     sink = None
     output = None
 
@@ -108,34 +140,7 @@ def Execute( command_line,
 
         # ----------------------------------------------------------------------
 
-    if not environment: 
-        environment = dict(os.environ)
-    
-    if "PYTHONIOENCODING" not in environment:
-        environment["PYTHONIOENCODING"] = "UTF_8"
-
-    if sys.version_info[0] == 2:
-        # Keys and values must be strings, which can be a problem if the environment was extraced from unicode data
-        import unicodedata
-
-        # ----------------------------------------------------------------------
-        def ConvertUnicodeToAsciiString(item, errors="ignore"):
-            return unicodedata.normalize('NFKD', item).encode('ascii', errors)
-
-        # ----------------------------------------------------------------------
-
-        for key in list(six.iterkeys(environment)):
-            value = environment[key]
-
-            if isinstance(key, unicode):                # <Undefined variable> pylint: disable = E0602
-                del environment[key]
-                key = ConvertUnicodeToAsciiString(key)
-
-            if isinstance(value, unicode):              # <Undefined variable> pylint: disable = E0602
-                value = ConvertUnicodeToAsciiString(value)
-
-            environment[key] = value
-
+    # Execute
     result = subprocess.Popen( command_line,
                                shell=True,
                                stdout=subprocess.PIPE,
