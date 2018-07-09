@@ -31,14 +31,16 @@ then
     setup_first_arg=$1
     shift
 
-    $DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL/Tools/Python/v3.6.5/Linux/bin/python -m RepositoryBootstrap.Impl.Setup $setup_first_arg $setup_repo_dir "$@"
+    /opt/CommonEnvironment/python/3.6.5/bin/python -m RepositoryBootstrap.Impl.Setup $setup_first_arg $setup_repo_dir "$@"
 else
     # Create a temporary file that contains output produced by the python script. This lets us quickly bootstrap
     # to the python environment while still executing OS-specific commands.
     temp_script_name=`mktemp`
     
+    set +e
+
     # Generate
-    $DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL/Tools/Python/v3.6.5/Linux/bin/python -m RepositoryBootstrap.Impl.Setup Setup "$temp_script_name" "$setup_repo_dir" "$@"
+    /opt/CommonEnvironment/python/3.6.5/bin/python -m RepositoryBootstrap.Impl.Setup Setup "$temp_script_name" "$setup_repo_dir" "$@"
     generation_error=$?
     
     # Invoke
@@ -46,9 +48,11 @@ else
     then
         chmod u+x $temp_script_name
         source $temp_script_name
+        execution_error=$?
     fi
-    execution_error=$?
     
+    set -e
+
     # Process errors...
     if [[ $generation_error != 0 ]]
     then 
@@ -85,5 +89,4 @@ else
 fi
 
 popd > /dev/null                            # -this_dir
-
-exit 0
+unset PYTHONPATH

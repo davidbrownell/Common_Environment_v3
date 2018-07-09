@@ -244,7 +244,7 @@ def ListConfigurations( repository_root,
     repo_info = EnvironmentBootstrap.Load(repository_root)
 
     if display_format == "json":
-        items = {}
+        items = OrderedDict()
 
         for config_name, config_info in six.iteritems(repo_info.Configurations):
             if config_name is None:

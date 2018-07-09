@@ -235,7 +235,7 @@ class CompilerImpl(Interface):
         for input in inputs:
             if os.path.isfile(input):
                 if isinstance(cls.InputTypeInfo, FilenameTypeInfo):
-                    result = cls.InputTypeInfo.ValidateItem(input)          # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
+                    result = cls.InputTypeInfo.ValidateItemNoThrow(input)   # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
                     if result is not None:
                         raise cls.DiagnosticException(result)
 

@@ -124,7 +124,10 @@ class CompleteConfiguration(Configuration):
             result, output = Process.Execute('python "{}" Metadata'.format(build_filename))
             assert result == 0, (result, output)
 
-            match = RegularExpression.TemplateStringToRegex(cls._VIEW_METADATA_TEMPLATE).match(output)
+            match = RegularExpression.TemplateStringToRegex( cls._VIEW_METADATA_TEMPLATE, 
+                                                             optional_tags=[ "suggested_output_dir_location", 
+                                                                           ],
+                                                           ).match(output)
             if not match:
                 raise Exception("'{}' did not produce valid metadata results".format(build_filename))
             

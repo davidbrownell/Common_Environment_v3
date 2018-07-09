@@ -96,7 +96,7 @@ def GetDependencies():
                                                      [ Dependency( "0EAA1DCF22804F90AD9F5A3B85A5D706",                              # Id for Common_Environment; found in <Common_Environment>/__RepositoryId__
                                                                    "Common_Environment",                                            # Name used if Common_Environment cannot be found during setup
                                                                    "python36",                                                      # Configuration value used when activating Common_Environment (can be None or skipped for repos that only support a single configuration)
-                                                                   "https://github.com/davidbrownell/Common_Environment_v3.git",    # Uri for repo
+                                                                   "https://github.com/davidbrownell/Common_Environment_v3.git",    # Uri for repo; can be string or def Func(scm_or_none) -> string
                                                                  ),
                                                        # Other dependencies go here (if any)    
                                                      ],
@@ -114,7 +114,7 @@ def GetDependencies():
                                                      [ Dependency( "0EAA1DCF22804F90AD9F5A3B85A5D706",                              # Id for Common_Environment; found in <Common_Environment>/__RepositoryId__
                                                                   "Common_Environment",                                             # Name used if Common_Environment cannot be found during setup
                                                                   "python27",                                                       # Configuration value used when activating Common_Environment (can be None or skipped for repos that only support a single configuration)
-                                                                  "https://github.com/davidbrownell/Common_Environment_v3.git",     # Uri for repo
+                                                                  "https://github.com/davidbrownell/Common_Environment_v3.git",     # Uri for repo; can be string or def Func(scm_or_none) -> string
                                                                 ),
                                                        # Other dependencies go here (if any)
                                                      ],
@@ -135,7 +135,7 @@ def GetDependencies():
                           [ Dependency( "0EAA1DCF22804F90AD9F5A3B85A5D706",                             # Id for Common_Environment; found in <Common_Environment>/__RepositoryId__
                                         "Common_Environment",                                           # Name used if Common_Environment cannot be found during setup
                                         "python36",                                                     # Configuration value used when activating Common_Environment (can be None or skipped for repos that only support a single configuration)
-                                        "https://github.com/davidbrownell/Common_Environment_v3.git",   # Uri for repo
+                                        "https://github.com/davidbrownell/Common_Environment_v3.git",   # Uri for repo; can be string or def Func(scm_or_none) -> string
                                       ),
                             # Other dependencies go here (if any)    
                           ],

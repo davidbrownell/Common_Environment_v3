@@ -25,7 +25,7 @@ from collections import OrderedDict, namedtuple
 import inflect as inflect_mod
 import six
 
-from CommonEnvironment import Describe
+from CommonEnvironment import Describe, Nonlocals
 from CommonEnvironment import CommandLine
 from CommonEnvironment import Interface
 from CommonEnvironment.StreamDecorator import StreamDecorator
@@ -447,6 +447,26 @@ def HasWorkingChanges( directory=None,
                 )
 
 # ----------------------------------------------------------------------
+@_SCMDocstringDecorator(SourceControlManagement.HasWorkingChanges)
+@CommandLine.EntryPoint
+@CommandLine.Constraints( directory=CommandLine.DirectoryTypeInfo(arity='?'),
+                          scm=CommandLine.EnumTypeInfo(_SCM_NAMES, arity='?'),
+                          output_stream=None,
+                        )
+def GetWorkingChanges( directory=None,
+                       scm=None,
+                       output_stream=sys.stdout,
+                       verbose=False,
+                     ):
+    return _Wrap( "GetWorkingChanges", 
+                  lambda directory, scm: scm.GetWorkingChanges(directory), 
+                  directory, 
+                  scm, 
+                  output_stream,
+                  verbose=verbose,
+                )
+
+# ----------------------------------------------------------------------
 @_SCMDocstringDecorator(SourceControlManagement.GetWorkingChangeStatus)
 @CommandLine.EntryPoint
 @CommandLine.Constraints( directory=CommandLine.DirectoryTypeInfo(arity='?'),
@@ -491,7 +511,7 @@ def GetChangeInfo( change,
 # ----------------------------------------------------------------------
 @_SCMDocstringDecorator(SourceControlManagement.AddFiles)
 @CommandLine.EntryPoint
-@CommandLine.Constraints( file=CommandLine.FilenameTypeInfo(arity='*'),
+@CommandLine.Constraints( filename=CommandLine.FilenameTypeInfo(arity='*'),
                           recurse=CommandLine.BoolTypeInfo(arity='?'),
                           include_re=CommandLine.StringTypeInfo(arity='*'),
                           exclude_re=CommandLine.StringTypeInfo(arity='*'),
@@ -499,7 +519,7 @@ def GetChangeInfo( change,
                           scm=CommandLine.EnumTypeInfo(_SCM_NAMES, arity='?'),
                           output_stream=None,
                         )
-def AddFiles( file=None,
+def AddFiles( filename=None,
               recurse=None,
               include_re=None,
               exclude_re=None,
@@ -508,7 +528,8 @@ def AddFiles( file=None,
               output_stream=sys.stdout,
               verbose=False,
             ):
-    files = file; del file
+    files = filename; del filename
+    
     include_res = include_re; del include_re
     exclude_res = exclude_re; del exclude_re
 
@@ -1285,6 +1306,7 @@ def _Wrap( method_name,
            output_stream,
            verbose=False,
            requires_distributed=False,
+           on_output_func=None,             # def Func(output)
          ):
     directory = directory or os.getcwd()
 
@@ -1314,6 +1336,9 @@ def _Wrap( method_name,
         output = result
         result = 0
     
+    if on_output_func:
+        on_output_func(output)
+
     sink = six.moves.StringIO()
     Describe(output, sink)
     sink = sink.getvalue()
@@ -1367,13 +1392,29 @@ def _WrapAll( query_method_name,
         query_callback = Interface.CreateCulledCallable(query_callback)
         optional_action_callback = Interface.CreateCulledCallable(optional_action_callback) if optional_action_callback else None
 
-        with dm.stream.SingleLineDoneManager("Running...") as this_dm:
+        processed_repositories = []
+        processed_repositories_lock = threading.Lock()
+
+        with dm.stream.SingleLineDoneManager( "Running...",
+                                              done_suffixes=[ lambda: "{} queried".format(inflect.no("repository", len(repositories))),
+                                                              lambda: "{} processed".format(inflect.no("repository", len(processed_repositories))),
+                                                            ],
+                                            ) as this_dm:
             # ----------------------------------------------------------------------
             def Impl(task_index, output_stream, on_status_update):
                 scm, directory = repositories[task_index]
             
                 on_status_update(query_method_name)
                 
+                nonlocals = Nonlocals( output=None,
+                                     )
+
+                # ----------------------------------------------------------------------
+                def OnOutput(output):
+                    nonlocals.output = output
+
+                # ----------------------------------------------------------------------
+
                 result = _Wrap( query_method_name,
                                 lambda directory, scm: query_callback(OrderedDict([ ( "directory", directory ),
                                                                                     ( "scm", scm ),
@@ -1382,13 +1423,20 @@ def _WrapAll( query_method_name,
                                 directory,
                                 scm,
                                 output_stream,
+                                on_output_func=OnOutput,
                               )
-                if result:
+                if result != 0:
                     return result
             
+                if isinstance(nonlocals.output, bool) and not nonlocals.output:
+                    return 0
+
                 on_status_update(optional_action_method_name)
                 
                 if optional_action_callback:
+                    with processed_repositories_lock:
+                        processed_repositories.append(directory)
+
                     result = _Wrap( optional_action_method_name,
                                     lambda directory, scm: optional_action_callback(OrderedDict([ ( "directory", directory ),
                                                                                                   ( "scm", scm ),
@@ -1416,6 +1464,18 @@ def _WrapAll( query_method_name,
                                                progress_bar=True,
                                              )
 
+        if processed_repositories:
+            dm.stream.write(textwrap.dedent(
+                """\
+
+                {this} {repository} {was} processed:
+                {results}
+                """).format( this=inflect.plural("This", len(processed_repositories)),
+                             repository=inflect.plural("repository", len(processed_repositories)),
+                             was=inflect.plural("was", len(processed_repositories)),
+                             results='\n'.join([ "    - {}".format(processed_repository) for processed_repository in sorted(processed_repositories) ]),
+                           ))
+        
         return dm.result
               
 # ----------------------------------------------------------------------

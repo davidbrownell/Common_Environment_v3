@@ -67,6 +67,7 @@ _ScmConstraint                              = CommonEnvironmentImports.CommandLi
 @CommonEnvironmentImports.CommandLine.EntryPoint( output_filename_or_stdout=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Filename for generated content or standard output if the value is 'stdout'"),
                                                   repository_root=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Root of the repository"),
                                                   recurse=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Invoke Setup on this repository and its dependencies"),
+                                                  all_configurations=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Setup all configurations, not just the ones used by this repository and those that it depends upon"),
                                                   debug=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Write additional debug information to the console"),
                                                   verbose=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Write additional verbose information to the console"),
                                                   configuration=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Configurations to setup; all configurations defined will be setup if explicit values are not provided"),
@@ -83,6 +84,7 @@ def Setup( output_filename_or_stdout,
            verbose=False,
            configuration=None,
            use_ascii=False,
+           all_configurations=False,
            output_stream=sys.stdout,
          ):
     """Perform setup activities for this repository"""
@@ -111,7 +113,9 @@ def Setup( output_filename_or_stdout,
             activities = [ _SetupRecursive,
                          ]
 
-            args.append(use_ascii)
+            args += [ use_ascii,
+                      all_configurations,
+                    ]
         else:
             # If here, setup this specific repo
             activities = [ _SetupBootstrap,
@@ -381,6 +385,7 @@ def _SetupRecursive( output_stream,
                      verbose,
                      explicit_configurations,
                      use_ascii,
+                     all_configurations,
                    ):
     # ----------------------------------------------------------------------
     def Callback(output_stream, repo_map):
@@ -390,10 +395,11 @@ def _SetupRecursive( output_stream,
                                       ) as dm:
             dm.stream.write("\n\n")
 
-            command_line_template = "{cmd}{debug}{verbose} {{}}".format( cmd=CommonEnvironmentImports.CurrentShell.CreateScriptName(Constants.SETUP_ENVIRONMENT_NAME),
-                                                                         debug='' if not debug else " /debug",
-                                                                         verbose='' if not verbose else " /verbose",
-                                                                       )
+            command_line_template = "{source}{cmd}{debug}{verbose} {{}}".format( source="./" if CommonEnvironmentImports.CurrentShell.CategoryName == "Linux" else '',
+                                                                                 cmd=CommonEnvironmentImports.CurrentShell.CreateScriptName(Constants.SETUP_ENVIRONMENT_NAME),
+                                                                                 debug='' if not debug else " /debug",
+                                                                                 verbose='' if not verbose else " /verbose",
+                                                                               )
 
             setup_error_variable_name = "_setup_error"
 
@@ -413,9 +419,14 @@ def _SetupRecursive( output_stream,
 
                         continue
 
+                    if all_configurations:
+                        configurations = []
+                    else:
+                        configurations = [ configuration for configuration in six.iterkeys(value.dependents) if configuration is not None ]
+
                     commands = [ Commands.EchoOff(),
                                  Commands.PushDirectory(value.root),
-                                 Commands.Call(command_line_template.format(' '.join([ "/configuration_EQ_{}".format(configuration) for configuration in six.iterkeys(value.dependents) if configuration is not None ]))),
+                                 Commands.Call(command_line_template.format('' if not configurations else ' '.join([ "/configuration_EQ_{}".format(configuration) for configuration in configurations ]))),
                                  Commands.PersistError(setup_error_variable_name),
                                  Commands.PopDirectory(),
                                  Commands.ExitOnError(variable_name=setup_error_variable_name),
@@ -816,8 +827,11 @@ class _RepositoriesMap(OrderedDict):
 
             # Calculated values
             self.root                       = None
+            self.configurations             = []
+
             self.get_clone_uri_func         = None
 
+            # The following will only be populated when recurse is True
             self.dependents                 = OrderedDict()                 # { <config_name> : [ ( <dependent_repo_id>, <dependent_config_name> ), ... ], ... }
             self.dependencies               = OrderedDict()                 # { <config_name> : [ ( <dependency_repo_id>, <dependency_config_name> ), ... ], ... }
 
@@ -849,29 +863,30 @@ class _RepositoriesMap(OrderedDict):
                                                                         )
 
         # ----------------------------------------------------------------------
+        def CreateRepoData(directory):
+            customization_mod = _GetCustomizationMod(directory)
+            if customization_mod is None:
+                return None
+
+            return _RepoData.Create(customization_mod)
+
+        # ----------------------------------------------------------------------
         def AddRepo( name,
                      id,
                      directory,
-                     configurations=None,
+                     repo_data,
                    ):
-            customization_mod = _GetCustomizationMod(directory)
-            if customization_mod is None:
-                return
-
             if id not in self:
                 value = cls.Value(name, id, directory)
+                
                 value.root = directory
+                value.configurations = list(six.iterkeys(repo_data.Configurations))
 
                 self[id] = value
 
             value = self[id]
 
-            if configurations is None:
-                configurations = _RepoData.Create(customization_mod).Configurations
-                if not configurations:
-                    return
-
-            for config_name, config_info in six.iteritems(configurations):
+            for config_name, config_info in six.iteritems(repo_data.Configurations):
                 config_dependencies = config_info.Dependencies
 
                 if not config_dependencies and id != fundamental_repo_id:
@@ -893,6 +908,7 @@ class _RepositoriesMap(OrderedDict):
                             AddRepo( enum_result.Name,
                                      enum_result.Id,
                                      enum_result.Root,
+                                     CreateRepoData(enum_result.Root),
                                    )
                         else:
                             self[dependency_info.RepositoryId] = cls.Value( dependency_info.FriendlyName,
@@ -922,7 +938,7 @@ class _RepositoriesMap(OrderedDict):
         AddRepo( root_repo_name,
                  root_repo_id,
                  repository_root,
-                 configurations=repo_data.Configurations,
+                 repo_data,
                )
 
         if on_search_begin_func and not on_search_begin_func(self):
@@ -957,18 +973,23 @@ class _RepositoriesMap(OrderedDict):
                     if value.root is not None:
                         continue
                 
+                    enum_repo_data = CreateRepoData(enum_result.Root)
+
                     if value.Name != enum_result.Name:
                         warnings.append(( enum_result.Name, value.Name, value.Source ))
                         
                     value.Name = enum_result.Name
+
                     value.root = enum_result.Root
-                    
+                    value.configurations = list(six.iterkeys(enum_repo_data.Configurations))
+
                     if recurse:
                         AddRepo( enum_result.Name,
                                  enum_result.Id,
                                  enum_result.Root,
+                                 enum_repo_data,
                                )
-                
+
                     assert nonlocals.remaining_repos
                     nonlocals.remaining_repos -= 1
                 
@@ -1001,11 +1022,19 @@ class _RepositoriesMap(OrderedDict):
         visited = set()
         
         # ----------------------------------------------------------------------
-        def Traverse(value, configuration):
+        def Traverse(value, config_name):
             visited.add(value.Id)
         
-            if configuration in value.dependencies:
-                for child_id, child_configuration in value.dependencies[configuration]:
+            if value.root and config_name not in value.configurations:
+                raise Exception("The configuration '{}' specified by '{}' is not valid for '{} <{}>' in '{}'".format( config_name,
+                                                                                                                      value.Source,
+                                                                                                                      value.Name,
+                                                                                                                      value.Id,
+                                                                                                                      value.root,
+                                                                                                                    ))
+
+            if config_name in value.dependencies:
+                for child_id, child_configuration in value.dependencies[config_name]:
                     assert child_id in self, child_id
                     child_value = self[child_id]
         
@@ -1014,8 +1043,8 @@ class _RepositoriesMap(OrderedDict):
         # ----------------------------------------------------------------------
         
         for root in [ value for value in six.itervalues(self) if not value.dependents ]:
-            for configuration in six.iterkeys(root.dependencies):
-                Traverse(root, configuration)
+            for config_name in six.iterkeys(root.dependencies):
+                Traverse(root, config_name)
         
         # Remove values that were not visited
         for id in list(six.iterkeys(self)):
@@ -1195,17 +1224,18 @@ class _RepositoriesMap(OrderedDict):
                 for result in Impl(True):
                     yield result
             
-                # If here, look at other drive locations
-                import win32api
-                import win32file
+                if not required_ancestor_dir:
+                    # If here, look at other drive locations
+                    import win32api
+                    import win32file
             
-                # <Module 'win32api' has not 'GetLogicalDriveStrings' member, but source is unavailable. Consider adding this module to extension-pkg-whitelist if you want to perform analysis based on run-time introspection of living objects.> pylint: disable = I1101
+                    # <Module 'win32api' has not 'GetLogicalDriveStrings' member, but source is unavailable. Consider adding this module to extension-pkg-whitelist if you want to perform analysis based on run-time introspection of living objects.> pylint: disable = I1101
             
-                for drive in [ drive for drive in win32api.GetLogicalDriveStrings().split('\000') if drive and win32file.GetDriveType(drive) == win32file.DRIVE_FIXED ]:
-                    PushSearchItem(drive)
+                    for drive in [ drive for drive in win32api.GetLogicalDriveStrings().split('\000') if drive and win32file.GetDriveType(drive) == win32file.DRIVE_FIXED ]:
+                        PushSearchItem(drive)
             
-                for result in Impl(False):
-                    yield result
+                    for result in Impl(False):
+                        yield result
             
             else:
                 for result in Impl(False):
@@ -1303,11 +1333,6 @@ def _SimpleFuncImpl( callback,              # def Func(output_stream, repo_map) 
             return repo_map
 
         # ----------------------------------------------------------------------
-        nonlocals = CommonEnvironmentImports.CommonEnvironment.Nonlocals( display_template=None,
-                                                                          display_cols=None,
-                                                                        )
-
-        # ----------------------------------------------------------------------
         DisplayInfo                         = namedtuple( "DisplayInfo",
                                                           [ "Id",
                                                             "Configuration",
@@ -1361,26 +1386,48 @@ def _SimpleFuncImpl( callback,              # def Func(output_stream, repo_map) 
             if added_line:
                 lines = lines[1:]
 
-            if nonlocals.display_template is None:
-                max_length = len(max(lines, key=len))
+            resolved_display_infos = []
+            max_configuration_name_length = 0
+            max_location_length = 0
+            max_uri_length = 0
 
-                nonlocals.display_cols = [ max_length, 20, 32, 50, 45, ]
-                nonlocals.display_template = "{{0:<{0}}}  {{1:<{1}}}  {{2:<{2}}}  {{3:<{3}}}  {{4:<{4}}}".format(*nonlocals.display_cols)
+            for display_info in display_infos:
+                configuration = display_info.Configuration or "<default>"
+                max_configuration_name_length = max(max_configuration_name_length, len(configuration))
+
+                location = display_info.Root or "N/A"
+                max_location_length = max(max_location_length, len(location))
+
+                uri = (display_info.GetCloneUri(scm) if display_info.GetCloneUri else None) or "N/A"
+                max_uri_length = max(max_uri_length, len(uri))
+
+                resolved_display_infos.append(( configuration, 
+                                                display_info.Id,
+                                                location,
+                                                uri,
+                                              ))
+
+            # Space is tight here, so minimize the display width
+            display_cols = [ max(len("Repository"), len(max(lines, key=len))), 
+                             max(len("Configuration"), max_configuration_name_length),
+                             max(len("Id"), 32), 
+                             max(len("Location"), max_location_length), 
+                             max(len("Clone Uri"), max_uri_length), 
+                           ]
+
+            display_template = "{{0:<{0}}}  {{1:<{1}}}  {{2:<{2}}}  {{3:<{3}}}  {{4}}".format(*display_cols)
 
             dm.stream.write(textwrap.dedent(
                 """\
                 {}
                 {}
                 {}
-                """).format( nonlocals.display_template.format("Repository", "Configuration", "Id", "Location", "Clone Uri"),
-                             nonlocals.display_template.format(*[ '-' * col_size for col_size in nonlocals.display_cols ]),
-                             '\n'.join([ nonlocals.display_template.format( line,
-                                                                            display_infos[index].Configuration or "<default>",
-                                                                            display_infos[index].Id,
-                                                                            display_infos[index].Root or "N/A",
-                                                                            (display_infos[index].GetCloneUri(scm) if display_infos[index].GetCloneUri else None) or "N/A",
-                                                                          )
-                                         for index, line in enumerate(lines)
+                """).format( display_template.format("Repository", "Configuration", "Id", "Location", "Clone Uri"),
+                             display_template.format(*[ '-' * col_size for col_size in display_cols ]),
+                             '\n'.join([ display_template.format( line,
+                                                                  *resolved_display_info,
+                                                                )
+                                         for line, resolved_display_info in zip(lines, resolved_display_infos)
                                        ]),
                            ))
 

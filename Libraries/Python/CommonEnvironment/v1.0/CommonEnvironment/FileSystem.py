@@ -680,6 +680,3 @@ def _ProcessWalkArgs(include_items, exclude_items):
     # ----------------------------------------------------------------------
 
     return Impl
-
-
-# TODO: CopyTree
