@@ -395,10 +395,11 @@ def _SetupRecursive( output_stream,
                                       ) as dm:
             dm.stream.write("\n\n")
 
-            command_line_template = "{cmd}{debug}{verbose} {{}}".format( cmd=CommonEnvironmentImports.CurrentShell.CreateScriptName(Constants.SETUP_ENVIRONMENT_NAME),
-                                                                         debug='' if not debug else " /debug",
-                                                                         verbose='' if not verbose else " /verbose",
-                                                                       )
+            command_line_template = "{source}{cmd}{debug}{verbose} {{}}".format( source="./" if CommonEnvironmentImports.CurrentShell.CategoryName == "Linux" else '',
+                                                                                 cmd=CommonEnvironmentImports.CurrentShell.CreateScriptName(Constants.SETUP_ENVIRONMENT_NAME),
+                                                                                 debug='' if not debug else " /debug",
+                                                                                 verbose='' if not verbose else " /verbose",
+                                                                               )
 
             setup_error_variable_name = "_setup_error"
 
@@ -1332,11 +1333,6 @@ def _SimpleFuncImpl( callback,              # def Func(output_stream, repo_map) 
             return repo_map
 
         # ----------------------------------------------------------------------
-        nonlocals = CommonEnvironmentImports.CommonEnvironment.Nonlocals( display_template=None,
-                                                                          display_cols=None,
-                                                                        )
-
-        # ----------------------------------------------------------------------
         DisplayInfo                         = namedtuple( "DisplayInfo",
                                                           [ "Id",
                                                             "Configuration",
@@ -1390,26 +1386,48 @@ def _SimpleFuncImpl( callback,              # def Func(output_stream, repo_map) 
             if added_line:
                 lines = lines[1:]
 
-            if nonlocals.display_template is None:
-                max_length = len(max(lines, key=len))
+            resolved_display_infos = []
+            max_configuration_name_length = 0
+            max_location_length = 0
+            max_uri_length = 0
 
-                nonlocals.display_cols = [ max_length, 20, 32, 50, 45, ]
-                nonlocals.display_template = "{{0:<{0}}}  {{1:<{1}}}  {{2:<{2}}}  {{3:<{3}}}  {{4:<{4}}}".format(*nonlocals.display_cols)
+            for display_info in display_infos:
+                configuration = display_info.Configuration or "<default>"
+                max_configuration_name_length = max(max_configuration_name_length, len(configuration))
+
+                location = display_info.Root or "N/A"
+                max_location_length = max(max_location_length, len(location))
+
+                uri = (display_info.GetCloneUri(scm) if display_info.GetCloneUri else None) or "N/A"
+                max_uri_length = max(max_uri_length, len(uri))
+
+                resolved_display_infos.append(( configuration, 
+                                                display_info.Id,
+                                                location,
+                                                uri,
+                                              ))
+
+            # Space is tight here, so minimize the display width
+            display_cols = [ max(len("Repository"), len(max(lines, key=len))), 
+                             max(len("Configuration"), max_configuration_name_length),
+                             max(len("Id"), 32), 
+                             max(len("Location"), max_location_length), 
+                             max(len("Clone Uri"), max_uri_length), 
+                           ]
+
+            display_template = "{{0:<{0}}}  {{1:<{1}}}  {{2:<{2}}}  {{3:<{3}}}  {{4}}".format(*display_cols)
 
             dm.stream.write(textwrap.dedent(
                 """\
                 {}
                 {}
                 {}
-                """).format( nonlocals.display_template.format("Repository", "Configuration", "Id", "Location", "Clone Uri"),
-                             nonlocals.display_template.format(*[ '-' * col_size for col_size in nonlocals.display_cols ]),
-                             '\n'.join([ nonlocals.display_template.format( line,
-                                                                            display_infos[index].Configuration or "<default>",
-                                                                            display_infos[index].Id,
-                                                                            display_infos[index].Root or "N/A",
-                                                                            (display_infos[index].GetCloneUri(scm) if display_infos[index].GetCloneUri else None) or "N/A",
-                                                                          )
-                                         for index, line in enumerate(lines)
+                """).format( display_template.format("Repository", "Configuration", "Id", "Location", "Clone Uri"),
+                             display_template.format(*[ '-' * col_size for col_size in display_cols ]),
+                             '\n'.join([ display_template.format( line,
+                                                                  *resolved_display_info,
+                                                                )
+                                         for line, resolved_display_info in zip(lines, resolved_display_infos)
                                        ]),
                            ))
 
