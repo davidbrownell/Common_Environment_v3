@@ -511,7 +511,7 @@ def GetChangeInfo( change,
 # ----------------------------------------------------------------------
 @_SCMDocstringDecorator(SourceControlManagement.AddFiles)
 @CommandLine.EntryPoint
-@CommandLine.Constraints( file=CommandLine.FilenameTypeInfo(arity='*'),
+@CommandLine.Constraints( filename=CommandLine.FilenameTypeInfo(arity='*'),
                           recurse=CommandLine.BoolTypeInfo(arity='?'),
                           include_re=CommandLine.StringTypeInfo(arity='*'),
                           exclude_re=CommandLine.StringTypeInfo(arity='*'),
@@ -519,7 +519,7 @@ def GetChangeInfo( change,
                           scm=CommandLine.EnumTypeInfo(_SCM_NAMES, arity='?'),
                           output_stream=None,
                         )
-def AddFiles( file=None,
+def AddFiles( filename=None,
               recurse=None,
               include_re=None,
               exclude_re=None,
@@ -528,7 +528,8 @@ def AddFiles( file=None,
               output_stream=sys.stdout,
               verbose=False,
             ):
-    files = file; del file
+    files = filename; del filename
+    
     include_res = include_re; del include_re
     exclude_res = exclude_re; del exclude_re
 
