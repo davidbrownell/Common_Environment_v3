@@ -45,7 +45,7 @@ inflect                                     = inflect_mod.engine()
 class ConditionalInvocationQueryMixin(InvocationQueryMixin):
 
     # Derived classes can override this value to potentially force generation
-    ShouldGenerate                          = False
+    AlwaysGenerate                          = False
 
     # ----------------------------------------------------------------------
     @classmethod
@@ -209,7 +209,7 @@ class ConditionalInvocationQueryMixin(InvocationQueryMixin):
 
         # ----------------------------------------------------------------------
         def ShouldGenerate():
-            return getattr(cls, "ShouldGenerate", None)
+            return getattr(cls, "AlwaysGenerate", None)
 
         # ----------------------------------------------------------------------
 

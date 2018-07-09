@@ -225,6 +225,13 @@ class SourceControlManagement(Interface):
         raise Exception("Abstract method")
 
     # ----------------------------------------------------------------------
+    @staticmethod
+    @abstractmethod
+    def GetWorkingChanges(repo_root):
+        """Returns a list of all files that have changed (but are not yet committed) in the local working directory."""
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
     GetWorkingChangeStatusResult            = namedtuple( "GetWorkingChangeStatusResult",
                                                           [ "untracked",
                                                             "working",

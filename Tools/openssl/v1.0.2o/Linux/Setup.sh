@@ -20,14 +20,10 @@ pushd $setup_openssl_dir > /dev/null        # +dir
 
 echo "Setting up openssl v1.0.2o..."
 
-# Link to the originally compile location
-[[ -d /opt/CommonEnvironment/openssl ]] || mkdir -p "/opt/CommonEnvironment/openssl"
-ln -fsd $setup_openssl_dir /opt/CommonEnvironment/openssl/1.0.2o
-
-echo "  Unpacking content..."
-
 if [[ ! -d ./bin ]]
 then 
+    echo "  Unpacking content..."
+
     temp_dir=/tmp/openssl
 
     [[ ! -d $temp_dir ]] || rm -Rfd $temp_dir
@@ -40,6 +36,13 @@ then
 
     popd > /dev/null                        # -temp_dir
     rmdir $temp_dir
+fi
+
+# Link to the originally compile location
+if [[ ! -e /opt/CommonEnvironment/openssl/1.0.2o ]]
+then
+    [[ -d /opt/CommonEnvironment/openssl ]] || mkdir -p "/opt/CommonEnvironment/openssl"
+    ln -fsd $setup_openssl_dir /opt/CommonEnvironment/openssl/1.0.2o
 fi
 
 echo "DONE!"

@@ -164,7 +164,7 @@ class LinuxShellImpl(Shell):
         # ----------------------------------------------------------------------
         @staticmethod
         def OnExitOnError(command):
-            variable_name = "${}".format(command.variable_name) if command.variable_name else "$?"
+            variable_name = "${}".format(command.VariableName) if command.VariableName else "$?"
 
             return textwrap.dedent(
                 """\

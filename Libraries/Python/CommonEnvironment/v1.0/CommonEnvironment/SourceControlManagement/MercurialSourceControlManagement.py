@@ -282,6 +282,22 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
 
     # ----------------------------------------------------------------------
     @classmethod
+    def GetWorkingChanges(cls, repo_root):
+        result, output = cls.Execute(repo_root, 'hg status')
+        assert result == 0, (result, output)
+
+        regex = re.compile(r"^(?P<type>\S+)\s+(?P<filename>.+)$")
+        
+        results = []
+        for line in output.split('\n'):
+            match = regex.match(line)
+            if match:
+                results.append(os.path.join(repo_root, match.group("filename")))
+
+        return results
+
+    # ----------------------------------------------------------------------
+    @classmethod
     def GetChangeInfo(cls, repo_root, change):
         result, output = cls.Execute(repo_root, 'hg log --rev "{}"'.format(change))
         assert result == 0, (result, output)

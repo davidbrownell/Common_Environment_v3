@@ -133,7 +133,7 @@ fi
 # If here, we are in a verified activation scenario. Set the previous value to this value, knowing that that is the value
 # that will be committed.
 previous_fundamental=$DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL
- 
+
 # ----------------------------------------------------------------------
 # |  Only allow one activated environment at a time (unless we are activating a mixin repo)
 if [[ $should_continue == 1 && "$DEVELOPMENT_ENVIRONMENT_REPOSITORY" != "" && "$DEVELOPMENT_ENVIRONMENT_REPOSITORY" != "`pwd`" ]]
@@ -251,7 +251,12 @@ then
 fi
 
 unset PYTHONPATH
-export DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=$previous_fundamental
+
+if [[ "$previous_fundamental" != "" ]]; then
+    export DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=$previous_fundamental
+else
+    unset DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL
+fi
 
 if [[ $changed_dir == 1 ]]
 then
