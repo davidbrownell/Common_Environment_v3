@@ -18,11 +18,13 @@ import inspect
 import json
 import os
 import re
+import shutil
 import sys
 import textwrap
 import time
 import uuid
 
+import inflect as inflect_mod
 import six
 
 from CommonEnvironment.CallOnExit import CallOnExit
@@ -38,6 +40,8 @@ _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
+inflect                                     = inflect_mod.engine()
+
 # ----------------------------------------------------------------------
 def CreateRepositoryBuildFunc( repository_name,
                                repository_uri,
@@ -50,6 +54,9 @@ def CreateRepositoryBuildFunc( repository_name,
                                repository_setup_configurations=None,
                                repository_activation_configurations=None,
                                repository_source_excludes=None,
+                               expose_ports=None,                           # { "<activation name>" : [ port, ... ], ... }
+                               commands=None,                               # { "<activation name>" : [ "<cmd>", ... ], ... }
+                               post_build_func=None,                        # def Func(output_stream) -> result code
                              ):
     """
     Creates a Build function that is able to build a docker image for Common_Environment-
@@ -78,6 +85,8 @@ def CreateRepositoryBuildFunc( repository_name,
                output_stream=sys.stdout,
                preserve_ansi_escape_sequences=False,
              ):
+        """Builds a docker image"""
+
         with StreamDecorator.GenerateAnsiSequenceStream( output_stream,
                                                          preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
                                                        ) as output_stream:
@@ -116,6 +125,9 @@ def CreateRepositoryBuildFunc( repository_name,
                     # Get the source
                     scm = GetAnySCM(calling_dir)
                     
+                    if force:
+                        FileSystem.RemoveTree(source_dir)
+
                     if not os.path.isdir(source_dir):
                         base_dm.stream.write("Cloning source...")
                         with base_dm.stream.DoneManager() as this_dm:
@@ -160,6 +172,23 @@ def CreateRepositoryBuildFunc( repository_name,
                                     this_dm.stream.write(output)
                                     return this_dm.result
                     
+                    if os.path.isdir(repository_uri):
+                        repository_dir = os.path.realpath(repository_uri)
+                        
+                        # Copy any working changes as well
+                        changed_filenames = scm.GetWorkingChanges(repository_dir)
+                        if changed_filenames:
+                            has_changes = True
+
+                            base_dm.stream.write("Copying {}...".format(inflect.no("working change", len(changed_filenames))))
+                            with base_dm.stream.DoneManager():
+                                for changed_filename in changed_filenames:
+                                    assert changed_filename.startswith(repository_dir), (changed_filename, repository_dir)
+                                    dest_filename = os.path.join(source_dir, changed_filename[len(repository_dir):].lstrip(os.path.sep))
+
+                                    FileSystem.MakeDirs(os.path.dirname(dest_filename))
+                                    shutil.copyfile(changed_filename, dest_filename)
+
                     # Filter the source
                     filtered_source_dir = os.path.join(base_image_dir, "FilteredSource")
 
@@ -207,14 +236,20 @@ def CreateRepositoryBuildFunc( repository_name,
                         setup_statement = "./Setup.sh{}".format('' if not repository_setup_configurations else ' {}'.format(' '.join([ '"/configuration={}"'.format(configuration) for configuration in repository_setup_configurations ])))
                     
                         if repository_name == "Common_Environment":
-                            commands = textwrap.dedent(
+                            statements = textwrap.dedent(
                                             """\
                                             RUN link /usr/bin/python3 /usr/bin/python
                     
+                                            # Create a new user
                                             RUN adduser --disabled-password --disabled-login --gecos "" "{username}" \\
                                              && addgroup "{groupname}" \\
                                              && adduser "{username}" "{groupname}"
                     
+                                            # Create a new group that has permissions to modify /etc/ld.so.conf.d
+                                            RUN addgroup "ldconfig_owners" \\
+                                             && adduser root ldconfig_owners \\
+                                             && adduser "{username}" ldconfig_owners
+
                                             RUN cd {image_code_dir} \\
                                              && {setup_statement}
                     
@@ -236,13 +271,13 @@ def CreateRepositoryBuildFunc( repository_name,
                                             . {image_code_base}/Common/Environment/Activate.sh python36
                                             cd {image_code_dir}
                                             {setup_statement}
-                                            rm --recursive {image_code_base}/Common/Environment/Generated/Linux/Default
+                                            rm --recursive {image_code_base}/Common/Environment/Generated/Linux/python36
                                             """).format( image_code_base=image_code_base,
                                                          image_code_dir=image_code_dir,
                                                          setup_statement=setup_statement,
                                                        ))
                     
-                            commands = textwrap.dedent(
+                            statements = textwrap.dedent(
                                             """\
                                             COPY SetupEnvironmentImpl.sh /tmp/SetupEnvironmentImpl.sh
                     
@@ -257,13 +292,24 @@ def CreateRepositoryBuildFunc( repository_name,
                     
                                 COPY FilteredSource {image_code_dir}
                     
-                                {commands}
+                                {statements}
                     
+                                # Set permissions on the source
                                 RUN chown -R {username}:{groupname} {image_code_dir} \\
                                  && chmod g-s {image_code_dir}/Generated/Linux \\
                                  && chmod 0750 {image_code_dir}/Generated/Linux \\
                                  && chmod -R o-rwx {image_code_dir}
                     
+                                # Set permissions ldconfig dir
+                                RUN chown root:ldconfig_owners /etc \\
+                                 && chown -R root:ldconfig_owners /etc/ld.so.conf.d \\
+                                 && chown root:ldconfig_owners /etc/ld.so.cache \\
+                                 && chown root:ldconfig_owners /etc/ld.so.conf \\
+                                 && chmod g+rw /etc \\
+                                 && chmod -R g+rw /etc/ld.so.conf.d \\
+                                 && chmod g+rw /etc/ld.so.cache \\
+                                 && chmod g+rw /etc/ld.so.conf
+
                                 # Cleanup
                                 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
                     
@@ -274,7 +320,7 @@ def CreateRepositoryBuildFunc( repository_name,
                                 CMD [ "/sbin/my_init", "/sbin/setuser", "{username}", "bash" ]
                     
                                 """).format( base_image=base_docker_image,
-                                             commands=commands,
+                                             statements=statements,
                                              username=image_username,
                                              groupname=image_groupname,
                                              image_code_dir=image_code_dir,
@@ -284,7 +330,6 @@ def CreateRepositoryBuildFunc( repository_name,
                     base_dm.stream.write("Building Docker image...")
                     with base_dm.stream.DoneManager() as this_dm:
                         tags = [ "base",
-                                 "base_latest",
                                ]
 
                         if now_tag:
@@ -321,7 +366,7 @@ def CreateRepositoryBuildFunc( repository_name,
                                 # Activate the image so we can extract the changes
                                 activated_dm.stream.write("Activating...")
                                 with activated_dm.stream.DoneManager(suffix='\n') as this_dm:
-                                    command_line = 'docker run -it --name "{container_name}" "{image_name}:base_latest" /sbin/my_init -- /sbin/setuser "{username}" bash -c "cd {image_code_dir} && . ./Activate.sh {configuration} && pushd {image_code_base}/Common/Environment && python -m RepositoryBootstrap.EnvironmentDiffs After /decorate' \
+                                    command_line = 'docker run -it --name "{container_name}" "{image_name}:base" /sbin/my_init -- /sbin/setuser "{username}" bash -c "cd {image_code_dir} && . ./Activate.sh {configuration} && pushd {image_code_base}/Common/Environment && python -m RepositoryBootstrap.EnvironmentDiffs After /decorate' \
                                                         .format( container_name=temp_container_name,
                                                                  image_name=docker_image_name,
                                                                  configuration=configuration or '',
@@ -392,7 +437,8 @@ def CreateRepositoryBuildFunc( repository_name,
 
                                     with CallOnExit(RemoveTempImage):
                                         # Create a new dockerfile. The temp image has all the harddrive changes
-                                        # made during activation, but doesn't have the environment changes.
+                                        # made during activation, but doesn't have the environment changes -
+                                        # add those now.
                                         activated_dm.stream.write("Creating dockerfile...")
                                         with activated_dm.stream.DoneManager() as this_dm:
                                             with open(os.path.join(this_activated_dir, "Dockerfile"), 'w') as f:
@@ -403,7 +449,7 @@ def CreateRepositoryBuildFunc( repository_name,
                                                     ENV {env}
 
                                                     # By default, run a bash prompt as the source code user
-                                                    CMD [ "/sbin/my_init", "/sbin/setuser", "{username}", "bash" ]
+                                                    CMD [ "/sbin/my_init", "/sbin/setuser", "{username}", {commands} ]
 
                                                     LABEL maintainer="{maintainer}"
 
@@ -412,12 +458,15 @@ def CreateRepositoryBuildFunc( repository_name,
                                                                  image_code_dir=image_code_dir,
                                                                  maintainer=maintainer,
                                                                  username=image_username,
+                                                                 commands=', '.join([ '"{}"'.format(command) for command in (commands[configuration] if commands and configuration in commands else [ "bash", ]) ]),
                                                                ))
+
+                                                if expose_ports and configuration in expose_ports:
+                                                    f.write("{}\n".format('\n'.join([ "EXPOSE {}".format(port) for port in expose_ports[configuration] ])))
 
                                         activated_dm.stream.write("Building Docker image...")
                                         with activated_dm.stream.DoneManager() as this_dm:
-                                            tags = [ "latest",
-                                                   ]
+                                            tags = []
 
                                             if now_tag:
                                                 tags.append(now_tag)
@@ -437,6 +486,9 @@ def CreateRepositoryBuildFunc( repository_name,
                                             if this_dm.result != 0:
                                                 return this_dm.result
                                 
+                if post_build_func:
+                    dm.result = post_build_func(dm.stream) or 0
+
                 return dm.result
 
     # ----------------------------------------------------------------------
@@ -453,7 +505,7 @@ def CreateRepositoryCleanFunc():
                             )
     def Clean( output_stream=sys.stdout,
              ):
-        """Cleans previously build content."""
+        """Cleans previously built content."""
 
         potential_dir = os.path.join(calling_dir, "Generated")
 

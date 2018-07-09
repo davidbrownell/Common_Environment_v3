@@ -304,6 +304,22 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
 
     # ----------------------------------------------------------------------
     @classmethod
+    def GetWorkingChanges(cls, repo_root):
+        result, output = cls.Execute(repo_root, 'git status --short')
+        assert result == 0, (result, output)
+
+        regex = re.compile("^(?P<type>..)\s+(?P<filename>.+)$")
+        
+        results = []
+        for line in output.split('\n'):
+            match = regex.match(line)
+            if match:
+                results.append(os.path.join(repo_root, match.group("filename").replace('/', os.path.sep)))
+                
+        return results
+        
+    # ----------------------------------------------------------------------
+    @classmethod
     def GetChangeInfo(cls, repo_root, change):
         # Not the spaces to work around issues with git
         template = " %aN <%ae> %n %cd %n %s"
