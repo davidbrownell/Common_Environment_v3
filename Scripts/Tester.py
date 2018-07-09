@@ -1541,7 +1541,7 @@ def MatchAllTests( input_dir,
         for index, configuration in enumerate(six.itervalues(CONFIGURATIONS)):
             dm.stream.write("Matching '{}' ({} of {})...".format( configuration.Compiler.Name,
                                                                   index + 1,
-                                                                  len(COMPILERS),
+                                                                  len(CONFIGURATIONS),
                                                                 ))
             with dm.stream.DoneManager(line_prefix="    ") as this_dm:
                 this_dm.result = MatchTests( input_dir,
