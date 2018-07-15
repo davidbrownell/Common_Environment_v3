@@ -59,7 +59,7 @@ class EnumTypeInfo(TypeInfo):
 
     # ----------------------------------------------------------------------
     def __repr__(self):
-        return CommonEnvironment.ObjectReprImpl(self, include_private=False)
+        return CommonEnvironment.ObjectReprImpl(self)
 
     # ----------------------------------------------------------------------
     @property

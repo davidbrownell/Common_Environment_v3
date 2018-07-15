@@ -84,16 +84,13 @@ class LinuxShellImpl(Shell):
         # ----------------------------------------------------------------------
         @staticmethod
         def OnSymbolicLink(command):
-            d = { "link" : command.LinkFilename,
-                  "target" : command.Target,
-                }
-
             return textwrap.dedent(
                 """\
-                {remove}ln -fs{dir_flag} "{target}" "{link}"
-                """).format( remove='' if not command.RemoveExisting else 'rm -f "{link}"\n'.format(**d),
+                ln -{force_flag}s{dir_flag} "{target}" "{link}"
+                """).format( force_flag='' if not command.RemoveExisting else 'f',
                              dir_flag='d' if command.IsDir else '',
-                             **d
+                             target=command.Target,
+                             link=command.LinkFilename,
                            )
     
         # ----------------------------------------------------------------------

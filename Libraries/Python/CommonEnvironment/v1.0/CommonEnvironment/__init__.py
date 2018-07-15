@@ -106,7 +106,7 @@ def Describe( item,                         # str, dict, iterable, obj
     # ----------------------------------------------------------------------
     def Impl(item, indentation_str):
         if isinstance(item, six.string_types):
-            output_stream.write("{}\n".format(item))
+            output_stream.write("{}\n".format(('\n{}'.format(indentation_str)).join(item.split('\n'))))
         elif isinstance(item, dict):
             OutputDict(item, indentation_str)
         elif isinstance(item, list):
@@ -117,30 +117,32 @@ def Describe( item,                         # str, dict, iterable, obj
                 try:
                     # Is the item iterable?
                     potential_attribute_name = next(iter(item))
-
-                    # Is the item dict-like?
-                    try:
-                        ignore_me = item[potential_attribute_name]
-                        OutputDict(item, indentation_str)
-                    except TypeError:
-                        # No, it isn't
-                        OutputList(item, indentation_str)
-
-                    return True
-
                 except (TypeError, IndexError, StopIteration):
                     # Not iterable
                     return False
+
+                # Is the item dict-like?
+                try:
+                    ignore_me = item[potential_attribute_name]
+                    OutputDict(item, indentation_str)
+                except (TypeError, IndexError):
+                    # No, it isn't
+                    OutputList(item, indentation_str)
+
+                return True
 
             # ----------------------------------------------------------------------
 
             if not Display():
                 content = str(item).strip()
-
+                
                 if "<class" not in content:
                     content += "{}{}".format( '\n' if content.count('\n') > 1 else ' ',
                                               type(item),
                                             )
+
+                if " object at " in content:
+                    content += "\n\n{}".format(ObjectReprImpl(item))
 
                 output_stream.write("{}\n".format(('\n{}'.format(indentation_str)).join(content.split('\n'))))
 
@@ -159,7 +161,7 @@ def ObjectToDict(obj):
 # ----------------------------------------------------------------------
 def ObjectReprImpl( obj, 
                     include_methods=False,
-                    include_private=True,
+                    include_private=False,
                   ):
     """\
     Implementation of an object's __repr__ method.
@@ -170,7 +172,11 @@ def ObjectReprImpl( obj,
     """
 
     d = ObjectToDict(obj)
-
+    
+    # Displaying builtins prevents anything from being displayed after it
+    if "f_builtins" in d:
+        del d["f_builtins"]
+    
     if not include_methods or not include_private:
         for k in list(six.iterkeys(d)):
             if not include_methods and callable(d[k]):

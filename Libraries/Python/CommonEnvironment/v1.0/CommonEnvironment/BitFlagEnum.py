@@ -33,9 +33,9 @@ class BitFlagEnum(IntFlag):
 
     Example:
         >>> class MyFlag(BitFlagEnum):
-            Value1 = auto()
-            Value2 = auto()
-            Value3 = auto()
+        ...      Value1 = auto()
+        ...      Value2 = auto()
+        ...      Value3 = auto()
         
         >>> MyFlag.Value1.value
         1
