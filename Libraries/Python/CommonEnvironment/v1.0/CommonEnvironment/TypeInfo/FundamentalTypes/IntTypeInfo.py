@@ -65,8 +65,8 @@ class IntTypeInfo(TypeInfo):
                 if max is None:
                     max = min + range
 
-            if max - min > range:
-                raise Exception("Invalid argument - 'min/max'")
+                if max - min > range:
+                    raise Exception("Invalid argument - 'min/max'")
 
         self.Min                            = min
         self.Max                            = max
