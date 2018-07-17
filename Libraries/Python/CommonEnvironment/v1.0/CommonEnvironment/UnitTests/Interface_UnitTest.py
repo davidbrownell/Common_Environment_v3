@@ -53,20 +53,24 @@ class InterfaceSuite(unittest.TestCase):
         # ----------------------------------------------------------------------
         class MyObject(self.MyIterface):
             @property
-            def Property(self): pass
+            @override
+            def Property(self): return 10
 
+            @override
             def Method(self, a, b): pass
 
             @staticmethod
+            @override
             def StaticMethod(a, b, c=None): pass
 
             @classmethod
+            @override
             def ClassMethod(cls, a, b): pass
 
         # ----------------------------------------------------------------------
 
         MyObject();
-        self.assertTrue(True);
+        self.assertEqual(MyObject().Property, 10);
 
     # ----------------------------------------------------------------------
     def test_MissingProperty(self):
@@ -138,12 +142,16 @@ class InterfaceSuite(unittest.TestCase):
         # ----------------------------------------------------------------------
         class MyObject(self.MyIterface):
             @property
+            @override
             def Property(self): pass
 
+            @override
             def Method(self, a, b): pass
 
+            @override
             def StaticMethod(self, a, b, c=None): pass
 
+            @override
             def ClassMethod(cls, a, b): pass
 
         # ----------------------------------------------------------------------
@@ -156,15 +164,19 @@ class InterfaceSuite(unittest.TestCase):
         # ----------------------------------------------------------------------
         class MyObject(self.MyIterface):
             @property
+            @override
             def Property(self): pass
 
             @staticmethod
+            @override
             def Method(a, b): pass
 
             @staticmethod
+            @override
             def StaticMethod(a, b, c=None): pass
 
             @staticmethod
+            @override
             def ClassMethod(a, b): pass
 
         # ----------------------------------------------------------------------
@@ -177,15 +189,19 @@ class InterfaceSuite(unittest.TestCase):
         # ----------------------------------------------------------------------
         class MyObject(self.MyIterface):
             @property
+            @override
             def Property(self): pass
 
             @classmethod
+            @override
             def Method(cls, a, b): pass
 
             @classmethod
+            @override
             def StaticMethod(cls, a, b, c=None): pass
 
             @classmethod
+            @override
             def ClassMethod(cls, a, b): pass
 
         # ----------------------------------------------------------------------
@@ -198,14 +214,18 @@ class InterfaceSuite(unittest.TestCase):
         # ----------------------------------------------------------------------
         class MyObject(self.MyIterface):
             @property
+            @override
             def Property(self): pass
 
+            @override
             def Method(self, *args, **kwargs): pass
 
             @staticmethod
+            @override
             def StaticMethod(*args, **kwargs): pass
 
             @classmethod
+            @override
             def ClassMethod(cls, *args, **kwargs): pass
 
         # ----------------------------------------------------------------------
@@ -294,14 +314,18 @@ class InterfaceSuite(unittest.TestCase):
         # ----------------------------------------------------------------------
         class MyObject(self.MyIterface):
             @property
+            @override
             def Property(self): pass
 
+            @override
             def Method(self, a, b, c=None): pass
 
             @staticmethod
+            @override
             def StaticMethod(a, b, c=None, d=10): pass
 
             @classmethod
+            @override
             def ClassMethod(cls, a, b, c="a string"): pass
 
         # ----------------------------------------------------------------------
@@ -395,12 +419,12 @@ class ExtensionMethodSuite(unittest.TestCase):
         @extensionmethod
         def ExtensionMethod(self): pass
 
-        @extensionmethod
         @staticmethod
+        @extensionmethod
         def StaticExtensionMethod(self): pass
 
-        @extensionmethod
         @classmethod
+        @extensionmethod
         def ClassExtensionMethod(self): pass
 
     # ----------------------------------------------------------------------
@@ -410,44 +434,62 @@ class ExtensionMethodSuite(unittest.TestCase):
         @extensionmethod
         def ExtensionMethod2(self): pass
 
-        @extensionmethod
         @staticmethod
+        @extensionmethod
         def StaticExtensionMethod2(self): pass
 
-        @extensionmethod
         @classmethod
+        @extensionmethod
         def ClassExtensionMethod2(self): pass
 
     # ----------------------------------------------------------------------
     def test_Base(self):
-        expected_prefixes = [ "Base.ExtensionMethod",
-                              "Base.StaticExtensionMethod",
-                              "Base.ClassExtensionMethod",
+        expected_prefixes = [ "ExtensionMethod",
+                              "StaticExtensionMethod",
+                              "ClassExtensionMethod",
                             ]
 
-        methods = self.Base().ExtensionMethods
+        methods = list(six.iterkeys(self.Base()._ExtensionItems))
 
         self.assertEqual(len(methods), len(expected_prefixes))
 
         for index, prefix in enumerate(expected_prefixes):
-            self.assertTrue(methods[index].startswith(prefix))
+            self.assertEqual(methods[index], prefix)
        
     # ----------------------------------------------------------------------
     def test_Derived(self):
-        expected_prefixes = [ "Derived.ExtensionMethod",
-                              "Derived.StaticExtensionMethod",
-                              "Derived.ClassExtensionMethod",
-                              "Derived.ExtensionMethod2",
-                              "Derived.StaticExtensionMethod2",
-                              "Derived.ClassExtensionMethod2",
+        expected_prefixes = [ "ExtensionMethod",
+                              "StaticExtensionMethod",
+                              "ClassExtensionMethod",
+                              "ExtensionMethod2",
+                              "StaticExtensionMethod2",
+                              "ClassExtensionMethod2",
                             ]
 
-        methods = self.Derived().ExtensionMethods
+        methods = list(six.iterkeys(self.Derived()._ExtensionItems))
         
         self.assertEqual(len(methods), len(expected_prefixes))
         
         for index, prefix in enumerate(expected_prefixes):
-            self.assertTrue(methods[index].startswith(prefix))
+            self.assertEqual(methods[index], prefix)
+
+    # ----------------------------------------------------------------------
+    def test_Errors(self):
+        class Base(Interface):
+            @extensionmethod
+            def Method(self): pass
+
+        class Derived(Base):
+            @override
+            def DoesNotExist(self): pass
+
+        self.assertRaises(InterfaceException, lambda: Derived())
+
+        class DoubleOverride(Base):
+            @extensionmethod
+            def Method(self): pass
+
+        self.assertRaises(InterfaceException, lambda: DoubleOverride())
 
 # ----------------------------------------------------------------------
 class StaticDerivedSuite(unittest.TestCase):

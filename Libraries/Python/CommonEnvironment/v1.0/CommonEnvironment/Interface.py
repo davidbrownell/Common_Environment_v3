@@ -22,6 +22,7 @@ import textwrap
 
 from collections import OrderedDict
 
+from enum import Enum
 import six
 
 # ----------------------------------------------------------------------
@@ -83,22 +84,39 @@ class Interface(object):
                 raise Exception("Abstract property")
 
         class Obj(MyInterface):
-            def Method(self, a, b):                     pass                # Good
-            def Method(self, a):                        pass                # ERROR: 'b' is missing
-            def Method(self, a, notB):                  pass                # ERROR: The parameter 'notB' is not named 'b'
+            @override
+            def Method(self, a, b):                     
+                pass                        # Good
 
-            @staticmethod def StaticMethod(a, b, c):    pass                # Good
-            @staticmethod def StaticMethod(a, b, c=int):pass                # ERROR: 'int' != 'None'
+            @override
+            def Method(self, a):                        
+                pass                        # ERROR: 'b' is missing
 
-            @property def Property(self):               pass                # Good
+            @override
+            def Method(self, a, notB):                  
+                pass                        # ERROR: The parameter 'notB' is not named 'b'
 
-        Obj.AbstractItems:                  All abstract items defined by the class
-        Obj.ExtensionMethods:               All extension methods made available by the class
+            @staticmethod 
+            @override
+            def StaticMethod(a, b, c):    
+                pass                        # Good
+
+            @staticmethod 
+            @override
+            def StaticMethod(a, b, c=int):
+                pass                        # ERROR: 'int' != 'None'
+
+            @property 
+            @override
+            def Property(self):               
+                pass                        # Good
+
+        Obj._AbstractItems:                 All abstract items defined by the class
+        Obj._ExtensionItems:                All extension items made available by the class
     """
 
     if __debug__:
-        __metaclass__ = abc.ABCMeta
-
+        __metaclass__                       = abc.ABCMeta
         _verified_types                     = set()
 
         # ----------------------------------------------------------------------
@@ -122,13 +140,12 @@ class Interface(object):
                     # ----------------------------------------------------------------------
                     # |  Public Types
 
-                    # Enumeration values used to indicate type (not using enum, as this code has to be
-                    # backwards compatible with 2.7).
-                    ( StaticMethodType,
-                      ClassMethodType,
-                      MethodType,
-                      PropertyType,
-                    ) = six.moves.range(4)
+                    # Enumeration values used to indicate type
+                    class Type(Enum):
+                        StaticMethod        = 1
+                        ClassMethod         = 2
+                        Method              = 3
+                        Property            = 4
 
                     # ----------------------------------------------------------------------
                     # <Too few public methods> pylint: disable = R0903
@@ -147,27 +164,29 @@ class Interface(object):
                                 item = item.__func__
 
                         if IsStaticMethod(item):
-                            typ = Entity.StaticMethodType
+                            typ = Entity.Type.StaticMethod
                         elif IsClassMethod(item):
-                            typ = Entity.ClassMethodType
+                            typ = Entity.Type.ClassMethod
                         elif IsStandardMethod(item):
-                            typ = Entity.MethodType
+                            typ = Entity.Type.Method
                         else:
-                            typ = Entity.PropertyType
+                            typ = Entity.Type.Property
+                            item = getattr(item, "fget", item)
 
                         self.Type               = typ
+                        self.Item               = item
                         self.FuncCode           = getattr(item, "__code__", None)
                         self.FuncDefaults       = getattr(item, "__defaults__", None)
                 
                     # ----------------------------------------------------------------------
                     def TypeString(self):
-                        if self.Type == Entity.StaticMethodType:
+                        if self.Type == Entity.Type.StaticMethod:
                             return "staticmethod"
-                        if self.Type == Entity.ClassMethodType:
+                        if self.Type == Entity.Type.ClassMethod:
                             return "classmethod"
-                        if self.Type == Entity.MethodType:
+                        if self.Type == Entity.Type.Method:
                             return "method"
-                        if self.Type == Entity.PropertyType:
+                        if self.Type == Entity.Type.Property:
                             return "property"
 
                         assert False, self.Type
@@ -188,7 +207,7 @@ class Interface(object):
 
                     # ----------------------------------------------------------------------
                     def GetParams(self):
-                        assert self.Type != Entity.PropertyType
+                        assert self.Type != Entity.Type.Property
 
                         params = OrderedDict()
 
@@ -198,7 +217,7 @@ class Interface(object):
                         for index, name in enumerate(var_names):
                             # Skip the 'self' or 'cls' value as they aren't interesting when
                             # it comes to argument comparison.
-                            if index == 0 and self.Type in [ Entity.MethodType, Entity.ClassMethodType, ]:
+                            if index == 0 and self.Type in [ Entity.Type.Method, Entity.Type.ClassMethod, ]:
                                 continue
 
                             if index >= default_value_offset:
@@ -211,8 +230,9 @@ class Interface(object):
                 # ----------------------------------------------------------------------
 
                 # Get all the abstract items and make that information available via the class type
-                abstracts = OrderedDict()
-                extension_methods = {}
+                abstracts = {}
+                extensions = {}
+                errors = []
 
                 for base in reversed(inspect.getmro(cls)):
                     these_abstracts = []
@@ -221,11 +241,21 @@ class Interface(object):
                         if getattr(member_info, "__extension_method", False):
                             entity = Entity(member_info)
 
-                            extension_methods[entity.LocationString()] = "{}.{}".format( type(instance).__name__,
-                                                                                         member_name,
-                                                                                       )
+                            if ( member_name in extensions and 
+                                 ( entity.FuncCode.co_filename != extensions[member_name].FuncCode.co_filename or 
+                                   entity.FuncCode.co_firstlineno != extensions[member_name].FuncCode.co_firstlineno
+                                 )
+                               ):
+                                errors.append("The {} '{}' has already been extended; did you mean 'override'? (new: {}, previous: {})".format( entity.TypeString(),
+                                                                                                                                                member_name,
+                                                                                                                                                entity.LocationString(),
+                                                                                                                                                extensions[member_name].LocationString(),
+                                                                                                                                              ))
+                                continue
 
-                        if getattr(member_info, "__isabstractmethod__", False):
+                            extensions[member_name] = entity
+
+                        elif getattr(member_info, "__isabstractmethod__", False):
                             these_abstracts.append(member_name)
 
                             if member_name not in abstracts:
@@ -233,16 +263,36 @@ class Interface(object):
                                 
                     if these_abstracts and base not in Interface._verified_types:
                         Interface._verified_types.add(base)
-                        base.AbstractItems = these_abstracts
 
-                extension_method_keys = list(six.iterkeys(extension_methods))
-                extension_method_keys.sort()
+                        base._AbstractItems = these_abstracts
 
-                cls.ExtensionMethods = [ "{0:<50} {1}".format( extension_methods[emk],
-                                                               emk,
-                                                             )
-                                         for emk in extension_method_keys
-                                       ]
+                if errors:
+                    raise InterfaceException(errors)
+
+                # Sort the dictionaries by definition location to ensure a stable sort
+
+                # ----------------------------------------------------------------------
+                def SortDict(d):
+                    kvps = list(six.iteritems(d))
+
+                    kvps.sort(key=lambda kvp: ( kvp[1].FuncCode.co_filename,
+                                                kvp[1].FuncCode.co_firstlineno,
+                                                kvp[0],
+                                              ))
+
+                    result = OrderedDict()
+
+                    for k, v in kvps:
+                        result[k] = v
+
+                    return result
+
+                # ----------------------------------------------------------------------
+
+                abstracts = SortDict(abstracts)
+                extensions = SortDict(extensions)
+
+                cls._ExtensionItems = extensions
 
 
                 # Ensure that all abstracts exist
@@ -250,7 +300,7 @@ class Interface(object):
 
                 # ----------------------------------------------------------------------
                 def HasEntity(abstract_name, abstract_entity):
-                    if abstract_entity.Type == Entity.MethodType:
+                    if abstract_entity.Type == Entity.Type.Method:
                         value = getattr(cls, abstract_name, None)
                         if value is None:
                             return False
@@ -275,18 +325,22 @@ class Interface(object):
                 if errors:
                     raise InterfaceException(errors)
 
+                # Create entity values for all of the derived items
+                concrete_entites = []
+
+                for abstract_name in six.iterkeys(abstracts):
+                    value = getattr(cls, abstract_name)
+                    concrete_entites.append(Entity(value))
+
                 # Ensure that all abstracts are of the correct type
                 errors = []
 
-                for abstract_name, abstract_entity in six.iteritems(abstracts):
-                    concrete_value = getattr(cls, abstract_name)
-                    concrete_entity = Entity(concrete_value)
-
+                for (abstract_name, abstract_entity), concrete_entity in zip(six.iteritems(abstracts), concrete_entites):
                     # Check if the types are the same. Allow for an abstract static
                     # method to be fulfilled by a standard method.
                     if not ( abstract_entity.Type == concrete_entity.Type or
-                             ( abstract_entity.Type in [ Entity.StaticMethodType, Entity.ClassMethodType, Entity.MethodType, ] and 
-                               concrete_entity.Type in [ Entity.StaticMethodType, Entity.ClassMethodType, Entity.MethodType, ]
+                             ( abstract_entity.Type in [ Entity.Type.StaticMethod, Entity.Type.ClassMethod, Entity.Type.Method, ] and 
+                               concrete_entity.Type in [ Entity.Type.StaticMethod, Entity.Type.ClassMethod, Entity.Type.Method, ]
                              )
                            ):
                         errors.append("'{name}' was expected to be a {abstract_type} but {concrete_type} was found ({abstract_location}, {concrete_location})" \
@@ -305,21 +359,17 @@ class Interface(object):
                 # same as the abstract value.
                 errors = []
 
-                for abstract_name, abstract_entity in six.iteritems(abstracts):
-                    if abstract_entity.Type == Entity.MethodType:
+                for (abstract_name, abstract_entity), concrete_entity in zip(six.iteritems(abstracts), concrete_entites):
+                    if abstract_entity.Type == Entity.Type.Method:
                         continue
-
-                    concrete_value = getattr(cls, abstract_name)
 
                     # ----------------------------------------------------------------------
                     def IsMissing():
-                        if abstract_entity.Type == Entity.PropertyType:
-                            return getattr(concrete_value, "__isabstractmethod__", False)
+                        if abstract_entity.Type == Entity.Type.Property:
+                            return getattr(concrete_entity.Item, "__isabstractmethod__", False)
 
-                        concrete_value_func_code = six.get_function_code(concrete_value)
-
-                        return ( concrete_value_func_code.co_filename == abstract_entity.FuncCode.co_filename and 
-                                 concrete_value_func_code.co_firstlineno == abstract_entity.FuncCode.co_firstlineno
+                        return ( concrete_entity.FuncCode.co_filename == abstract_entity.FuncCode.co_filename and 
+                                 concrete_entity.FuncCode.co_firstlineno == abstract_entity.FuncCode.co_firstlineno
                                )
 
                     # ----------------------------------------------------------------------
@@ -339,14 +389,11 @@ class Interface(object):
                 kwargs_flag = 4
                 var_args_flag = 8
 
-                for abstract_name, abstract_entity in six.iteritems(abstracts):
-                    if abstract_entity.Type == Entity.PropertyType:
+                for (abstract_name, abstract_entity), concrete_entity in zip(six.iteritems(abstracts), concrete_entites):
+                    if abstract_entity.Type == Entity.Type.Property:
                         continue
 
-                    concrete_value = getattr(cls, abstract_name)
-                    concrete_entity = Entity(concrete_value)
                     concrete_params = concrete_entity.GetParams()
-
                     abstract_params = abstract_entity.GetParams()
 
                     # We can skip the test if either the abstract or concrete params are
@@ -441,6 +488,44 @@ class Interface(object):
                                                for name, aparams, aentity, cparams, centity in errors
                                              ])
 
+                # Ensure that all methods marked with override have a corresponding abstract implementation
+                errors = []
+
+                for potential_item in dir(cls):
+                    if potential_item in abstracts:
+                        continue
+
+                    value = getattr(cls, potential_item)
+                    value = getattr(cls, "fget", value)
+
+                    if getattr(value, "__override_method", False) and potential_item not in cls._ExtensionItems:
+                        entity = Entity(value)
+                        
+                        errors.append("'{}' is decorrated with 'override' but doesn't match and abstacted/extended item ({})".format(potential_item, entity.LocationString()))
+
+                if errors:
+                    raise InterfaceException(errors)
+
+                # Ensure that all derived methods are decorated with the override decorator
+                warnings = []
+
+                for abstract_name, concrete_entity in zip(six.iterkeys(abstracts), concrete_entites):
+                    if not getattr(concrete_entity.Item, "__override_method", False):
+                        warnings.append("{} '{}' {}".format( concrete_entity.TypeString(),
+                                                             abstract_name,
+                                                             concrete_entity.LocationString(),
+                                                           ))
+                        
+                if warnings:
+                    sys.stderr.write(textwrap.dedent(
+                        """\
+                        WARNING: Missing override decorations in '{name}':
+                        {warnings}
+                        """).format( name=cls.__name__,
+                                     warnings='\n'.join([ "    - {}".format(warning) for warning in warnings ]),
+                                   ))
+
+                
                 Interface._verified_types.add(cls)
 
                 return instance
@@ -453,11 +538,6 @@ class Interface(object):
                     """).format( class_=cls.__name__,
                                  errors='\n'.join([ "    - {}".format(error) for error in (ex.args[0] if isinstance(ex.args[0], (list, tuple)) else [ ex.args[0], ]) ]),
                                ))
-
-
-
-
-            
 
         # ----------------------------------------------------------------------
 
@@ -475,7 +555,7 @@ def extensionmethod(func):
 
     To view all extensions of an `Interface`-based type:
 
-        print('\n'.join(MyClass.ExtensionMethods))
+        print('\n'.join(six.iterkeys(MyClass._ExtensionItems)))
     """
 
     if isinstance(func, (staticmethod, classmethod)):
@@ -489,7 +569,24 @@ def extensionmethod(func):
 
     return func
 
-# TODO: Extending attribute that ensure the current method is named the same as an extension method
+# ----------------------------------------------------------------------
+def override(func):
+    """
+    Decorator that indicates that the method is overriding an abstract or extension
+    method defined in a base class. Note that this decorator has no impact on
+    the method's functionalty.
+    """
+
+    if isinstance(func, (staticmethod, classmethod)):
+        actual_func = func.__func__
+    elif callable(func):
+        actual_func = func
+    else:
+        assert False, type(func)
+
+    setattr(actual_func, "__override_method", True)
+
+    return func
 
 # ----------------------------------------------------------------------
 def staticderived(cls):
