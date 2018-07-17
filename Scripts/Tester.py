@@ -851,7 +851,7 @@ def GenerateTestResults( test_items,
 
                 log_filename = os.path.join( working_data.output_dir,
                                              configuration,
-                                             "{0}.{1:06d}.txt".format(log_name, iteration),
+                                             "{0}.{1:06d}.txt".format(log_name, iteration + 1),
                                            )
 
                 with open(log_filename, 'w') as f:
@@ -1856,18 +1856,36 @@ def _ExecuteImpl( filename_or_dir,
 
         result = complete_result.ResultCode() or 0
 
-        if verbose and result != 0:
+        if verbose or result != 0:
             for configuration_results in [ complete_result.debug,
                                            complete_result.release,
                                          ]:
-                if configuration_results.compile_result != 0 and configuration_results.compile_log is not None:
-                    output_stream.write(open(configuration_results.compile_log).read())
-                    break
+                if (verbose or configuration_results.compile_result != 0) and configuration_results.compile_log is not None:
+                    output_stream.write(textwrap.dedent(
+                        """\
+                        {header}
+                        {filename}
+                        {header}
+                        {content}
+
+                        """).format( filename=configuration_results.compile_log,
+                                     header=len(configuration_results.compile_log) * '=',
+                                     content=open(configuration_results.compile_log).read().strip(),
+                                   ))
 
                 for er in configuration_results.execute_results:
-                    if er.TestResult != 0 and er.TestOutput is not None:
-                        output_stream.write(open(er.TestOutput).read())
-                        break
+                    if (verbose or er.TestResult != 0) and er.TestOutput is not None:
+                        output_stream.write(textwrap.dedent(
+                            """\
+                            {header}
+                            {filename}
+                            {header}
+                            {content}
+
+                            """).format( filename=er.TestOutput,
+                                         header=len(er.TestOutput) * '=',
+                                         content=open(er.TestOutput).read().strip(),
+                                       ))
 
         return result
 
