@@ -179,6 +179,22 @@ class Interface(object):
                         self.FuncDefaults       = getattr(item, "__defaults__", None)
                 
                     # ----------------------------------------------------------------------
+                    def __repr__(self):
+                        return textwrap.dedent(
+                            """\
+                            Interface.Entity:
+                                Type:           {}
+                                Item:           {}
+                                FuncCode:       {}
+                                FuncDefaults:   {}
+
+                            """).format( self.Type,
+                                         self.Item,
+                                         self.FuncCode,
+                                         self.FuncDefaults,
+                                       )
+
+                    # ----------------------------------------------------------------------
                     def TypeString(self):
                         if self.Type == Entity.Type.StaticMethod:
                             return "staticmethod"
@@ -326,16 +342,19 @@ class Interface(object):
                     raise InterfaceException(errors)
 
                 # Create entity values for all of the derived items
-                concrete_entites = []
+                concrete_entites = {}
 
                 for abstract_name in six.iterkeys(abstracts):
                     value = getattr(cls, abstract_name)
-                    concrete_entites.append(Entity(value))
+                    
+                    concrete_entites[abstract_name] = Entity(value)
 
                 # Ensure that all abstracts are of the correct type
                 errors = []
 
-                for (abstract_name, abstract_entity), concrete_entity in zip(six.iteritems(abstracts), concrete_entites):
+                for abstract_name, abstract_entity in six.iteritems(abstracts):
+                    concrete_entity = concrete_entites[abstract_name]
+
                     # Check if the types are the same. Allow for an abstract static
                     # method to be fulfilled by a standard method.
                     if not ( abstract_entity.Type == concrete_entity.Type or
@@ -359,9 +378,11 @@ class Interface(object):
                 # same as the abstract value.
                 errors = []
 
-                for (abstract_name, abstract_entity), concrete_entity in zip(six.iteritems(abstracts), concrete_entites):
+                for abstract_name, abstract_entity in six.iteritems(abstracts):
                     if abstract_entity.Type == Entity.Type.Method:
                         continue
+
+                    concrete_entity = concrete_entites[abstract_name]
 
                     # ----------------------------------------------------------------------
                     def IsMissing():
@@ -389,9 +410,11 @@ class Interface(object):
                 kwargs_flag = 4
                 var_args_flag = 8
 
-                for (abstract_name, abstract_entity), concrete_entity in zip(six.iteritems(abstracts), concrete_entites):
+                for abstract_name, abstract_entity in six.iteritems(abstracts):
                     if abstract_entity.Type == Entity.Type.Property:
                         continue
+
+                    concrete_entity = concrete_entites[abstract_name]
 
                     concrete_params = concrete_entity.GetParams()
                     abstract_params = abstract_entity.GetParams()
@@ -492,16 +515,22 @@ class Interface(object):
                 errors = []
 
                 for potential_item in dir(cls):
-                    if potential_item in abstracts:
+                    if potential_item.startswith("__"):
                         continue
 
                     value = getattr(cls, potential_item)
-                    value = getattr(cls, "fget", value)
+                    value = getattr(value, "fget", value)
+                    
+                    if getattr(value, "__name__", None) == "PseudoProperty":
+                        setattr(cls, potential_item, value(None))
 
-                    if getattr(value, "__override_method", False) and potential_item not in cls._ExtensionItems:
+                    if ( getattr(value, "__override_method", False) and 
+                         potential_item not in abstracts and 
+                         potential_item not in cls._ExtensionItems
+                       ):
                         entity = Entity(value)
                         
-                        errors.append("'{}' is decorrated with 'override' but doesn't match and abstacted/extended item ({})".format(potential_item, entity.LocationString()))
+                        errors.append("'{}' is decorrated with 'override' but doesn't match an abstacted/extended item ({})".format(potential_item, entity.LocationString()))
 
                 if errors:
                     raise InterfaceException(errors)
@@ -509,22 +538,34 @@ class Interface(object):
                 # Ensure that all derived methods are decorated with the override decorator
                 warnings = []
 
-                for abstract_name, concrete_entity in zip(six.iterkeys(abstracts), concrete_entites):
+                if not hasattr(cls, "_validated_overrides"):
+                    cls._validated_overrides = set()
+
+                for name, concrete_entity in six.iteritems(concrete_entites):
+                    # Don't both checking for an overrides on items that have been verified in base classes
+                    if name in cls._validated_overrides:
+                        continue
+
                     if not getattr(concrete_entity.Item, "__override_method", False):
                         warnings.append("{} '{}' {}".format( concrete_entity.TypeString(),
-                                                             abstract_name,
+                                                             name,
                                                              concrete_entity.LocationString(),
                                                            ))
+                    else:
+                        cls._validated_overrides.add(name)
                         
                 if warnings:
                     sys.stderr.write(textwrap.dedent(
                         """\
-                        WARNING: Missing override decorations in '{name}':
+                        WARNING: Missing override decorations in '{name}'
+                                    Filename:           {filename}
+                                    Line:               {line}
                         {warnings}
                         """).format( name=cls.__name__,
-                                     warnings='\n'.join([ "    - {}".format(warning) for warning in warnings ]),
+                                     filename=inspect.getfile(cls),
+                                     line=inspect.findsource(cls)[1],
+                                     warnings='\n'.join([ "               - {}".format(warning) for warning in warnings ]),
                                    ))
-
                 
                 Interface._verified_types.add(cls)
 
@@ -634,6 +675,52 @@ def clsinit(cls):
 # |  
 # |  Public Methods
 # |  
+# ----------------------------------------------------------------------
+def DerivedProperty(value):
+    """
+    Helper when implementating a derived property that isn't dependent upon the
+    instance's state. In python, a class may implement a property A) using the property
+    decorator (which is valuable when the value depends on instance state or B) by
+    assigning a class-level variable:
+
+        # (A)
+        class Foo(object):
+            @property
+            def AProperty(self):
+                return self._some_value
+
+        # (B)
+        class Foo(object):
+            AProperty = 10
+
+    However, things become more complicated when implemeting a property that is abstract in
+    the base class but overridden in the derived class, as the detection logic needs something
+    to use to detect the user's intent (in this case, that they are overridding something that
+    should be defined in the base class). This method provides that implementation using a fairly
+    natural syntax.
+
+        class Base(Interface):
+            @abstractproperty
+            def Name(self):
+                raise Exception("Abstract property")
+
+        @staticderived
+        class Derived(Base):
+            Name                            = DerivedProperty("My Name")
+    """
+
+    # ----------------------------------------------------------------------
+    @property
+    @override
+    def PseudoProperty(self):
+        return value
+
+    # ----------------------------------------------------------------------
+
+    # Instances of this method will be replaced by the corresponding value during
+    # the logic above.
+    return PseudoProperty
+
 # ----------------------------------------------------------------------
 def CreateCulledCallable(func):
     """

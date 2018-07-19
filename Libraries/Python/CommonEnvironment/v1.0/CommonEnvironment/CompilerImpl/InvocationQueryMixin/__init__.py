@@ -17,7 +17,7 @@
 import os
 import sys
 
-from CommonEnvironment.Interface import Interface, abstractmethod
+from CommonEnvironment.Interface import Interface, abstractmethod, override
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -48,11 +48,13 @@ class InvocationQueryMixin(Interface):
     # |  mixins.
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def _GetInvokeReason(cls, *args, **kwargs):
         return cls._GetInvokeReasonImpl(*args, **kwargs)
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def _PersistContext(cls, *args, **kwargs):
         return cls._PersistContextImpl(*args, **kwargs)
 

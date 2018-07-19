@@ -18,6 +18,7 @@ import os
 import sys
 
 from CommonEnvironment import FileSystem
+from CommonEnvironment.Interface import override
 from CommonEnvironment.StreamDecorator import StreamDecorator
 
 from CommonEnvironment.CompilerImpl.OutputMixin import OutputMixin
@@ -33,12 +34,14 @@ class MultipleOutputMixin(OutputMixin):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def _GetRequiredContextNames(cls):
         return [ "output_filenames",
                ] + super(MultipleOutputMixin, cls)._GetRequiredContextNames()
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def _CreateContext(cls, metadata):
         for index, output_filename in enumerate(metadata["output_filenames"]):
             metadata["output_filenames"][index] = os.path.realpath(output_filename)
@@ -48,11 +51,13 @@ class MultipleOutputMixin(OutputMixin):
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def _GetOutputItems(context):
         return context["output_filenames"]
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def _CleanImplEx(cls, context, output_stream):
         output_stream = StreamDecorator(output_stream)
         input_items = set(cls.GetInputItems(context))

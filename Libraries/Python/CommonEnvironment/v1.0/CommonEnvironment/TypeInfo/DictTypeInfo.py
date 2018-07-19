@@ -19,7 +19,7 @@ import sys
 
 import six
 
-from CommonEnvironment.Interface import extensionmethod
+from CommonEnvironment.Interface import extensionmethod, override, DerivedProperty
 from CommonEnvironment.TypeInfo import TypeInfo
 
 # ----------------------------------------------------------------------
@@ -31,7 +31,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 class DictTypeInfo(TypeInfo):
     """Type info that validates a dictionary object."""
 
-    Desc                                    = "Dictionary"
+    Desc                                    = DerivedProperty("Dictionary")
     ExpectedType                            = dict
 
     # ----------------------------------------------------------------------
@@ -63,6 +63,7 @@ class DictTypeInfo(TypeInfo):
 
     # ----------------------------------------------------------------------
     @property
+    @override
     def ConstraintsDesc(self):
         if not self.Items:
             return ''
@@ -70,6 +71,7 @@ class DictTypeInfo(TypeInfo):
         return "Value must contain the attributes {}".format( ', '.join([ "'{}' <{}>".format(k, v.Desc) for k, v in six.iteritems(self.Items) ]))
 
     # ----------------------------------------------------------------------
+    @override
     def _ValidateItemNoThrowImpl( self,
                                   item, 
                                   recurse=True,

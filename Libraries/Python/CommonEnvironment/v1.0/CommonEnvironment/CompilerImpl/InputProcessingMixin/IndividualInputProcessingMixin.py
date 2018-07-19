@@ -17,6 +17,7 @@
 import os
 import sys
 
+from CommonEnvironment.Interface import override
 from CommonEnvironment.CompilerImpl.InputProcessingMixin import InputProcessingMixin
 
 # ----------------------------------------------------------------------
@@ -33,6 +34,7 @@ class IndividualInputProcessingMixin(InputProcessingMixin):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def _GenerateMetadataItemsImpl(cls, invocation_group_inputs, metadata):
         if cls.AttributeName in metadata:
             raise Exception("'{}' is a reserved keyword".format(cls.AttributeName))
@@ -43,5 +45,6 @@ class IndividualInputProcessingMixin(InputProcessingMixin):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def _GetInputItems(cls, context):
         return [ context[cls.AttributeName], ]

@@ -18,6 +18,7 @@ import os
 import sys
 
 from CommonEnvironment import FileSystem
+from CommonEnvironment.Interface import override
 from CommonEnvironment.StreamDecorator import StreamDecorator
 
 from CommonEnvironment.CompilerImpl.OutputMixin import OutputMixin
@@ -33,12 +34,14 @@ class SingleOutputMixin(OutputMixin):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def _GetRequiredContextItems(cls):
         return [ "output_filename",
                ] + super(SingleOutputMixin, cls)._GetRequiredContextItems()
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def _CreateContext(cls, metadata):
         metadata["output_filename"] = os.path.realpath(metadata["output_filename"])
 
@@ -48,11 +51,13 @@ class SingleOutputMixin(OutputMixin):
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def _GetOutputItems(context):
         return [ context["output_filename"], ]
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def _CleanImplEx(cls, context, output_stream):
         if context["output_filename"] not in cls.GetInputItems(context) and os.path.isfile(context["output_filename"]):
             output_stream.write("Removing '{}'...".format(context["output_filename"]))

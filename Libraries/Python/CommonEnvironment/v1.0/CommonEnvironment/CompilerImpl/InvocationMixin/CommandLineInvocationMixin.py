@@ -20,7 +20,7 @@ import textwrap
 
 import six
 
-from CommonEnvironment.Interface import abstractmethod
+from CommonEnvironment.Interface import abstractmethod, override
 from CommonEnvironment import Process
 
 from CommonEnvironment.CompilerImpl.InvocationMixin import InvocationMixin
@@ -44,6 +44,7 @@ class CommandLineInvocationMixin(InvocationMixin):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def _InvokeImplEx(cls, invoke_reason, context, status_stream, verbose_stream, verbose):
         command_line = cls.CreateInvokeCommandLine(context, verbose_stream)
 

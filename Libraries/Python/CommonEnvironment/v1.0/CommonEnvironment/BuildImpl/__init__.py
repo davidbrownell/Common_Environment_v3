@@ -161,6 +161,7 @@ class CompleteConfiguration(Configuration):
                       )
 
     # ----------------------------------------------------------------------
+    # <__init__ method from base class 'Configuration' is not called> pylint: disable = W0231
     def __init__(self, exposed_functions, config):
         self.__dict__                       = config.__dict__
         self.ExposedFunctions               = list(exposed_functions)
@@ -358,8 +359,8 @@ def _RedirectEntryPoint(function_name, entry_point, config):
 
     # Dynamically redefine the function so that it prints information that lets the user know the the
     # functionality can't be executed on the current platform/configuration/environment.
-    if config.RequiredDevelopmentEnvironment and config.RequiredDevelopmentEnvironment.lower() not in [ CurrentShell.Name.lower(),
-                                                                                                        CurrentShell.CategoryName.lower(),
+    if config.RequiredDevelopmentEnvironment and config.RequiredDevelopmentEnvironment.lower() not in [ CurrentShell.Name.lower(),              # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
+                                                                                                        CurrentShell.CategoryName.lower(),      # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
                                                                                                       ]:
         exec(textwrap.dedent(
             """\

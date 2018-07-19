@@ -42,8 +42,8 @@ class ToolsActivationActivity(ActivationActivity):
     # |  Public Properties
     # |  
     # ----------------------------------------------------------------------
-    Name                                    = "Tools"
-    DelayExecute                            = False
+    Name                                    = CommonEnvironmentImports.Interface.DerivedProperty("Tools")
+    DelayExecute                            = CommonEnvironmentImports.Interface.DerivedProperty(False)
 
     # ----------------------------------------------------------------------
     # |  
@@ -51,6 +51,7 @@ class ToolsActivationActivity(ActivationActivity):
     # |  
     # ----------------------------------------------------------------------
     @classmethod
+    @CommonEnvironmentImports.Interface.override
     def _CreateCommandsImpl( cls,
                              output_stream,
                              verbose_stream,

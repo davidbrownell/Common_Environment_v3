@@ -503,6 +503,7 @@ def _SetupBootstrap( output_stream,
 
         if repo_data.HasConfigurations:
             configuration_info = textwrap.dedent(
+                                    # <Wrong hanging indentation> pylint: disable = C0330
                                     """\
                                     Based on these configurations:
 
@@ -517,6 +518,7 @@ def _SetupBootstrap( output_stream,
                                                                                                      4,
                                                                                                    ),
                                                  '' if repo_data.AreConfigurationsFiltered else textwrap.dedent(
+                                                                                                    # <Wrong hanging indentation> pylint: disable = C0330
                                                                                                     """\
 
                                                                                                     To operate on specific configurations, specify this argument one or more times on the command line:
@@ -893,7 +895,7 @@ class _RepositoriesMap(OrderedDict):
                     config_dependencies.append(Dependency( fundamental_repo_id, 
                                                            fundamental_repo_name,
                                                            Constants.DEFAULT_FUNDAMENTAL_CONFIGURATION,
-                                                        ))
+                                                         ))
 
                 these_dependencies = []
 
@@ -1004,6 +1006,7 @@ class _RepositoriesMap(OrderedDict):
                         {}
 
                     """).format(CommonEnvironmentImports.StringHelpers.LeftJustify( '\n'.join([ textwrap.dedent(
+                                                                                                    # <Wrong hanging indentation> pylint: disable = C0330
                                                                                                     """\
                                                                                                     Actual Name:        {}
                                                                                                     Dependency Name:    {}
@@ -1425,7 +1428,7 @@ def _SimpleFuncImpl( callback,              # def Func(output_stream, repo_map) 
                 """).format( display_template.format("Repository", "Configuration", "Id", "Location", "Clone Uri"),
                              display_template.format(*[ '-' * col_size for col_size in display_cols ]),
                              '\n'.join([ display_template.format( line,
-                                                                  *resolved_display_info,
+                                                                  *resolved_display_info
                                                                 )
                                          for line, resolved_display_info in zip(lines, resolved_display_infos)
                                        ]),
@@ -1501,6 +1504,7 @@ def _ScmParameterToScm(value, repository_root):
             return scm
 
     assert False, value
+    return None
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------

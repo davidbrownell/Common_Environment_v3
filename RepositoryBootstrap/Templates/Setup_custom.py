@@ -12,6 +12,7 @@
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 # |  
 # ----------------------------------------------------------------------
+"""Performs repository-specific setup activities."""
 
 # ----------------------------------------------------------------------
 # |  
@@ -32,6 +33,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 # <Missing function docstring> pylint: disable = C0111
+# <Line too long> pylint: disable = C0301
 # <Wrong hanging indentation> pylint: disable = C0330
 # <Class '<name>' has no '<attr>' member> pylint: disable = E1103
 # <Unreachable code> pylint: disable = W0101

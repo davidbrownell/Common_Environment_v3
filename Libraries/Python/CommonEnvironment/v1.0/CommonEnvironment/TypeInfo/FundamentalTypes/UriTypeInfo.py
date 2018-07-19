@@ -20,7 +20,7 @@ import sys
 import six
 
 import CommonEnvironment
-from CommonEnvironment.Interface import staticderived
+from CommonEnvironment.Interface import staticderived, override, DerivedProperty
 from CommonEnvironment.TypeInfo import TypeInfo
 
 # ----------------------------------------------------------------------
@@ -116,11 +116,12 @@ class UriTypeInfo(TypeInfo):
 
     Uri                                     = Uri
 
-    Desc                                    = "Uri"
-    ConstraintsDesc                         = ''
+    Desc                                    = DerivedProperty("Uri")
+    ConstraintsDesc                         = DerivedProperty('')
     ExpectedType                            = Uri
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def _ValidateItemNoThrowImpl(item):
         return

@@ -18,7 +18,7 @@ import os
 import re
 import sys
 
-from CommonEnvironment.Interface import staticderived
+from CommonEnvironment.Interface import staticderived, override, DerivedProperty
 from CommonEnvironment.TestParserImpl import TestParserImpl
 
 # ----------------------------------------------------------------------
@@ -33,12 +33,13 @@ class TestParser(TestParserImpl):
 
     # ----------------------------------------------------------------------
     # |  Public Properties
-    Name                                    = "PyUnittest"
-    Description                             = "Parses Python unittest output."
+    Name                                    = DerivedProperty("PyUnittest")
+    Description                             = DerivedProperty("Parses Python unittest output.")
 
     # ----------------------------------------------------------------------
     # |  Public Methods
     @staticmethod
+    @override
     def IsSupportedCompiler(compiler):
         # Supports any compiler that supports python; use this file as a test subject
         return compiler.IsSupported(_script_fullpath if os.path.splitext(_script_name)[1] == ".py" else "{}.py".format(os.path.splitext(_script_fullpath)[0]))
@@ -48,6 +49,7 @@ class TestParser(TestParserImpl):
     _Parse_ok                               = re.compile(r"^OK\s*$", re.DOTALL | re.MULTILINE)
 
     @classmethod
+    @override
     def Parse(cls, test_data):
         if cls._Parse_failed.search(test_data):
             return -1

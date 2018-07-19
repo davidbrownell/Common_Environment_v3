@@ -18,7 +18,7 @@ import os
 import sys
 import uuid
 
-from CommonEnvironment.Interface import staticderived
+from CommonEnvironment.Interface import staticderived, override, DerivedProperty
 from CommonEnvironment.TypeInfo import TypeInfo
 
 # ----------------------------------------------------------------------
@@ -30,8 +30,8 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 class GuidTypeInfo(TypeInfo):
     """Type info for a guid value."""
 
-    Desc                                    = "Guid"
-    ConstraintsDesc                         = ''
+    Desc                                    = DerivedProperty("Guid")
+    ConstraintsDesc                         = DerivedProperty('')
     ExpectedType                            = uuid.UUID
 
     # ----------------------------------------------------------------------
@@ -41,5 +41,6 @@ class GuidTypeInfo(TypeInfo):
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def _ValidateItemNoThrowImpl(item):
         return

@@ -140,10 +140,10 @@ def Describe( item,                         # str, dict, iterable, obj
                     content += "{}{}".format( '\n' if content.count('\n') > 1 else ' ',
                                               type(item),
                                             )
-
+                
                 if " object at " in content:
                     content += "\n\n{}".format(ObjectReprImpl(item))
-
+                
                 output_stream.write("{}\n".format(('\n{}'.format(indentation_str)).join(content.split('\n'))))
 
     # ----------------------------------------------------------------------
@@ -177,12 +177,15 @@ def ObjectReprImpl( obj,
     if "f_builtins" in d:
         del d["f_builtins"]
     
-    if not include_methods or not include_private:
-        for k in list(six.iterkeys(d)):
-            if not include_methods and callable(d[k]):
+    for k, v in list(six.iteritems(d)):
+        if callable(v):
+            if include_methods:
+                d[k] = "callable"
+            else:
                 del d[k]
-            elif not include_private and k.startswith('_'):
-                del d[k]
+        
+        if not include_private and k.startswith('_'):
+            del d[k]
 
     sink = six.moves.StringIO()
     Describe(d, sink)

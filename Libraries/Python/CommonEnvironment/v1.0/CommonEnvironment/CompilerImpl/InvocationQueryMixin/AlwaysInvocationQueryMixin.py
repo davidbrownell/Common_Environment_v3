@@ -17,6 +17,7 @@
 import os
 import sys
 
+from CommonEnvironment.Interface import override
 from CommonEnvironment.CompilerImpl.InvocationQueryMixin import InvocationQueryMixin
 
 # ----------------------------------------------------------------------
@@ -29,10 +30,12 @@ class AlwaysInvocationQueryMixin(InvocationQueryMixin):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def _GetInvokeReasonImpl(cls, context, output_stream):
         return cls.InvokeReason_Always
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def _PersistContextImpl(context):
         pass

@@ -80,7 +80,14 @@ class ClassTypeInfoSuite(unittest.TestCase):
                           )
 
         self.assertEqual(ti.Desc, "Class")
-        self.assertEqual(ti.ConstraintsDesc, "Value must contain the attributes 'Method' <Method>, 'ClassMethod' <Class Method>, 'StaticMethod' <Static Method>")
+
+        if sys.version[0] == '2':
+            # Python2 returns items in alpha order
+            self.assertEqual(ti.ConstraintsDesc, "Value must contain the attributes 'ClassMethod' <Class Method>, 'StaticMethod' <Static Method>, 'Method' <Method>")
+        else:
+            # Python3 returns item in declared order
+            self.assertEqual(ti.ConstraintsDesc, "Value must contain the attributes 'Method' <Method>, 'ClassMethod' <Class Method>, 'StaticMethod' <Static Method>")
+
         self.assertTrue(ti.ExpectedTypeIsCallable)
         self.assertTrue(ti.IsExpectedType(Object))
         self.assertTrue(ti.IsValidItem(Object()))

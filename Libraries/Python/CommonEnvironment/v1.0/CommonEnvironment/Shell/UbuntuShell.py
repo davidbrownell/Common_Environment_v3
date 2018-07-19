@@ -17,7 +17,7 @@
 import os
 import sys
 
-from CommonEnvironment.Interface import staticderived
+from CommonEnvironment.Interface import staticderived, DerivedProperty
 from CommonEnvironment.Shell.LinuxShellImpl import LinuxShellImpl
 
 # ----------------------------------------------------------------------
@@ -31,4 +31,4 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 class UbuntuShell(LinuxShellImpl):
     """Shell for Ubuntu systems"""
 
-    Name                                    = "Ubuntu"
+    Name                                    = DerivedProperty("Ubuntu")

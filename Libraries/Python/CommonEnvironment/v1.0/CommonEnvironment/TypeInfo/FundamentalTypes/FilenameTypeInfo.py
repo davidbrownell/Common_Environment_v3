@@ -21,6 +21,7 @@ import sys
 import six
 
 import CommonEnvironment
+from CommonEnvironment.Interface import override, DerivedProperty
 from CommonEnvironment.TypeInfo import TypeInfo
 
 # ----------------------------------------------------------------------
@@ -31,7 +32,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 class FilenameTypeInfo(TypeInfo):
     """Type info for a filename."""
 
-    Desc                                    = "Filename"
+    Desc                                    = DerivedProperty("Filename")
     ExpectedType                            = six.string_types
 
     # ----------------------------------------------------------------------
@@ -53,6 +54,7 @@ class FilenameTypeInfo(TypeInfo):
 
     # ----------------------------------------------------------------------
     @property
+    @override
     def ConstraintsDesc(self):
         constraints = []
 
@@ -73,6 +75,7 @@ class FilenameTypeInfo(TypeInfo):
         return "Value must {}".format(', '.join(constraints))
 
     # ----------------------------------------------------------------------
+    @override
     def _ValidateItemNoThrowImpl(self, item):
         if self.EnsureExists:
             if self.MatchAny:

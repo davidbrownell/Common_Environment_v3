@@ -17,7 +17,7 @@
 import os
 import sys
 
-from CommonEnvironment.Interface import Interface, abstractmethod
+from CommonEnvironment.Interface import Interface, abstractmethod, override
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -34,11 +34,13 @@ class OutputMixin(Interface):
     # |  mixins.
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def GetOutputItems(cls, *args, **kwargs):
         return cls._GetOutputItems(*args, **kwargs)
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def _CleanImpl(cls, *args, **kwargs):
         return cls._CleanImplEx(*args, **kwargs)
 

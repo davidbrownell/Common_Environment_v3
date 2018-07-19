@@ -17,7 +17,7 @@
 import os
 import sys
 
-from CommonEnvironment.Interface import staticderived
+from CommonEnvironment.Interface import staticderived, override
 
 from CommonEnvironment.TypeInfo.FundamentalTypes.Visitor import Visitor
 
@@ -26,26 +26,32 @@ _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
+# <Parameters differ from overridden '<...>' method> pylint: disable = W0221
+
 # ----------------------------------------------------------------------
 @staticderived
 class PythonCodeVisitor(Visitor):
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def OnBool(cls, type_info):
         return "BoolTypeInfo({})".format(cls._ArityString(type_info.Arity))
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def OnDateTime(cls, type_info):
         return "DateTimeTypeInfo({})".format(cls._ArityString(type_info.Arity))
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def OnDate(cls, type_info):
         return "DateTypeInfo({})".format(cls._ArityString(type_info.Arity))
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def OnDirectory(cls, type_info):
         args = []
 
@@ -61,11 +67,13 @@ class PythonCodeVisitor(Visitor):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def OnDuration(cls, type_info):
         return "DurationTypeInfo({})".format(cls._ArityString(type_info.Arity))
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def OnEnum(cls, type_info):
         # ----------------------------------------------------------------------
         def ToList(values):
@@ -84,6 +92,7 @@ class PythonCodeVisitor(Visitor):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def OnFilename(cls, type_info):
         args = []
 
@@ -102,6 +111,7 @@ class PythonCodeVisitor(Visitor):
         
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def OnFloat(cls, type_info):
         args = []
 
@@ -117,11 +127,13 @@ class PythonCodeVisitor(Visitor):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def OnGuid(cls, type_info):
         return "GuidTypeInfo({})".format(cls._ArityString(type_info.Arity))
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def OnInt(cls, type_info):
         args = []
 
@@ -140,6 +152,7 @@ class PythonCodeVisitor(Visitor):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def OnString(cls, type_info):
         args = []
 
@@ -158,11 +171,13 @@ class PythonCodeVisitor(Visitor):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def OnTime(cls, type_info):
         return "TimeTypeInfo({})".format(cls._ArityString(type_info.Arity))
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def OnUri(cls, type_info):
         return "UriTypeInfo({})".format(cls._ArityString(type_info.Arity))
 
@@ -173,15 +188,16 @@ class PythonCodeVisitor(Visitor):
     def _ArityString(arity):
         if arity.IsOptional:
             return "arity=Arity.FromString('?')"
-        elif arity.IsOneOrMore:
+        
+        if arity.IsOneOrMore:
             return "arity=Arity.FromString('+')"
-        elif arity.IsZeroOrMore:
+        
+        if arity.IsZeroOrMore:
             return "arity=Arity.FromString('*')"
-        elif arity.Min == arity.Max == 1:
+        
+        if arity.Min == arity.Max == 1:
             return ''
-        else:
-            return "arity=Arity({},{})".format( arity.Min,
-                                                arity.Max or "None",
-                                              )
-
-        return ''
+        
+        return "arity=Arity({},{})".format( arity.Min,
+                                            arity.Max or "None",
+                                          )

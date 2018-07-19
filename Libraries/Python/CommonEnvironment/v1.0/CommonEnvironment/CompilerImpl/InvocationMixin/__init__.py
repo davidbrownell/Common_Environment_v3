@@ -17,7 +17,7 @@
 import os
 import sys
 
-from CommonEnvironment.Interface import Interface, abstractmethod
+from CommonEnvironment.Interface import Interface, abstractmethod, override
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -36,6 +36,7 @@ class InvocationMixin(Interface):
     # |  mixins.
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def _InvokeImpl(cls, *args, **kwargs):
         return cls._InvokeImplEx(*args, **kwargs)
 

@@ -17,6 +17,7 @@
 import os
 import sys
 
+from CommonEnvironment.Interface import override
 from CommonEnvironment.CompilerImpl.OutputMixin import OutputMixin
 
 # ----------------------------------------------------------------------
@@ -29,10 +30,12 @@ class NoOutputMixin(OutputMixin):
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def _GetOutputItems(context):
         return []
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def _CleanImplEx(context, output_stream):
         pass

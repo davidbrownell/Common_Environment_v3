@@ -491,6 +491,29 @@ class ExtensionMethodSuite(unittest.TestCase):
 
         self.assertRaises(InterfaceException, lambda: DoubleOverride())
 
+    # ----------------------------------------------------------------------
+    def test_MultipleOverride(self):
+        class Base(Interface):
+            @staticmethod
+            @extensionmethod
+            def Method(value): return value
+
+        @staticderived
+        class Derived1(Base):
+            @classmethod
+            @override
+            def Method(cls, value) : return super(Derived1, cls).Method(value) * 10
+
+        @staticderived
+        class Derived2(Derived1):
+            @classmethod
+            @override
+            def Method(cls, value): return super(Derived2, cls).Method(value) * 20
+
+
+        self.assertEqual(Derived1.Method(1), 10)
+        self.assertEqual(Derived2.Method(1), 200)
+
 # ----------------------------------------------------------------------
 class StaticDerivedSuite(unittest.TestCase):
 

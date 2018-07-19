@@ -20,6 +20,7 @@ import string
 import sys
 
 import six
+from enum import Enum
 
 from CommonEnvironment.CallOnExit import CallOnExit
 
@@ -150,11 +151,11 @@ def Execute( command_line,
     
     with CallOnExit(Flush):
         # ----------------------------------------------------------------------
-        ( CharacterStack_Escape,
-          CharacterStack_LineReset,
-          CharacterStack_Buffered,
-          CharacterStack_MultiByte,
-        ) = range(4)
+        class CharacterStack(Enum):
+            Escape = 1
+            LineReset = 2
+            Buffered = 3
+            MultiByte = 4
 
         # ----------------------------------------------------------------------
         def IsAsciiLetter(value):
@@ -202,7 +203,7 @@ def Execute( command_line,
             hard_stop = False
 
             while True:
-                if character_stack_type == CharacterStack_Buffered:
+                if character_stack_type == CharacterStack.Buffered:
                     value = character_stack.pop()
 
                     assert not character_stack
@@ -217,7 +218,7 @@ def Execute( command_line,
 
                 content = None
 
-                if character_stack_type == CharacterStack_Escape:
+                if character_stack_type == CharacterStack.Escape:
                     character_stack.append(value)
 
                     if not IsAsciiLetter(value):
@@ -228,7 +229,7 @@ def Execute( command_line,
                     character_stack = []
                     character_stack_type = None
 
-                elif character_stack_type == CharacterStack_LineReset:
+                elif character_stack_type == CharacterStack.LineReset:
                     if IsNewlineish(value):
                         character_stack.append(value)
                         continue
@@ -236,9 +237,9 @@ def Execute( command_line,
                     content = character_stack
 
                     character_stack = [ value, ]
-                    character_stack_type = CharacterStack_Buffered
+                    character_stack_type = CharacterStack.Buffered
 
-                elif character_stack_type == CharacterStack_MultiByte:
+                elif character_stack_type == CharacterStack.MultiByte:
                     if value >> 6 == 0b10: 
                         # Continuation char
                         character_stack.append(value)
@@ -247,27 +248,27 @@ def Execute( command_line,
                     content = character_stack
 
                     character_stack = [ value, ]
-                    character_stack_type = CharacterStack_Buffered
+                    character_stack_type = CharacterStack.Buffered
 
                 else:
                     assert character_stack_type is None, character_stack_type
 
                     if IsEscape(value):
                         character_stack.append(value)
-                        character_stack_type = CharacterStack_Escape
+                        character_stack_type = CharacterStack.Escape
 
                         continue
 
                     elif IsNewlineish(value):
                         character_stack.append(value)
-                        character_stack_type = CharacterStack_LineReset
+                        character_stack_type = CharacterStack.LineReset
 
                         continue
 
                     elif value >> 6 == 0b11:
                         # If the high bit is set, this is the first part of a multi-byte character set.
                         character_stack.append(value)
-                        character_stack_type = CharacterStack_MultiByte
+                        character_stack_type = CharacterStack.MultiByte
 
                         continue
 

@@ -26,7 +26,7 @@ from xml.etree import ElementTree as ET
 
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import FileSystem
-from CommonEnvironment.Interface import staticderived
+from CommonEnvironment.Interface import staticderived, override, DerivedProperty
 from CommonEnvironment import Process
 from CommonEnvironment.Shell.All import CurrentShell
 
@@ -69,18 +69,20 @@ class TestExecutor(TestExecutorImpl):
 
     # ----------------------------------------------------------------------
     # |  Public Properties
-    Name                                    = "PyCoverage"
-    Description                             = "Extracts code coverage information for Python source code using coverage.py."
+    Name                                    = DerivedProperty("PyCoverage")
+    Description                             = DerivedProperty("Extracts code coverage information for Python source code using coverage.py.")
 
     # ----------------------------------------------------------------------
     # |  Public Methods
     @staticmethod
+    @override
     def IsSupportedCompiler(compiler):
         # Supports any compiler that supports python; use this file as a test subject.
         return compiler.IsSupported(_script_fullpath if os.path.splitext(_script_name)[1] == ".py" else "{}.py".format(os.path.splitext(_script_fullpath)[0]))
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def Execute( cls,
                  compiler,
                  context,

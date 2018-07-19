@@ -26,7 +26,7 @@ import six
 import six.moves.cPickle as pickle
 
 from CommonEnvironment import FileSystem
-from CommonEnvironment.Interface import extensionmethod
+from CommonEnvironment.Interface import extensionmethod, override
 from CommonEnvironment import RegularExpression
 
 from CommonEnvironment.CompilerImpl.InvocationQueryMixin import InvocationQueryMixin
@@ -49,6 +49,7 @@ class ConditionalInvocationQueryMixin(InvocationQueryMixin):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def _GetOptionalMetadata(cls):
         return [ ( "force", False ),
                  ( "output_data_filename_prefix", '' ),
@@ -56,12 +57,14 @@ class ConditionalInvocationQueryMixin(InvocationQueryMixin):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def _GetRequiredContextNames(cls):
         return [ "output_dir",
                ] + super(ConditionalInvocationQueryMixin, cls)._GetRequiredContextNames()
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def _CreateContext(cls, metadata):
         metadata["output_dir"] = os.path.realpath(metadata["output_dir"])
 
@@ -71,6 +74,7 @@ class ConditionalInvocationQueryMixin(InvocationQueryMixin):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def _GetInvokeReasonImpl(cls, context, output_stream):
 
         prev_info, prev_modified_time = _PersistedInfo.Load(cls, context, output_stream)
@@ -231,6 +235,7 @@ class ConditionalInvocationQueryMixin(InvocationQueryMixin):
     
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def _PersistContextImpl(cls, context):
         _PersistedInfo(cls, context).Save()
 

@@ -23,7 +23,7 @@ import six
 
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import FileSystem
-from CommonEnvironment.Interface import staticderived
+from CommonEnvironment.Interface import staticderived, override, DerivedProperty
 from CommonEnvironment import Process
 from CommonEnvironment import RegularExpression
 from CommonEnvironment.Shell.All import CurrentShell
@@ -49,11 +49,11 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
     # |  Public Properties
     # |  
     # ----------------------------------------------------------------------
-    Name                                    = "Git"
-    DefaultBranch                           = "master"
-    Tip                                     = "head"
-    WorkingDirectories                      = [ ".git", ]
-    IgnoreFilename                          = ".gitignore"
+    Name                                    = DerivedProperty("Git")
+    DefaultBranch                           = DerivedProperty("master")
+    Tip                                     = DerivedProperty("head")
+    WorkingDirectories                      = DerivedProperty([ ".git", ])
+    IgnoreFilename                          = DerivedProperty(".gitignore")
 
     DetachedHeadPseudoBranchName            = "__DetachedHeadPseudoBranchName_{Index}_{BranchName}__"
     _DetachedHeadPseudoBranchName_regex     = RegularExpression.TemplateStringToRegex(DetachedHeadPseudoBranchName)
@@ -88,6 +88,7 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
     
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def IsAvailable(cls):
         is_available = getattr(cls, "_cached_is_available", None)
         if is_available is None:
@@ -102,6 +103,7 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
     _cached_is_active                       = set()
 
     @classmethod
+    @override
     def IsActive(cls, repo_root):
         for k in cls._cached_is_active:
             if repo_root.startswith(k):
@@ -124,6 +126,7 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def Create(cls, output_dir):
         if os.path.isdir(output_dir):
             raise Exception("The directory '{}' already exists and will not be overwritten".format(output_dir))
@@ -133,6 +136,7 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
     
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def Clone(cls, uri, output_dir, branch=None):
         if os.path.isdir(output_dir):
             raise Exception("The directory '{}' already exists and will not be overwritten.".format(output_dir))
@@ -147,6 +151,7 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
     
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def GetUniqueName(cls, repo_root):
         result, output = cls.Execute(repo_root, "git remote -v")
         assert result == 0, (result, output)
@@ -165,6 +170,7 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
     
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def Who(cls, repo_root):
         # ----------------------------------------------------------------------
         def GetValue(name):
@@ -183,6 +189,7 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
     _cached_roots                           = set()
 
     @classmethod
+    @override
     def GetRoot(cls, repo_dir):
         for k in cls._cached_roots:
             if repo_dir.startswith(k):
@@ -200,11 +207,13 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
     
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def IsRoot(cls, repo_dir):
         return os.path.isdir(os.path.join(repo_dir, cls.WorkingDirectories[0]))
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def Clean(cls, repo_root, no_prompt=False):
         if not no_prompt and not cls.AreYouSurePrompt(textwrap.dedent(
             # <Wrong hanging indentation> pylint: disable = C0330
@@ -227,6 +236,7 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
     _GetBranches_regex                      = re.compile(r"^\*?\s*\[(origin/)?(?P<name>\S+?)\]\s+.+?")
 
     @classmethod
+    @override
     def GetBranches(cls, repo_root):
         result, output = cls.Execute(repo_root, "git show-branch --list --all")
         assert result == 0, (result, output)
@@ -247,6 +257,7 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
     _GetCurrentBranch_regex                 = re.compile(r"\s*\*\s+(?P<name>.+)")
 
     @classmethod
+    @override
     def GetCurrentBranch(cls, repo_root):
         result, output = cls.Execute(repo_root, "git branch --no-color")
         assert result == 0, (result, output)
@@ -261,6 +272,7 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
     
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def GetMostRecentBranch(cls, repo_root):
         result, output = cls.Execute( repo_root,
                                       'git for-each-ref --sort=-committerdate --format="%(refname)"',
@@ -278,16 +290,19 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
     
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def CreateBranch(cls, repo_root, branch_name):
         return cls.Execute(repo_root, 'git branch "{name}" && git checkout "{name}"'.format(name=branch_name))
     
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def SetBranch(cls, repo_root, branch_name):
         return cls.Execute(repo_root, 'git checkout "{}"'.format(branch_name))
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def HasUntrackedWorkingChanges(cls, repo_root):
         result, output = cls.Execute(repo_root, "git ls-files --others --exclude-standard")
         assert result == 0, (result, output)
@@ -296,6 +311,7 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def HasWorkingChanges(cls, repo_root):
         result, output = cls.Execute(repo_root, "git --no-pager diff -name-only")
         assert result == 0, (result, output)
@@ -304,6 +320,7 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def GetWorkingChanges(cls, repo_root):
         result, output = cls.Execute(repo_root, 'git status --short')
         assert result == 0, (result, output)
@@ -320,6 +337,7 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
         
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def GetChangeInfo(cls, repo_root, change):
         # Not the spaces to work around issues with git
         template = " %aN <%ae> %n %cd %n %s"
@@ -343,6 +361,7 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
     _Commit_regex                           = re.compile(r"(?P<username>.+?)\s+\<(?P<email>.+?)\>")
 
     @classmethod
+    @override
     def Commit(cls, repo_root, description, username=None):
         # Git is particular about username format; massage it into the right
         # format if necessary.
@@ -358,6 +377,7 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
                           )
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def Update(cls, repo_root, update_arg=None):
         branch = cls.GetCurrentBranch(repo_root)
 
@@ -405,11 +425,13 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def Merge(cls, repo_root, merge_arg):
         return cls.Execute(repo_root, 'git merge --no-commit --no-ff {}'.format(cls._UpdateMergeArgToString(repo_root, merge_arg)))
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def GetChangesSinceLastMerge(cls, repo_root, dest_branch, source_merge_arg=None):
         # Git is really screwed up. After a 30 minute search, I couldn't find a way to
         # specify a branch and beginning revision in a single command. Therefore, I am
@@ -490,6 +512,7 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
     _GetChangedFiles_regex                  = re.compile(r'^(?:\S|\?\?)\s+"?(?P<filename>.+)"?$')
 
     @classmethod
+    @override
     def GetChangedFiles(cls, repo_root, change_or_changes_or_none):
         if not change_or_changes_or_none:
             result, output = cls.Execute(repo_root, 'git status --short')
@@ -527,6 +550,7 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
     
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def EnumBlameInfo(cls, repo_root, filename):
         result, output = cls.Execute(repo_root, 'git blame -s "{}"'.format(filename))
 
@@ -555,6 +579,7 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def EnumTrackedFiles(cls, repo_root):
         temp_filename = CurrentShell.CreateTempFilename()
 
@@ -571,6 +596,7 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def CreatePatch( cls,
                      repo_root, 
                      output_filename,
@@ -588,6 +614,7 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def ApplyPatch( cls, 
                     repo_root,
                     patch_filename,
@@ -600,6 +627,7 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
     
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def Reset( cls,
                repo_root, 
                no_prompt=False, 
@@ -641,6 +669,7 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def HasUpdateChanges(cls, repo_root):
         result, output = cls.Execute(repo_root, "git status -uno")
         assert result == 0, (result, output)
@@ -649,6 +678,7 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def HasLocalChanges(cls, repo_root):
         result, output = cls.Execute(repo_root, 'git --no-pager log --branches --not --remotes')
         assert result == 0 or (result == 1 and "no changes found" in output), (result, output)
@@ -657,6 +687,7 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def GetLocalChanges(cls, repo_root):
         result, output = cls.Execute(repo_root, 'git remote update')
         assert result == 0, (result, output)
@@ -668,6 +699,7 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def HasRemoteChanges(cls, repo_root):
         result, output = cls.Execute(repo_root, 'git remote update')
         assert result == 0, (result, output)
@@ -676,6 +708,7 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def GetRemoteChanges(cls, repo_root):
         result, output = cls.Execute(repo_root, 'git remote update')
         assert result == 0, (result, output)
@@ -687,6 +720,7 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def Push(cls, repo_root, create_remote_branch=False):
         commands = [ 'git push',
                      'git push --tags',
@@ -699,6 +733,7 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def Pull(cls, repo_root, branch_or_branches=None):
         commands = []
 
@@ -723,6 +758,7 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
     # |  
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def _AddFilesImpl(cls, repo_root, filenames):
         return cls.Execute(repo_root, 'git add {}'.format(' '.join([ '"{}"'.format(filename) for filename in filenames ])))
 
