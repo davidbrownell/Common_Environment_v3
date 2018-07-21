@@ -37,6 +37,7 @@ class WindowsPowerShell(WindowsShell):
     ENVIRONMENT_NAME                        = "DEVELOPMENT_ENVIRONMENT_USE_WINDOWS_POWERSHELL"
 
     @staticderived
+    @override
     class CommandVisitor(Visitor):
         # ----------------------------------------------------------------------
         @staticmethod
@@ -237,6 +238,7 @@ class WindowsPowerShell(WindowsShell):
     # |  
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def IsActive(cls, platform_name):
         return ("windows" in platform_name or platform_name == "nt") and os.getenv(cls.ENVIRONMENT_NAME, None) == "1"
 
