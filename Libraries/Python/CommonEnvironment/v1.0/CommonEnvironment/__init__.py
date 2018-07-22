@@ -183,9 +183,11 @@ def ObjectReprImpl( obj,
                 d[k] = "callable"
             else:
                 del d[k]
+                continue
         
         if not include_private and k.startswith('_'):
             del d[k]
+            continue
 
     sink = six.moves.StringIO()
     Describe(d, sink)
