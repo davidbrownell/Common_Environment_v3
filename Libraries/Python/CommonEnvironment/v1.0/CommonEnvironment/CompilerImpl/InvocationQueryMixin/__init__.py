@@ -17,7 +17,7 @@
 import os
 import sys
 
-from CommonEnvironment.Interface import Interface, abstractmethod, override
+from CommonEnvironment.Interface import Interface, abstractmethod, override, mixin
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -26,6 +26,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 
 # ----------------------------------------------------------------------
 # <Too few public methods> pylint: disable = R0903
+@mixin
 class InvocationQueryMixin(Interface):
     """Object that implements strategies for determining if a compiler should be invoked based on input."""
 

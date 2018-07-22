@@ -18,7 +18,7 @@ import os
 import sys
 
 from CommonEnvironment import FileSystem
-from CommonEnvironment.Interface import override
+from CommonEnvironment.Interface import override, mixin
 from CommonEnvironment.StreamDecorator import StreamDecorator
 
 from CommonEnvironment.CompilerImpl.OutputMixin import OutputMixin
@@ -29,6 +29,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 # ----------------------------------------------------------------------
+@mixin
 class SingleOutputMixin(OutputMixin):
     """Mixin for compilers that generate a single file"""
 

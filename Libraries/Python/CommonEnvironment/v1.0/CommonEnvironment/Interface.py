@@ -218,6 +218,44 @@ def staticderived(cls):
     return cls
 
 # ----------------------------------------------------------------------
+def mixin(cls):
+    """
+    Decorate applied to a class that indicates the class is a mixin and should not
+    participate in interface verification until it is part of another class.
+
+    Example:
+        class MyInterface(Interface):
+            @staticmethod
+            @abstractmethod
+            def Method1(): pass
+
+            @staticmethod
+            @abstractmethod
+            def Method2(): pass
+
+        # Don't check that Method matches MyInterface, as Mixin isn't based on
+        # MyInterface yet.
+
+        @mixin 
+        class Mixin1(Interface):
+            @staticmethod
+            @override
+            def Method1(): pass
+
+        @mixin
+        class Mixin2(Interface):
+            @staticmethod
+            @override
+            def Method2(): pass
+
+        class MyObject(Mixin1, Mixin2, MyInterface):
+            pass
+    """
+
+    setattr(cls, "__mixin", cls)
+    return cls
+
+# ----------------------------------------------------------------------
 def clsinit(cls):
     """
     Calls __clsinit__ on an object.
@@ -441,7 +479,7 @@ class _Entity(object):
 
     # ----------------------------------------------------------------------
     # |  Public Methods
-    def __init__(self, cls, item):
+    def __init__(self, cls, is_mixin, item):
         if not _is_python2:
             while hasattr(item, "__func__"):
                 item = item.__func__
@@ -464,6 +502,7 @@ class _Entity(object):
         self._is_abstract                   = getattr(abstract_check_item, "__isabstractmethod__", False)
 
         self.Cls                            = cls
+        self.IsMixin                        = is_mixin
         self.Type                           = typ
         self.Item                           = item
         self.FuncCode                       = getattr(item, "__code__", None)
@@ -519,8 +558,8 @@ class _Entity(object):
 
                 return self_value == other_value
 
-            # If one of the entities doesn't have code info, th
-            elif self.FuncCode is None or other.FuncCode is None:
+            # If one of the entities doesn't have code info, then they can't match
+            if self.FuncCode is None or other.FuncCode is None:
                 return False
             
         return ( self.FuncCode.co_filename == other.FuncCode.co_filename and
@@ -585,6 +624,8 @@ def _ResolveType(verified_types, cls, is_concrete_type):
 
     verified_types.add(cls)
 
+    is_mixin = getattr(cls, "__mixin", False) == cls
+
     bases = list(reversed(inspect.getmro(cls)))
 
     # Collect information about the members of the cls
@@ -631,13 +672,15 @@ def _ResolveType(verified_types, cls, is_concrete_type):
     these_abstracts = []
     these_extensions = []
     these_overrides = []
+    extra_validations = []
+
     errors = []
 
     for name, value in inspect.getmembers(cls):
         if name.startswith('__'):
             continue
 
-        entity = _Entity(cls, value)
+        entity = _Entity(cls, is_mixin, value)
 
         decorator_count = 0
 
@@ -661,6 +704,9 @@ def _ResolveType(verified_types, cls, is_concrete_type):
             if name not in overrides or not EntityInList(overrides[name], entity):
                 overrides.setdefault(name, []).append(entity)
                 these_overrides.append(name)
+
+            if not is_mixin and name in overrides and overrides[name][-1].IsMixin:
+                extra_validations.append(name)
 
         if decorator_count > 1:
             assert entity is not None
@@ -743,213 +789,216 @@ def _ResolveType(verified_types, cls, is_concrete_type):
         if errors:
             raise InterfaceException(errors)
         
-        # Ensure that derived items are associated with abstract/extension items
-        errors = []
-        
-        for override in these_overrides:
-            if override not in abstracts and override not in extensions:
-                entity = overrides[override][-1]
-        
-                errors.append("The {} '{}' is decorated with 'override' but doesn't match an abstract/extension item ({})".format( entity.TypeString(),
-                                                                                                                                   override,
-                                                                                                                                   entity.LocationString(),
-                                                                                                                                 ))
-        
-        if errors:
-            raise InterfaceException(errors)
-        
-        # Ensure that derived items are the right type
-        errors = []
-        
-        for override in these_overrides:
-            derived_entity = overrides[override][-1]
-        
-            base_entity = abstracts.get(override, extensions.get(override, None))
-            assert base_entity is not None, override
-        
-            if not ( base_entity.Type == derived_entity.Type or
-                     ( base_entity.Type in [ _Entity.Type.StaticMethod, _Entity.Type.ClassMethod, _Entity.Type.Method, ] and
-                       derived_entity.Type in [ _Entity.Type.StaticMethod, _Entity.Type.ClassMethod, _Entity.Type.Method, ]
-                     )
-                   ):
-                errors.append("The {} '{}' was implemented as a {} ({}, {})" \
-                                .format( base_entity.TypeString(),
-                                         override,
-                                         derived_entity.TypeString(),
-                                         base_entity.LocationString(),
-                                         derived_entity.LocationString(),
-                                       ))
-        
-        if errors:
-            raise InterfaceException(errors)
-        
-        # Ensure that derived items are defined with the correct arguments
-        errors = []
-        
-        kwargs_flag = 4
-        var_args_flag = 8
-        
-        for override in these_overrides:
-            derived_entity = overrides[override][-1]
-        
-            base_entity = abstracts.get(override, extensions.get(override, None))
-            assert base_entity is not None, override
-        
-            if base_entity.Type == _Entity.Type.Property:
-                continue
-        
-            base_params = base_entity.GetParams()
-            derived_params = derived_entity.GetParams()
-        
-            # We can skip the test if either the base or derived params represents a
-            # forwarding function:
-            #
-            #   def Func(*args, **kwargs)
-        
-            # ----------------------------------------------------------------------
-            def IsForwardingFunction(entity, params):
-                return ( not params and
-                         entity.FuncCode.co_flags & kwargs_flag and
-                         entity.FuncCode.co_flags & var_args_flag
-                       )
-        
-            # ----------------------------------------------------------------------
-        
-            if IsForwardingFunction(base_entity, base_params):
-                continue
-        
-            if IsForwardingFunction(derived_entity, derived_params):
-                continue
-        
-            # If the base specifies a variable number of args, only check those
-            # that are positional.
-            require_exact_match = True
-        
-            for flag in [ kwargs_flag,
-                          var_args_flag,
-                        ]:
-                if base_entity.FuncCode.co_flags & flag:
-                    require_exact_match = False
-                    break
-        
-            # This is not standard from an object-oriented perspective, but all custom 
-            # parameters with default values in derived functions, even if they weren't
-            # present in the base function.
-            if len(derived_params) > len(base_params):
-                params_to_remove = min(len(derived_params) - len(base_params), len(derived_entity.FuncDefaults or []))
-        
-                keys = list(six.iterkeys(derived_params))
-        
-                for _ in range(params_to_remove):
-                    del derived_params[keys.pop()]
-        
-            if ( (require_exact_match and len(derived_params) != len(base_params)) or
-                 not all(k in derived_params and derived_params[k] == v for k, v in six.iteritems(base_params))
-               ):
-                errors.append(( name,
-                                base_params,
-                                base_entity,
-                                derived_params,
-                                derived_entity,
-                              ))
-        
-        if errors:
-            # ----------------------------------------------------------------------
-            def DisplayParams(params):
-                values = []
-                has_default_value = False
-        
-                for name, default_value in six.iteritems(params):
-                    if default_value != _Entity.DoesNotExist:
-                        has_default_value = True
-        
-                        values.append("{name:<40}  {default:<20}  {type_}".format( name=name,
-                                                                                   default=str(default_value),
-                                                                                   type_=type(default_value),
-                                                                                 ))
-                    else:
-                        values.append(name)
-        
-                if has_default_value:
-                    return '\n'.join([ "            {}".format(value) for value in values ])
-        
-                return "            {}".format(", ".join(values))
-        
-            # ----------------------------------------------------------------------
-        
-            raise InterfaceException([ textwrap.dedent(
-                                            """\
-                                            {name}
-                                                    Base {base_location}
-                                            {base_params}
-        
-                                                    Derived {derived_location}
-        
-                                            {derived_params}
-        
-                                            """).format( name=name,
-                                                         base_location=bentity.LocationString(),
-                                                         base_params=DisplayParams(bparams),
-                                                         derived_location=dentity.LocationString(),
-                                                         derived_params=DisplayParams(dparams),
-                                                       )
-                                       for name, bparams, bentity, dparams, dentity in errors 
-                                     ])
-        
-        # Ensure that derived items are marked with override
-        warnings = []
-        
-        for name, value in inspect.getmembers(cls):
-            if name.startswith('__'):
-                continue
-        
-            base_entity = abstracts.get(name, extensions.get(name, None))
-            if base_entity is None:
-                continue
-        
-            entity = _Entity(cls, value)
-        
-            if entity.IsSameLocation(base_entity):
-                continue
-        
-            if name not in overrides or not overrides[name][-1].IsSameLocation(entity):
-                overrides.setdefault(name, []).append(entity)
-        
-                warnings.append("{} '{}' {}".format( entity.TypeString(),
-                                                     name,
-                                                     entity.LocationString(),
-                                                   ))
-        
-        if warnings:
-            sys.stderr.write(textwrap.dedent(
-                """\
-                WARNING: Missing override decorations in the object '{name}'
-                            Filename:   {filename}
-                            Line:       {line}
-        
-                {warnings}
-        
-                """).format( name=cls.__name__,
-                             filename=inspect.getfile(cls),
-                             line=inspect.findsource(cls)[1],
-                             warnings='\n'.join([ "               - {}".format(warning) for warning in warnings ]),
-                           ))
+        if not is_mixin:
+            overrides_to_validate = these_overrides + extra_validations
 
-        if is_concrete_type:
-            # Ensure that all abstracts are decorated
+            # Ensure that derived items are associated with abstract/extension items
             errors = []
-        
-            for name, base_entity in six.iteritems(abstracts):
-                this_entity = _Entity(cls, getattr(cls, name))
-        
-                if this_entity.IsSameLocation(base_entity):
-                    errors.append("The abstract {} '{}' is missing {}".format( base_entity.TypeString(),
-                                                                               name,
-                                                                               base_entity.LocationString(),
-                                                                             ))
-        
+            
+            for override in overrides_to_validate:
+                if override not in abstracts and override not in extensions:
+                    entity = overrides[override][-1]
+            
+                    errors.append("The {} '{}' is decorated with 'override' but doesn't match an abstract/extension item ({})".format( entity.TypeString(),
+                                                                                                                                       override,
+                                                                                                                                       entity.LocationString(),
+                                                                                                                                     ))
+            
             if errors:
                 raise InterfaceException(errors)
+            
+            # Ensure that derived items are the right type
+            errors = []
+            
+            for override in overrides_to_validate:
+                derived_entity = overrides[override][-1]
+            
+                base_entity = abstracts.get(override, extensions.get(override, None))
+                assert base_entity is not None, override
+            
+                if not ( base_entity.Type == derived_entity.Type or
+                         ( base_entity.Type in [ _Entity.Type.StaticMethod, _Entity.Type.ClassMethod, _Entity.Type.Method, ] and
+                           derived_entity.Type in [ _Entity.Type.StaticMethod, _Entity.Type.ClassMethod, _Entity.Type.Method, ]
+                         )
+                       ):
+                    errors.append("The {} '{}' was implemented as a {} ({}, {})" \
+                                    .format( base_entity.TypeString(),
+                                             override,
+                                             derived_entity.TypeString(),
+                                             base_entity.LocationString(),
+                                             derived_entity.LocationString(),
+                                           ))
+            
+            if errors:
+                raise InterfaceException(errors)
+            
+            # Ensure that derived items are defined with the correct arguments
+            errors = []
+            
+            kwargs_flag = 4
+            var_args_flag = 8
+            
+            for override in overrides_to_validate:
+                derived_entity = overrides[override][-1]
+            
+                base_entity = abstracts.get(override, extensions.get(override, None))
+                assert base_entity is not None, override
+            
+                if base_entity.Type == _Entity.Type.Property:
+                    continue
+            
+                base_params = base_entity.GetParams()
+                derived_params = derived_entity.GetParams()
+            
+                # We can skip the test if either the base or derived params represents a
+                # forwarding function:
+                #
+                #   def Func(*args, **kwargs)
+            
+                # ----------------------------------------------------------------------
+                def IsForwardingFunction(entity, params):
+                    return ( not params and
+                             entity.FuncCode.co_flags & kwargs_flag and
+                             entity.FuncCode.co_flags & var_args_flag
+                           )
+            
+                # ----------------------------------------------------------------------
+            
+                if IsForwardingFunction(base_entity, base_params):
+                    continue
+            
+                if IsForwardingFunction(derived_entity, derived_params):
+                    continue
+            
+                # If the base specifies a variable number of args, only check those
+                # that are positional.
+                require_exact_match = True
+            
+                for flag in [ kwargs_flag,
+                              var_args_flag,
+                            ]:
+                    if base_entity.FuncCode.co_flags & flag:
+                        require_exact_match = False
+                        break
+            
+                # This is not standard from an object-oriented perspective, but all custom 
+                # parameters with default values in derived functions, even if they weren't
+                # present in the base function.
+                if len(derived_params) > len(base_params):
+                    params_to_remove = min(len(derived_params) - len(base_params), len(derived_entity.FuncDefaults or []))
+            
+                    keys = list(six.iterkeys(derived_params))
+            
+                    for _ in range(params_to_remove):
+                        del derived_params[keys.pop()]
+            
+                if ( (require_exact_match and len(derived_params) != len(base_params)) or
+                     not all(k in derived_params and derived_params[k] == v for k, v in six.iteritems(base_params))
+                   ):
+                    errors.append(( name,
+                                    base_params,
+                                    base_entity,
+                                    derived_params,
+                                    derived_entity,
+                                  ))
+            
+            if errors:
+                # ----------------------------------------------------------------------
+                def DisplayParams(params):
+                    values = []
+                    has_default_value = False
+            
+                    for name, default_value in six.iteritems(params):
+                        if default_value != _Entity.DoesNotExist:
+                            has_default_value = True
+            
+                            values.append("{name:<40}  {default:<20}  {type_}".format( name=name,
+                                                                                       default=str(default_value),
+                                                                                       type_=type(default_value),
+                                                                                     ))
+                        else:
+                            values.append(name)
+            
+                    if has_default_value:
+                        return '\n'.join([ "            {}".format(value) for value in values ])
+            
+                    return "            {}".format(", ".join(values))
+            
+                # ----------------------------------------------------------------------
+            
+                raise InterfaceException([ textwrap.dedent(
+                                                """\
+                                                {name}
+                                                        Base {base_location}
+                                                {base_params}
+            
+                                                        Derived {derived_location}
+            
+                                                {derived_params}
+            
+                                                """).format( name=name,
+                                                             base_location=bentity.LocationString(),
+                                                             base_params=DisplayParams(bparams),
+                                                             derived_location=dentity.LocationString(),
+                                                             derived_params=DisplayParams(dparams),
+                                                           )
+                                           for name, bparams, bentity, dparams, dentity in errors 
+                                         ])
+            
+            # Ensure that derived items are marked with override
+            warnings = []
+            
+            for name, value in inspect.getmembers(cls):
+                if name.startswith('__'):
+                    continue
+            
+                base_entity = abstracts.get(name, extensions.get(name, None))
+                if base_entity is None:
+                    continue
+            
+                entity = _Entity(cls, is_mixin, value)
+            
+                if entity.IsSameLocation(base_entity):
+                    continue
+            
+                if name not in overrides or not overrides[name][-1].IsSameLocation(entity):
+                    overrides.setdefault(name, []).append(entity)
+            
+                    warnings.append("{} '{}' {}".format( entity.TypeString(),
+                                                         name,
+                                                         entity.LocationString(),
+                                                       ))
+            
+            if warnings:
+                sys.stderr.write(textwrap.dedent(
+                    """\
+                    WARNING: Missing override decorations in the object '{name}'
+                                Filename:   {filename}
+                                Line:       {line}
+            
+                    {warnings}
+            
+                    """).format( name=cls.__name__,
+                                 filename=inspect.getfile(cls),
+                                 line=inspect.findsource(cls)[1],
+                                 warnings='\n'.join([ "               - {}".format(warning) for warning in warnings ]),
+                               ))
+
+            if is_concrete_type:
+                # Ensure that all abstracts are decorated
+                errors = []
+            
+                for name, base_entity in six.iteritems(abstracts):
+                    this_entity = _Entity(cls, is_mixin, getattr(cls, name))
+            
+                    if this_entity.IsSameLocation(base_entity):
+                        errors.append("The abstract {} '{}' is missing {}".format( base_entity.TypeString(),
+                                                                                   name,
+                                                                                   base_entity.LocationString(),
+                                                                                 ))
+            
+                if errors:
+                    raise InterfaceException(errors)
 
     # Commit the values
     cls._AbstractItems = abstracts

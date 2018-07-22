@@ -26,7 +26,7 @@ import six
 import six.moves.cPickle as pickle
 
 from CommonEnvironment import FileSystem
-from CommonEnvironment.Interface import extensionmethod, override
+from CommonEnvironment.Interface import extensionmethod, override, mixin
 from CommonEnvironment import RegularExpression
 
 from CommonEnvironment.CompilerImpl.InvocationQueryMixin import InvocationQueryMixin
@@ -42,6 +42,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 inflect                                     = inflect_mod.engine()
 
 # ----------------------------------------------------------------------
+@mixin
 class ConditionalInvocationQueryMixin(InvocationQueryMixin):
 
     # Derived classes can override this value to potentially force generation

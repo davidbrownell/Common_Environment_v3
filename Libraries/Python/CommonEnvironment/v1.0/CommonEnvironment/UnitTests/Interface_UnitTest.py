@@ -634,6 +634,53 @@ class StaticDerivedSuite(unittest.TestCase):
             self.assertTrue(True)
 
 # ----------------------------------------------------------------------
+class MixinSuite(unittest.TestCase):
+
+    class MyInterface(Interface):
+        @staticmethod
+        @abstractmethod
+        def Method1(a): pass
+
+        @staticmethod
+        @abstractmethod
+        def Method2(a, b): pass
+
+    @mixin
+    class Mixin1(Interface):
+        @staticmethod
+        @override
+        def Method1(a): pass
+
+    @mixin
+    class Mixin2(Interface):
+        @staticmethod
+        @override
+        def Method2(a, b): pass
+
+    # ----------------------------------------------------------------------
+    def test_Valid(self):
+        class MyObject(self.Mixin1, self.Mixin2, self.MyInterface):
+            pass
+
+        MyObject()
+
+    # ----------------------------------------------------------------------
+    def test_MissingMethod(self):
+        class MyObject(self.Mixin1, self.MyInterface):
+            pass
+
+        self.assertRaises(InterfaceException, MyObject)
+
+    # ----------------------------------------------------------------------
+    def test_WrongParams(self):
+        class MyObject(self.Mixin1, self.Mixin2, self.MyInterface):
+            @staticmethod
+            @override
+            def Method2(a, b, c): pass
+
+        self.assertRaises(InterfaceException, MyObject)
+
+# ----------------------------------------------------------------------
 class ClsInitSuite(unittest.TestCase):
 
     # ----------------------------------------------------------------------

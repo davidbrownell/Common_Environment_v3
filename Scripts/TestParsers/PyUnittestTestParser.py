@@ -61,6 +61,7 @@ class TestParser(TestParserImpl):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def CreateInvokeCommandLine(cls, context, debug_on_error):
         command_line = super(TestParser, cls).CreateInvokeCommandLine(context, debug_on_error)
 

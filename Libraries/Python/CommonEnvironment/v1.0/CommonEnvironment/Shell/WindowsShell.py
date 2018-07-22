@@ -309,6 +309,7 @@ class WindowsShell(Shell):
 
         # ----------------------------------------------------------------------
         @classmethod
+        @override
         def ResolveSymLink(cls, filename):
             # Python 2.+ doesn't support symlinks on Windows and there doesn't seem to be
             # a way to resolve a symlink without parsing the file, and libraries mentioned
@@ -383,6 +384,7 @@ class WindowsShell(Shell):
 
         # ----------------------------------------------------------------------
         @classmethod
+        @override
         def DeleteSymLink(cls, filename, command_only=False):
             assert cls.IsSymLink(filename), filename
         

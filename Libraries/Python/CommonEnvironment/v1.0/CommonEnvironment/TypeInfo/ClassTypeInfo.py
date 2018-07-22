@@ -66,11 +66,13 @@ class ClassTypeInfo(DictTypeInfo):
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @Interface.override
     def _GetAttributes(item):
         return dir(item)
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @Interface.override
     def _GetAttributeValue(item, name, type_info):
         if isinstance(type_info, _MethodTypeInfo):
             item = type(item)
