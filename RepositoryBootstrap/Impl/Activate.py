@@ -137,12 +137,13 @@ def Activate( output_filename_or_stdout,
         def LoadMixinLibrary(mixin_path):
             mixin_activation_data = ActivationData.Load( mixin_path,
                                                          configuration=None,
+                                                         is_fast_environment=False,
                                                          force=True,
                                                        )
             if not mixin_activation_data.IsMixinRepo:
                 raise Exception("The repository at '{}' is not a mixin repository".format(mixin_path))
 
-            assert not mixin_activation_data.VersionSpecs.Tool
+            assert not mixin_activation_data.VersionSpecs.Tools
             assert not mixin_activation_data.VersionSpecs.Libraries
             assert len(mixin_activation_data.PrioritizedRepositories) == 1
 

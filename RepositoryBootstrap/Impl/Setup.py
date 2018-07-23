@@ -463,13 +463,7 @@ def _SetupBootstrap( output_stream,
                                 )
 
     # A mixin repository cannot have configurations, dependencies or version specs
-    if ( repo_data.IsMixinRepository and
-         ( repo_data.HasConfigurations or
-           next(six.itervalues(repo_data.Configurations)).Dependencies or 
-           next(six.itervalues(repo_data.Configurations)).VersionSpecs.Tools or
-           next(six.itervalues(repo_data.Configurations)).VersionSpecs.Libraries
-         )
-       ):
+    if repo_data.IsMixinRepository and repo_data.HasConfigurations:
         raise Exception("A mixin repository cannot have configurations, dependencies, or version specs.")
 
     display_cols = [ 54, 32, 100, ]
@@ -570,30 +564,31 @@ def _SetupBootstrap( output_stream,
                          repos='\n'.join([ "    - {} <{}>".format(ri.Name, ri.Id) for ri in remaining_repos ]),
                        ))
 
-    output_stream.write(textwrap.dedent(
-        """\
-        {repository} {was} found at {this} {location}
-
-            {header}
-            {sep}
-            {values}
-
-
-        """).format( repository=inflect.no("repository", len(repo_map)),
-                     was=inflect.plural("was", len(repo_map)),
-                     this=inflect.plural("this", len(repo_map)),
-                     location=inflect.plural("location", len(repo_map)),
-                     header=display_template.format("Repository Name", "Id", "Location"),
-                     sep=display_template.format(*[ '-' * col_size for col_size in display_cols ]),
-                     values=CommonEnvironmentImports.StringHelpers.LeftJustify( '\n'.join([ display_template.format( value.Name,
-                                                                                                                     value.Id,
-                                                                                                                     value.root,
-                                                                                                                   )
-                                                                                            for value in six.itervalues(repo_map)
-                                                                                          ]),
-                                                                                4,
-                                                                              ),
-                   ))
+    if repo_map:
+        output_stream.write(textwrap.dedent(
+            """\
+            {repository} {was} found at {this} {location}
+        
+                {header}
+                {sep}
+                {values}
+        
+        
+            """).format( repository=inflect.no("repository", len(repo_map)),
+                         was=inflect.plural("was", len(repo_map)),
+                         this=inflect.plural("this", len(repo_map)),
+                         location=inflect.plural("location", len(repo_map)),
+                         header=display_template.format("Repository Name", "Id", "Location"),
+                         sep=display_template.format(*[ '-' * col_size for col_size in display_cols ]),
+                         values=CommonEnvironmentImports.StringHelpers.LeftJustify( '\n'.join([ display_template.format( value.Name,
+                                                                                                                         value.Id,
+                                                                                                                         value.root,
+                                                                                                                       )
+                                                                                                for value in six.itervalues(repo_map)
+                                                                                              ]),
+                                                                                    4,
+                                                                                  ),
+                       ))
 
     # Populate the configurations and calculate the fingerprints
     for config_name, config_info in six.iteritems(repo_data.Configurations):
@@ -770,7 +765,7 @@ class _RepoData(object):
             # Get the dependency info
             dependencies_func = getattr(customization_mod, Constants.SETUP_ENVIRONMENT_DEPENDENCIES_METHOD_NAME, None)
             if dependencies_func:
-                configurations = dependencies_func()
+                configurations = dependencies_func() or {}
 
                 if configurations and not isinstance(configurations, dict):
                     configurations = { None : configurations, }
@@ -802,7 +797,7 @@ class _RepoData(object):
                   are_configurations_filtered,
                   is_mixin_repository,
                 ):
-        self.Configurations                 = configurations
+        self.Configurations                 = configurations or {}
         self.AreConfigurationsFiltered      = are_configurations_filtered
         self.IsMixinRepository              = is_mixin_repository
 
@@ -813,7 +808,9 @@ class _RepoData(object):
     # ----------------------------------------------------------------------
     @property
     def HasConfigurations(self):
-        return len(self.Configurations) > 1 or next(six.iterkeys(self.Configurations)) is not None
+        return ( self.Configurations and 
+                 (len(self.Configurations) > 1 or next(six.iterkeys(self.Configurations)) is not None)
+               )
 
 # ----------------------------------------------------------------------
 class _RepositoriesMap(OrderedDict):
@@ -943,9 +940,9 @@ class _RepositoriesMap(OrderedDict):
                  repo_data,
                )
 
-        if on_search_begin_func and not on_search_begin_func(self):
-            return None
-
+        if nonlocals.remaining_repos == 0:
+            return self
+        
         if nonlocals.remaining_repos:
             output_stream.write("\nSearching for repositories...")
             output_stream.flush()
