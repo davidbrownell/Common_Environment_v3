@@ -17,7 +17,6 @@
 import os
 import sys
 
-import CommonEnvironment
 from CommonEnvironment.Interface import override, DerivedProperty
 from CommonEnvironment.TypeInfo import TypeInfo
 
@@ -45,10 +44,6 @@ class FloatTypeInfo(TypeInfo):
 
         self.Min                            = float(min) if min is not None else None
         self.Max                            = float(max) if max is not None else None
-
-    # ----------------------------------------------------------------------
-    def __repr__(self):
-        return CommonEnvironment.ObjectReprImpl(self)
 
     # ----------------------------------------------------------------------
     @property

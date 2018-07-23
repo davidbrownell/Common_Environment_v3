@@ -21,7 +21,6 @@ import sys
 import inflect as inflect_mod
 import six
 
-import CommonEnvironment
 from CommonEnvironment.Interface import override, DerivedProperty
 from CommonEnvironment.TypeInfo import TypeInfo
 
@@ -63,10 +62,6 @@ class StringTypeInfo(TypeInfo):
         self.ValidationExpression           = validation_expression
         self.MinLength                      = min_length
         self.MaxLength                      = max_length
-
-    # ----------------------------------------------------------------------
-    def __repr__(self):
-        return CommonEnvironment.ObjectReprImpl(self)
 
     # ----------------------------------------------------------------------
     @property

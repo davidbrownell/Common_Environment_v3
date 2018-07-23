@@ -20,7 +20,6 @@ import sys
 
 import six
 
-import CommonEnvironment
 from CommonEnvironment.Interface import override, DerivedProperty
 from CommonEnvironment.TypeInfo import TypeInfo
 
@@ -47,10 +46,6 @@ class FilenameTypeInfo(TypeInfo):
         self.EnsureExists                   = ensure_exists
         self.MatchAny                       = match_any
         self.ValidationExpression           = validation_expression
-
-    # ----------------------------------------------------------------------
-    def __repr__(self):
-        return CommonEnvironment.ObjectReprImpl(self)
 
     # ----------------------------------------------------------------------
     @property

@@ -20,6 +20,7 @@ import sys
 import inflect as inflect_mod
 import six
 
+import CommonEnvironment
 from CommonEnvironment.Interface import Interface, \
                                         abstractmethod, \
                                         abstractproperty
@@ -278,6 +279,10 @@ class TypeInfo(Interface):
         self.Arity                          = arity
         self.ValidationFunc                 = validation_func
         self.CollectionValidationFunc       = collection_validation_func
+
+    # ----------------------------------------------------------------------
+    def __repr__(self):
+        return CommonEnvironment.ObjectReprImpl(self)
 
     # ----------------------------------------------------------------------
     def IsExpectedType(self, item):

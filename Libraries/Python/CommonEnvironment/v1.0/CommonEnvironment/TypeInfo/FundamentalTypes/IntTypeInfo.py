@@ -18,7 +18,6 @@ import math
 import os
 import sys
 
-import CommonEnvironment
 from CommonEnvironment.Interface import override, DerivedProperty
 from CommonEnvironment.TypeInfo import TypeInfo
 
@@ -73,10 +72,6 @@ class IntTypeInfo(TypeInfo):
         self.Max                            = max
         self.Bytes                          = bytes
         self.Unsigned                       = min is not None and min >= 0
-
-    # ----------------------------------------------------------------------
-    def __repr__(self):
-        return CommonEnvironment.ObjectReprImpl(self)
 
     # ----------------------------------------------------------------------
     @property

@@ -19,7 +19,6 @@ import sys
 
 import six
 
-import CommonEnvironment
 from CommonEnvironment.Interface import override, DerivedProperty
 from CommonEnvironment.TypeInfo import TypeInfo
 
@@ -57,10 +56,6 @@ class EnumTypeInfo(TypeInfo):
 
         self.Values                         = values
         self.FriendlyValues                 = friendly_values
-
-    # ----------------------------------------------------------------------
-    def __repr__(self):
-        return CommonEnvironment.ObjectReprImpl(self)
 
     # ----------------------------------------------------------------------
     @property

@@ -20,7 +20,6 @@ import sys
 
 import six
 
-import CommonEnvironment
 from CommonEnvironment.Interface import override, DerivedProperty
 from CommonEnvironment.TypeInfo import TypeInfo
 
@@ -44,10 +43,6 @@ class DirectoryTypeInfo(TypeInfo):
 
         self.EnsureExists                   = ensure_exists
         self.ValidationExpression           = validation_expression
-
-    # ----------------------------------------------------------------------
-    def __repr__(self):
-        return CommonEnvironment.ObjectReprImpl(self)
 
     # ----------------------------------------------------------------------
     @property
