@@ -75,7 +75,7 @@ def Activate( output_filename_or_stdout,
               mixin=None,
               output_stream=sys.stdout,
             ):
-    """Activates a respository for development activities."""
+    """Activates a repository for development activities."""
 
     configuration = configuration if configuration.lower() != "none" else None
     version_specs = version_spec or {}; del version_spec
@@ -143,11 +143,7 @@ def Activate( output_filename_or_stdout,
             if not mixin_activation_data.IsMixinRepo:
                 raise Exception("The repository at '{}' is not a mixin repository".format(mixin_path))
 
-            assert not mixin_activation_data.VersionSpecs.Tools
-            assert not mixin_activation_data.VersionSpecs.Libraries
-            assert len(mixin_activation_data.PrioritizedRepositories) == 1
-
-            mixin_repo = mixin_activation_data.PrioritizedRepositories[0]
+            mixin_repo = mixin_activation_data.PrioritizedRepositories[-1]
             mixin_repo.IsMixinRepo = True
 
             # Add this repo as a repo to be activated if it isn't already in the list

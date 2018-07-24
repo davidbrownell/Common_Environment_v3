@@ -564,31 +564,30 @@ def _SetupBootstrap( output_stream,
                          repos='\n'.join([ "    - {} <{}>".format(ri.Name, ri.Id) for ri in remaining_repos ]),
                        ))
 
-    if repo_map:
-        output_stream.write(textwrap.dedent(
-            """\
-            {repository} {was} found at {this} {location}
-        
-                {header}
-                {sep}
-                {values}
-        
-        
-            """).format( repository=inflect.no("repository", len(repo_map)),
-                         was=inflect.plural("was", len(repo_map)),
-                         this=inflect.plural("this", len(repo_map)),
-                         location=inflect.plural("location", len(repo_map)),
-                         header=display_template.format("Repository Name", "Id", "Location"),
-                         sep=display_template.format(*[ '-' * col_size for col_size in display_cols ]),
-                         values=CommonEnvironmentImports.StringHelpers.LeftJustify( '\n'.join([ display_template.format( value.Name,
-                                                                                                                         value.Id,
-                                                                                                                         value.root,
-                                                                                                                       )
-                                                                                                for value in six.itervalues(repo_map)
-                                                                                              ]),
-                                                                                    4,
-                                                                                  ),
-                       ))
+    output_stream.write(textwrap.dedent(
+        """\
+        {repository} {was} found at {this} {location}
+    
+            {header}
+            {sep}
+            {values}
+    
+    
+        """).format( repository=inflect.no("repository", len(repo_map)),
+                     was=inflect.plural("was", len(repo_map)),
+                     this=inflect.plural("this", len(repo_map)),
+                     location=inflect.plural("location", len(repo_map)),
+                     header=display_template.format("Repository Name", "Id", "Location"),
+                     sep=display_template.format(*[ '-' * col_size for col_size in display_cols ]),
+                     values=CommonEnvironmentImports.StringHelpers.LeftJustify( '\n'.join([ display_template.format( value.Name,
+                                                                                                                     value.Id,
+                                                                                                                     value.root,
+                                                                                                                   )
+                                                                                            for value in six.itervalues(repo_map)
+                                                                                          ]),
+                                                                                4,
+                                                                              ),
+                   ))
 
     # Populate the configurations and calculate the fingerprints
     for config_name, config_info in six.iteritems(repo_data.Configurations):
@@ -765,7 +764,7 @@ class _RepoData(object):
             # Get the dependency info
             dependencies_func = getattr(customization_mod, Constants.SETUP_ENVIRONMENT_DEPENDENCIES_METHOD_NAME, None)
             if dependencies_func:
-                configurations = dependencies_func() or {}
+                configurations = dependencies_func()
 
                 if configurations and not isinstance(configurations, dict):
                     configurations = { None : configurations, }
@@ -797,7 +796,7 @@ class _RepoData(object):
                   are_configurations_filtered,
                   is_mixin_repository,
                 ):
-        self.Configurations                 = configurations or {}
+        self.Configurations                 = configurations
         self.AreConfigurationsFiltered      = are_configurations_filtered
         self.IsMixinRepository              = is_mixin_repository
 
@@ -808,9 +807,7 @@ class _RepoData(object):
     # ----------------------------------------------------------------------
     @property
     def HasConfigurations(self):
-        return ( self.Configurations and 
-                 (len(self.Configurations) > 1 or next(six.iterkeys(self.Configurations)) is not None)
-               )
+        return len(self.Configurations) > 1 or next(six.iterkeys(self.Configurations)) is not None
 
 # ----------------------------------------------------------------------
 class _RepositoriesMap(OrderedDict):
@@ -940,9 +937,6 @@ class _RepositoriesMap(OrderedDict):
                  repo_data,
                )
 
-        if nonlocals.remaining_repos == 0:
-            return self
-        
         if nonlocals.remaining_repos:
             output_stream.write("\nSearching for repositories...")
             output_stream.flush()
