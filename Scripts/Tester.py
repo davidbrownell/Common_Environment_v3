@@ -72,7 +72,7 @@ def _LoadCompilerFromModule(mod):
     for potential_name in [ "Compiler", "CodeGenerator", "Verifier", ]:
         result = getattr(mod, potential_name, None)
         if result is not None:
-            return result
+            return result()
 
     assert False, mod
     return None
@@ -80,9 +80,9 @@ def _LoadCompilerFromModule(mod):
 # ----------------------------------------------------------------------
 
 COMPILERS                                   = [ _LoadCompilerFromModule(mod) for mod in DPA.EnumeratePlugins("DEVELOPMENT_ENVIRONMENT_COMPILERS") ]
-TEST_EXECUTORS                              = [ mod.TestExecutor for mod in DPA.EnumeratePlugins("DEVELOPMENT_ENVIRONMENT_TEST_EXECUTORS") ]
-TEST_PARSERS                                = [ mod.TestParser for mod in DPA.EnumeratePlugins("DEVELOPMENT_ENVIRONMENT_TEST_PARSERS") ]
-CODE_COVERAGE_VALIDATORS                    = [ mod.CodeCoverageValidator for mod in DPA.EnumeratePlugins("DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_VALIDATORS") ]
+TEST_EXECUTORS                              = [ mod.TestExecutor() for mod in DPA.EnumeratePlugins("DEVELOPMENT_ENVIRONMENT_TEST_EXECUTORS") ]
+TEST_PARSERS                                = [ mod.TestParser() for mod in DPA.EnumeratePlugins("DEVELOPMENT_ENVIRONMENT_TEST_PARSERS") ]
+CODE_COVERAGE_VALIDATORS                    = [ mod.CodeCoverageValidator() for mod in DPA.EnumeratePlugins("DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_VALIDATORS") ]
 
 # Extract configuration-specific information from other repositories. This ensures that this file,
 # which is in the fundamental repo, doesn't take a dependency on repos that depend on this one.
@@ -147,10 +147,10 @@ def _CreateConfigurations():
                 assert compiler
                 assert test_parser
     
-                self.Compiler                               = compiler()
-                self.TestParser                             = test_parser()
-                self.OptionalCoverageExecutor               = optional_coverage_executor() if optional_coverage_executor else None
-                self.OptionalCodeCoverageValidator          = optional_code_coverage_validator() if optional_code_coverage_validator else None
+                self.Compiler                               = compiler
+                self.TestParser                             = test_parser
+                self.OptionalCoverageExecutor               = optional_coverage_executor if optional_coverage_executor else None
+                self.OptionalCodeCoverageValidator          = optional_code_coverage_validator if optional_code_coverage_validator else None
     
         # ----------------------------------------------------------------------
                           
@@ -1814,7 +1814,7 @@ def _ExecuteImpl( filename_or_dir,
 
     if test_executor and test_executor.Name != "Standard" and code_coverage_validator is None:
         code_coverage_validator = next(ccv for ccv in CODE_COVERAGE_VALIDATORS if ccv.Name == "Standard")
-        code_coverage_validator = code_coverage_validator()
+        code_coverage_validator = code_coverage_validator
 
     with StreamDecorator.GenerateAnsiSequenceStream( output_stream,
                                                      preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
