@@ -67,6 +67,11 @@ class TestExecutor(TestExecutorImpl):
     with _*Test.py
     """
 
+    # This environment variable can be set to specify the coverage output file.
+    # A random filename will be created if this environment variable is not defined
+    # and set to an output filename.
+    COVERAGE_FILENAME_ENVIRONMENT_VARIABLE  = "PYCOVERAGE_OUTPUT_FILENAME"
+
     # ----------------------------------------------------------------------
     # |  Public Properties
     Name                                    = DerivedProperty("PyCoverage")
@@ -208,10 +213,12 @@ class TestExecutor(TestExecutorImpl):
             test_time = str(datetime.timedelta(seconds=(time.time() - start_time)))
 
             # Get the coverage info
+            xml_temp_filename = os.getenv(cls.COVERAGE_FILENAME_ENVIRONMENT_VARIABLE)
+            if xml_temp_filename is None:
+                xml_temp_filename = CurrentShell.CreateTempFilename(".xml")
+
             start_time = time.time()
-
-            xml_temp_filename = CurrentShell.CreateTempFilename(".xml")
-
+            
             command_line = '{} -o "{}"'.format( command_line_template.format("xml"),
                                                 xml_temp_filename,
                                               )
