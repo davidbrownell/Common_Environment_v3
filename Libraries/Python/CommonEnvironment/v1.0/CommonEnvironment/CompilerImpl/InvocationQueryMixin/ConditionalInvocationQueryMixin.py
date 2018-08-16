@@ -245,7 +245,7 @@ class ConditionalInvocationQueryMixin(InvocationQueryMixin):
     # ----------------------------------------------------------------------
     @staticmethod
     def _GetModifiedTime(filename):
-        # When it comes to python files, we don't care when the file was compiled by rather
+        # When it comes to python files, we don't care when the file was compiled but rather
         # when the corresponding source file was modified. If passed a compiled file, look
         # at the corresponding .py file instead.
         if os.path.splitext(filename)[1].lower() in [ ".pyc", ".pyo", ]:
@@ -326,8 +326,8 @@ class _PersistedInfo(object):
     def Save(self):
         data = pickle.dumps(self)
         data = base64.b64encode(data)
-        data = str(data)
-
+        data = data.decode("utf-8")
+        
         filename = self._GetPersistedFilename(self.Context)
 
         FileSystem.MakeDirs(os.path.dirname(filename))
