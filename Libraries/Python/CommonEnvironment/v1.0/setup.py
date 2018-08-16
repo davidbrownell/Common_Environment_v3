@@ -12,51 +12,25 @@
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 # |  
 # ----------------------------------------------------------------------
-import os
-import re
-import sys
-
-import pip
 from setuptools import setup, find_packages
-import six
-
-from CommonEnvironment import Process
-
-# ----------------------------------------------------------------------
-_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
-_script_dir, _script_name = os.path.split(_script_fullpath)
-# ----------------------------------------------------------------------
-
-# Get the installed packages. We can assume that everything installed is a dependency since we
-#  are the most fundamental repo.
-installation_requirements = []
-
-sink = six.moves.StringIO()
-
-result = Process.Execute("pip freeze", sink)
-sink = sink.getvalue()
-
-assert result == 0, sink
-
-regex = re.compile(r"^(?P<name>.+?)==(?P<version>.+)$")
-
-for line in sink.split('\n'):
-    match = regex.match(line)
-    if not match:
-        continue
-
-    installation_requirements.append("{}>={}".format(match.group("name"), match.group("version")))
 
 # Do the setup
 setup( name="CommonEnvironment",
-       version="1.0",
+       version="1.0.0",
        packages=find_packages(),
-       install_requires=installation_requirements,
+       install_requires=[ "asciitree >= 0.3.3", 
+                          "colorama >= 0.3.9", 
+                          "enum34 >= 1.1.6", 
+                          "inflect >= 0.2.5", 
+                          "six >= 1.11.0", 
+                          "tqdm >= 4.23.3", 
+                          "wrapt >= 1.10.11"
+                        ],
        
        author="David Brownell",
        author_email="pypi@DavidBrownell.com",
        description="Foundational Python libraries used across a variety of different projects and environments.",
-       long_description=open(os.path.join(_script_dir, "Readme.rst")).read(),
+       long_description=open("Readme.rst").read(),
        license="Boost Software License",
        keywords=[ "Python",
                   "Library",

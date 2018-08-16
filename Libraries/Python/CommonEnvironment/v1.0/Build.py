@@ -15,12 +15,18 @@
 """Builds the Common_Environment Python distribution"""
 
 import os
+import re
 import sys
+import textwrap
+
+import six
 
 from CommonEnvironment import BuildImpl
+from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CommandLine
 from CommonEnvironment import FileSystem
 from CommonEnvironment import Process
+from CommonEnvironment.Shell.All import CurrentShell
 from CommonEnvironment.StreamDecorator import StreamDecorator
 
 # ----------------------------------------------------------------------
@@ -73,7 +79,7 @@ def Clean( output_stream=sys.stdout,
             found_dir = True
 
         if not found_dir:
-            dm.stream.write("No content was found.\n")
+            dm.stream.write("No content found.\n")
 
         return dm.result
 
@@ -90,11 +96,42 @@ def Deploy( production=False,
                                                      prefix="\nResults: ",
                                                      suffix='\n',
                                                    ) as dm:
-        dm.result = Process.Execute( "twine upload --repository-url {url} dist/*".format( url="https://pypi.org/" if production else "https://test.pypi.org/legacy/",
-                                                                                        ),
-                                     dm.stream,
-                                   )
-        return dm.result
+        temp_directory = CurrentShell.CreateTempDirectory()
+        assert os.path.isdir(temp_directory), temp_directory
+
+        with CallOnExit(lambda: FileSystem.RemoveTree(temp_directory)):
+            import getpass
+
+            username = six.moves.input("Enter your username: ")
+            if not username:
+                dm.result = 1
+                return dm.result
+
+            password = getpass.getpass("Enter your password: ")
+            if not password:
+                dm.result = 1
+                return dm.result
+            
+            with open(os.path.join(temp_directory, ".pypirc"), 'w') as f:
+                f.write(textwrap.dedent(
+                    """\
+                    [distutils]
+                    index-servers =
+                        pypi
+
+                    [pypi]
+                    repository: {repo}
+                    username: {username}
+                    password: {password}
+                    """).format( repo="https://upload.pypi.org/legacy/" if production else "https://test.pypi.org/legacy/",
+                                 username=username,
+                                 password=password,
+                               ))
+
+            os.environ["HOME"] = temp_directory
+
+            dm.result = Process.Execute('twine upload "dist/*"', dm.stream)
+            return dm.result
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
