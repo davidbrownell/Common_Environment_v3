@@ -595,6 +595,9 @@ class Executor(object):
                                )
 
         except ValidationException as ex:
+            if allow_exceptions:
+                raise
+                
             result = self.Usage( error=str(ex),
                                  verbose=verbose,
                                )
