@@ -270,6 +270,7 @@ def Main( config,
     # ----------------------------------------------------------------------
     @CommandLine.EntryPoint
     def Metadata():
+        """Metadata associated with the build"""
         sys.stdout.write(str(config))
 
     # ----------------------------------------------------------------------
@@ -433,6 +434,7 @@ def _GenerateRebuild(build_func, clean_func, config):
                                       output_dir=CommandLine.DirectoryTypeInfo(ensure_exists=False),
                                     )
             def Rebuild(configuration, output_dir):
+                """Invokes Clean and Build functionality"""
                 return Impl(configuration, output_dir, build_func, clean_func)
 
             # ----------------------------------------------------------------------
@@ -442,6 +444,7 @@ def _GenerateRebuild(build_func, clean_func, config):
             @CommandLine.Constraints( configuration=CommandLine.EnumTypeInfo(config.Configurations),
                                     )
             def Rebuild(configuration):
+                """Invokes Clean and Build functionality"""
                 return Impl( configuration,
                              None,
                              lambda cfg, output_dir: build_func(cfg),
@@ -457,6 +460,7 @@ def _GenerateRebuild(build_func, clean_func, config):
             @CommandLine.Constraints( output_dir=CommandLine.DirectoryTypeInfo(ensure_exists=False),
                                     )
             def Rebuild(output_dir):
+                """Invokes Clean and Build functionality"""
                 return Impl( None,
                              output_dir,
                              lambda cfg, output_dir: build_func(output_dir),
@@ -468,6 +472,7 @@ def _GenerateRebuild(build_func, clean_func, config):
             # ----------------------------------------------------------------------
             @CommandLine.EntryPoint
             def Rebuild():
+                """Invokes Clean and Build functionality"""
                 return Impl( None,
                              None,
                              lambda cfg, output_dir: build_func(),
