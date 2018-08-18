@@ -64,7 +64,7 @@ def GenerateCommands( functor,              # def Func() -> []
         else:
             error = str(ex)
 
-        commands = [ CommonEnvironmentImports.CurrentShell.Commands.Message("ERROR: {}".format(CommonEnvironmentImports.StringHelpers.LeftJustify(error, len("ERROR: ")))),
+        commands = [ CommonEnvironmentImports.CurrentShell.Commands.Message("\n\nERROR: {}".format(CommonEnvironmentImports.StringHelpers.LeftJustify(error, len("ERROR: ")))),
                      CommonEnvironmentImports.CurrentShell.Commands.Exit(return_code=-1),
                    ]
 

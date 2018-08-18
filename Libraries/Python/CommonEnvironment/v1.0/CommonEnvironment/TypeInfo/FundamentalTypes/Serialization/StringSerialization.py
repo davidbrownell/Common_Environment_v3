@@ -23,7 +23,7 @@ import textwrap
 import uuid
 
 from CommonEnvironment import FileSystem
-from CommonEnvironment.Interface import staticderived
+from CommonEnvironment.Interface import staticderived, override
 from CommonEnvironment import RegularExpression
 
 from CommonEnvironment.TypeInfo import ValidationException
@@ -50,12 +50,14 @@ class RegularExpressionVisitor(Visitor):
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnBool(type_info):
         return [ ( r"(true|t|yes|y|1|false|f|no|n|0)", re.IGNORECASE ),
                ]
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def OnDateTime(cls, type_info):
         float_regex_string = cls.OnFloat(FloatTypeInfo(min=0))[0]
 
@@ -100,6 +102,7 @@ class RegularExpressionVisitor(Visitor):
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnDate(type_info):
         sep = r"[-/\.]"
 
@@ -123,12 +126,14 @@ class RegularExpressionVisitor(Visitor):
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnDirectory(type_info):
         return [ r".+",
                ]
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnDuration(type_info):
         return [ textwrap.dedent(
                     # <Wrong hanging indentation> pylint: disable = C0330
@@ -143,24 +148,28 @@ class RegularExpressionVisitor(Visitor):
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnEnum(type_info):
         return [ "({})".format('|'.join([ re.escape(value) for value in type_info.Values ])),
                ]
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnFilename(type_info):
         return [ r".+",
                ]
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def OnFloat(cls, type_info):
         return [ r"{}(?:\.\d+)?".format(cls.OnInt(type_info)[0]),
                ]
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnGuid(type_info):
         d = { "char" : r"[0-9A-Fa-f]", }
 
@@ -175,6 +184,7 @@ class RegularExpressionVisitor(Visitor):
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnInt(type_info):
         patterns = []
 
@@ -207,6 +217,7 @@ class RegularExpressionVisitor(Visitor):
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnString(type_info):
         if type_info.ValidationExpression:
             return [ RegularExpression.PythonToJavaScript(type_info.ValidationExpression),
@@ -232,6 +243,7 @@ class RegularExpressionVisitor(Visitor):
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnTime(type_info):
         return [ textwrap.dedent(
                     # <Wrong hanging indentation> pylint: disable = C0330
@@ -245,6 +257,7 @@ class RegularExpressionVisitor(Visitor):
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnUri(type_info):
         # This regex is overly aggressive in identifying uris, but should work in most cases.
         return [ r"\S+?://\S+", ]
@@ -256,6 +269,7 @@ class StringSerialization(Serialization):
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def _SerializeItemImpl(type_info, item, **custom_kwargs):
         # custom_kwargs:
         #   type_info type          Key             Value       Default             Desc
@@ -268,6 +282,7 @@ class StringSerialization(Serialization):
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def _DeserializeItemImpl(type_info, item, **custom_kwargs):
         # custom_kwargs:
         #   type_info type          Key         Value       Default             Desc
@@ -308,11 +323,13 @@ class _SerializationVisitor(Visitor):
     
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnBool(type_info, item, custom_kwargs):
         return str(item)
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnDateTime(type_info, item, custom_kwargs):
         if not custom_kwargs.get("microseconds", True):
             item = item.replace(microsecond=0)
@@ -321,16 +338,19 @@ class _SerializationVisitor(Visitor):
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnDate(type_info, item, custom_kwargs):
         return item.isoformat()
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def OnDirectory(cls, type_info, item, custom_kwargs):
         return cls.OnFilename(type_info, item, custom_kwargs)
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnDuration(type_info, item, custom_kwargs):
         seconds = item.total_seconds()
 
@@ -371,41 +391,49 @@ class _SerializationVisitor(Visitor):
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnEnum(type_info, item, custom_kwargs):
         return item
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnFilename(type_info, item, custom_kwargs):
         return item.replace(os.path.sep, '/')
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnFloat(type_info, item, custom_kwargs):
         return str(item)
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnGuid(type_info, item, custom_kwargs):
         return str(item)
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnInt(type_info, item, custom_kwargs):
         return str(item)
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnString(type_info, item, custom_kwargs):
         return item
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnTime(type_info, item, custom_kwargs):
         return item.isoformat()
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnUri(type_info, item, custom_kwargs):
         return item.ToString()
 
@@ -414,11 +442,13 @@ class _SerializationVisitor(Visitor):
 class _DeserializationVisitor(Visitor):
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnBool(type_info, item, custom_kwargs, regex_match, regex_index):
         return item.lower() in [ "true", "t", "yes", "y", "1", ]
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def OnDateTime(cls, type_info, item, custom_kwargs, regex_match, regex_index):
         if regex_index == 0:
             # ISO Format
@@ -465,6 +495,7 @@ class _DeserializationVisitor(Visitor):
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnDate(type_info, item, custom_kwargs, regex_match, regex_index):
         year = int(regex_match.group("year{}".format(regex_index)))
         month = int(regex_match.group("month{}".format(regex_index)))
@@ -482,11 +513,13 @@ class _DeserializationVisitor(Visitor):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def OnDirectory(cls, type_info, item, custom_kwargs, regex_match, regex_index):
         return cls.OnFilename(type_info, item, custom_kwargs, regex_match, regex_index)
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnDuration(type_info, item, custom_kwargs, regex_match, regex_index):
         parts = item.split(':')
 
@@ -535,11 +568,13 @@ class _DeserializationVisitor(Visitor):
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnEnum(type_info, item, custom_kwargs, regex_match, regex_index):
         return item
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnFilename(type_info, item, custom_kwargs, regex_match, regex_index):
         item = item.replace('/', os.path.sep)
 
@@ -550,31 +585,37 @@ class _DeserializationVisitor(Visitor):
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnFloat(type_info, item, custom_kwargs, regex_match, regex_index):
         return float(item)
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnGuid(type_info, item, custom_kwargs, regex_match, regex_index):
         return uuid.UUID(item)
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnInt(type_info, item, custom_kwargs, regex_match, regex_index):
         return int(item)
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnString(type_info, item, custom_kwargs, regex_match, regex_index):
         return item
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def OnTime(cls, type_info, item, custom_kwargs, regex_match, regex_index):
         return datetime.datetime.strptime(*cls._GetTimeExpr(item)).time()
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnUri(type_info, item, custom_kwargs, regex_match, regex_index):
         return UriTypeInfo.Uri.FromString(item)
 

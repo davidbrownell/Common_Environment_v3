@@ -17,6 +17,7 @@
 import os
 import sys
 
+from CommonEnvironment.Interface import override, mixin
 from CommonEnvironment.CompilerImpl.InputProcessingMixin import InputProcessingMixin
 
 # ----------------------------------------------------------------------
@@ -24,6 +25,7 @@ _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
+@mixin
 class AtomicInputProcessingMixin(InputProcessingMixin):
     """All inputs are grouped together as a single group."""
 
@@ -31,6 +33,7 @@ class AtomicInputProcessingMixin(InputProcessingMixin):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def _GenerateMetadataItemsImpl(cls, invocation_group_inputs, metadata):
         if cls.AttributeName in metadata:
             raise Exception("'{}' is a reserved keyword".format(cls.AttributeName))
@@ -40,5 +43,6 @@ class AtomicInputProcessingMixin(InputProcessingMixin):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def _GetInputItems(cls, context):
         return context[cls.AttributeName]

@@ -72,7 +72,7 @@ def _LoadCompilerFromModule(mod):
     for potential_name in [ "Compiler", "CodeGenerator", "Verifier", ]:
         result = getattr(mod, potential_name, None)
         if result is not None:
-            return result
+            return result()
 
     assert False, mod
     return None
@@ -80,9 +80,9 @@ def _LoadCompilerFromModule(mod):
 # ----------------------------------------------------------------------
 
 COMPILERS                                   = [ _LoadCompilerFromModule(mod) for mod in DPA.EnumeratePlugins("DEVELOPMENT_ENVIRONMENT_COMPILERS") ]
-TEST_EXECUTORS                              = [ mod.TestExecutor for mod in DPA.EnumeratePlugins("DEVELOPMENT_ENVIRONMENT_TEST_EXECUTORS") ]
-TEST_PARSERS                                = [ mod.TestParser for mod in DPA.EnumeratePlugins("DEVELOPMENT_ENVIRONMENT_TEST_PARSERS") ]
-CODE_COVERAGE_VALIDATORS                    = [ mod.CodeCoverageValidator for mod in DPA.EnumeratePlugins("DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_VALIDATORS") ]
+TEST_EXECUTORS                              = [ mod.TestExecutor() for mod in DPA.EnumeratePlugins("DEVELOPMENT_ENVIRONMENT_TEST_EXECUTORS") ]
+TEST_PARSERS                                = [ mod.TestParser() for mod in DPA.EnumeratePlugins("DEVELOPMENT_ENVIRONMENT_TEST_PARSERS") ]
+CODE_COVERAGE_VALIDATORS                    = [ mod.CodeCoverageValidator() for mod in DPA.EnumeratePlugins("DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_VALIDATORS") ]
 
 # Extract configuration-specific information from other repositories. This ensures that this file,
 # which is in the fundamental repo, doesn't take a dependency on repos that depend on this one.
@@ -147,10 +147,10 @@ def _CreateConfigurations():
                 assert compiler
                 assert test_parser
     
-                self.Compiler                               = compiler()
-                self.TestParser                             = test_parser()
-                self.OptionalCoverageExecutor               = optional_coverage_executor() if optional_coverage_executor else None
-                self.OptionalCodeCoverageValidator          = optional_code_coverage_validator() if optional_code_coverage_validator else None
+                self.Compiler                               = compiler
+                self.TestParser                             = test_parser
+                self.OptionalCoverageExecutor               = optional_coverage_executor if optional_coverage_executor else None
+                self.OptionalCodeCoverageValidator          = optional_code_coverage_validator if optional_code_coverage_validator else None
     
         # ----------------------------------------------------------------------
                           
@@ -851,7 +851,7 @@ def GenerateTestResults( test_items,
 
                 log_filename = os.path.join( working_data.output_dir,
                                              configuration,
-                                             "{0}.{1:06d}.txt".format(log_name, iteration),
+                                             "{0}.{1:06d}.txt".format(log_name, iteration + 1),
                                            )
 
                 with open(log_filename, 'w') as f:
@@ -1503,7 +1503,7 @@ def MatchTests( input_dir,
                        ))
 
     if test_items:
-        header = "{} with corresponding sources".format(inflect.no("test file", len(test_items)))
+        header = "{} without corresponding sources".format(inflect.no("test file", len(test_items)))
 
         output_stream.write(textwrap.dedent(
             """\
@@ -1792,7 +1792,10 @@ def _GetFromCommandLineArg(arg, items, flags, allow_empty=False):
 
     assert item
 
-    return item(**flags)
+    # Parser/Compilers/etc are created via default constructors, so we have a concrete
+    # instance here. Create a new instance with the provided flags. This is pretty 
+    # unusual behavior.
+    return type(item)(**flags)
 
 # ----------------------------------------------------------------------
 def _ExecuteImpl( filename_or_dir,
@@ -1814,7 +1817,7 @@ def _ExecuteImpl( filename_or_dir,
 
     if test_executor and test_executor.Name != "Standard" and code_coverage_validator is None:
         code_coverage_validator = next(ccv for ccv in CODE_COVERAGE_VALIDATORS if ccv.Name == "Standard")
-        code_coverage_validator = code_coverage_validator()
+        code_coverage_validator = code_coverage_validator
 
     with StreamDecorator.GenerateAnsiSequenceStream( output_stream,
                                                      preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
@@ -1856,18 +1859,36 @@ def _ExecuteImpl( filename_or_dir,
 
         result = complete_result.ResultCode() or 0
 
-        if verbose and result != 0:
+        if verbose or result != 0:
             for configuration_results in [ complete_result.debug,
                                            complete_result.release,
                                          ]:
-                if configuration_results.compile_result != 0 and configuration_results.compile_log is not None:
-                    output_stream.write(open(configuration_results.compile_log).read())
-                    break
+                if (verbose or configuration_results.compile_result != 0) and configuration_results.compile_log is not None:
+                    output_stream.write(textwrap.dedent(
+                        """\
+                        {header}
+                        {filename}
+                        {header}
+                        {content}
+
+                        """).format( filename=configuration_results.compile_log,
+                                     header=len(configuration_results.compile_log) * '=',
+                                     content=open(configuration_results.compile_log).read().strip(),
+                                   ))
 
                 for er in configuration_results.execute_results:
-                    if er.TestResult != 0 and er.TestOutput is not None:
-                        output_stream.write(open(er.TestOutput).read())
-                        break
+                    if (verbose or er.TestResult != 0) and er.TestOutput is not None:
+                        output_stream.write(textwrap.dedent(
+                            """\
+                            {header}
+                            {filename}
+                            {header}
+                            {content}
+
+                            """).format( filename=er.TestOutput,
+                                         header=len(er.TestOutput) * '=',
+                                         content=open(er.TestOutput).read().strip(),
+                                       ))
 
         return result
 

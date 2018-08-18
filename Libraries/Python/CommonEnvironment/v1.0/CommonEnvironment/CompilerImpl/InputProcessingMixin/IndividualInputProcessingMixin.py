@@ -17,6 +17,7 @@
 import os
 import sys
 
+from CommonEnvironment.Interface import override, mixin
 from CommonEnvironment.CompilerImpl.InputProcessingMixin import InputProcessingMixin
 
 # ----------------------------------------------------------------------
@@ -26,6 +27,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 
 # ----------------------------------------------------------------------
 # <Too few public methods> pylint: disable = R0903
+@mixin
 class IndividualInputProcessingMixin(InputProcessingMixin):
     """Each input is processed in isolation."""
 
@@ -33,6 +35,7 @@ class IndividualInputProcessingMixin(InputProcessingMixin):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def _GenerateMetadataItemsImpl(cls, invocation_group_inputs, metadata):
         if cls.AttributeName in metadata:
             raise Exception("'{}' is a reserved keyword".format(cls.AttributeName))
@@ -43,5 +46,6 @@ class IndividualInputProcessingMixin(InputProcessingMixin):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def _GetInputItems(cls, context):
         return [ context[cls.AttributeName], ]

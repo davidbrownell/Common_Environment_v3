@@ -21,6 +21,8 @@ import sys
 import textwrap
 import unittest
 
+from collections import OrderedDict
+
 import six
 
 import CommonEnvironment
@@ -58,32 +60,59 @@ class DescribeSuite(unittest.TestCase):
     def test_Dict(self):
         # Standard
         sink = six.moves.StringIO()
-        CommonEnvironment.Describe({ "a" : "one", "bee" : 2, "c" : True, "d" : 1.0, }, sink)
+        CommonEnvironment.Describe(OrderedDict([ ( "a", "one" ), 
+                                                 ( "bee", 2 ), 
+                                                 ( "c", True ), 
+                                                 ( "d", 1.0 ),
+                                               ]), sink)
 
-        self.assertEqual(sink.getvalue(), textwrap.dedent(
-            """\
-            a   : one
-            bee : 2 <class 'int'>
-            c   : True <class 'bool'>
-            d   : 1.0 <class 'float'>
+        if sys.version[0] == '2':
+            self.assertEqual(sink.getvalue(), textwrap.dedent(
+                """\
+                a   : one
+                bee : 2 <type 'int'>
+                c   : True <type 'bool'>
+                d   : 1.0 <type 'float'>
 
 
-            """))
+                """))
+        else:
+            self.assertEqual(sink.getvalue(), textwrap.dedent(
+                """\
+                a   : one
+                bee : 2 <class 'int'>
+                c   : True <class 'bool'>
+                d   : 1.0 <class 'float'>
+
+
+                """))
 
         # Nested
         sink = six.moves.StringIO()
         CommonEnvironment.Describe({ "nested" : { "foo" : "bar", "baz" : "biz", "one" : "more", }, "a" : "one", "bee" : 2, }, sink)
 
-        self.assertEqual(sink.getvalue(), textwrap.dedent(
-            """\
-            nested : foo : bar
-                     baz : biz
-                     one : more
-            a      : one
-            bee    : 2 <class 'int'>
-            
-            
-            """))
+        if sys.version[0] == '2':
+            self.assertEqual(sink.getvalue(), textwrap.dedent(
+                """\
+                a      : one
+                bee    : 2 <type 'int'>
+                nested : foo : bar
+                         baz : biz
+                         one : more
+                
+                
+                """))
+        else:
+            self.assertEqual(sink.getvalue(), textwrap.dedent(
+                """\
+                nested : foo : bar
+                         baz : biz
+                         one : more
+                a      : one
+                bee    : 2 <class 'int'>
+                
+                
+                """))
 
         # Empty
         sink = six.moves.StringIO()
@@ -102,29 +131,51 @@ class DescribeSuite(unittest.TestCase):
         sink = six.moves.StringIO()
         CommonEnvironment.Describe([ "one", 2, 3.0, ], sink)
         
-        self.assertEqual(sink.getvalue(), textwrap.dedent(
-            """\
-            0)   one
-            1)   2 <class 'int'>
-            2)   3.0 <class 'float'>
-            
-            
-            """))
+        if sys.version[0] == '2':
+            self.assertEqual(sink.getvalue(), textwrap.dedent(
+                """\
+                0)   one
+                1)   2 <type 'int'>
+                2)   3.0 <type 'float'>
+                
+                
+                """))
+        else:
+            self.assertEqual(sink.getvalue(), textwrap.dedent(
+                """\
+                0)   one
+                1)   2 <class 'int'>
+                2)   3.0 <class 'float'>
+                
+                
+                """))
         
         # Nested
         sink = six.moves.StringIO()
         CommonEnvironment.Describe([ "one", [ "foo", "bar", ], 2, 3.0, ], sink)
         
-        self.assertEqual(sink.getvalue(), textwrap.dedent(
-            """\
-            0)   one
-            1)   0)   foo
-                 1)   bar
-            2)   2 <class 'int'>
-            3)   3.0 <class 'float'>
+        if sys.version[0] == '2':
+            self.assertEqual(sink.getvalue(), textwrap.dedent(
+                """\
+                0)   one
+                1)   0)   foo
+                     1)   bar
+                2)   2 <type 'int'>
+                3)   3.0 <type 'float'>
         
         
-            """))
+                """))
+        else:
+            self.assertEqual(sink.getvalue(), textwrap.dedent(
+                """\
+                0)   one
+                1)   0)   foo
+                     1)   bar
+                2)   2 <class 'int'>
+                3)   3.0 <class 'float'>
+            
+            
+                """))
 
         # Empty
         sink = six.moves.StringIO()
@@ -173,10 +224,10 @@ class ObjectReprImpl(unittest.TestCase):
                     self.c = c
 
                 def Method(self): pass
-
+                
                 @staticmethod
                 def StaticMethod(): pass
-
+                
                 @classmethod
                 def ClassMethod(cls): pass
 
@@ -187,41 +238,66 @@ class ObjectReprImpl(unittest.TestCase):
 
         # ----------------------------------------------------------------------
 
-        self.assertEqual(str(CreateObj(False)), textwrap.dedent(
-            """\
-            <class '__main__.ObjectReprImpl.test_Standard.<locals>.CreateObj.<locals>.Object'>
-            a : one
-            b : 2 <class 'int'>
-            c : <class '__main__.ObjectReprImpl.test_Standard.<locals>.CreateObj.<locals>.Object'>
-                a : 3.0 <class 'float'>
-                b : four
-                c : True <class 'bool'>
-            """))
-
-        # Remove hex addresses from output, as that will be different between executions
-        output = re.sub( r"0x[A-Fa-f0-9]+",
-                         "0x________",
-                         str(CreateObj(True)),
-                       )
+        if sys.version[0] == '2':
+            self.assertEqual(str(CreateObj(False)), textwrap.dedent(
+                """\
+                <class '__main__.Object'>
+                a : one
+                c : <class '__main__.Object'>
+                    a : 3.0 <type 'float'>
+                    c : True <type 'bool'>
+                    b : four
+                b : 2 <type 'int'>
+                """))
+        else:
+            self.assertEqual(str(CreateObj(False)), textwrap.dedent(
+                """\
+                <class '__main__.ObjectReprImpl.test_Standard.<locals>.CreateObj.<locals>.Object'>
+                a : one
+                b : 2 <class 'int'>
+                c : <class '__main__.ObjectReprImpl.test_Standard.<locals>.CreateObj.<locals>.Object'>
+                    a : 3.0 <class 'float'>
+                    b : four
+                    c : True <class 'bool'>
+                """))
 
         self.maxDiff = None
-        self.assertEqual(output, textwrap.dedent(
+        
+        if sys.version[0] == '2':
+            self.assertEqual(str(CreateObj(True)), textwrap.dedent(
+                """\
+                <class '__main__.Object'>
+                a            : one
+                c            : <class '__main__.Object'>
+                               a            : 3.0 <type 'float'>
+                               c            : True <type 'bool'>
+                               b            : four
+                               ClassMethod  : callable
+                               StaticMethod : callable
+                               Method       : callable
+                b            : 2 <type 'int'>
+                ClassMethod  : callable
+                StaticMethod : callable
+                Method       : callable
+                """))
+
+        else:
+            self.assertEqual(str(CreateObj(True)), textwrap.dedent(
             """\
             <class '__main__.ObjectReprImpl.test_Standard.<locals>.CreateObj.<locals>.Object'>
-            ClassMethod  : <bound method ObjectReprImpl.test_Standard.<locals>.CreateObj.<locals>.Object.ClassMethod of <class '__main__.ObjectReprImpl.test_Standard.<locals>.CreateObj.<locals>.Object'>>
-            Method       : <bound method ObjectReprImpl.test_Standard.<locals>.CreateObj.<locals>.Object.Method of <__main__.ObjectReprImpl.test_Standard.<locals>.CreateObj.<locals>.Object object at 0x________>> <class 'method'>
-            StaticMethod : <function ObjectReprImpl.test_Standard.<locals>.CreateObj.<locals>.Object.StaticMethod at 0x________> <class 'function'>
+            ClassMethod  : callable
+            Method       : callable
+            StaticMethod : callable
             a            : one
             b            : 2 <class 'int'>
             c            : <class '__main__.ObjectReprImpl.test_Standard.<locals>.CreateObj.<locals>.Object'>
-                           ClassMethod  : <bound method ObjectReprImpl.test_Standard.<locals>.CreateObj.<locals>.Object.ClassMethod of <class '__main__.ObjectReprImpl.test_Standard.<locals>.CreateObj.<locals>.Object'>>
-                           Method       : <bound method ObjectReprImpl.test_Standard.<locals>.CreateObj.<locals>.Object.Method of <__main__.ObjectReprImpl.test_Standard.<locals>.CreateObj.<locals>.Object object at 0x________>> <class 'method'>
-                           StaticMethod : <function ObjectReprImpl.test_Standard.<locals>.CreateObj.<locals>.Object.StaticMethod at 0x________> <class 'function'>
+                           ClassMethod  : callable
+                           Method       : callable
+                           StaticMethod : callable
                            a            : 3.0 <class 'float'>
                            b            : four
                            c            : True <class 'bool'>
             """))
-
         
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------

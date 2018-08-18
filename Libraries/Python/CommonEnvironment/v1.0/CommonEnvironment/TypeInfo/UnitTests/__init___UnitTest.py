@@ -18,7 +18,7 @@ import os
 import sys
 import unittest
 
-from CommonEnvironment.Interface import staticderived
+from CommonEnvironment.Interface import staticderived, override, DerivedProperty
 from CommonEnvironment.TypeInfo import Arity, TypeInfo, ValidationException
 
 # ----------------------------------------------------------------------
@@ -110,11 +110,12 @@ class TypeInfoSuite(unittest.TestCase):
     # ----------------------------------------------------------------------
     @staticderived
     class TeenTypeInfo(TypeInfo):
-        Desc                                = "A number that is in the teens"
-        ConstraintsDesc                     = "13 <= value <= 19"
+        Desc                                = DerivedProperty("A number that is in the teens")
+        ConstraintsDesc                     = DerivedProperty("13 <= value <= 19")
         ExpectedType                        = int 
 
         @staticmethod
+        @override
         def _ValidateItemNoThrowImpl(item, **custom_args):
             if item < 13: return "item < 13"
             if item > 19: return "item > 19"

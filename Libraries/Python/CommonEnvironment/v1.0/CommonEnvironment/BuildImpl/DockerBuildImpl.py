@@ -183,6 +183,9 @@ def CreateRepositoryBuildFunc( repository_name,
                             base_dm.stream.write("Copying {}...".format(inflect.no("working change", len(changed_filenames))))
                             with base_dm.stream.DoneManager():
                                 for changed_filename in changed_filenames:
+                                    if not os.path.isfile(changed_filename):
+                                        continue
+                                        
                                     assert changed_filename.startswith(repository_dir), (changed_filename, repository_dir)
                                     dest_filename = os.path.join(source_dir, changed_filename[len(repository_dir):].lstrip(os.path.sep))
 

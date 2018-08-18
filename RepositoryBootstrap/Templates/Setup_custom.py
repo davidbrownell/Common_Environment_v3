@@ -12,6 +12,7 @@
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 # |  
 # ----------------------------------------------------------------------
+"""Performs repository-specific setup activities."""
 
 # ----------------------------------------------------------------------
 # |  
@@ -32,6 +33,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 # <Missing function docstring> pylint: disable = C0111
+# <Line too long> pylint: disable = C0301
 # <Wrong hanging indentation> pylint: disable = C0330
 # <Class '<name>' has no '<attr>' member> pylint: disable = E1103
 # <Unreachable code> pylint: disable = W0101
@@ -110,7 +112,7 @@ def GetDependencies():
                                                                    },
                                                                  ),
                                                     ) ),
-                         ( "Config2", Configuration( "A descrption of Config2; this configuration uses python27",
+                         ( "Config2", Configuration( "A description of Config2; this configuration uses python27",
                                                      [ Dependency( "0EAA1DCF22804F90AD9F5A3B85A5D706",                              # Id for Common_Environment; found in <Common_Environment>/__RepositoryId__
                                                                   "Common_Environment",                                             # Name used if Common_Environment cannot be found during setup
                                                                   "python27",                                                       # Configuration value used when activating Common_Environment (can be None or skipped for repos that only support a single configuration)
@@ -158,7 +160,7 @@ def GetCustomActions(debug, verbose, explicit_configurations):
     Actions are generic command line statements defined in 
     <Common_Environment>/Libraries/Python/CommonEnvironment/v1.0/CommonEnvironment/Shell/Commands/__init__.py
     that are converted into statements appropriate for the current scripting language (in most
-    cases, this is Bash on Linux systems and Batch or Powershell on Windows systems.
+    cases, this is Bash on Linux systems and Batch or PowerShell on Windows systems.
     """
 
     raise Exception("Remove this exception once you have updated the custom actions for your new repository (GetCustomActions).")

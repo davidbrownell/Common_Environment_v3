@@ -402,7 +402,7 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
                         The library '{name}' has already been defined.
 
                             New:                {new_name}{new_config} <{new_id}> [{new_root}]
-                        Original:           {original_name}{original_config} <<{original_version}>> <{original_id}> [{original_root}]
+                            Original:           {original_name}{original_config} <<{original_version}>> <{original_id}> [{original_root}]
 
                         """).format( name=item,
                                      new_name=repository.Name,
@@ -410,7 +410,7 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
                                      new_id=repository.Id,
                                      new_root=repository.Root,
                                      original_name=libraries[item].Repository.Name,
-                                     original_config=" ({})".format(libraries[item].Repository.Configuration) if libraries[item].Repo.Configuration else '',
+                                     original_config=" ({})".format(libraries[item].Repository.Configuration) if libraries[item].Repository.Configuration else '',
                                      original_version=libraries[item].Version,
                                      original_id=libraries[item].Repository.Id,
                                      original_root=libraries[item].Repository.Root,

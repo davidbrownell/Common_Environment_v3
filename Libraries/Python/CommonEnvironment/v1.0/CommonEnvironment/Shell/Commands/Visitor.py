@@ -19,7 +19,8 @@ import sys
 
 from CommonEnvironment.Interface import Interface, \
                                         abstractmethod, \
-                                        staticderived
+                                        staticderived, \
+                                        override
 
 # <Unused import> pylint: disable = W0614
 
@@ -254,101 +255,121 @@ def CreateSimpleVisitor( on_comment_func=None,          # def Func(command, *arg
     class SimpleVisitor(Visitor):
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnComment(command, *args, **kwargs):
             return on_comment_func(command, *args, **kwargs)
     
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnMessage(command, *args, **kwargs):
             return on_message_func(command, *args, **kwargs)
     
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnCall(command, *args, **kwargs):
             return on_call_func(command, *args, **kwargs)
     
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnExecute(command, *args, **kwargs):
             return on_execute_func(command, *args, **kwargs)
     
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnSymbolicLink(command, *args, **kwargs):
             return on_symbolic_link_func(command, *args, **kwargs)
     
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnPath(command, *args, **kwargs):
             return on_path_func(command, *args, **kwargs)
     
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnAugmentPath(command, *args, **kwargs):
             return on_augment_path_func(command, *args, **kwargs)
     
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnSet(command, *args, **kwargs):
             return on_set_func(command, *args, **kwargs)
     
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnAugment(command, *args, **kwargs):
             return on_augment_func(command, *args, **kwargs)
     
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnExit(command, *args, **kwargs):
             return on_exit_func(command, *args, **kwargs)
     
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnExitOnError(command, *args, **kwargs):
             return on_exit_on_error_func(command, *args, **kwargs)
     
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnRaw(command, *args, **kwargs):
             return on_raw_func(command, *args, **kwargs)
     
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnEchoOff(command, *args, **kwargs):
             return on_echo_off_func(command, *args, **kwargs)
     
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnCommandPrompt(command, *args, **kwargs):
             return on_command_prompt_func(command, *args, **kwargs)
     
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnDelete(command, *args, **kwargs):
             return on_delete_func(command, *args, **kwargs)
     
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnCopy(command, *args, **kwargs):
             return on_copy_func(command, *args, **kwargs)
     
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnMove(command, *args, **kwargs):
             return on_move_func(command, *args, **kwargs)
 
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnPersistError(command, *args, **kwargs):
             return on_persist_error_func(command, *args, **kwargs)
 
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnPushDirectory(command, *args, **kwargs):
             return on_push_directory_func(command, *args, **kwargs)
 
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnPopDirectory(command, *args, **kwargs):
             return on_pop_directory_func(command, *args, **kwargs)
 

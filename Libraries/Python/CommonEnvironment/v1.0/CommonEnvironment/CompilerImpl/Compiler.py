@@ -17,7 +17,7 @@
 import os
 import sys
 
-from CommonEnvironment.Interface import extensionmethod
+from CommonEnvironment.Interface import extensionmethod, DerivedProperty
 
 from CommonEnvironment.CompilerImpl import CompilerImpl
 from CommonEnvironment.CompilerImpl.CommandLine import CommandLineInvoke, CommandLineCleanOutputDir
@@ -34,7 +34,7 @@ class Compiler(CompilerImpl):
     # ----------------------------------------------------------------------
     # |  Public Properties
     IsCompiler                              = True
-    InvokeVerb                              = "Compiling"
+    InvokeVerb                              = DerivedProperty("Compiling")
 
     # ----------------------------------------------------------------------
     # |  Public Methods
