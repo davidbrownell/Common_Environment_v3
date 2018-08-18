@@ -1503,7 +1503,7 @@ def MatchTests( input_dir,
                        ))
 
     if test_items:
-        header = "{} with corresponding sources".format(inflect.no("test file", len(test_items)))
+        header = "{} without corresponding sources".format(inflect.no("test file", len(test_items)))
 
         output_stream.write(textwrap.dedent(
             """\
@@ -1792,7 +1792,10 @@ def _GetFromCommandLineArg(arg, items, flags, allow_empty=False):
 
     assert item
 
-    return item(**flags)
+    # Parser/Compilers/etc are created via default constructors, so we have a concrete
+    # instance here. Create a new instance with the provided flags. This is pretty 
+    # unusual behavior.
+    return type(item)(**flags)
 
 # ----------------------------------------------------------------------
 def _ExecuteImpl( filename_or_dir,
