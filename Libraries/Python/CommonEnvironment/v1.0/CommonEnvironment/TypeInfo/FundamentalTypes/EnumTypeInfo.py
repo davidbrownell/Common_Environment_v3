@@ -19,7 +19,7 @@ import sys
 
 import six
 
-import CommonEnvironment
+from CommonEnvironment.Interface import override, DerivedProperty
 from CommonEnvironment.TypeInfo import TypeInfo
 
 # ----------------------------------------------------------------------
@@ -30,7 +30,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 class EnumTypeInfo(TypeInfo):
     """Type info for an enumeration value."""
 
-    Desc                                    = "Enum"
+    Desc                                    = DerivedProperty("Enum")
     ExpectedType                            = six.string_types
 
     # ----------------------------------------------------------------------
@@ -58,11 +58,8 @@ class EnumTypeInfo(TypeInfo):
         self.FriendlyValues                 = friendly_values
 
     # ----------------------------------------------------------------------
-    def __repr__(self):
-        return CommonEnvironment.ObjectReprImpl(self, include_private=False)
-
-    # ----------------------------------------------------------------------
     @property
+    @override
     def ConstraintsDesc(self):
         if len(self.Values) == 1:
             return 'Value must be "{}"'.format(self.Values[0])
@@ -70,6 +67,7 @@ class EnumTypeInfo(TypeInfo):
         return "Value must be one of {}".format(', '.join([ '"{}"'.format(value) for value in self.Values ]))
 
     # ----------------------------------------------------------------------
+    @override
     def _ValidateItemNoThrowImpl(self, item):
         if item not in self.Values:
             return "'{}' is not a valid value ({} expected)".format( item, 

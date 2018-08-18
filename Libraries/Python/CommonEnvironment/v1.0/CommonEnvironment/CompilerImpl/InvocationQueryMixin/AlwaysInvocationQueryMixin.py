@@ -17,6 +17,7 @@
 import os
 import sys
 
+from CommonEnvironment.Interface import override, mixin
 from CommonEnvironment.CompilerImpl.InvocationQueryMixin import InvocationQueryMixin
 
 # ----------------------------------------------------------------------
@@ -24,15 +25,18 @@ _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
+@mixin
 class AlwaysInvocationQueryMixin(InvocationQueryMixin):
     """Always invoke"""
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def _GetInvokeReasonImpl(cls, context, output_stream):
         return cls.InvokeReason_Always
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def _PersistContextImpl(context):
         pass

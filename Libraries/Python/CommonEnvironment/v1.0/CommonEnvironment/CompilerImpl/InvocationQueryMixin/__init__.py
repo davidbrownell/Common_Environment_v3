@@ -17,7 +17,7 @@
 import os
 import sys
 
-from CommonEnvironment.Interface import Interface, abstractmethod
+from CommonEnvironment.Interface import Interface, abstractmethod, override, mixin
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -26,6 +26,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 
 # ----------------------------------------------------------------------
 # <Too few public methods> pylint: disable = R0903
+@mixin
 class InvocationQueryMixin(Interface):
     """Object that implements strategies for determining if a compiler should be invoked based on input."""
 
@@ -48,11 +49,13 @@ class InvocationQueryMixin(Interface):
     # |  mixins.
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def _GetInvokeReason(cls, *args, **kwargs):
         return cls._GetInvokeReasonImpl(*args, **kwargs)
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def _PersistContext(cls, *args, **kwargs):
         return cls._PersistContextImpl(*args, **kwargs)
 

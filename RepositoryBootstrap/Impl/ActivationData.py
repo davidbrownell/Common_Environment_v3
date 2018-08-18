@@ -268,28 +268,28 @@ class ActivationData(object):
                                ))
         
             # ----------------------------------------------------------------------
-        
+    
             for version_info in bootstrap_info.Configurations[repo.Configuration].VersionSpecs.Tools:
                 existing_version_info = next((tvi for tvi in tool_version_info if tvi.Name == version_info.Name), None)
                 
                 if existing_version_info is None:
                     tool_version_info.append(version_info)
                     version_info_lookup[version_info] = repo
-
+            
                 elif version_info.Version != existing_version_info.Version:
                     OnVersionMismatch("Tools", version_info, existing_version_info)
-
+            
             for library_language, version_info_items in six.iteritems(bootstrap_info.Configurations[repo.Configuration].VersionSpecs.Libraries):
                 for version_info in version_info_items:
                     existing_version_info = next((lvi for lvi in library_version_info.get(library_language, []) if lvi.Name == version_info.Name), None)
-
+            
                     if existing_version_info is None:
                         library_version_info.setdefault(library_language, []).append(version_info)
                         version_info_lookup[version_info] = repo
-
+            
                     elif version_info.Version != existing_version_info.Version:
                         OnVersionMismatch("{} Libraries".format(library_language), version_info, existing_version_info)
-
+            
             # Process this repository's dependencies
             if recurse:
                 for dependency_info in bootstrap_info.Configurations[repo.Configuration].Dependencies:
@@ -310,26 +310,26 @@ class ActivationData(object):
 
         this_bootstrap_info = repositories[priority_values[-1][0]]
         this_configuration = this_bootstrap_info.Configurations[configuration]
-
+            
         # Check the fingerprints
         calculated_fingerprint = Utilities.CalculateFingerprint( [ repository_root, ] + [ dependency.RepositoryRoot for dependency in this_configuration.Dependencies ],
                                                                  repository_root,
                                                                )
         if this_configuration.Fingerprint != calculated_fingerprint:
             lines = []
-
+        
             line_template = "{0:<80}  :  {1}"
-
+        
             for k, v in six.iteritems(calculated_fingerprint):
                 if k not in this_configuration.Fingerprint:
                     lines.append(line_template.format(k, "Added"))
                 else:
                     lines.append(line_template.format(k, "Identical" if v == this_configuration.Fingerprint[k] else "Modified"))
-
+        
             for k in six.iterkeys(this_configuration.Fingerprint):
                 if k not in calculated_fingerprint:
                     lines.append(line_template.format(k, "Removed"))
-
+        
             assert lines
             raise Exception(textwrap.dedent(
                 """\
@@ -337,7 +337,7 @@ class ActivationData(object):
                 ********************************************************************************
                 It appears that one or more of the repositories that this repository depends on
                 have changed.
-
+        
                 Please run '{setup}' again.
         
                     {status}

@@ -17,7 +17,7 @@
 import os
 import sys
 
-import CommonEnvironment
+from CommonEnvironment.Interface import override, DerivedProperty
 from CommonEnvironment.TypeInfo import TypeInfo
 
 # ----------------------------------------------------------------------
@@ -28,7 +28,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 class FloatTypeInfo(TypeInfo):
     """Type info for a float value."""
 
-    Desc                                    = "Float"
+    Desc                                    = DerivedProperty("Float")
     ExpectedType                            = (float, int)
 
     # ----------------------------------------------------------------------
@@ -46,11 +46,8 @@ class FloatTypeInfo(TypeInfo):
         self.Max                            = float(max) if max is not None else None
 
     # ----------------------------------------------------------------------
-    def __repr__(self):
-        return CommonEnvironment.ObjectReprImpl(self, include_private=False)
-
-    # ----------------------------------------------------------------------
     @property
+    @override
     def ConstraintsDesc(self):
         constraints = []
 
@@ -66,6 +63,7 @@ class FloatTypeInfo(TypeInfo):
         return "Value must be {}".format(', '.join(constraints))
 
     # ----------------------------------------------------------------------
+    @override
     def _ValidateItemNoThrowImpl(self, item, **custom_args):
         if self.Min is not None and item < self.Min:
             return "{} is not >= {}".format(item, self.Min)

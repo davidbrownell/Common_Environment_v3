@@ -161,7 +161,11 @@ class Shell(Interface):
 
     # ----------------------------------------------------------------------
     @classmethod
-    def GenerateCommands(cls, command_or_commands):
+    def GenerateCommands( cls, 
+                          command_or_commands,
+                          suppress_prefix=False,
+                          suppress_suffix=False,
+                        ):
         """Generates Shell-specific commands from a list of generic commands."""
 
         if command_or_commands is None:
@@ -172,9 +176,10 @@ class Shell(Interface):
 
         results = []
 
-        prefix = cls._GeneratePrefixCommand()
-        if prefix:
-            results.append(prefix)
+        if not suppress_prefix:
+            prefix = cls._GeneratePrefixCommand()
+            if prefix:
+                results.append(prefix)
 
         visitor = cls.CommandVisitor
 
@@ -183,9 +188,10 @@ class Shell(Interface):
             if result:
                 results.append(result)
 
-        suffix = cls._GenerateSuffixCommand()
-        if suffix:
-            results.append(suffix)
+        if not suppress_suffix:
+            suffix = cls._GenerateSuffixCommand()
+            if suffix:
+                results.append(suffix)
 
         return '\n'.join(results)
 

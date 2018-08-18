@@ -161,6 +161,7 @@ class CompleteConfiguration(Configuration):
                       )
 
     # ----------------------------------------------------------------------
+    # <__init__ method from base class 'Configuration' is not called> pylint: disable = W0231
     def __init__(self, exposed_functions, config):
         self.__dict__                       = config.__dict__
         self.ExposedFunctions               = list(exposed_functions)
@@ -269,6 +270,7 @@ def Main( config,
     # ----------------------------------------------------------------------
     @CommandLine.EntryPoint
     def Metadata():
+        """Metadata associated with the build"""
         sys.stdout.write(str(config))
 
     # ----------------------------------------------------------------------
@@ -358,8 +360,8 @@ def _RedirectEntryPoint(function_name, entry_point, config):
 
     # Dynamically redefine the function so that it prints information that lets the user know the the
     # functionality can't be executed on the current platform/configuration/environment.
-    if config.RequiredDevelopmentEnvironment and config.RequiredDevelopmentEnvironment.lower() not in [ CurrentShell.Name.lower(),
-                                                                                                        CurrentShell.CategoryName.lower(),
+    if config.RequiredDevelopmentEnvironment and config.RequiredDevelopmentEnvironment.lower() not in [ CurrentShell.Name.lower(),              # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
+                                                                                                        CurrentShell.CategoryName.lower(),      # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
                                                                                                       ]:
         exec(textwrap.dedent(
             """\
@@ -432,6 +434,7 @@ def _GenerateRebuild(build_func, clean_func, config):
                                       output_dir=CommandLine.DirectoryTypeInfo(ensure_exists=False),
                                     )
             def Rebuild(configuration, output_dir):
+                """Invokes Clean and Build functionality"""
                 return Impl(configuration, output_dir, build_func, clean_func)
 
             # ----------------------------------------------------------------------
@@ -441,6 +444,7 @@ def _GenerateRebuild(build_func, clean_func, config):
             @CommandLine.Constraints( configuration=CommandLine.EnumTypeInfo(config.Configurations),
                                     )
             def Rebuild(configuration):
+                """Invokes Clean and Build functionality"""
                 return Impl( configuration,
                              None,
                              lambda cfg, output_dir: build_func(cfg),
@@ -456,6 +460,7 @@ def _GenerateRebuild(build_func, clean_func, config):
             @CommandLine.Constraints( output_dir=CommandLine.DirectoryTypeInfo(ensure_exists=False),
                                     )
             def Rebuild(output_dir):
+                """Invokes Clean and Build functionality"""
                 return Impl( None,
                              output_dir,
                              lambda cfg, output_dir: build_func(output_dir),
@@ -467,6 +472,7 @@ def _GenerateRebuild(build_func, clean_func, config):
             # ----------------------------------------------------------------------
             @CommandLine.EntryPoint
             def Rebuild():
+                """Invokes Clean and Build functionality"""
                 return Impl( None,
                              None,
                              lambda cfg, output_dir: build_func(),

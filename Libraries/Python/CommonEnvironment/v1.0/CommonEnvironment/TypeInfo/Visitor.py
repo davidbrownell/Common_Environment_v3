@@ -18,7 +18,8 @@ import os
 import sys
 
 from CommonEnvironment.Interface import abstractmethod, \
-                                        staticderived
+                                        staticderived, \
+                                        override
 
 # <Unused import> pylint: disable = W0614
 
@@ -139,36 +140,43 @@ def CreateSimpleVisitor( on_any_of_func=None,           # def Func(type_info, *a
                        ):
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnAnyOf(type_info, *args, **kwargs):
             return on_any_of_func(type_info, *args, **kwargs)
 
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnClass(type_info, *args, **kwargs):
             return on_class_func(type_info, *args, **kwargs)
 
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnMethod(type_info, *args, **kwargs):
             return on_method_func(type_info, *args, **kwargs)
 
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnClassMethod(type_info, *args, **kwargs):
             return on_class_method_func(type_info, *args, **kwargs)
 
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnStaticMethod(type_info, *args, **kwargs):
             return on_static_method_func(type_info, *args, **kwargs)
 
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnDict(type_info, *args, **kwargs):
             return on_dict_func(type_info, *args, **kwargs)
 
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnList(type_info, *args, **kwargs):
             return on_list_func(type_info, *args, **kwargs)
 

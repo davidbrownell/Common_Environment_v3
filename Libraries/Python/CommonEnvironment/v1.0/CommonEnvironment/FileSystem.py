@@ -144,7 +144,7 @@ def TrimPath(fullpath, initial_path):
         decorator_func = lambda item: item.lower()
 
     if not decorator_func(fullpath).startswith(decorator_func(initial_path)):
-        raise Exception("'{}' does not begin with '{}'".format(fullpath, iniitial_path))
+        raise Exception("'{}' does not begin with '{}'".format(fullpath, initial_path))
 
     fullpath = fullpath[len(initial_path):]
     if fullpath.startswith(os.path.sep):

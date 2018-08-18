@@ -18,7 +18,7 @@ import datetime
 import os
 import sys
 
-from CommonEnvironment.Interface import staticderived
+from CommonEnvironment.Interface import staticderived, override, DerivedProperty
 from CommonEnvironment.TypeInfo import TypeInfo
 
 # ----------------------------------------------------------------------
@@ -30,8 +30,8 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 class DateTimeTypeInfo(TypeInfo):
     """Type information for a datetime value."""
 
-    Desc                                    = "Datetime"
-    ConstraintsDesc                         = ''
+    Desc                                    = DerivedProperty("Datetime")
+    ConstraintsDesc                         = DerivedProperty('')
     ExpectedType                            = datetime.datetime
 
     # ----------------------------------------------------------------------
@@ -46,6 +46,7 @@ class DateTimeTypeInfo(TypeInfo):
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def _ValidateItemNoThrowImpl(item):
         return
     

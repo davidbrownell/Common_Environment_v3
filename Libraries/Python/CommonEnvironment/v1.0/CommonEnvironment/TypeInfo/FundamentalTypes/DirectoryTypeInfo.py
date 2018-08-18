@@ -20,7 +20,7 @@ import sys
 
 import six
 
-import CommonEnvironment
+from CommonEnvironment.Interface import override, DerivedProperty
 from CommonEnvironment.TypeInfo import TypeInfo
 
 # ----------------------------------------------------------------------
@@ -30,7 +30,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 
 class DirectoryTypeInfo(TypeInfo):
 
-    Desc                                    = "Directory"
+    Desc                                    = DerivedProperty("Directory")
     ExpectedType                            = six.string_types
 
     # ----------------------------------------------------------------------
@@ -45,11 +45,8 @@ class DirectoryTypeInfo(TypeInfo):
         self.ValidationExpression           = validation_expression
 
     # ----------------------------------------------------------------------
-    def __repr__(self):
-        return CommonEnvironment.ObjectReprImpl(self, include_private=False)
-
-    # ----------------------------------------------------------------------
     @property
+    @override
     def ConstraintsDesc(self):
         constraints = []
 
@@ -65,6 +62,7 @@ class DirectoryTypeInfo(TypeInfo):
         return "Value must {}".format(', '.join(constraints))
 
     # ----------------------------------------------------------------------
+    @override
     def _ValidateItemNoThrowImpl(self, item):
         if self.EnsureExists and not os.path.isdir(item):
             return "'{}' is not a valid directory".format(item)

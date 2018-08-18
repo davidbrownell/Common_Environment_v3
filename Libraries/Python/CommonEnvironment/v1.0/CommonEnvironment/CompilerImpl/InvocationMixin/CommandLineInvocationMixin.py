@@ -20,7 +20,7 @@ import textwrap
 
 import six
 
-from CommonEnvironment.Interface import abstractmethod
+from CommonEnvironment.Interface import abstractmethod, override, mixin
 from CommonEnvironment import Process
 
 from CommonEnvironment.CompilerImpl.InvocationMixin import InvocationMixin
@@ -32,6 +32,7 @@ _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
+@mixin
 class CommandLineInvocationMixin(InvocationMixin):
     """Implements invocation by invoking a command line"""
 
@@ -44,6 +45,7 @@ class CommandLineInvocationMixin(InvocationMixin):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def _InvokeImplEx(cls, invoke_reason, context, status_stream, verbose_stream, verbose):
         command_line = cls.CreateInvokeCommandLine(context, verbose_stream)
 

@@ -17,6 +17,8 @@
 import os
 import sys
 
+from CommonEnvironment.Interface import DerivedProperty
+
 from CommonEnvironment.CompilerImpl import CompilerImpl
 from CommonEnvironment.CompilerImpl.CommandLine import CommandLineInvoke
 from CommonEnvironment.CompilerImpl.InputProcessingMixin.IndividualInputProcessingMixin import IndividualInputProcessingMixin
@@ -39,7 +41,7 @@ class Verifier( IndividualInputProcessingMixin,
     # ----------------------------------------------------------------------
     # |  Public Properties
     IsVerifier                              = True
-    InvokeVerb                              = "Verifying"
+    InvokeVerb                              = DerivedProperty("Verifying")
 
     # ----------------------------------------------------------------------
     # |  Public Methods

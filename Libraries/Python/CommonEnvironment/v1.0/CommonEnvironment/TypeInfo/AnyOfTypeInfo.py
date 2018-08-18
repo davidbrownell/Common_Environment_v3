@@ -17,6 +17,7 @@
 import os
 import sys
 
+from CommonEnvironment.Interface import override
 from CommonEnvironment.TypeInfo import TypeInfo
 
 # ----------------------------------------------------------------------
@@ -42,10 +43,12 @@ class AnyOfTypeInfo(TypeInfo):
     # ----------------------------------------------------------------------
     # |  Properties
     @property
+    @override
     def Desc(self):
         return "Any of {}".format(', '.join([ "'{}'".format(eti.Desc) for eti in self.ElementTypeInfos ]))
 
     @property
+    @override
     def ConstraintsDesc(self):
         items = []
 
@@ -74,6 +77,7 @@ class AnyOfTypeInfo(TypeInfo):
                 return eti
 
     # ----------------------------------------------------------------------
+    @override
     def _ValidateItemNoThrowImpl(self, item, **custom_args):
         eti = self._GetElementTypeInfo(item)
         if eti is None:

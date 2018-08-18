@@ -46,8 +46,8 @@ class ScriptsActivationActivity(ActivationActivity):
     # |  Public Properties
     # |  
     # ----------------------------------------------------------------------
-    Name                                    = "Scripts"
-    DelayExecute                            = False
+    Name                                    = CommonEnvironmentImports.Interface.DerivedProperty("Scripts")
+    DelayExecute                            = CommonEnvironmentImports.Interface.DerivedProperty(False)
 
     # ----------------------------------------------------------------------
     # |  
@@ -55,6 +55,7 @@ class ScriptsActivationActivity(ActivationActivity):
     # |  
     # ----------------------------------------------------------------------
     @classmethod
+    @CommonEnvironmentImports.Interface.override
     def _CreateCommandsImpl( cls,
                              output_stream,
                              verbose_stream,

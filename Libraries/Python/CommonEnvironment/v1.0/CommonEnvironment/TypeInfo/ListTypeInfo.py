@@ -17,6 +17,7 @@
 import os
 import sys
 
+from CommonEnvironment.Interface import override, DerivedProperty
 from CommonEnvironment.TypeInfo import TypeInfo
 
 # ----------------------------------------------------------------------
@@ -32,7 +33,7 @@ class ListTypeInfo(TypeInfo):
         values = [ [ 1, 2 ], [ 3, 4, 5 ], ... ]
     """
 
-    Desc                                    = "List"
+    Desc                                    = DerivedProperty("List")
     ExpectedType                            = (list, tuple)
     
     # ----------------------------------------------------------------------
@@ -46,6 +47,7 @@ class ListTypeInfo(TypeInfo):
 
     # ----------------------------------------------------------------------
     @property
+    @override
     def ConstraintsDesc(self):
         desc = [ "List of '{}' values".format(self.ElementTypeInfo.Desc), ]
 
@@ -56,5 +58,6 @@ class ListTypeInfo(TypeInfo):
         return ''.join(desc)
 
     # ----------------------------------------------------------------------
+    @override
     def _ValidateItemNoThrowImpl(self, item):
         return self.ElementTypeInfo.ValidateNoThrow(item)

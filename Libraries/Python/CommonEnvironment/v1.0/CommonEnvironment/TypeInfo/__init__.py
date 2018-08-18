@@ -20,6 +20,7 @@ import sys
 import inflect as inflect_mod
 import six
 
+import CommonEnvironment
 from CommonEnvironment.Interface import Interface, \
                                         abstractmethod, \
                                         abstractproperty
@@ -58,6 +59,7 @@ class Arity(object):
             {3,4}   3 or 4
             {2,8}   2-8 [inclusive]
             {4}     Exactly 4
+            {2+}    2 or more
         """
 
         if value == '?':
@@ -70,9 +72,20 @@ class Arity(object):
             return cls(1, None)
 
         if value.startswith('{') and value.endswith('}'):
-            values = [ int(v.strip()) for v in value[1:-1].split(',') ]
+            values = [ v.strip() for v in value[1:-1].split(',') ]
+
+            if len(values) == 1 and values[0].endswith('+'):
+                is_or_more = True
+                values[0] = values[0][:-1]
+            else:
+                is_or_more = False
+
+            values = [ int(value) for value in values ]
 
             if len(values) == 1:
+                if is_or_more:
+                    return cls(values[0], None)
+
                 return cls(values[0], values[0])
             elif len(values) == 2:
                 return cls(values[0], values[1])
@@ -146,6 +159,11 @@ class Arity(object):
                                     self.Min,
                                     brackets[1],
                                   )
+        if self.Max is None:
+            return "{}{}+{}".format( brackets[0],
+                                     self.Min,
+                                     brackets[1],
+                                   )
 
         return "{}{},{}{}".format( brackets[0],
                                    self.Min,
@@ -226,12 +244,12 @@ class TypeInfo(Interface):
         raise Exception("Abstract property")
 
     # In theory, this should be an abstractproperty. However, some implementations
-    # have a callable ExpectedType, which will cause Interface validation to file.
+    # have a callable ExpectedType, which will cause Interface validation to fail.
     # If someone forgets to implement the property/method, they will see an exception
     # raised on the first invocation.
     #
     # @abstractproperty
-    def ExepctedType(self):
+    def ExpectedType(self):
         """Returns the expected python type associated with the type."""
         raise Exception("Abstract property")
 
@@ -261,6 +279,10 @@ class TypeInfo(Interface):
         self.Arity                          = arity
         self.ValidationFunc                 = validation_func
         self.CollectionValidationFunc       = collection_validation_func
+
+    # ----------------------------------------------------------------------
+    def __repr__(self):
+        return CommonEnvironment.ObjectReprImpl(self)
 
     # ----------------------------------------------------------------------
     def IsExpectedType(self, item):

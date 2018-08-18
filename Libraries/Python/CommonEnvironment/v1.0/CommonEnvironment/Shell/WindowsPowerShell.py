@@ -11,10 +11,10 @@
 
 import os
 import sys
+import textwrap
 
-from CommonEnvironment.Interface import staticderived
-from CommonEnvironment.Shell import *
-from CommonEnvironment.Shell.Commands import *
+from CommonEnvironment.Interface import staticderived, override, DerivedProperty
+from CommonEnvironment.Shell.Commands import Augment, Set
 from CommonEnvironment.Shell.Commands.Visitor import Visitor
 from CommonEnvironment.Shell.WindowsShell import WindowsShell
 
@@ -37,15 +37,18 @@ class WindowsPowerShell(WindowsShell):
     ENVIRONMENT_NAME                        = "DEVELOPMENT_ENVIRONMENT_USE_WINDOWS_POWERSHELL"
 
     @staticderived
+    @override
     class CommandVisitor(Visitor):
         # ----------------------------------------------------------------------
         @staticmethod
-        def OnComment(command):
+        @override
+        def OnComment(command, *args, **kwargs):
             return "# {}".format(command.Value)
 
         # ----------------------------------------------------------------------
         @staticmethod
-        def OnMessage(command):
+        @override
+        def OnMessage(command, *args, **kwargs):
             replacement_chars = [ ( '`', '``' ),
                                   ( "'", "''" ),
                                 ]
@@ -65,17 +68,20 @@ class WindowsPowerShell(WindowsShell):
 
         # ----------------------------------------------------------------------
         @staticmethod
-        def OnCall(command):
+        @override
+        def OnCall(command, *args, **kwargs):
             return 'Invoke-Expression "{}"'.format(command.CommandLine)
 
         # ----------------------------------------------------------------------
         @staticmethod
-        def OnExecute(command):
+        @override
+        def OnExecute(command, *args, **kwargs):
             return command.CommandLine
 
         # ----------------------------------------------------------------------
         @staticmethod
-        def OnSymbolicLink(command):
+        @override
+        def OnSymbolicLink(command, *args, **kwargs):
             d = { "link" : command.LinkFilename,
                   "target" : command.Target,
                 }
@@ -84,37 +90,41 @@ class WindowsPowerShell(WindowsShell):
                 """\
                 {remove}cmd /c mklink{dir_flag} "{link}" "{target}" > NULL
                 """).format( remove='' if not command.RemoveExisting else 'if exist "{link}" ({remove} "{link}")\r\n'.format( remove="rmdir" if command.IsDir else "del /Q",
-                                                                                                                            **d
-                                                                                                                          ),
+                                                                                                                              **d
+                                                                                                                            ),
                              dir_flag=" /D /J" if command.IsDir else '',
                              **d
                            )
 
         # ----------------------------------------------------------------------
         @classmethod
-        def OnPath(cls, command):
+        @override
+        def OnPath(cls, command, *args, **kwargs):
             return cls.OnSet(Set("PATH", command.Values))
 
         # ----------------------------------------------------------------------
         @classmethod
-        def OnAugmentPath(cls, command):
+        @override
+        def OnAugmentPath(cls, command, *args, **kwargs):
             return cls.OnAugment(Augment("PATH", command.Values))
 
         # ----------------------------------------------------------------------
         @staticmethod
-        def OnSet(command):
+        @override
+        def OnSet(command, *args, **kwargs):
             if command.Values is None:
                 return "if (Test-Path env:{name}) {{ Remove-Item env:{name} }}".format(name=command.Name)
 
             assert command.Values
 
-            return '$env:{}="{}"'.format(command.Name, WindowsShell.EnvironmentVariableDelimiter.join(command.Values))
+            return '$env:{}="{}"'.format(command.Name, WindowsShell.EnvironmentVariableDelimiter.join(command.Values))  # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
 
         # ----------------------------------------------------------------------
         @classmethod
-        def OnAugment(cls, command):
+        @override
+        def OnAugment(cls, command, *args, **kwargs):
             if not command.Values:
-                return
+                return None
 
             current_values = set(WindowsShell.EnumEnvironmentVariable(command.Name))
             
@@ -122,15 +132,16 @@ class WindowsPowerShell(WindowsShell):
             new_values = [ value for value in new_values if value not in current_values ]
 
             if not new_values:
-                return
+                return None
 
             return '$env:{name}="{values};" + $env:{name}'.format( name=command.Name,
-                                                                   values=WindowsShell.EnvironmentVariableDelimiter.join(command.Values),
+                                                                   values=WindowsShell.EnvironmentVariableDelimiter.join(command.Values),   # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
                                                                  )
             
         # ----------------------------------------------------------------------
         @staticmethod
-        def OnExit(command):
+        @override
+        def OnExit(command, *args, **kwargs):
             return textwrap.dedent(
                 """\
                 {success}
@@ -143,7 +154,8 @@ class WindowsPowerShell(WindowsShell):
 
         # ----------------------------------------------------------------------
         @staticmethod
-        def OnExitOnError(command):
+        @override
+        def OnExitOnError(command, *args, **kwargs):
             variable_name = "$env:{}".format(command.VariableName) if command.VariableName else "$?"
 
             return "if (-not {}){{ exit {}}}".format( variable_name,
@@ -152,22 +164,26 @@ class WindowsPowerShell(WindowsShell):
 
         # ----------------------------------------------------------------------
         @staticmethod
-        def OnRaw(command):
+        @override
+        def OnRaw(command, *args, **kwargs):
             return command.Value
 
         # ----------------------------------------------------------------------
         @staticmethod
-        def OnEchoOff(command):
+        @override
+        def OnEchoOff(command, *args, **kwargs):
             return '$InformationPreference = "Continue"'
 
         # ----------------------------------------------------------------------
         @staticmethod
-        def OnCommandPrompt(command):
+        @override
+        def OnCommandPrompt(command, *args, **kwargs):
             return 'function Global:prompt {{"PS: ({})  $($(Get-Location).path)>"}}'.format(command.Prompt)
 
         # ----------------------------------------------------------------------
         @staticmethod
-        def OnDelete(command):
+        @override
+        def OnDelete(command, *args, **kwargs):
             if command.IsDir:
                 return 'rmdir /S /Q "{}"'.format(command.FilenameOrDirectory)
             
@@ -175,31 +191,36 @@ class WindowsPowerShell(WindowsShell):
 
         # ----------------------------------------------------------------------
         @staticmethod
-        def OnCopy(command):
+        @override
+        def OnCopy(command, *args, **kwargs):
             return 'copy /T "{source}" "{dest}"'.format( source=command.Source,
                                                          dest=command.Dest,
                                                        )
 
         # ----------------------------------------------------------------------
         @staticmethod
-        def OnMove(command):
+        @override
+        def OnMove(command, *args, **kwargs):
             return 'move /Y "{source}" "{dest}"'.format( source=command.Source,
                                                          dest=command.Dest,
                                                        )
 
         # ----------------------------------------------------------------------
         @staticmethod
-        def OnPersistError(command):
+        @override
+        def OnPersistError(command, *args, **kwargs):
             return '$env:{}=$?'.format(command.VariableName)
 
         # ----------------------------------------------------------------------
         @staticmethod
-        def OnPushDirectory(command):
+        @override
+        def OnPushDirectory(command, *args, **kwargs):
             return 'pushd "{}"'.format(command.Directory)
 
         # ----------------------------------------------------------------------
         @staticmethod
-        def OnPopDirectory(command):
+        @override
+        def OnPopDirectory(command, *args, **kwargs):
             return "popd"
 
     # ----------------------------------------------------------------------
@@ -207,9 +228,9 @@ class WindowsPowerShell(WindowsShell):
     # |  Public Properties
     # |  
     # ----------------------------------------------------------------------
-    Name                                    = "WindowsPowerShell"
-    ScriptExtension                         = ".ps1"
-    AllArgumentsScriptVariable              = "$args"
+    Name                                    = DerivedProperty("WindowsPowerShell")
+    ScriptExtension                         = DerivedProperty(".ps1")
+    AllArgumentsScriptVariable              = DerivedProperty("$args")
     
     # ----------------------------------------------------------------------
     # |  
@@ -217,6 +238,7 @@ class WindowsPowerShell(WindowsShell):
     # |  
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def IsActive(cls, platform_name):
         return ("windows" in platform_name or platform_name == "nt") and os.getenv(cls.ENVIRONMENT_NAME, None) == "1"
 

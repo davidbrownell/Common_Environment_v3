@@ -13,3 +13,6 @@ Tools/openssl/*
 
 .coverage
 coverage.xml
+
+Libraries/Python/CommonEnvironment/v1.0/CommonEnvironment.egg-info/*
+Libraries/Python/CommonEnvironment/v1.0/dist/*

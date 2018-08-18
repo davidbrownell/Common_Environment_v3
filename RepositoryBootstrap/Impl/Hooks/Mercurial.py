@@ -44,6 +44,11 @@ sys.path.pop(0)
 def PreTxnCommit(ui, repo, node, parent1, parent2, *args, **kwargs):
     """Called prior to a commit being finalized"""
 
+    # Don't run this hook on a merge (where a merge is can be identified by
+    # a commit with multiple parents).
+    if parent1 and parent2:
+        return
+
     is_debug = _IsDebug(ui)
 
     if is_debug:
