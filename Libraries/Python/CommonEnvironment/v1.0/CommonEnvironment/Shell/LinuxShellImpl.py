@@ -18,6 +18,8 @@ import os
 import sys
 import textwrap
 
+from collections import OrderedDict
+
 from CommonEnvironment.Interface import staticderived, override, DerivedProperty
 from CommonEnvironment.Shell import Shell
 from CommonEnvironment.Shell.Commands import Set, Augment
@@ -57,22 +59,18 @@ class LinuxShellImpl(Shell):
         @staticmethod
         @override
         def OnMessage(command):
-            replacement_chars = [ ( '$', r'\$' ),
-                                  ( '"', r'\"' ),
-                                ]
-
             output = []
 
             for line in command.Value.split('\n'):
                 if not line.strip():
                     output.append('echo ""')
                 else:
-                    for old_char, new_char in replacement_chars:
-                        line = line.replace(old_char, new_char)
-
-                    output.append('echo "{}"'.format(line))
-
-            return '\n'.join(output)
+                    output.append('echo "{}"'.format(LinuxShellImpl._ProcessEscapedChars( line,
+                                                                                          OrderedDict([ ( '$', r'\$' ),
+                                                                                                        ( '"', r'\"' ),
+                                                                                                      ]),
+                                                                                        )))
+            return ' && '.join(output)
     
         # ----------------------------------------------------------------------
         @staticmethod
@@ -279,6 +277,12 @@ class LinuxShellImpl(Shell):
     def RemoveDir(path):
         if os.path.isdir(path):
             os.system('rm -Rfd "{}"'.format(path))
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @override
+    def DecorateEnvironmentVariable(var_name):
+        return "\\${}".format(var_name)
 
     # ----------------------------------------------------------------------
     # |  

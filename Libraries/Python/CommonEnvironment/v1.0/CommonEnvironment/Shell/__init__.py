@@ -15,10 +15,15 @@
 """Contains shell-related tool and functionality."""
 
 import os
+import re
 import stat
 import sys
 import tempfile
 import textwrap
+
+from collections import OrderedDict
+
+import six
 
 from CommonEnvironment.Interface import Interface, \
                                         abstractproperty, \
@@ -152,6 +157,13 @@ class Shell(Interface):
     @abstractmethod
     def RemoveDir(path):
         """Removes a directory in the most efficient way possible"""
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @abstractmethod
+    def DecorateEnvironmentVariable(var_name):
+        """Return a var name that is decorated so that it can be used in a script"""
         raise Exception("Abstract method")
 
     # ----------------------------------------------------------------------
@@ -349,3 +361,62 @@ class Shell(Interface):
     @extensionmethod
     def _GenerateSuffixCommand():
         return
+
+    # ----------------------------------------------------------------------
+    @classmethod
+    def _ProcessEscapedChars(cls, value, character_map, escape_char='\\'):
+        """Replaces characters in the provided value according to the character_map, unless preceded by an escape char. This is useful when processing strings for output."""
+
+        # Lazily initialize the data
+        if not hasattr(cls, "_ProcessEscapedChars_func"):
+            escape_char_token = "<<__##EscapeChar##__>>"
+
+            internal_character_map = OrderedDict()
+            needs_postprocess = False
+
+            for k, v in six.iteritems(character_map):
+                assert escape_char not in k, k
+
+                if escape_char in v:
+                    v = v.replace(escape_char, escape_char_token)
+                    needs_postprocess = True
+
+                internal_character_map[k] = v
+
+            regex = re.compile(r"(?<!{})(?P<char>[{}])".format( re.escape(escape_char),
+                                                                ''.join([ re.escape(k) for k in six.iterkeys(internal_character_map) ]),
+                                                              ))
+
+            if needs_postprocess:
+                # ----------------------------------------------------------------------
+                def Postprocess(value):
+                    return value.replace(escape_char_token, escape_char)
+
+                # ----------------------------------------------------------------------
+            else:
+                # ----------------------------------------------------------------------
+                def Postprocess(value):
+                    return value
+
+                # ----------------------------------------------------------------------
+
+            # ----------------------------------------------------------------------
+            def OnMatch(match):
+                char = match.group("char")
+                assert char in internal_character_map, char
+
+                return internal_character_map[char]
+
+            # ----------------------------------------------------------------------
+            def Func(value):
+                value = regex.sub(OnMatch, value)
+                value = value.replace(escape_char, '')
+                value = Postprocess(value)
+                
+                return value
+
+            # ----------------------------------------------------------------------
+
+            setattr(cls, "_ProcessEscapedChars_func", staticmethod(Func))
+            
+        return cls._ProcessEscapedChars_func(value)

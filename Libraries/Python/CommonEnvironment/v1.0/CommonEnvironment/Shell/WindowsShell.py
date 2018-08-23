@@ -18,6 +18,8 @@ import os
 import sys
 import textwrap
 
+from collections import OrderedDict
+
 from CommonEnvironment.Interface import staticderived, clsinit, override, DerivedProperty
 from CommonEnvironment.Shell import Shell
 from CommonEnvironment.Shell.Commands import Set, Augment
@@ -53,33 +55,29 @@ class WindowsShell(Shell):
         @staticmethod
         @override
         def OnMessage(command):
-            replacement_chars = [ ( '%', '%%' ),
-                                  ( '^', '^^' ),
-                                  ( '&', '^&' ),
-                                  ( '<', '^<' ),
-                                  ( '>', '^>' ),
-                                  ( '|', '^|' ),
-                                  ( ',', '^,' ),
-                                  ( ';', '^;' ),
-                                  ( '(', '^(' ),
-                                  ( ')', '^)' ),
-                                  ( '[', '^[' ),
-                                  ( ']', '^]' ),
-                                  ( '"', '\"' ),
-                                ]
-                                
             output = []
-            
+
             for line in command.Value.split('\n'):
                 if not line.strip():
                     output.append("echo.")
                 else:
-                    for old_char, new_char in replacement_chars:
-                        line = line.replace(old_char, new_char)
-                        
-                    output.append("echo {}".format(line))
-                    
-            return '\n'.join(output)
+                    output.append("echo {}".format(WindowsShell._ProcessEscapedChars( line,
+                                                                                      OrderedDict([ ( '%', '%%' ),
+                                                                                                    ( '^', '^^' ),
+                                                                                                    ( '&', '^&' ),
+                                                                                                    ( '<', '^<' ),
+                                                                                                    ( '>', '^>' ),
+                                                                                                    ( '|', '^|' ),
+                                                                                                    ( ',', '^,' ),
+                                                                                                    ( ';', '^;' ),
+                                                                                                    ( '(', '^(' ),
+                                                                                                    ( ')', '^)' ),
+                                                                                                    ( '[', '^[' ),
+                                                                                                    ( ']', '^]' ),
+                                                                                                    ( '"', '\"' ),
+                                                                                                  ]),
+                                                                                    )))
+            return ' && '.join(output)
 
         # ----------------------------------------------------------------------
         @staticmethod
@@ -288,6 +286,12 @@ class WindowsShell(Shell):
     def RemoveDir(path):
         if os.path.isdir(path):
             os.system('rmdir /S /Q "{}"'.format(path))
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @override
+    def DecorateEnvironmentVariable(var_name):
+        return "\\%{}\\%".format(var_name)
 
     # ----------------------------------------------------------------------
     @staticmethod

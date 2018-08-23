@@ -13,6 +13,8 @@ import os
 import sys
 import textwrap
 
+from collections import OrderedDict
+
 from CommonEnvironment.Interface import staticderived, override, DerivedProperty
 from CommonEnvironment.Shell.Commands import Augment, Set
 from CommonEnvironment.Shell.Commands.Visitor import Visitor
@@ -49,22 +51,18 @@ class WindowsPowerShell(WindowsShell):
         @staticmethod
         @override
         def OnMessage(command, *args, **kwargs):
-            replacement_chars = [ ( '`', '``' ),
-                                  ( "'", "''" ),
-                                ]
-                                
             output = []
-            
+
             for line in command.Value.split('\n'):
                 if not line.strip():
                     output.append("echo.")
                 else:
-                    for old_char, new_char in replacement_chars:
-                        line = line.replace(old_char, new_char)
-                        
-                    output.append("echo '{}'".format(line))
-                    
-            return '\n'.join(output)
+                    output.append("echo '{}'".format(WindowsPowerShell._ProcessEscapedChars( line,
+                                                                                             OrderedDict([ ( '`', '``' ),
+                                                                                                           ( "'", "''" ),
+                                                                                                         ]),
+                                                                                           )))
+            return ' && '.join(output)
 
         # ----------------------------------------------------------------------
         @staticmethod
@@ -236,6 +234,12 @@ class WindowsPowerShell(WindowsShell):
     # |  
     # |  Public Methods
     # |  
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @override
+    def DecorateEnvironmentVariable(var_name):
+        return "$env:{}".format(var_name)
+
     # ----------------------------------------------------------------------
     @classmethod
     @override
