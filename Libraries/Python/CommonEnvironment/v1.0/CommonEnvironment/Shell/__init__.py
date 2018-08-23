@@ -86,11 +86,6 @@ class Shell(Interface):
         raise Exception("Abstract property")
 
     @abstractproperty
-    def EnvironmentVariableDelimiter(self):
-        """Delimiter to separate environment variables (e.g. ";" or ":")"""
-        raise Exception("Abstract property")
-
-    @abstractproperty
     def HasCaseSensitiveFileSystem(self):
         """True if the file system is case sensitive."""
         raise Exception("Abstract property")
@@ -227,12 +222,12 @@ class Shell(Interface):
     # ----------------------------------------------------------------------
     @classmethod
     def EnumEnvironmentVariable(cls, name):
-        """yields all values within an environment variable as delimited by EnvironmentVariableDelimiter."""
+        """yields all values within an environment variable."""
         value = os.getenv(name)
         if not value:
             return
 
-        for item in value.split(cls.EnvironmentVariableDelimiter):
+        for item in value.split(os.pathsep):
             item = item.strip()
             if item:
                 yield item

@@ -120,7 +120,7 @@ class LinuxShellImpl(Shell):
 
             assert command.Values
 
-            return "export {}={}".format(command.Name, LinuxShellImpl.EnvironmentVariableDelimiter.join(command.Values))    # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
+            return "export {}={}".format(command.Name, os.pathsep.join(command.Values))    # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
     
         # ----------------------------------------------------------------------
         @staticmethod
@@ -138,7 +138,7 @@ class LinuxShellImpl(Shell):
                 return None
 
             return "export {name}={values}:${name}".format( name=command.Name,
-                                                            values=LinuxShellImpl.EnvironmentVariableDelimiter.join(command.Values),    # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
+                                                            values=os.pathsep.join(command.Values),    # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
                                                           )
     
         # ----------------------------------------------------------------------
@@ -257,7 +257,6 @@ class LinuxShellImpl(Shell):
     ExecutableExtension                     = DerivedProperty('')
     CompressionExtensions                   = DerivedProperty([ ".tgz", ".tar", "gz", ])
     AllArgumentsScriptVariable              = DerivedProperty('"$@"')
-    EnvironmentVariableDelimiter            = DerivedProperty(':')
     HasCaseSensitiveFileSystem              = DerivedProperty(True)
     Architecture                            = DerivedProperty("x64")        # I don't know of a reliable, cross-distro way to detect architecture
     UserDirectory                           = DerivedProperty(os.path.expanduser("~"))

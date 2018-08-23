@@ -168,7 +168,7 @@ def _CreateConfigurations():
     
         configuration_map = OrderedDict()
     
-        for configuration in [ item for item in custom_configurations.split(CurrentShell.EnvironmentVariableDelimiter) if item.strip() ]:
+        for configuration in [ item for item in custom_configurations.split(os.pathsep) if item.strip() ]:
             match = regex.match(configuration)
             assert match, configuration
     

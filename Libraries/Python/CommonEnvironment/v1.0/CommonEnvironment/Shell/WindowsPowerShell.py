@@ -117,7 +117,7 @@ class WindowsPowerShell(WindowsShell):
 
             assert command.Values
 
-            return '$env:{}="{}"'.format(command.Name, WindowsShell.EnvironmentVariableDelimiter.join(command.Values))  # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
+            return '$env:{}="{}"'.format(command.Name, os.pathsep.join(command.Values))  # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
 
         # ----------------------------------------------------------------------
         @classmethod
@@ -135,7 +135,7 @@ class WindowsPowerShell(WindowsShell):
                 return None
 
             return '$env:{name}="{values};" + $env:{name}'.format( name=command.Name,
-                                                                   values=WindowsShell.EnvironmentVariableDelimiter.join(command.Values),   # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
+                                                                   values=os.pathsep.join(command.Values),   # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
                                                                  )
             
         # ----------------------------------------------------------------------

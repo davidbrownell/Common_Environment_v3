@@ -132,7 +132,7 @@ class WindowsShell(Shell):
 
             assert command.Values
 
-            return "SET {}={}".format(command.Name, WindowsShell.EnvironmentVariableDelimiter.join(command.Values))     # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
+            return "SET {}={}".format(command.Name, os.pathsep.join(command.Values))     # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
 
         # ----------------------------------------------------------------------
         @classmethod
@@ -150,7 +150,7 @@ class WindowsShell(Shell):
                 return None
 
             return "SET {name}={values};%{name}%".format( name=command.Name,
-                                                          values=WindowsShell.EnvironmentVariableDelimiter.join(command.Values),    # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
+                                                          values=os.pathsep.join(command.Values),    # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
                                                         )
             
         # ----------------------------------------------------------------------
@@ -249,7 +249,6 @@ class WindowsShell(Shell):
     ExecutableExtension                     = DerivedProperty(".exe")
     CompressionExtensions                   = DerivedProperty([ ".zip", ])
     AllArgumentsScriptVariable              = DerivedProperty("%*")
-    EnvironmentVariableDelimiter            = DerivedProperty(";")
     HasCaseSensitiveFileSystem              = DerivedProperty(False)
     Architecture                            = DerivedProperty("x64" if os.getenv("ProgramFiles(x86)") else "x86")
     TempDirectory                           = DerivedProperty(os.getenv("TMP"))
