@@ -18,7 +18,7 @@ import os
 import sys
 import unittest
 
-from CommonEnvironment.WindowsPowerShell import *
+from CommonEnvironment.Shell.WindowsPowerShell import *
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -27,6 +27,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 
 # ----------------------------------------------------------------------
 class StandardSuite(unittest.TestCase):
+    @unittest.skip("Not implemented")
     def test_Placeholder(self):
         self.assertTrue(False)
         

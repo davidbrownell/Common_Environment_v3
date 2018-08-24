@@ -27,6 +27,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 
 # ----------------------------------------------------------------------
 class StandardSuite(unittest.TestCase):
+    @unittest.skip("Not implemented")
     def test_Placeholder(self):
         self.assertTrue(False)
 

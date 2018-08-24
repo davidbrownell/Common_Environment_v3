@@ -17,7 +17,6 @@ from collections import OrderedDict
 
 from CommonEnvironment.Interface import staticderived, override, DerivedProperty
 from CommonEnvironment.Shell.Commands import Augment, Set
-from CommonEnvironment.Shell.Commands.Visitor import Visitor
 from CommonEnvironment.Shell.WindowsShell import WindowsShell
 
 # ----------------------------------------------------------------------
@@ -41,6 +40,9 @@ class WindowsPowerShell(WindowsShell):
     @staticderived
     @override
     class CommandVisitor(WindowsShell.CommandVisitor):
+        # <Parameters differ from overridden 'name' method> pylint: disable = W0221
+        # <Unused argument> pylint: disable = W0613
+
         # ----------------------------------------------------------------------
         @staticmethod
         @override

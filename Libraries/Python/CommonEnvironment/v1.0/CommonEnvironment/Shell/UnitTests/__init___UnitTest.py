@@ -61,6 +61,12 @@ class MyShell(Shell):
     def RemoveDir(path):
         pass
 
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @override
+    def DecorateEnvironmentVariable(var_name):
+        return var_name
+
 # ----------------------------------------------------------------------
 class StandardSuite(unittest.TestCase):
     # ----------------------------------------------------------------------
