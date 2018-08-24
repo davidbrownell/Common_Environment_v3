@@ -59,7 +59,7 @@ class WindowsPowerShell(WindowsShell):
                 else:
                     output.append("Write-Host '{}'".format(WindowsShell._ProcessEscapedChars( line,
                                                                                               OrderedDict([ ( '`', '``' ),
-                                                                                                            ( "'", "''" ),
+                                                                                                            ( "'", "`'" ),
                                                                                                           ]),
                                                                                             )))
             return '; '.join(output)
