@@ -226,7 +226,7 @@ class Shell(Interface):
         with CallOnExit(lambda: FileSystem.RemoveFile(temp_filename)):
             cls.MakeFileExecutable(temp_filename)
             
-            return Process.Execute( temp_filename,
+            return Process.Execute( cls.CreateScriptName(temp_filename),
                                     output_stream,
                                     environment=environment,
                                   )
@@ -246,9 +246,9 @@ class Shell(Interface):
 
     # ----------------------------------------------------------------------
     @classmethod
-    def CreateScriptName(cls, name):
+    def CreateScriptName(cls, name, filename_only=False):
         ext = cls.ScriptExtension
-        if ext:
+        if ext and not name.endswith(ext):
             name += ext
 
         return name

@@ -40,7 +40,7 @@ class WindowsPowerShell(WindowsShell):
 
     @staticderived
     @override
-    class CommandVisitor(Visitor):
+    class CommandVisitor(WindowsShell.CommandVisitor):
         # ----------------------------------------------------------------------
         @staticmethod
         @override
@@ -55,26 +55,20 @@ class WindowsPowerShell(WindowsShell):
 
             for line in command.Value.split('\n'):
                 if not line.strip():
-                    output.append("echo.")
+                    output.append("Write-Host ''")
                 else:
-                    output.append("echo '{}'".format(WindowsPowerShell._ProcessEscapedChars( line,
-                                                                                             OrderedDict([ ( '`', '``' ),
-                                                                                                           ( "'", "''" ),
-                                                                                                         ]),
-                                                                                           )))
-            return ' && '.join(output)
+                    output.append("Write-Host '{}'".format(WindowsShell._ProcessEscapedChars( line,
+                                                                                              OrderedDict([ ( '`', '``' ),
+                                                                                                            ( "'", "''" ),
+                                                                                                          ]),
+                                                                                            )))
+            return '; '.join(output)
 
         # ----------------------------------------------------------------------
         @staticmethod
         @override
         def OnCall(command, *args, **kwargs):
             return 'Invoke-Expression "{}"'.format(command.CommandLine)
-
-        # ----------------------------------------------------------------------
-        @staticmethod
-        @override
-        def OnExecute(command, *args, **kwargs):
-            return command.CommandLine
 
         # ----------------------------------------------------------------------
         @staticmethod
@@ -163,12 +157,6 @@ class WindowsPowerShell(WindowsShell):
         # ----------------------------------------------------------------------
         @staticmethod
         @override
-        def OnRaw(command, *args, **kwargs):
-            return command.Value
-
-        # ----------------------------------------------------------------------
-        @staticmethod
-        @override
         def OnEchoOff(command, *args, **kwargs):
             return '$InformationPreference = "Continue"'
 
@@ -181,45 +169,8 @@ class WindowsPowerShell(WindowsShell):
         # ----------------------------------------------------------------------
         @staticmethod
         @override
-        def OnDelete(command, *args, **kwargs):
-            if command.IsDir:
-                return 'rmdir /S /Q "{}"'.format(command.FilenameOrDirectory)
-            
-            return 'del "{}"'.format(command.FilenameOrDirectory)
-
-        # ----------------------------------------------------------------------
-        @staticmethod
-        @override
-        def OnCopy(command, *args, **kwargs):
-            return 'copy /T "{source}" "{dest}"'.format( source=command.Source,
-                                                         dest=command.Dest,
-                                                       )
-
-        # ----------------------------------------------------------------------
-        @staticmethod
-        @override
-        def OnMove(command, *args, **kwargs):
-            return 'move /Y "{source}" "{dest}"'.format( source=command.Source,
-                                                         dest=command.Dest,
-                                                       )
-
-        # ----------------------------------------------------------------------
-        @staticmethod
-        @override
         def OnPersistError(command, *args, **kwargs):
             return '$env:{}=$?'.format(command.VariableName)
-
-        # ----------------------------------------------------------------------
-        @staticmethod
-        @override
-        def OnPushDirectory(command, *args, **kwargs):
-            return 'pushd "{}"'.format(command.Directory)
-
-        # ----------------------------------------------------------------------
-        @staticmethod
-        @override
-        def OnPopDirectory(command, *args, **kwargs):
-            return "popd"
 
     # ----------------------------------------------------------------------
     # |  
@@ -248,6 +199,10 @@ class WindowsPowerShell(WindowsShell):
 
     # ----------------------------------------------------------------------
     @classmethod
-    def CreateScriptName(cls, name):
-        return 'powershell "{}"'.format(super(WindowsPowerShell, cls).CreateScriptName(name))
+    def CreateScriptName(cls, name, filename_only=False):
+        filename = super(WindowsPowerShell, cls).CreateScriptName(name, filename_only=filename_only)
+        if filename_only:
+            return filename
+
+        return 'powershell "{}"'.format(filename)
     

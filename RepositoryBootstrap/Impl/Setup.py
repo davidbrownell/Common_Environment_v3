@@ -644,7 +644,7 @@ def _SetupShortcuts( output_stream,
                      verbose,
                      explicit_configurations,
                    ):
-    activate_script = CommonEnvironmentImports.CurrentShell.CreateScriptName(Constants.ACTIVATE_ENVIRONMENT_NAME)
+    activate_script = CommonEnvironmentImports.CurrentShell.CreateScriptName(Constants.ACTIVATE_ENVIRONMENT_NAME, filename_only=True)
 
     shortcut_target = os.path.join(_script_dir, activate_script)
     assert os.path.isfile(shortcut_target), shortcut_target
