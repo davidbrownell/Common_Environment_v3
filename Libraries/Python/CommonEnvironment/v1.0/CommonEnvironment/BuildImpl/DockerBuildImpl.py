@@ -386,7 +386,7 @@ def CreateRepositoryBuildFunc( repository_name,
 
                                     sink = sink.getvalue()
 
-                                activated_dm.stream.write("Extracting enviroment diffs...")
+                                activated_dm.stream.write("Extracting environment diffs...")
                                 with activated_dm.stream.DoneManager():
                                     match = re.search( textwrap.dedent(
                                                             """\
