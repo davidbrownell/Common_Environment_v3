@@ -161,6 +161,7 @@ def GetRepoMapFromSetup( repository_root,
 # In those cases, go through a bit more work to ensure that these imports work as
 # expected.
 try:
+    import enum
     import inflect
     import six
     import wrapt
@@ -192,6 +193,7 @@ except ImportError:
     # Try to import again
 
     # <Imports are not grouped> pylint: disable = C0412
+    import enum
     import inflect
     import six
     import wrapt
