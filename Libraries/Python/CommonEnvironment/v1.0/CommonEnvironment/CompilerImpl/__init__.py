@@ -136,7 +136,7 @@ class CompilerImpl(Interface):
     # ----------------------------------------------------------------------
     @staticmethod
     @extensionmethod
-    def IsSupportedTestFile(item):
+    def IsSupportedTestItem(item):
         """
         Return True if the item is a valid test file.
 

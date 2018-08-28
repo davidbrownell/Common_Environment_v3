@@ -174,12 +174,15 @@ def Normalize(path):
     
     if not CurrentShell.HasCaseSensitiveFileSystem:
         if os.path.exists(path) and CurrentShell.Name == "Windows":
-            import win32api
+            try:
+                import win32api
 
-            # <Module 'win32api' has not 'GetLongPathName' member, but source is unavailable. Consider adding this module to extension-pkg-whitelist if you want to perform analysis based on run-time introspection of living objects.> pylint: disable = I1101
+                # <Module 'win32api' has not 'GetLongPathName' member, but source is unavailable. Consider adding this module to extension-pkg-whitelist if you want to perform analysis based on run-time introspection of living objects.> pylint: disable = I1101
 
-            path = win32api.GetLongPathName(win32api.GetShortPathName(path))
-
+                path = win32api.GetLongPathName(win32api.GetShortPathName(path))
+            except ImportError:
+                pass
+                
         drive, suffix = os.path.splitdrive(path)
         path = "{}{}".format(drive.upper(), suffix)
 

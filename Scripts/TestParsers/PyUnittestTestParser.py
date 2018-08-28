@@ -46,7 +46,7 @@ class TestParser(TestParserImpl):
 
     # ----------------------------------------------------------------------
     _Parse_failed                           = re.compile(r"^FAILED", re.DOTALL | re.MULTILINE)
-    _Parse_ok                               = re.compile(r"^OK\s*$", re.DOTALL | re.MULTILINE)
+    _Parse_ok                               = re.compile(r"^OK\s*", re.DOTALL | re.MULTILINE)
 
     @classmethod
     @override

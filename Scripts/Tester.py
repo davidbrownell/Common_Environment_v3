@@ -168,7 +168,7 @@ def _CreateConfigurations():
     
         configuration_map = OrderedDict()
     
-        for configuration in [ item for item in custom_configurations.split(CurrentShell.EnvironmentVariableDelimiter) if item.strip() ]:
+        for configuration in [ item for item in custom_configurations.split(os.pathsep) if item.strip() ]:
             match = regex.match(configuration)
             assert match, configuration
     
@@ -583,7 +583,7 @@ def ExtractTestItems( input_dir,
             if os.path.exists(TEST_IGNORE_FILENAME_TEMPLATE.format(fullpath)):
                 continue
 
-            if compiler.IsSupported(fullpath) and compiler.IsSupportedTestFile(fullpath):
+            if compiler.IsSupported(fullpath) and compiler.IsSupportedTestItem(fullpath):
                 test_items.append(fullpath)
             else:
                 verbose_stream.write("'{}' is not supported by the compiler.\n".format(fullpath))
@@ -1474,7 +1474,7 @@ def MatchTests( input_dir,
 
         test_item = compiler.ItemToTestName(source_filename, test_type)
 
-        if os.path.isfile(test_item):
+        if test_item is None or os.path.isfile(test_item):
             # We can't be sure that the test is in the file, as multiple source files may map
             # to the same test file (as in the case of headers with ".h" and ".hpp" extensions).
             if test_item in test_items:

@@ -67,10 +67,11 @@ _ScmConstraint                              = CommonEnvironmentImports.CommandLi
 @CommonEnvironmentImports.CommandLine.EntryPoint( output_filename_or_stdout=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Filename for generated content or standard output if the value is 'stdout'"),
                                                   repository_root=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Root of the repository"),
                                                   recurse=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Invoke Setup on this repository and its dependencies"),
-                                                  all_configurations=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Setup all configurations, not just the ones used by this repository and those that it depends upon"),
                                                   debug=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Write additional debug information to the console"),
                                                   verbose=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Write additional verbose information to the console"),
                                                   configuration=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Configurations to setup; all configurations defined will be setup if explicit values are not provided"),
+                                                  all_configurations=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Setup all configurations, not just the ones used by this repository and those that it depends upon  (used with '/recurse')"),
+                                                  no_hooks=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Do not setup SCM hooks"),
                                                 )
 @CommonEnvironmentImports.CommandLine.Constraints( output_filename_or_stdout=CommonEnvironmentImports.CommandLine.StringTypeInfo(),
                                                    repository_root=CommonEnvironmentImports.CommandLine.DirectoryTypeInfo(),
@@ -85,6 +86,7 @@ def Setup( output_filename_or_stdout,
            configuration=None,
            use_ascii=False,
            all_configurations=False,
+           no_hooks=False,
            output_stream=sys.stdout,
          ):
     """Perform setup activities for this repository"""
@@ -122,8 +124,11 @@ def Setup( output_filename_or_stdout,
                            _SetupCustom,
                            _SetupShortcuts,
                            _SetupGeneratedPermissions,
-                           _SetupScmHooks,
                          ]
+
+            if not no_hooks:
+                activities += [ _SetupScmHooks,
+                              ]
 
         commands = []
 
@@ -639,7 +644,7 @@ def _SetupShortcuts( output_stream,
                      verbose,
                      explicit_configurations,
                    ):
-    activate_script = CommonEnvironmentImports.CurrentShell.CreateScriptName(Constants.ACTIVATE_ENVIRONMENT_NAME)
+    activate_script = CommonEnvironmentImports.CurrentShell.CreateScriptName(Constants.ACTIVATE_ENVIRONMENT_NAME, filename_only=True)
 
     shortcut_target = os.path.join(_script_dir, activate_script)
     assert os.path.isfile(shortcut_target), shortcut_target
@@ -690,7 +695,7 @@ def _SetupScmHooks( output_stream,
         if not config.has_section("hooks"):
             config.add_section("hooks")
 
-        relative_hooks_filename = CommonEnvironmentImports.FileSystem.GetRelativePath(repository_root, hooks_filename)
+        relative_hooks_filename = CommonEnvironmentImports.FileSystem.GetRelativePath(repository_root, hooks_filename).replace(os.path.sep, '/')
 
         config.set("hooks", "pretxncommit.CommonEnvironment", "python:{}:PreTxnCommit".format(relative_hooks_filename))
         config.set("hooks", "preoutgoing.CommonEnvironment", "python:{}:PreOutgoing".format(relative_hooks_filename))

@@ -80,6 +80,12 @@ class Verifier(VerifierMod.Verifier):
         dirname, basename = os.path.split(item_name)
         name, ext = os.path.splitext(basename)
 
+        if name.endswith("Impl"):
+            return None
+
+        if name == "__init__" and ext == ".py" and os.path.getsize(item_name) == 0:
+            return None
+
         return os.path.join(dirname, test_type_name, "{}_{}{}".format( name,
                                                                        inflect.singular_noun(test_type_name) or test_type_name,
                                                                        ext,
@@ -104,6 +110,12 @@ class Verifier(VerifierMod.Verifier):
             dirname = os.path.dirname(dirname)
 
         return os.path.join(dirname, name)
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @override
+    def IsSupportedTestItem(item):
+        return os.path.basename(item) != "__init__.py"
 
     # ----------------------------------------------------------------------
     # |  

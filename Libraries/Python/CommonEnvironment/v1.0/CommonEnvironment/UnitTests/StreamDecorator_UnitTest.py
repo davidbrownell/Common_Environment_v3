@@ -1,9 +1,9 @@
 # ----------------------------------------------------------------------
 # |  
-# |  DateTimeTypeInfo_UnitTest.py
+# |  StreamDecorator_UnitTest.py
 # |  
 # |  David Brownell <db@DavidBrownell.com>
-# |      2018-04-22 22:48:49
+# |      2018-08-21 07:38:01
 # |  
 # ----------------------------------------------------------------------
 # |  
@@ -12,37 +12,25 @@
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 # |  
 # ----------------------------------------------------------------------
-"""Unit test for DateTimeTypeInfo.py."""
+"""Unit test for StreamDecorator.py"""
 
-import datetime
 import os
 import sys
 import unittest
 
-from CommonEnvironment.TypeInfo.FundamentalTypes.DateTimeTypeInfo import DateTimeTypeInfo
+from CommonEnvironment.StreamDecorator import *
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
+# ----------------------------------------------------------------------
 class StandardSuite(unittest.TestCase):
-    
-    # ----------------------------------------------------------------------
-    def test_Standard(self):
-        self.assertEqual(DateTimeTypeInfo.Desc, "Datetime")
-        self.assertEqual(DateTimeTypeInfo.ConstraintsDesc, '')
-        self.assertEqual(DateTimeTypeInfo.ExpectedType, datetime.datetime)
-
-    # ----------------------------------------------------------------------
-    def test_Create(self):
-        past = DateTimeTypeInfo.Create()
-        result = datetime.datetime.now() - past
-        self.assertTrue(result <= datetime.timedelta(seconds=2))
-
-        dt = DateTimeTypeInfo.Create(microseconds=False)
-        self.assertEqual(dt.microsecond, 0)
-
+    @unittest.skip("Not implemented")
+    def test_Placeholder(self):
+        self.assertTrue(False)
+        
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
