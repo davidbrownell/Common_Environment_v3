@@ -18,6 +18,8 @@ import os
 import sys
 import textwrap
 
+from collections import OrderedDict
+
 from CommonEnvironment.Interface import staticderived, clsinit, override, DerivedProperty
 from CommonEnvironment.Shell import Shell
 from CommonEnvironment.Shell.Commands import Set, Augment
@@ -53,33 +55,29 @@ class WindowsShell(Shell):
         @staticmethod
         @override
         def OnMessage(command):
-            replacement_chars = [ ( '%', '%%' ),
-                                  ( '^', '^^' ),
-                                  ( '&', '^&' ),
-                                  ( '<', '^<' ),
-                                  ( '>', '^>' ),
-                                  ( '|', '^|' ),
-                                  ( ',', '^,' ),
-                                  ( ';', '^;' ),
-                                  ( '(', '^(' ),
-                                  ( ')', '^)' ),
-                                  ( '[', '^[' ),
-                                  ( ']', '^]' ),
-                                  ( '"', '\"' ),
-                                ]
-                                
             output = []
-            
+
             for line in command.Value.split('\n'):
                 if not line.strip():
                     output.append("echo.")
                 else:
-                    for old_char, new_char in replacement_chars:
-                        line = line.replace(old_char, new_char)
-                        
-                    output.append("echo {}".format(line))
-                    
-            return '\n'.join(output)
+                    output.append("echo {}".format(WindowsShell._ProcessEscapedChars( line,
+                                                                                      OrderedDict([ ( '%', '%%' ),
+                                                                                                    ( '^', '^^' ),
+                                                                                                    ( '&', '^&' ),
+                                                                                                    ( '<', '^<' ),
+                                                                                                    ( '>', '^>' ),
+                                                                                                    ( '|', '^|' ),
+                                                                                                    ( ',', '^,' ),
+                                                                                                    ( ';', '^;' ),
+                                                                                                    ( '(', '^(' ),
+                                                                                                    ( ')', '^)' ),
+                                                                                                    ( '[', '^[' ),
+                                                                                                    ( ']', '^]' ),
+                                                                                                    ( '"', '\"' ),
+                                                                                                  ]),
+                                                                                    )))
+            return ' && '.join(output)
 
         # ----------------------------------------------------------------------
         @staticmethod
@@ -132,7 +130,7 @@ class WindowsShell(Shell):
 
             assert command.Values
 
-            return "SET {}={}".format(command.Name, WindowsShell.EnvironmentVariableDelimiter.join(command.Values))     # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
+            return "SET {}={}".format(command.Name, os.pathsep.join(command.Values))     # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
 
         # ----------------------------------------------------------------------
         @classmethod
@@ -150,7 +148,7 @@ class WindowsShell(Shell):
                 return None
 
             return "SET {name}={values};%{name}%".format( name=command.Name,
-                                                          values=WindowsShell.EnvironmentVariableDelimiter.join(command.Values),    # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
+                                                          values=os.pathsep.join(command.Values),    # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
                                                         )
             
         # ----------------------------------------------------------------------
@@ -249,7 +247,6 @@ class WindowsShell(Shell):
     ExecutableExtension                     = DerivedProperty(".exe")
     CompressionExtensions                   = DerivedProperty([ ".zip", ])
     AllArgumentsScriptVariable              = DerivedProperty("%*")
-    EnvironmentVariableDelimiter            = DerivedProperty(";")
     HasCaseSensitiveFileSystem              = DerivedProperty(False)
     Architecture                            = DerivedProperty("x64" if os.getenv("ProgramFiles(x86)") else "x86")
     TempDirectory                           = DerivedProperty(os.getenv("TMP"))
@@ -289,6 +286,12 @@ class WindowsShell(Shell):
     def RemoveDir(path):
         if os.path.isdir(path):
             os.system('rmdir /S /Q "{}"'.format(path))
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @override
+    def DecorateEnvironmentVariable(var_name):
+        return "\\%{}\\%".format(var_name)
 
     # ----------------------------------------------------------------------
     @staticmethod

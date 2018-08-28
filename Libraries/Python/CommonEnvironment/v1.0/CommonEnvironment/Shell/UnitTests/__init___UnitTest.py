@@ -36,7 +36,6 @@ class MyShell(Shell):
     ScriptExtension                         = DerivedProperty(".AScriptExt")
     ExecutableExtension                     = DerivedProperty(".AExeExt")
     AllArgumentsScriptVariable              = DerivedProperty("_all_args_")
-    EnvironmentVariableDelimiter            = DerivedProperty("___")
     HasCaseSensitiveFileSystem              = DerivedProperty(True)
     Architecture                            = DerivedProperty("987")
     UserDirectory                           = DerivedProperty("<user>")
@@ -62,6 +61,12 @@ class MyShell(Shell):
     def RemoveDir(path):
         pass
 
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @override
+    def DecorateEnvironmentVariable(var_name):
+        return var_name
+
 # ----------------------------------------------------------------------
 class StandardSuite(unittest.TestCase):
     # ----------------------------------------------------------------------
@@ -77,7 +82,7 @@ class StandardSuite(unittest.TestCase):
 
         values = [ "one", "two", "three", ]
 
-        os.environ[var_name] = MyShell.EnvironmentVariableDelimiter.join(values)
+        os.environ[var_name] = os.pathsep.join(values)
         
         self.assertEqual(list(MyShell.EnumEnvironmentVariable(var_name)), values)
 

@@ -32,8 +32,7 @@ if ( ([string]::IsNullOrEmpty($args[0])) -or $args[0].Substring(0,1) -eq "/" -or
     if( -not $success ){
         $msg = $Error[0].Exception.Message
 
-        Write-Error `
-(@"
+        Write-Error (@"
  
  
 Errors were encountered and the repository has not been setup for development.
@@ -48,13 +47,12 @@ Errors were encountered and the repository has not been setup for development.
 # End bootstrap customization
 
 if ([string]::IsNullOrEmpty($env:DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL)) {
-    Write-Error `
-(@"
+    Write-Error @"
  
  
 Please run Activate.ps1 within a repository before running this script. It may be necessary to Setup and Activate the Common_Environment repository before setting up this one.
  
-"@)
+"@
 
     ExitScript
 }
@@ -63,6 +61,6 @@ Invoke-Expression "$env:DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL\RepositoryBootstrap\
 
 # Bootstrap customization
 $env:DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=$env:_PREV_DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL
-Remove-Item "Env:\_PREV_DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"
+$env:_PREV_DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL = ''
 
 ExitScript

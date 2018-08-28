@@ -34,10 +34,6 @@ class StandardSuite(unittest.TestCase):
         self.assertEqual(TimeTypeInfo.ConstraintsDesc, '')
         self.assertEqual(TimeTypeInfo.ExpectedType, datetime.time)
 
-    # ----------------------------------------------------------------------
-    def test_Create(self):
-        self.assertAlmostEqual(TimeTypeInfo.Create(), datetime.datetime.now().time(), delta=datetime.timedelta(seconds=1))
-
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
