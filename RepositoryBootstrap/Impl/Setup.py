@@ -695,7 +695,7 @@ def _SetupScmHooks( output_stream,
         if not config.has_section("hooks"):
             config.add_section("hooks")
 
-        relative_hooks_filename = CommonEnvironmentImports.FileSystem.GetRelativePath(repository_root, hooks_filename)
+        relative_hooks_filename = CommonEnvironmentImports.FileSystem.GetRelativePath(repository_root, hooks_filename).replace(os.path.sep, '/')
 
         config.set("hooks", "pretxncommit.CommonEnvironment", "python:{}:PreTxnCommit".format(relative_hooks_filename))
         config.set("hooks", "preoutgoing.CommonEnvironment", "python:{}:PreOutgoing".format(relative_hooks_filename))
