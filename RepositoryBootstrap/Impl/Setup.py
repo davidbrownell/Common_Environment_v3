@@ -135,6 +135,9 @@ def Setup( output_filename_or_stdout,
         for func in activities:
             these_commands = func(*args)
             if these_commands:
+                if isinstance(these_commands, int):
+                    return these_commands
+                    
                 commands += these_commands
 
         return commands
@@ -445,15 +448,15 @@ def _SetupRecursive( output_stream,
 
     # ----------------------------------------------------------------------
 
-    _SimpleFuncImpl( Callback,
-                     repository_root,
-                     True, # recursive
-                     _ScmParameterToScm(None, repository_root),
-                     explicit_configurations=explicit_configurations,
-                     output_stream=output_stream,
-                     verbose=verbose,
-                     use_ascii=use_ascii,
-                   )
+    return _SimpleFuncImpl( Callback,
+                            repository_root,
+                            True, # recursive
+                            _ScmParameterToScm(None, repository_root),
+                            explicit_configurations=explicit_configurations,
+                            output_stream=output_stream,
+                            verbose=verbose,
+                            use_ascii=use_ascii,
+                          )
 
 # ----------------------------------------------------------------------
 def _SetupBootstrap( output_stream,

@@ -50,7 +50,9 @@ def GenerateCommands( functor,              # def Func() -> []
     try:
         result = functor()
 
-        if isinstance(result, tuple):
+        if isinstance(result, int):
+            commands = []
+        elif isinstance(result, tuple):
             result, commands = result
         else:
             commands = result
