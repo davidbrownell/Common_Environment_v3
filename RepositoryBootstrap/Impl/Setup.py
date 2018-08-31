@@ -84,7 +84,6 @@ def Setup( output_filename_or_stdout,
            debug=False,
            verbose=False,
            configuration=None,
-           use_ascii=False,
            all_configurations=False,
            no_hooks=False,
            output_stream=sys.stdout,
@@ -115,8 +114,7 @@ def Setup( output_filename_or_stdout,
             activities = [ _SetupRecursive,
                          ]
 
-            args += [ use_ascii,
-                      all_configurations,
+            args += [ all_configurations,
                     ]
         else:
             # If here, setup this specific repo
@@ -183,7 +181,6 @@ def List( repository_root,
           search_depth=None,
           max_num_searches=None,
           required_ancestor_dir=None,
-          use_ascii=False,
           json=False,
           decorate=False,
           output_stream=sys.stdout,
@@ -254,7 +251,6 @@ def List( repository_root,
                                 search_depth=search_depth,
                                 max_num_searches=max_num_searches,
                                 required_ancestor_dir=required_ancestor_dir,
-                                use_ascii=use_ascii,
                               )
 
 # ----------------------------------------------------------------------
@@ -283,7 +279,6 @@ def Enlist( repository_root,
             configuration=None,
             search_depth=None,
             max_num_searches=None,
-            use_ascii=False,
             output_stream=sys.stdout,
             verbose=False,
           ):
@@ -375,7 +370,6 @@ def Enlist( repository_root,
                                   search_depth=search_depth,
                                   max_num_searches=max_num_searches,
                                   required_ancestor_dir=repositories_root,
-                                  use_ascii=use_ascii,
                                 )
         
         if result != 0 or not nonlocals.should_continue:
@@ -392,7 +386,6 @@ def _SetupRecursive( output_stream,
                      debug,
                      verbose,
                      explicit_configurations,
-                     use_ascii,
                      all_configurations,
                    ):
     # ----------------------------------------------------------------------
@@ -455,7 +448,6 @@ def _SetupRecursive( output_stream,
                             explicit_configurations=explicit_configurations,
                             output_stream=output_stream,
                             verbose=verbose,
-                            use_ascii=use_ascii,
                           )
 
 # ----------------------------------------------------------------------
@@ -1316,12 +1308,14 @@ def _SimpleFuncImpl( callback,              # def Func(output_stream, repo_map) 
                      search_depth=None,
                      max_num_searches=None,
                      required_ancestor_dir=None,
-                     use_ascii=False,
                    ):
+    """Scaffolding the creates a repo map, displays it, and invokes the provided callback within a command line context"""
+
     with CommonEnvironmentImports.StreamDecorator(output_stream).DoneManager( line_prefix='',
                                                                               prefix="\nResults: ",
                                                                               suffix='\n',
                                                                             ) as dm:
+        # Create the repo map
         repo_map = _CreateRepoMap( repository_root,
                                    explicit_configurations,
                                    recurse,
@@ -1333,6 +1327,8 @@ def _SimpleFuncImpl( callback,              # def Func(output_stream, repo_map) 
                                  )
         if isinstance(repo_map, int):
             return repo_map
+
+        # Display the repo map as a tree
 
         # ----------------------------------------------------------------------
         DisplayInfo                         = namedtuple( "DisplayInfo",
@@ -1379,9 +1375,9 @@ def _SimpleFuncImpl( callback,              # def Func(output_stream, repo_map) 
                 added_line = False
 
             from asciitree import LeftAligned
-            from asciitree.drawing import BoxStyle, BOX_LIGHT, BOX_ASCII
+            from asciitree.drawing import BoxStyle, BOX_LIGHT
 
-            create_tree_func = LeftAligned(draw=BoxStyle(gfx=(BOX_ASCII if use_ascii else BOX_LIGHT), horiz_len=1))
+            create_tree_func = LeftAligned(draw=BoxStyle(gfx=BOX_LIGHT, horiz_len=1))
 
             lines = create_tree_func(tree).split('\n')
 
@@ -1403,18 +1399,49 @@ def _SimpleFuncImpl( callback,              # def Func(output_stream, repo_map) 
                 uri = (display_info.GetCloneUri(scm) if display_info.GetCloneUri else None) or "N/A"
                 max_uri_length = max(max_uri_length, len(uri))
 
-                resolved_display_infos.append(( configuration, 
+                resolved_display_infos.append([ configuration, 
                                                 display_info.Id,
                                                 location,
                                                 uri,
-                                              ))
+                                              ])
+
+            # ----------------------------------------------------------------------
+            def TrimValues(header, max_length, item_index):
+                """Space is tight, so attempt to extract a common prefix from all of the values; returns the header value."""
+
+                values = [ resolved_display_info[item_index] for resolved_display_info in resolved_display_infos if resolved_display_info[item_index] != "N/A" ]
+
+                common_prefix = os.path.commonprefix(values)
+                if not common_prefix:
+                    return header, max_length
+
+                if common_prefix[-1] in [ '\\', '/', ]:
+                    common_prefix = common_prefix[:-1]
+                    
+                header = "{} ({}...)".format(header, common_prefix)
+
+                # Replace values
+                common_prefix_len = len(common_prefix)
+
+                for rdi_index, resolved_display_info in enumerate(resolved_display_infos):
+                    if resolved_display_info[item_index] == "N/A":
+                        continue
+
+                    resolved_display_infos[rdi_index][item_index] = "...{}".format(resolved_display_info[item_index][common_prefix_len:])
+                
+                return header, max_length - len(common_prefix) + 3
+
+            # ----------------------------------------------------------------------
+
+            location_header, max_location_length = TrimValues("Location", max_location_length, 2)
+            uri_header, max_uri_length = TrimValues("Clone Uri", max_uri_length, 3)
 
             # Space is tight here, so minimize the display width
             display_cols = [ max(len("Repository"), len(max(lines, key=len))), 
                              max(len("Configuration"), max_configuration_name_length),
                              max(len("Id"), 32), 
-                             max(len("Location"), max_location_length), 
-                             max(len("Clone Uri"), max_uri_length), 
+                             max(len(location_header), max_location_length), 
+                             max(len(uri_header), max_uri_length), 
                            ]
 
             display_template = "{{0:<{0}}}  {{1:<{1}}}  {{2:<{2}}}  {{3:<{3}}}  {{4}}".format(*display_cols)
@@ -1424,7 +1451,7 @@ def _SimpleFuncImpl( callback,              # def Func(output_stream, repo_map) 
                 {}
                 {}
                 {}
-                """).format( display_template.format("Repository", "Configuration", "Id", "Location", "Clone Uri"),
+                """).format( display_template.format("Repository", "Configuration", "Id", location_header, uri_header),
                              display_template.format(*[ '-' * col_size for col_size in display_cols ]),
                              '\n'.join([ display_template.format( line,
                                                                   *resolved_display_info
