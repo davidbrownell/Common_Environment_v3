@@ -669,6 +669,16 @@ def _SetupGeneratedPermissions( output_stream,
     generated_dir = os.path.join(repository_root, Constants.GENERATED_DIRECTORY_NAME, CommonEnvironmentImports.CurrentShell.CategoryName)
     assert os.path.isdir(generated_dir), generated_dir
 
+    # This functionality may be invoked by an elevated user (e.g. via sudo on Linux), but these output
+    # files should be writable by any user.
+    if hasattr(os, "geteuid") and os.geteuid() == 0 and not any(var for var in [ "SUDO_UID",
+                                                                                 "SUDO_GID",
+                                                                               ] if var not in os.environ):
+        os.system('chown {}:{} "{}"'.format( os.environ["SUDO_UID"],
+                                             os.environ["SUDO_GID"],
+                                             generated_dir,
+                                           ))
+                                           
     os.chmod(generated_dir, 0x777)
 
 # ----------------------------------------------------------------------

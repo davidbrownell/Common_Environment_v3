@@ -165,27 +165,6 @@ class EnvironmentBootstrap(object):
         output_dir = os.path.join(repo_root, Constants.GENERATED_DIRECTORY_NAME, CommonEnvironmentImports.CurrentShell.CategoryName)
         CommonEnvironmentImports.FileSystem.MakeDirs(output_dir)
 
-        # This functionality may be invoked by an elevated user (e.g. via sudo on Linux), but these output
-        # files should be writable by any user. Update permissions if necessary.
-        if hasattr(os, "geteuid") and os.geteuid() == 0 and not any(evar for evar in [ "SUDO_UID",
-                                                                                       "SUDO_GID",
-                                                                                     ] if evar not in os.environ):
-            owner = os.environ["SUDO_UID"]
-            group = os.environ["SUDO_GID"]
-
-            # ----------------------------------------------------------------------
-            def UpdatePermissions(filename):
-                os.system('chown {}:{} "{}"'.format( owner,
-                                                     group,
-                                                     filename,
-                                                   ))
-
-            # ----------------------------------------------------------------------
-
-            update_permissions_func = UpdatePermissions
-        else:
-            update_permissions_func = lambda filename: None
-
         # Write the json file
         output_filename = os.path.join(output_dir, Constants.GENERATED_BOOTSTRAP_JSON_FILENAME)
 
@@ -212,8 +191,6 @@ class EnvironmentBootstrap(object):
                        cls=Encoder,
                      )
 
-        update_permissions_func(output_filename)
-
         # Write the data file
         output_filename = os.path.join(output_dir, Constants.GENERATED_BOOTSTRAP_DATA_FILENAME)
 
@@ -227,8 +204,6 @@ class EnvironmentBootstrap(object):
                              is_mixin_repo="1" if self.IsMixinRepo else "0",
                              is_configurable="1" if self.IsConfigurable else "0",
                            ))
-
-        update_permissions_func(output_filename)
 
     # ----------------------------------------------------------------------
     def __repr__(self):
