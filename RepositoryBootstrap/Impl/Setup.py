@@ -674,11 +674,11 @@ def _SetupGeneratedPermissions( output_stream,
     if hasattr(os, "geteuid") and os.geteuid() == 0 and not any(var for var in [ "SUDO_UID",
                                                                                  "SUDO_GID",
                                                                                ] if var not in os.environ):
-        os.system('chown {}:{} "{}"'.format( os.environ["SUDO_UID"],
-                                             os.environ["SUDO_GID"],
-                                             generated_dir,
-                                           ))
-                                           
+        os.system('chown --recursive {}:{} "{}"'.format( os.environ["SUDO_UID"],
+                                                         os.environ["SUDO_GID"],
+                                                         generated_dir,
+                                                       ))
+
     os.chmod(generated_dir, 0x777)
 
 # ----------------------------------------------------------------------
