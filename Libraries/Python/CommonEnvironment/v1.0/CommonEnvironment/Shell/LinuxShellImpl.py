@@ -293,12 +293,12 @@ class LinuxShellImpl(Shell):
              not any(var for var in [ "SUDO_UID", "SUDO_GID", ] if var not in os.environ)
            ):
            os.system('chown {recursive} {user}:{group} "{input}"' \
-                        .format( recrusive="--recursive" if os.path.isdir(filename_or_directory) else '',
+                        .format( recursive="--recursive" if os.path.isdir(filename_or_directory) else '',
                                  user=os.environ["SUDO_UID"],
                                  group=os.environ["SUDO_GID"],
                                  input=filename_or_directory,
                                ))
-                               
+
     # ----------------------------------------------------------------------
     # |  
     # |  Private Methods
