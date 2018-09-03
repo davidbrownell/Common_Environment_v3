@@ -199,9 +199,15 @@ def GetSizeDisplay(num_bytes, suffix='B'):
     return "%.1f %s%s" % (num_bytes, 'Yi', suffix)
 
 # ----------------------------------------------------------------------
-def MakeDirs(path):
+def MakeDirs( path, 
+              as_user=False,                # If True, ownership of the dir is associated with a calling user and not root
+                                            # (if invoked as sudo)
+            ):
     if not os.path.isdir(path):
         os.makedirs(path)
+
+    if as_user:
+        CurrentShell.UpdateOwnership(path)
 
 # ----------------------------------------------------------------------
 def RemoveTree( path,

@@ -287,6 +287,15 @@ class Shell(Interface):
         os.chmod(filename, stat.S_IXUSR | stat.S_IWUSR | stat.S_IRUSR)
 
     # ----------------------------------------------------------------------
+    @staticmethod
+    @extensionmethod
+    def UpdateOwnership(filename_or_directory):
+        """Updates the ownership of a file or a directory to the original user when running as sudo"""
+
+        # By default, do nothing as not all shells support running as sudo
+        pass
+        
+    # ----------------------------------------------------------------------
     @classmethod
     def CreateDataFilename( cls,
                             application_name,
@@ -302,7 +311,7 @@ class Shell(Interface):
         """\
         Creating a symbolic link on some systems is cumbersome. This method handles
         the complexity to ensure that it works on all systems, but may be overkill
-        for those systems where it is a straighforward process.
+        for those systems where it is a straightforward process.
         """
 
         from CommonEnvironment.Shell.Commands import SymbolicLink
