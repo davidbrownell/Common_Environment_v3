@@ -163,7 +163,7 @@ class EnvironmentBootstrap(object):
 
         # Write the output files
         output_dir = os.path.join(repo_root, Constants.GENERATED_DIRECTORY_NAME, CommonEnvironmentImports.CurrentShell.CategoryName)
-        CommonEnvironmentImports.FileSystem.MakeDirs(output_dir)
+        CommonEnvironmentImports.FileSystem.MakeDirs(output_dir, as_user=True)
 
         # Write the json file
         output_filename = os.path.join(output_dir, Constants.GENERATED_BOOTSTRAP_JSON_FILENAME)
