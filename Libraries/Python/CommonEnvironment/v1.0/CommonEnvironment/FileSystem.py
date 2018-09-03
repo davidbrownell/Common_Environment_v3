@@ -199,9 +199,22 @@ def GetSizeDisplay(num_bytes, suffix='B'):
     return "%.1f %s%s" % (num_bytes, 'Yi', suffix)
 
 # ----------------------------------------------------------------------
-def MakeDirs(path):
+def MakeDirs( path, 
+              as_user=False,                # If True, ownership of the dir is associated with a calling user and not root
+                                            # (if invoked as sudo)
+            ):
     if not os.path.isdir(path):
         os.makedirs(path)
+
+    if ( as_user and 
+         hasattr(os, "geteuid") and 
+         os.geteuid() == 0 and
+         not any(var for var in [ "SUDO_UID", "SUDO_GID", ] if var not in os.environ)
+       ):
+       os.system('chown --recursive {}:{} "{}"'.format( os.environ["SUDO_UID"],
+                                                        os.environ["SUDO_GID"],
+                                                        path,
+                                                      ))
 
 # ----------------------------------------------------------------------
 def RemoveTree( path,
