@@ -43,7 +43,7 @@ echo "  Finalizing..."
 # Convert sep in '-', then remove the initial '-'
 conf_file=$(echo $(pwd)/bin/python2.7 | tr / - | cut -c 2-).conf
 
-if [[ ! -d /etc/ld.so.conf.d/$conf_file ]]
+if [[ ! -e /etc/ld.so.conf.d/$conf_file ]]
 then
     
 cat > /etc/ld.so.conf.d/$conf_file << END
