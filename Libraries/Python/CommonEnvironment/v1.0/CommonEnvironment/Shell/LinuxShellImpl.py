@@ -285,6 +285,21 @@ class LinuxShellImpl(Shell):
         return "\\${}".format(var_name)
 
     # ----------------------------------------------------------------------
+    @staticmethod
+    @override
+    def UpdateOwnership(filename_or_directory):
+        if ( hasattr(os, "geteuid") and
+             os.geteuid() == 0 and 
+             not any(var for var in [ "SUDO_UID", "SUDO_GID", ] if var not in os.environ)
+           ):
+           os.system('chown {recursive} {user}:{group} "{input}"' \
+                        .format( recrusive="--recursive" if os.path.isdir(filename_or_directory) else '',
+                                 user=os.environ["SUDO_UID"],
+                                 group=os.environ["SUDO_GID"],
+                                 input=filename_or_directory,
+                               ))
+                               
+    # ----------------------------------------------------------------------
     # |  
     # |  Private Methods
     # |  
