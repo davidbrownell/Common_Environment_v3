@@ -191,6 +191,8 @@ class EnvironmentBootstrap(object):
                        cls=Encoder,
                      )
 
+        CommonEnvironmentImports.CurrentShell.UpdateOwnership(output_filename)
+
         # Write the data file
         output_filename = os.path.join(output_dir, Constants.GENERATED_BOOTSTRAP_DATA_FILENAME)
 
@@ -204,6 +206,8 @@ class EnvironmentBootstrap(object):
                              is_mixin_repo="1" if self.IsMixinRepo else "0",
                              is_configurable="1" if self.IsConfigurable else "0",
                            ))
+
+        CommonEnvironmentImports.CurrentShell.UpdateOwnership(output_filename)
 
     # ----------------------------------------------------------------------
     def __repr__(self):

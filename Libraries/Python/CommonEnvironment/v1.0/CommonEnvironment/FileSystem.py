@@ -206,15 +206,8 @@ def MakeDirs( path,
     if not os.path.isdir(path):
         os.makedirs(path)
 
-    if ( as_user and 
-         hasattr(os, "geteuid") and 
-         os.geteuid() == 0 and
-         not any(var for var in [ "SUDO_UID", "SUDO_GID", ] if var not in os.environ)
-       ):
-       os.system('chown --recursive {}:{} "{}"'.format( os.environ["SUDO_UID"],
-                                                        os.environ["SUDO_GID"],
-                                                        path,
-                                                      ))
+    if as_user:
+        CurrentShell.UpdateOwnership(path)
 
 # ----------------------------------------------------------------------
 def RemoveTree( path,
