@@ -22,6 +22,8 @@ import sys
 import textwrap
 import uuid
 
+import six
+
 from CommonEnvironment import FileSystem
 from CommonEnvironment.Interface import staticderived, override
 from CommonEnvironment import RegularExpression
@@ -271,12 +273,17 @@ class StringSerialization(Serialization):
     @staticmethod
     @override
     def _SerializeItemImpl(type_info, item, **custom_kwargs):
+        
         # custom_kwargs:
+        #
         #   type_info type          Key             Value       Default             Desc
         #   ----------------------  --------------  ----------  ------------------  ----------------
         #   DateTimeTypeInfo        sep             string      ' '                 String that separates dates and times (' ' or 'T')
         #   DateTypeTypeInfo        microseconds    bool        True                Disables the display of microseconds during serialization if the value is False
         #   DurationTypeInfo        sep             string      '.'                 String that separates days and hours ('.' or ':')
+
+        if type_info.Arity.IsOptional and item is None:
+            return "None"
 
         return _SerializationVisitor.Accept(type_info, item, custom_kwargs)
 
@@ -284,11 +291,16 @@ class StringSerialization(Serialization):
     @staticmethod
     @override
     def _DeserializeItemImpl(type_info, item, **custom_kwargs):
+        
         # custom_kwargs:
+        #
         #   type_info type          Key         Value       Default             Desc
         #   ----------------------  ----------  ----------  ------------------  ----------------
         #   DirectoryTypeInfo       normalize   Boolean     True                Applies os.path.realpath and os.path.normpath to the string
         #   FilenameTypeInfo        normalize   Boolean     True                Applies os.path.realpath and os.path.normpath to the string
+
+        if type_info.Arity.IsOptional and isinstance(item, six.string_types) and item.lower() == "none":
+            return None
 
         regex_strings = RegularExpressionVisitor.Accept(type_info)
 
