@@ -21,7 +21,7 @@ import six
 
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CommandLine
-from CommonEnvironment.Interface import abstractmethod
+from CommonEnvironment.Interface import abstractmethod, override, DerivedProperty
 from CommonEnvironment.Shell.All import CurrentShell
 from CommonEnvironment.StreamDecorator import StreamDecorator
 
@@ -51,8 +51,8 @@ class DistutilsCompilerImpl( AtomicInputProcessingMixin,
 
     # ----------------------------------------------------------------------
     # |  Public Properties
-    Description                             = "Creates an executable for a python file."
-    InputTypeInfo                           = FilenameTypeInfo(validation_expression=r".+\.py")
+    Description                             = DerivedProperty("Creates an executable for a python file.")
+    InputTypeInfo                           = DerivedProperty(FilenameTypeInfo(validation_expression=r".+\.py"))
 
     ( BuildType_Console,
       BuildType_Windows,
@@ -61,12 +61,14 @@ class DistutilsCompilerImpl( AtomicInputProcessingMixin,
     # ----------------------------------------------------------------------
     # |  Public Methods
     @classmethod
+    @override
     def _GetRequiredContextNames(cls):
         return [ "output_dir", ] + \
                super(DistutilsCompilerImpl, cls)._GetRequiredContextNames()
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def _GetOptionalMetadata(cls):
         return [ ( "preserve_temp_dir", False ),
 
@@ -97,6 +99,7 @@ class DistutilsCompilerImpl( AtomicInputProcessingMixin,
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def _CreateContext(cls, metadata):
         if len(metadata["inputs"]) != 1 and metadata["output_name"]:
             raise Exception("'output_name' cannot be specified when multiple input files are provided")
@@ -118,6 +121,7 @@ class DistutilsCompilerImpl( AtomicInputProcessingMixin,
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def _InvokeImpl(cls, invoke_reason, context, status_stream, verbose_stream, verbose):
         with status_stream.DoneManager(associated_stream=verbose_stream) as (this_dm, this_verbose_stream):
             generated_python_context = cls._GenerateScriptContent(context)

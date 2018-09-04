@@ -417,7 +417,7 @@ class Executor(object):
                   command_line_keyword_separator='=',
                   command_line_dict_tag_value_separator=':',
                   args_in_a_file_prefix='@',
-                  secondary_command_line_keyword_separator="_EQ_",          # Used the the standard keyword sep has special meaning within some environments and cannot be used in some cases
+                  secondary_command_line_keyword_separator="_EQ_",          # Use if the standard keyword sep has special meaning within some environments and cannot be used in some cases
                   script_name=None,
                   script_description=None,
                   script_description_prefix=None,
@@ -595,6 +595,9 @@ class Executor(object):
                                )
 
         except ValidationException as ex:
+            if allow_exceptions: 
+                raise
+                
             result = self.Usage( error=str(ex),
                                  verbose=verbose,
                                )
@@ -822,6 +825,11 @@ class Executor(object):
 
             except ValidationException as ex:
                 return str(ex)
+
+            # Continue as if the value wasn't provided if the parameter is optional and
+            # the value is None.
+            if parameter.DisplayArity in [ '?', '*', ] and value is None:
+                return
 
             if parameter.DisplayArity in [ '?', '1', ]:
                 if parameter.Name in argument_values:

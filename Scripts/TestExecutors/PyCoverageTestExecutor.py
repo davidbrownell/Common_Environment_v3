@@ -26,7 +26,7 @@ from xml.etree import ElementTree as ET
 
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import FileSystem
-from CommonEnvironment.Interface import staticderived
+from CommonEnvironment.Interface import staticderived, override, DerivedProperty
 from CommonEnvironment import Process
 from CommonEnvironment.Shell.All import CurrentShell
 
@@ -67,20 +67,27 @@ class TestExecutor(TestExecutorImpl):
     with _*Test.py
     """
 
+    # This environment variable can be set to specify the coverage output file.
+    # A random filename will be created if this environment variable is not defined
+    # and set to an output filename.
+    COVERAGE_FILENAME_ENVIRONMENT_VARIABLE  = "PYCOVERAGE_OUTPUT_FILENAME"
+
     # ----------------------------------------------------------------------
     # |  Public Properties
-    Name                                    = "PyCoverage"
-    Description                             = "Extracts code coverage information for Python source code using coverage.py."
+    Name                                    = DerivedProperty("PyCoverage")
+    Description                             = DerivedProperty("Extracts code coverage information for Python source code using coverage.py.")
 
     # ----------------------------------------------------------------------
     # |  Public Methods
     @staticmethod
+    @override
     def IsSupportedCompiler(compiler):
         # Supports any compiler that supports python; use this file as a test subject.
         return compiler.IsSupported(_script_fullpath if os.path.splitext(_script_name)[1] == ".py" else "{}.py".format(os.path.splitext(_script_fullpath)[0]))
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def Execute( cls,
                  compiler,
                  context,
@@ -206,10 +213,12 @@ class TestExecutor(TestExecutorImpl):
             test_time = str(datetime.timedelta(seconds=(time.time() - start_time)))
 
             # Get the coverage info
+            xml_temp_filename = os.getenv(cls.COVERAGE_FILENAME_ENVIRONMENT_VARIABLE)
+            if xml_temp_filename is None:
+                xml_temp_filename = CurrentShell.CreateTempFilename(".xml")
+
             start_time = time.time()
-
-            xml_temp_filename = CurrentShell.CreateTempFilename(".xml")
-
+            
             command_line = '{} -o "{}"'.format( command_line_template.format("xml"),
                                                 xml_temp_filename,
                                               )

@@ -26,7 +26,7 @@ import six
 import six.moves.cPickle as pickle
 
 from CommonEnvironment import FileSystem
-from CommonEnvironment.Interface import extensionmethod
+from CommonEnvironment.Interface import extensionmethod, override, mixin
 from CommonEnvironment import RegularExpression
 
 from CommonEnvironment.CompilerImpl.InvocationQueryMixin import InvocationQueryMixin
@@ -42,6 +42,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 inflect                                     = inflect_mod.engine()
 
 # ----------------------------------------------------------------------
+@mixin
 class ConditionalInvocationQueryMixin(InvocationQueryMixin):
 
     # Derived classes can override this value to potentially force generation
@@ -49,6 +50,7 @@ class ConditionalInvocationQueryMixin(InvocationQueryMixin):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def _GetOptionalMetadata(cls):
         return [ ( "force", False ),
                  ( "output_data_filename_prefix", '' ),
@@ -56,12 +58,14 @@ class ConditionalInvocationQueryMixin(InvocationQueryMixin):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def _GetRequiredContextNames(cls):
         return [ "output_dir",
                ] + super(ConditionalInvocationQueryMixin, cls)._GetRequiredContextNames()
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def _CreateContext(cls, metadata):
         metadata["output_dir"] = os.path.realpath(metadata["output_dir"])
 
@@ -71,6 +75,7 @@ class ConditionalInvocationQueryMixin(InvocationQueryMixin):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def _GetInvokeReasonImpl(cls, context, output_stream):
 
         prev_info, prev_modified_time = _PersistedInfo.Load(cls, context, output_stream)
@@ -231,6 +236,7 @@ class ConditionalInvocationQueryMixin(InvocationQueryMixin):
     
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def _PersistContextImpl(cls, context):
         _PersistedInfo(cls, context).Save()
 
@@ -239,7 +245,7 @@ class ConditionalInvocationQueryMixin(InvocationQueryMixin):
     # ----------------------------------------------------------------------
     @staticmethod
     def _GetModifiedTime(filename):
-        # When it comes to python files, we don't care when the file was compiled by rather
+        # When it comes to python files, we don't care when the file was compiled but rather
         # when the corresponding source file was modified. If passed a compiled file, look
         # at the corresponding .py file instead.
         if os.path.splitext(filename)[1].lower() in [ ".pyc", ".pyo", ]:
@@ -320,8 +326,8 @@ class _PersistedInfo(object):
     def Save(self):
         data = pickle.dumps(self)
         data = base64.b64encode(data)
-        data = str(data)
-
+        data = data.decode("utf-8")
+        
         filename = self._GetPersistedFilename(self.Context)
 
         FileSystem.MakeDirs(os.path.dirname(filename))

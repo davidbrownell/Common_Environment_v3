@@ -36,7 +36,9 @@ class StandardSuite(unittest.TestCase):
 
     # ----------------------------------------------------------------------
     def test_Create(self):
-        self.assertAlmostEqual(DateTimeTypeInfo.Create(), datetime.datetime.now(), datetime.timedelta(seconds=2))
+        past = DateTimeTypeInfo.Create()
+        result = datetime.datetime.now() - past
+        self.assertTrue(result <= datetime.timedelta(seconds=2))
 
         dt = DateTimeTypeInfo.Create(microseconds=False)
         self.assertEqual(dt.microsecond, 0)

@@ -21,7 +21,7 @@ import sys
 import inflect as inflect_mod
 import six
 
-import CommonEnvironment
+from CommonEnvironment.Interface import override, DerivedProperty
 from CommonEnvironment.TypeInfo import TypeInfo
 
 # ----------------------------------------------------------------------
@@ -35,7 +35,7 @@ inflect                                     = inflect_mod.engine()
 class StringTypeInfo(TypeInfo):
     """Type info for a string value."""
 
-    Desc                                    = "String"
+    Desc                                    = DerivedProperty("String")
     ExpectedType                            = six.string_types
 
     # ----------------------------------------------------------------------
@@ -64,11 +64,8 @@ class StringTypeInfo(TypeInfo):
         self.MaxLength                      = max_length
 
     # ----------------------------------------------------------------------
-    def __repr__(self):
-        return CommonEnvironment.ObjectReprImpl(self, include_private=False)
-
-    # ----------------------------------------------------------------------
     @property
+    @override
     def ConstraintsDesc(self):
         constraints = []
 
@@ -87,6 +84,7 @@ class StringTypeInfo(TypeInfo):
         return "Value must {}".format(', '.join(constraints))
 
     # ----------------------------------------------------------------------
+    @override
     def _ValidateItemNoThrowImpl(self, item):
         if self.ValidationExpression:
             if not hasattr(self, "_validation_regex"):

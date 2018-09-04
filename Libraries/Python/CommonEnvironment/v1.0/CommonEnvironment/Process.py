@@ -20,6 +20,7 @@ import string
 import sys
 
 import six
+from enum import Enum
 
 from CommonEnvironment.CallOnExit import CallOnExit
 
@@ -36,8 +37,6 @@ def Execute( command_line,
            ):
     """
     Invokes the given command line.
-
-
 
     Returns the exit code if output_output_stream_or_functor is not None, otherwise
     ( <exit_code>, <output> )
@@ -149,139 +148,8 @@ def Execute( command_line,
                              )
     
     with CallOnExit(Flush):
-        # ----------------------------------------------------------------------
-        ( CharacterStack_Escape,
-          CharacterStack_LineReset,
-          CharacterStack_Buffered,
-          CharacterStack_MultiByte,
-        ) = range(4)
-
-        # ----------------------------------------------------------------------
-        def IsAsciiLetter(value):
-            return (value >= ord('a') and value <= ord('z')) or (value >= ord('A') and value <= ord('Z'))
-
-        # ----------------------------------------------------------------------
-        def IsNewlineish(value):
-            return value in [ 10, 13, ]
-
-        # ----------------------------------------------------------------------
-        def IsEscape(value):
-            return value == 27
-
-        # ----------------------------------------------------------------------
-        def ToString(c):
-            result = bytearray(c)
-            s = None
-
-            for codec in [ "utf-8",
-                           "ansi",
-                           "ascii",
-                         ]:
-                try:
-                    s = result.decode(codec)
-                    break
-
-                except (UnicodeDecodeError, LookupError):
-                    pass
-
-            if s is None:
-                raise Exception("The content '{}' could not be decoded".format(result))
-
-            if sys.version_info[0] == 2:
-                # Convert the unicode string back into an ascii string
-                s = ConvertUnicodeToAsciiString(s, "replace")
-
-            return s
-
-        # ----------------------------------------------------------------------
-
         try:
-            character_stack = []
-            character_stack_type = None
-
-            hard_stop = False
-
-            while True:
-                if character_stack_type == CharacterStack_Buffered:
-                    value = character_stack.pop()
-
-                    assert not character_stack
-                    character_stack_type = None
-
-                else:
-                    c = result.stdout.read(1)
-                    if not c:
-                        break
-
-                    value = ord(c)
-
-                content = None
-
-                if character_stack_type == CharacterStack_Escape:
-                    character_stack.append(value)
-
-                    if not IsAsciiLetter(value):
-                        continue
-
-                    content = character_stack
-
-                    character_stack = []
-                    character_stack_type = None
-
-                elif character_stack_type == CharacterStack_LineReset:
-                    if IsNewlineish(value):
-                        character_stack.append(value)
-                        continue
-
-                    content = character_stack
-
-                    character_stack = [ value, ]
-                    character_stack_type = CharacterStack_Buffered
-
-                elif character_stack_type == CharacterStack_MultiByte:
-                    if value >> 6 == 0b10: 
-                        # Continuation char
-                        character_stack.append(value)
-                        continue
-
-                    content = character_stack
-
-                    character_stack = [ value, ]
-                    character_stack_type = CharacterStack_Buffered
-
-                else:
-                    assert character_stack_type is None, character_stack_type
-
-                    if IsEscape(value):
-                        character_stack.append(value)
-                        character_stack_type = CharacterStack_Escape
-
-                        continue
-
-                    elif IsNewlineish(value):
-                        character_stack.append(value)
-                        character_stack_type = CharacterStack_LineReset
-
-                        continue
-
-                    elif value >> 6 == 0b11:
-                        # If the high bit is set, this is the first part of a multi-byte character set.
-                        character_stack.append(value)
-                        character_stack_type = CharacterStack_MultiByte
-
-                        continue
-
-                    content = [ value, ]
-
-                assert content
-
-                if output(ToString(content)) == False:
-                    hard_stop = True
-                    break
-
-            if not hard_stop and character_stack:
-                output(ToString(character_stack))
-
+            ConsumeOutput(result.stdout, output)
             result = result.wait() or 0
 
         except IOError:
@@ -291,3 +159,157 @@ def Execute( command_line,
         return result
 
     return result, sink.getvalue()
+
+# ----------------------------------------------------------------------
+if sys.version_info[0] == 2:
+    import unicodedata
+    
+    # ----------------------------------------------------------------------
+    def ConvertUnicodeToAsciiString(item, errors="ignore"):
+        return unicodedata.normalize('NFKD', item).encode('ascii', errors)
+
+# ----------------------------------------------------------------------
+def ConsumeOutput( input_stream,
+                   output_func,             # def Func(content) -> True to continue, False to quit
+                 ):
+    """
+    Reads chars from the provided stream, ensuring that escape sequences and multibyte chars are atomic.
+    Returns the value provided by output_func.
+    """
+
+    # ----------------------------------------------------------------------
+    class CharacterStack(Enum):
+        Escape = 1
+        LineReset = 2
+        Buffered = 3
+        MultiByte = 4
+
+    # ----------------------------------------------------------------------
+    def IsAsciiLetter(value):
+        return (value >= ord('a') and value <= ord('z')) or (value >= ord('A') and value <= ord('Z'))
+
+    # ----------------------------------------------------------------------
+    def IsNewlineish(value):
+        return value in [ 10, 13, ]
+
+    # ----------------------------------------------------------------------
+    def IsEscape(value):
+        return value == 27
+
+    # ----------------------------------------------------------------------
+    def ToString(value):
+        result = bytearray(value)
+        s = None
+
+        for codec in [ "utf-8",
+                       "ansi",
+                       "ascii",
+                     ]:
+            try:
+                s = result.decode(codec)
+                break
+
+            except (UnicodeDecodeError, LookupError):
+                pass
+
+        if s is None:
+            raise Exception("The content '{}' could not be decoded".format(result))
+
+        if sys.version[0] == 2:
+            # Convert the Unicode string back to an ascii string
+            s = ConvertUnicodeToAsciiString(s, "replace")
+
+        return s
+
+    # ----------------------------------------------------------------------
+
+    character_stack = []
+    character_stack_type = None
+
+    hard_stop = False
+
+    while True:
+        # Get the next character
+        if character_stack_type == CharacterStack.Buffered:
+            value = character_stack.pop()
+
+            assert not character_stack
+            character_stack_type = None
+
+        else:
+            c = input_stream.read(1)
+            if not c:
+                break
+
+            value = ord(c)
+
+        content = None
+
+        # Process the character
+        if character_stack_type == CharacterStack.Escape:
+            character_stack.append(value)
+
+            if not IsAsciiLetter(value):
+                continue
+
+            content = character_stack
+
+            character_stack = []
+            character_stack_type = None
+
+        elif character_stack_type == CharacterStack.LineReset:
+            if IsNewlineish(value):
+                character_stack.append(value)
+                continue
+
+            content = character_stack
+
+            character_stack = [ value, ]
+            character_stack_type = CharacterStack.Buffered
+
+        elif character_stack_type == CharacterStack.MultiByte:
+            if value >> 6 == 0b10:
+                # Continuation char
+                character_stack.append(value)
+                continue
+
+            content = character_stack
+
+            character_stack = [ value, ]
+            character_stack_type = CharacterStack.Buffered
+
+        else:
+            assert character_stack_type is None, character_stack_type
+
+            if IsEscape(value):
+                character_stack.append(value)
+                character_stack_type = CharacterStack.Escape
+
+                continue
+
+            elif IsNewlineish(value):
+                character_stack.append(value)
+                character_stack_type = CharacterStack.LineReset
+
+                continue
+
+            elif value >> 6 == 0b11:
+                # If the high bit is set, this is the first part of a multi-byte character
+                character_stack.append(value)
+                character_stack_type = CharacterStack.MultiByte
+
+                continue
+
+            content = [ value, ]
+
+        assert content
+
+        if output_func(ToString(content)) == False:
+            hard_stop = True
+            break
+
+    if not hard_stop and character_stack:
+        hard_stop = not output_func(ToString(character_stack))
+
+    return not hard_stop
+

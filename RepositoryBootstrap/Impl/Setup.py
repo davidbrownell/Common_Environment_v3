@@ -67,10 +67,11 @@ _ScmConstraint                              = CommonEnvironmentImports.CommandLi
 @CommonEnvironmentImports.CommandLine.EntryPoint( output_filename_or_stdout=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Filename for generated content or standard output if the value is 'stdout'"),
                                                   repository_root=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Root of the repository"),
                                                   recurse=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Invoke Setup on this repository and its dependencies"),
-                                                  all_configurations=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Setup all configurations, not just the ones used by this repository and those that it depends upon"),
                                                   debug=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Write additional debug information to the console"),
                                                   verbose=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Write additional verbose information to the console"),
                                                   configuration=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Configurations to setup; all configurations defined will be setup if explicit values are not provided"),
+                                                  all_configurations=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Setup all configurations, not just the ones used by this repository and those that it depends upon  (used with '/recurse')"),
+                                                  no_hooks=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Do not setup SCM hooks"),
                                                 )
 @CommonEnvironmentImports.CommandLine.Constraints( output_filename_or_stdout=CommonEnvironmentImports.CommandLine.StringTypeInfo(),
                                                    repository_root=CommonEnvironmentImports.CommandLine.DirectoryTypeInfo(),
@@ -85,6 +86,7 @@ def Setup( output_filename_or_stdout,
            configuration=None,
            use_ascii=False,
            all_configurations=False,
+           no_hooks=False,
            output_stream=sys.stdout,
          ):
     """Perform setup activities for this repository"""
@@ -121,15 +123,20 @@ def Setup( output_filename_or_stdout,
             activities = [ _SetupBootstrap,
                            _SetupCustom,
                            _SetupShortcuts,
-                           _SetupGeneratedPermissions,
-                           _SetupScmHooks,
                          ]
+
+            if not no_hooks:
+                activities += [ _SetupScmHooks,
+                              ]
 
         commands = []
 
         for func in activities:
             these_commands = func(*args)
             if these_commands:
+                if isinstance(these_commands, int):
+                    return these_commands
+                    
                 commands += these_commands
 
         return commands
@@ -440,15 +447,15 @@ def _SetupRecursive( output_stream,
 
     # ----------------------------------------------------------------------
 
-    _SimpleFuncImpl( Callback,
-                     repository_root,
-                     True, # recursive
-                     _ScmParameterToScm(None, repository_root),
-                     explicit_configurations=explicit_configurations,
-                     output_stream=output_stream,
-                     verbose=verbose,
-                     use_ascii=use_ascii,
-                   )
+    return _SimpleFuncImpl( Callback,
+                            repository_root,
+                            True, # recursive
+                            _ScmParameterToScm(None, repository_root),
+                            explicit_configurations=explicit_configurations,
+                            output_stream=output_stream,
+                            verbose=verbose,
+                            use_ascii=use_ascii,
+                          )
 
 # ----------------------------------------------------------------------
 def _SetupBootstrap( output_stream,
@@ -463,13 +470,7 @@ def _SetupBootstrap( output_stream,
                                 )
 
     # A mixin repository cannot have configurations, dependencies or version specs
-    if ( repo_data.IsMixinRepository and
-         ( repo_data.HasConfigurations or
-           next(six.itervalues(repo_data.Configurations)).Dependencies or 
-           next(six.itervalues(repo_data.Configurations)).VersionSpecs.Tools or
-           next(six.itervalues(repo_data.Configurations)).VersionSpecs.Libraries
-         )
-       ):
+    if repo_data.IsMixinRepository and repo_data.HasConfigurations:
         raise Exception("A mixin repository cannot have configurations, dependencies, or version specs.")
 
     display_cols = [ 54, 32, 100, ]
@@ -503,6 +504,7 @@ def _SetupBootstrap( output_stream,
 
         if repo_data.HasConfigurations:
             configuration_info = textwrap.dedent(
+                                    # <Wrong hanging indentation> pylint: disable = C0330
                                     """\
                                     Based on these configurations:
 
@@ -517,6 +519,7 @@ def _SetupBootstrap( output_stream,
                                                                                                      4,
                                                                                                    ),
                                                  '' if repo_data.AreConfigurationsFiltered else textwrap.dedent(
+                                                                                                    # <Wrong hanging indentation> pylint: disable = C0330
                                                                                                     """\
 
                                                                                                     To operate on specific configurations, specify this argument one or more times on the command line:
@@ -571,12 +574,12 @@ def _SetupBootstrap( output_stream,
     output_stream.write(textwrap.dedent(
         """\
         {repository} {was} found at {this} {location}
-
+    
             {header}
             {sep}
             {values}
-
-
+    
+    
         """).format( repository=inflect.no("repository", len(repo_map)),
                      was=inflect.plural("was", len(repo_map)),
                      this=inflect.plural("this", len(repo_map)),
@@ -643,7 +646,7 @@ def _SetupShortcuts( output_stream,
                      verbose,
                      explicit_configurations,
                    ):
-    activate_script = CommonEnvironmentImports.CurrentShell.CreateScriptName(Constants.ACTIVATE_ENVIRONMENT_NAME)
+    activate_script = CommonEnvironmentImports.CurrentShell.CreateScriptName(Constants.ACTIVATE_ENVIRONMENT_NAME, filename_only=True)
 
     shortcut_target = os.path.join(_script_dir, activate_script)
     assert os.path.isfile(shortcut_target), shortcut_target
@@ -652,20 +655,6 @@ def _SetupShortcuts( output_stream,
                                                                           shortcut_target,
                                                                         ),
            ]
-
-# ----------------------------------------------------------------------
-# <Unused argument> pylint: disable = W0613
-def _SetupGeneratedPermissions( output_stream,
-                                repository_root,
-                                customization_mod,
-                                debug,
-                                verbose,
-                                explicit_configurations,
-                              ):
-    generated_dir = os.path.join(repository_root, Constants.GENERATED_DIRECTORY_NAME, CommonEnvironmentImports.CurrentShell.CategoryName)
-    assert os.path.isdir(generated_dir), generated_dir
-
-    os.chmod(generated_dir, 0x777)
 
 # ----------------------------------------------------------------------
 # <Unused argument> pylint: disable = W0613
@@ -694,7 +683,7 @@ def _SetupScmHooks( output_stream,
         if not config.has_section("hooks"):
             config.add_section("hooks")
 
-        relative_hooks_filename = CommonEnvironmentImports.FileSystem.GetRelativePath(repository_root, hooks_filename)
+        relative_hooks_filename = CommonEnvironmentImports.FileSystem.GetRelativePath(repository_root, hooks_filename).replace(os.path.sep, '/')
 
         config.set("hooks", "pretxncommit.CommonEnvironment", "python:{}:PreTxnCommit".format(relative_hooks_filename))
         config.set("hooks", "preoutgoing.CommonEnvironment", "python:{}:PreOutgoing".format(relative_hooks_filename))
@@ -893,7 +882,7 @@ class _RepositoriesMap(OrderedDict):
                     config_dependencies.append(Dependency( fundamental_repo_id, 
                                                            fundamental_repo_name,
                                                            Constants.DEFAULT_FUNDAMENTAL_CONFIGURATION,
-                                                        ))
+                                                         ))
 
                 these_dependencies = []
 
@@ -940,9 +929,6 @@ class _RepositoriesMap(OrderedDict):
                  repository_root,
                  repo_data,
                )
-
-        if on_search_begin_func and not on_search_begin_func(self):
-            return None
 
         if nonlocals.remaining_repos:
             output_stream.write("\nSearching for repositories...")
@@ -1004,6 +990,7 @@ class _RepositoriesMap(OrderedDict):
                         {}
 
                     """).format(CommonEnvironmentImports.StringHelpers.LeftJustify( '\n'.join([ textwrap.dedent(
+                                                                                                    # <Wrong hanging indentation> pylint: disable = C0330
                                                                                                     """\
                                                                                                     Actual Name:        {}
                                                                                                     Dependency Name:    {}
@@ -1316,10 +1303,13 @@ def _SimpleFuncImpl( callback,              # def Func(output_stream, repo_map) 
                      required_ancestor_dir=None,
                      use_ascii=False,
                    ):
+    """Scaffolding the creates a repo map, displays it, and invokes the provided callback within a command line context"""
+
     with CommonEnvironmentImports.StreamDecorator(output_stream).DoneManager( line_prefix='',
                                                                               prefix="\nResults: ",
                                                                               suffix='\n',
                                                                             ) as dm:
+        # Create the repo map
         repo_map = _CreateRepoMap( repository_root,
                                    explicit_configurations,
                                    recurse,
@@ -1331,6 +1321,8 @@ def _SimpleFuncImpl( callback,              # def Func(output_stream, repo_map) 
                                  )
         if isinstance(repo_map, int):
             return repo_map
+
+        # Display the repo map as a tree
 
         # ----------------------------------------------------------------------
         DisplayInfo                         = namedtuple( "DisplayInfo",
@@ -1379,7 +1371,7 @@ def _SimpleFuncImpl( callback,              # def Func(output_stream, repo_map) 
             from asciitree import LeftAligned
             from asciitree.drawing import BoxStyle, BOX_LIGHT, BOX_ASCII
 
-            create_tree_func = LeftAligned(draw=BoxStyle(gfx=(BOX_ASCII if use_ascii else BOX_LIGHT), horiz_len=1))
+            create_tree_func = LeftAligned(draw=BoxStyle(gfx=BOX_ASCII if use_ascii else BOX_LIGHT, horiz_len=1))
 
             lines = create_tree_func(tree).split('\n')
 
@@ -1401,18 +1393,49 @@ def _SimpleFuncImpl( callback,              # def Func(output_stream, repo_map) 
                 uri = (display_info.GetCloneUri(scm) if display_info.GetCloneUri else None) or "N/A"
                 max_uri_length = max(max_uri_length, len(uri))
 
-                resolved_display_infos.append(( configuration, 
+                resolved_display_infos.append([ configuration, 
                                                 display_info.Id,
                                                 location,
                                                 uri,
-                                              ))
+                                              ])
+
+            # ----------------------------------------------------------------------
+            def TrimValues(header, max_length, item_index):
+                """Space is tight, so attempt to extract a common prefix from all of the values; returns the header value."""
+
+                values = [ resolved_display_info[item_index] for resolved_display_info in resolved_display_infos if resolved_display_info[item_index] != "N/A" ]
+
+                common_prefix = os.path.commonprefix(values)
+                if not common_prefix:
+                    return header, max_length
+
+                if common_prefix[-1] in [ '\\', '/', ]:
+                    common_prefix = common_prefix[:-1]
+                    
+                header = "{} ({}...)".format(header, common_prefix)
+
+                # Replace values
+                common_prefix_len = len(common_prefix)
+
+                for rdi_index, resolved_display_info in enumerate(resolved_display_infos):
+                    if resolved_display_info[item_index] == "N/A":
+                        continue
+
+                    resolved_display_infos[rdi_index][item_index] = "...{}".format(resolved_display_info[item_index][common_prefix_len:])
+                
+                return header, max_length - len(common_prefix) + 3
+
+            # ----------------------------------------------------------------------
+
+            location_header, max_location_length = TrimValues("Location", max_location_length, 2)
+            uri_header, max_uri_length = TrimValues("Clone Uri", max_uri_length, 3)
 
             # Space is tight here, so minimize the display width
             display_cols = [ max(len("Repository"), len(max(lines, key=len))), 
                              max(len("Configuration"), max_configuration_name_length),
                              max(len("Id"), 32), 
-                             max(len("Location"), max_location_length), 
-                             max(len("Clone Uri"), max_uri_length), 
+                             max(len(location_header), max_location_length), 
+                             max(len(uri_header), max_uri_length), 
                            ]
 
             display_template = "{{0:<{0}}}  {{1:<{1}}}  {{2:<{2}}}  {{3:<{3}}}  {{4}}".format(*display_cols)
@@ -1422,10 +1445,10 @@ def _SimpleFuncImpl( callback,              # def Func(output_stream, repo_map) 
                 {}
                 {}
                 {}
-                """).format( display_template.format("Repository", "Configuration", "Id", "Location", "Clone Uri"),
+                """).format( display_template.format("Repository", "Configuration", "Id", location_header, uri_header),
                              display_template.format(*[ '-' * col_size for col_size in display_cols ]),
                              '\n'.join([ display_template.format( line,
-                                                                  *resolved_display_info,
+                                                                  *resolved_display_info
                                                                 )
                                          for line, resolved_display_info in zip(lines, resolved_display_infos)
                                        ]),
@@ -1501,6 +1524,7 @@ def _ScmParameterToScm(value, repository_root):
             return scm
 
     assert False, value
+    return None
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------

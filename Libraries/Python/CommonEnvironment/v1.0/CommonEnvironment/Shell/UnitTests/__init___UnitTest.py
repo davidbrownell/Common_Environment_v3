@@ -19,7 +19,7 @@ import shutil
 import sys
 import unittest
 
-from CommonEnvironment.Interface import staticderived
+from CommonEnvironment.Interface import staticderived, override, DerivedProperty
 from CommonEnvironment.Shell import *
 from CommonEnvironment.Shell.Commands import *
 
@@ -31,32 +31,41 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 @staticderived
 class MyShell(Shell):
-    Name                                    = "MyShell"
-    CategoryName                            = "MyCategory"
-    ScriptExtension                         = ".AScriptExt"
-    ExecutableExtension                     = ".AExeExt"
-    AllArgumentsScriptVariable              = "_all_args_"
-    EnvironmentVariableDelimiter            = "___"
-    HasCaseSensitiveFileSystem              = True
-    Architecture                            = "987"
-    UserDirectory                           = "<user>"
-    TempDirectory                           = "<temp>"
-    CompressionExtensions                   = [ ".compressed", ]
+    Name                                    = DerivedProperty("MyShell")
+    CategoryName                            = DerivedProperty("MyCategory")
+    ScriptExtension                         = DerivedProperty(".AScriptExt")
+    ExecutableExtension                     = DerivedProperty(".AExeExt")
+    AllArgumentsScriptVariable              = DerivedProperty("_all_args_")
+    HasCaseSensitiveFileSystem              = DerivedProperty(True)
+    Architecture                            = DerivedProperty("987")
+    UserDirectory                           = DerivedProperty("<user>")
+    TempDirectory                           = DerivedProperty("<temp>")
+    CompressionExtensions                   = DerivedProperty([ ".compressed", ])
 
+    @override
     class CommandVisitor(object):
         @staticmethod
+        @override
         def Accept(command):
             return command.Value if hasattr(command, "Value") else str(command)
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def IsActive(platform_name):
         return True
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def RemoveDir(path):
         pass
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @override
+    def DecorateEnvironmentVariable(var_name):
+        return var_name
 
 # ----------------------------------------------------------------------
 class StandardSuite(unittest.TestCase):
@@ -73,7 +82,7 @@ class StandardSuite(unittest.TestCase):
 
         values = [ "one", "two", "three", ]
 
-        os.environ[var_name] = MyShell.EnvironmentVariableDelimiter.join(values)
+        os.environ[var_name] = os.pathsep.join(values)
         
         self.assertEqual(list(MyShell.EnumEnvironmentVariable(var_name)), values)
 

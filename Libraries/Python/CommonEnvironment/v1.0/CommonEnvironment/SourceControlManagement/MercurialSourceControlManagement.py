@@ -34,7 +34,7 @@ import six
 
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import FileSystem
-from CommonEnvironment.Interface import staticderived
+from CommonEnvironment.Interface import staticderived, override, DerivedProperty
 from CommonEnvironment import Process
 from CommonEnvironment.Shell.All import CurrentShell
 
@@ -58,11 +58,11 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
     # |  Public Properties
     # |  
     # ----------------------------------------------------------------------
-    Name                                    = "Mercurial"
-    DefaultBranch                           = "default"
-    Tip                                     = "tip"
-    WorkingDirectories                      = [ ".hg", ]
-    IgnoreFilename                          = ".hgignore"
+    Name                                    = DerivedProperty("Mercurial")
+    DefaultBranch                           = DerivedProperty("default")
+    Tip                                     = DerivedProperty("tip")
+    WorkingDirectories                      = DerivedProperty([ ".hg", ])
+    IgnoreFilename                          = DerivedProperty(".hgignore")
 
     # Diagnostics                             = True
 
@@ -96,6 +96,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def IsAvailable(cls):
         is_available = getattr(cls, "_cached_is_available", None)
         if is_available is None:
@@ -110,6 +111,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
     _cached_is_active                       = set()
 
     @classmethod
+    @override
     def IsActive(cls, repo_root):
         for k in cls._cached_is_active:
             if repo_root.startswith(k):
@@ -132,6 +134,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def Create(cls, output_dir):
         if os.path.isdir(output_dir):
             raise Exception("The directory '{}' already exists and will not be overwritten".format(output_dir))
@@ -141,6 +144,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def Clone(cls, uri, output_dir, branch=None):
         if os.path.isdir(output_dir):
             raise Exception("The directory '{}' already exists and will not be overwritten.".format(output_dir))
@@ -155,6 +159,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def GetUniqueName(cls, repo_root):
         result, output = cls.Execute(repo_root, "hg paths", newline=True)
         assert result == 0, (result, output)
@@ -173,6 +178,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def Who(cls, repo_root):
         result, output = cls.Execute(repo_root, "hg showconfig ui.username")
         assert result == 0, (result, output)
@@ -183,6 +189,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
     _cached_roots                           = set()
 
     @classmethod
+    @override
     def GetRoot(cls, repo_dir):
         for k in cls._cached_roots:
             if repo_dir.startswith(k):
@@ -200,11 +207,13 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
     
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def IsRoot(cls, repo_dir):
         return os.path.isdir(os.path.join(repo_dir, cls.WorkingDirectories[0]))
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def Clean(cls, repo_root, no_prompt=False):
         if not no_prompt and not cls.AreYouSurePrompt(textwrap.dedent(
             """\
@@ -224,6 +233,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def GetBranches(cls, repo_root):
         result, output = cls.Execute(repo_root, "hg branches")
         assert result == 0, (result, output)
@@ -235,6 +245,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def GetCurrentBranch(cls, repo_root):
         result, output = cls.Execute(repo_root, "hg branch")
         assert result == 0, (result, output)
@@ -243,21 +254,25 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def GetMostRecentBranch(cls, repo_root):
         return cls._GetBranchAssociatedWithChange(repo_root)
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def CreateBranch(cls, repo_root, branch_name):
         return cls.Execute(repo_root, 'hg branch "{}"'.format(branch_name))
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def SetBranch(cls, repo_root, branch_name):
         return cls.Execute(repo_root, 'hg update "{}"'.format(branch_name))
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def HasUntrackedWorkingChanges(cls, repo_root):
         result, output = cls.Execute(repo_root, "hg status")
 
@@ -269,6 +284,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def HasWorkingChanges(cls, repo_root):
         result, output = cls.Execute(repo_root, "hg status")
 
@@ -282,6 +298,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def GetWorkingChanges(cls, repo_root):
         result, output = cls.Execute(repo_root, 'hg status')
         assert result == 0, (result, output)
@@ -298,6 +315,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def GetChangeInfo(cls, repo_root, change):
         result, output = cls.Execute(repo_root, 'hg log --rev "{}"'.format(change))
         assert result == 0, (result, output)
@@ -323,6 +341,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def Commit(cls, repo_root, description, username=None):
         return cls.Execute( repo_root,
                             'hg commit --message "{desc}"{user}'.format( desc=description.replace('"', '\\"'),
@@ -332,16 +351,19 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def Update(cls, repo_root, update_arg=None):
         return cls.Execute(repo_root, "hg update{}".format(cls._UpdateMergeArgToCommandLine(repo_root, update_arg)))
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def Merge(cls, repo_root, merge_arg):
         return cls.Execute(repo_root, "hg merge{}".format(cls._UpdateMergeArgToCommandLine(repo_root, merge_arg)))
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def GetChangesSinceLastMerge(cls, repo_root, dest_branch, source_merge_arg=None):
         source_branch = None
         additional_filters = []
@@ -396,6 +418,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def GetChangedFiles(cls, repo_root, change_or_changes_or_none):
         command_line_template = "hg status"
 
@@ -424,6 +447,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def EnumBlameInfo(cls, repo_root, filename):
         result, output = cls.Execute(repo_root, 'hg blame "{}"'.format(filename))
 
@@ -452,6 +476,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def EnumTrackedFiles(cls, repo_root):
         temp_filename = CurrentShell.CreateTempFilename()
 
@@ -468,6 +493,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def CreatePatch( cls,
                      repo_root, 
                      output_filename,
@@ -485,6 +511,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def ApplyPatch( cls, 
                     repo_root,
                     patch_filename,
@@ -496,6 +523,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
     
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def Reset( cls,
                repo_root, 
                no_prompt=False, 
@@ -528,12 +556,14 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def HasUpdateChanges(cls, repo_root):
         result, output = cls.Execute(repo_root, "hg summary")
         return result == 0 and output.find("update: (current)") == -1
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def HasLocalChanges(cls, repo_root):
         result, output = cls.Execute(repo_root, "hg outgoing")
         assert result == 0 or (result == 1 and "no changes found" in output), (result, output)
@@ -542,6 +572,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def GetLocalChanges(cls, repo_root):
         output_prefix = "rev:"
 
@@ -552,6 +583,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def HasRemoteChanges(cls, repo_root):
         result, output = cls.Execute(repo_root, "hg incoming")
         assert result == 0 or (result == 1 and "no changes found" in output), (result, output)
@@ -560,6 +592,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def GetRemoteChanges(cls, repo_root):
         output_prefix = "rev:"
 
@@ -572,11 +605,13 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def Push(cls, repo_root, create_remote_branch=False):
         return cls.Execute(repo_root, "hg push{}".format(" --new-branch" if create_remote_branch else ''))
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def Pull(cls, repo_root, branch_or_branches=None):
         # In Mercurial, a pull gets all branches; no need to consider branch_or_branches
         result, output = cls.Execute(repo_root, "hg pull")
@@ -591,6 +626,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
     # |  
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def _AddFilesImpl(cls, repo_root, filenames):
         return cls.Execute(repo_root, 'hg add {}'.format(' '.join([ '"{}"'.format(filename) for filename in filenames ])))
 

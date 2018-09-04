@@ -18,7 +18,9 @@ import os
 import sys
 import textwrap
 
-from CommonEnvironment.Interface import staticderived, clsinit
+from collections import OrderedDict
+
+from CommonEnvironment.Interface import staticderived, clsinit, override, DerivedProperty
 from CommonEnvironment.Shell import Shell
 from CommonEnvironment.Shell.Commands import Set, Augment
 from CommonEnvironment.Shell.Commands.Visitor import Visitor
@@ -38,58 +40,60 @@ class WindowsShell(Shell):
     # |  
     # ----------------------------------------------------------------------
     @staticderived
+    @override
     class CommandVisitor(Visitor):
 
         # <Parameters differ from overridden '<...>' method> pylint: disable = W0221
 
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnComment(command):
             return "REM {}".format(command.Value)
 
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnMessage(command):
-            replacement_chars = [ ( '%', '%%' ),
-                                  ( '^', '^^' ),
-                                  ( '&', '^&' ),
-                                  ( '<', '^<' ),
-                                  ( '>', '^>' ),
-                                  ( '|', '^|' ),
-                                  ( ',', '^,' ),
-                                  ( ';', '^;' ),
-                                  ( '(', '^(' ),
-                                  ( ')', '^)' ),
-                                  ( '[', '^[' ),
-                                  ( ']', '^]' ),
-                                  ( '"', '\"' ),
-                                ]
-                                
             output = []
-            
+
             for line in command.Value.split('\n'):
                 if not line.strip():
                     output.append("echo.")
                 else:
-                    for old_char, new_char in replacement_chars:
-                        line = line.replace(old_char, new_char)
-                        
-                    output.append("echo {}".format(line))
-                    
-            return '\n'.join(output)
+                    output.append("echo {}".format(WindowsShell._ProcessEscapedChars( line,
+                                                                                      OrderedDict([ ( '%', '%%' ),
+                                                                                                    ( '^', '^^' ),
+                                                                                                    ( '&', '^&' ),
+                                                                                                    ( '<', '^<' ),
+                                                                                                    ( '>', '^>' ),
+                                                                                                    ( '|', '^|' ),
+                                                                                                    ( ',', '^,' ),
+                                                                                                    ( ';', '^;' ),
+                                                                                                    ( '(', '^(' ),
+                                                                                                    ( ')', '^)' ),
+                                                                                                    ( '[', '^[' ),
+                                                                                                    ( ']', '^]' ),
+                                                                                                    ( '"', '\"' ),
+                                                                                                  ]),
+                                                                                    )))
+            return ' && '.join(output)
 
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnCall(command):
             return "call {}".format(command.CommandLine)
 
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnExecute(command):
             return command.CommandLine
 
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnSymbolicLink(command):
             d = { "link" : command.LinkFilename,
                   "target" : command.Target,
@@ -107,26 +111,30 @@ class WindowsShell(Shell):
 
         # ----------------------------------------------------------------------
         @classmethod
+        @override
         def OnPath(cls, command):
             return cls.OnSet(Set("PATH", command.Values))
 
         # ----------------------------------------------------------------------
         @classmethod
+        @override
         def OnAugmentPath(cls, command):
             return cls.OnAugment(Augment("PATH", command.Values))
 
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnSet(command):
             if command.Values is None:
                 return "SET {}=".format(command.Name)
 
             assert command.Values
 
-            return "SET {}={}".format(command.Name, WindowsShell.EnvironmentVariableDelimiter.join(command.Values))
+            return "SET {}={}".format(command.Name, os.pathsep.join(command.Values))     # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
 
         # ----------------------------------------------------------------------
         @classmethod
+        @override
         def OnAugment(cls, command):
             if not command.Values:
                 return None
@@ -140,11 +148,12 @@ class WindowsShell(Shell):
                 return None
 
             return "SET {name}={values};%{name}%".format( name=command.Name,
-                                                          values=WindowsShell.EnvironmentVariableDelimiter.join(command.Values),
+                                                          values=os.pathsep.join(command.Values),    # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
                                                         )
             
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnExit(command):
             return textwrap.dedent(
                 """\
@@ -158,6 +167,7 @@ class WindowsShell(Shell):
 
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnExitOnError(command):
             variable_name = command.VariableName or "ERRORLEVEL"
 
@@ -167,21 +177,25 @@ class WindowsShell(Shell):
 
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnRaw(command):
             return command.Value
 
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnEchoOff(command):
             return "@echo off"
 
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnCommandPrompt(command):
             return "set PROMPT=({}) $P$G".format(command.Prompt)
 
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnDelete(command):
             if command.IsDir:
                 return 'rmdir /S /Q "{}"'.format(command.FilenameOrDirectory)
@@ -190,6 +204,7 @@ class WindowsShell(Shell):
 
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnCopy(command):
             return 'copy /T "{source}" "{dest}"'.format( source=command.Source,
                                                          dest=command.Dest,
@@ -197,6 +212,7 @@ class WindowsShell(Shell):
 
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnMove(command):
             return 'move /Y "{source}" "{dest}"'.format( source=command.Source,
                                                          dest=command.Dest,
@@ -204,16 +220,19 @@ class WindowsShell(Shell):
 
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnPersistError(command):
             return 'set {}=%ERRORLEVEL%'.format(command.VariableName)
 
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnPushDirectory(command):
             return 'pushd "{}"'.format(command.Directory)
 
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnPopDirectory(command):
             return "popd"
 
@@ -222,18 +241,17 @@ class WindowsShell(Shell):
     # |  Public Properties
     # |  
     # ----------------------------------------------------------------------
-    Name                                    = "Windows"
-    CategoryName                            = "Windows"
-    ScriptExtension                         = ".cmd"
-    ExecutableExtension                     = ".exe"
-    CompressionExtensions                   = [ ".zip", ]
-    AllArgumentsScriptVariable              = "%*"
-    EnvironmentVariableDelimiter            = ";"
-    HasCaseSensitiveFileSystem              = False
-    Architecture                            = "x64" if os.getenv("ProgramFiles(x86)") else "x86"
-    UserDirectory                           = None      # Set in __clsinit__
-    TempDirectory                           = os.getenv("TMP")
-
+    Name                                    = DerivedProperty("Windows")
+    CategoryName                            = DerivedProperty("Windows")
+    ScriptExtension                         = DerivedProperty(".cmd")
+    ExecutableExtension                     = DerivedProperty(".exe")
+    CompressionExtensions                   = DerivedProperty([ ".zip", ])
+    AllArgumentsScriptVariable              = DerivedProperty("%*")
+    HasCaseSensitiveFileSystem              = DerivedProperty(False)
+    Architecture                            = DerivedProperty("x64" if os.getenv("ProgramFiles(x86)") else "x86")
+    TempDirectory                           = DerivedProperty(os.getenv("TMP"))
+    UserDirectory                           = None  # Set in __clsinit__
+    
     # ----------------------------------------------------------------------
     # |  
     # |  Public Methods
@@ -251,24 +269,33 @@ class WindowsShell(Shell):
             if sys.version_info[0] == 2:
                 homedir = homedir.encode("ascii", "ignore")
 
-            cls.UserDirectory               = homedir
+            cls.UserDirectory               = DerivedProperty(homedir)
 
         except:
-            cls.UserDirectory               = None
+            cls.UserDirectory               = DerivedProperty(None)
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def IsActive(platform_name):
         return "windows" in platform_name or platform_name == "nt"
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def RemoveDir(path):
         if os.path.isdir(path):
             os.system('rmdir /S /Q "{}"'.format(path))
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
+    def DecorateEnvironmentVariable(var_name):
+        return "\\%{}\\%".format(var_name)
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @override
     def IsSymLink(filename):
         import win32file
 
@@ -285,6 +312,7 @@ class WindowsShell(Shell):
 
         # ----------------------------------------------------------------------
         @classmethod
+        @override
         def ResolveSymLink(cls, filename):
             # Python 2.+ doesn't support symlinks on Windows and there doesn't seem to be
             # a way to resolve a symlink without parsing the file, and libraries mentioned
@@ -359,6 +387,7 @@ class WindowsShell(Shell):
 
         # ----------------------------------------------------------------------
         @classmethod
+        @override
         def DeleteSymLink(cls, filename, command_only=False):
             assert cls.IsSymLink(filename), filename
         

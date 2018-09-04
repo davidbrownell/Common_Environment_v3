@@ -50,7 +50,9 @@ def GenerateCommands( functor,              # def Func() -> []
     try:
         result = functor()
 
-        if isinstance(result, tuple):
+        if isinstance(result, int):
+            commands = []
+        elif isinstance(result, tuple):
             result, commands = result
         else:
             commands = result
@@ -64,7 +66,7 @@ def GenerateCommands( functor,              # def Func() -> []
         else:
             error = str(ex)
 
-        commands = [ CommonEnvironmentImports.CurrentShell.Commands.Message("ERROR: {}".format(CommonEnvironmentImports.StringHelpers.LeftJustify(error, len("ERROR: ")))),
+        commands = [ CommonEnvironmentImports.CurrentShell.Commands.Message("\n\nERROR: {}".format(CommonEnvironmentImports.StringHelpers.LeftJustify(error, len("ERROR: ")))),
                      CommonEnvironmentImports.CurrentShell.Commands.Exit(return_code=-1),
                    ]
 

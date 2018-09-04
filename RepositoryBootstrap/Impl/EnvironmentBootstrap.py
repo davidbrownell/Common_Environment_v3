@@ -48,7 +48,7 @@ class EnvironmentBootstrap(object):
     def Load(cls, repo_root):
         # ----------------------------------------------------------------------
         def RestoreRelativePath(value):
-            fullpath = os.path.normpath(os.path.join(repo_root, value))
+            fullpath = os.path.normpath(os.path.join(repo_root, value.replace('/', os.path.sep)))
 
             if not os.path.exists(fullpath):
                 raise Exception(textwrap.dedent(
@@ -104,12 +104,22 @@ class EnvironmentBootstrap(object):
             for k, version_infos in six.iteritems(config_info["VersionSpecs"]["Libraries"]):
                 libraries[k] = [ Configuration.VersionInfo(vi["Name"], vi["Version"]) for vi in version_infos ]
 
+            # Update the fingerprint
+            fingerprint = config_info["Fingerprint"]
+
+            for old_key in list(six.iterkeys(fingerprint)):
+                new_key =old_key.replace('/', os.path.sep)
+
+                if new_key not in fingerprint:
+                    fingerprint[new_key] = fingerprint[old_key]
+                    del fingerprint[old_key]
+            
             # Create the config info
             configurations[config_name] = Configuration.Configuration( config_info["Description"],
                                                                        dependencies,
                                                                        Configuration.VersionSpecs(tools, libraries),
                                                                      )
-            configurations[config_name].Fingerprint = config_info["Fingerprint"]
+            configurations[config_name].Fingerprint = fingerprint
 
         if cls.NoneJsonKeyReplacementName in configurations:
             configurations[None] = configurations[cls.NoneJsonKeyReplacementName]
@@ -137,20 +147,23 @@ class EnvironmentBootstrap(object):
 
     # ----------------------------------------------------------------------
     def Save(self, repo_root):
-        fundamental_repo = CommonEnvironmentImports.FileSystem.GetRelativePath(repo_root, self.FundamentalRepo)
+        fundamental_repo = CommonEnvironmentImports.FileSystem.GetRelativePath(repo_root, self.FundamentalRepo).replace(os.path.sep, '/')
         
         configurations = copy.deepcopy(self.Configurations)
-        dependencies_converted = set()
-
+        
         for config_info in six.itervalues(configurations):
             for dependency in config_info.Dependencies:
-                if dependency not in dependencies_converted:
-                    dependency.RepositoryRoot = CommonEnvironmentImports.FileSystem.GetRelativePath(repo_root, dependency.RepositoryRoot)
-                    dependencies_converted.add(dependency)
+                dependency.RepositoryRoot = CommonEnvironmentImports.FileSystem.GetRelativePath(repo_root, dependency.RepositoryRoot).replace(os.path.sep, '/')
+                
+            for old_key in  list(six.iterkeys(config_info.Fingerprint)):
+                new_key = old_key.replace(os.path.sep, '/')
+                if new_key not in config_info.Fingerprint:
+                    config_info.Fingerprint[new_key] = config_info.Fingerprint[old_key]
+                    del config_info.Fingerprint[old_key]
 
         # Write the output files
         output_dir = os.path.join(repo_root, Constants.GENERATED_DIRECTORY_NAME, CommonEnvironmentImports.CurrentShell.CategoryName)
-        CommonEnvironmentImports.FileSystem.MakeDirs(output_dir)
+        CommonEnvironmentImports.FileSystem.MakeDirs(output_dir, as_user=True)
 
         # Write the json file
         output_filename = os.path.join(output_dir, Constants.GENERATED_BOOTSTRAP_JSON_FILENAME)
@@ -178,6 +191,8 @@ class EnvironmentBootstrap(object):
                        cls=Encoder,
                      )
 
+        CommonEnvironmentImports.CurrentShell.UpdateOwnership(output_filename)
+
         # Write the data file
         output_filename = os.path.join(output_dir, Constants.GENERATED_BOOTSTRAP_DATA_FILENAME)
 
@@ -191,6 +206,8 @@ class EnvironmentBootstrap(object):
                              is_mixin_repo="1" if self.IsMixinRepo else "0",
                              is_configurable="1" if self.IsConfigurable else "0",
                            ))
+
+        CommonEnvironmentImports.CurrentShell.UpdateOwnership(output_filename)
 
     # ----------------------------------------------------------------------
     def __repr__(self):

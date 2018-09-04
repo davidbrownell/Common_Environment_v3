@@ -59,95 +59,119 @@ class Nonlocals(object):
 # |  Public Methods
 # |  
 # ----------------------------------------------------------------------
+# Data type used to short-circuit infinite loops when attempting to describe
+# object with circular dependencies. 
+_describe_stack                             = set()
+
 def Describe( item,                         # str, dict, iterable, obj
               output_stream=sys.stdout,
+              unique_id=None,
+              **kwargs                      # { "<attribute_name>" : def Func(<attribute_value>) -> string, ... }
             ):
     """Writes information about the item to the provided stream."""
 
-    # ----------------------------------------------------------------------
-    def OutputDict(item, indentation_str):
-        if not item:
-            output_stream.write("-- empty dict --\n")
-            return
+    if unique_id is None:
+        unique_id = (type(item), id(item))
 
-        if hasattr(item, "_asdict"):
-            item = item._asdict()
+    if unique_id in _describe_stack:
+        output_stream.write("The item '{}' has already been described.\n".format(unique_id))
+        return
 
-        keys = OrderedDict([ (key, key if isinstance(key, six.string_types) else str(key)) for key in item.keys() ])
+    _describe_stack.add(unique_id)
 
-        max_length = 0
-        for key in six.itervalues(keys):
-            max_length = max(max_length, len(key))
+    try:
+        # ----------------------------------------------------------------------
+        def OutputDict(item, indentation_str):
+            if not item:
+                output_stream.write("-- empty dict --\n")
+                return
 
-        item_indentation_str = indentation_str + (' ' * (max_length + len(" : ")))
-        
-        for index, (key, key_name) in enumerate(six.iteritems(keys)):
-            output_stream.write("{0}{1:<{2}} : ".format( indentation_str if index else '',
-                                                         key_name,
-                                                         max_length,
-                                                       ))
+            if hasattr(item, "_asdict"):
+                item = item._asdict()
 
-            Impl(item[key], item_indentation_str)
+            keys = OrderedDict([ (key, key if isinstance(key, six.string_types) else str(key)) for key in item.keys() ])
 
-    # ----------------------------------------------------------------------
-    def OutputList(item, indentation_str):
-        if not item:
-            output_stream.write("-- empty list --\n")
-            return
+            max_length = 0
+            for key in six.itervalues(keys):
+                max_length = max(max_length, len(key))
 
-        item_indentation_str = indentation_str + (' ' * 5)
+            item_indentation_str = indentation_str + (' ' * (max_length + len(" : ")))
+            
+            for index, (key, key_name) in enumerate(six.iteritems(keys)):
+                output_stream.write("{0}{1:<{2}} : ".format( indentation_str if index else '',
+                                                             key_name,
+                                                             max_length,
+                                                           ))
 
-        for index, i in enumerate(item):
-            output_stream.write("{0}{1:<5}".format( indentation_str if index else '',
-                                                    "{})".format(index),
-                                                  ))
-            Impl(i, item_indentation_str)
+                if key in kwargs:
+                    output_stream.write("{}\n".format(kwargs[key](item[key])))
+                else:
+                    Impl(item[key], item_indentation_str)
 
-    # ----------------------------------------------------------------------
-    def Impl(item, indentation_str):
-        if isinstance(item, six.string_types):
-            output_stream.write("{}\n".format(item))
-        elif isinstance(item, dict):
-            OutputDict(item, indentation_str)
-        elif isinstance(item, list):
-            OutputList(item, indentation_str)
-        else:
-            # ----------------------------------------------------------------------
-            def Display():
-                try:
-                    # Is the item iterable?
-                    potential_attribute_name = next(iter(item))
+        # ----------------------------------------------------------------------
+        def OutputList(item, indentation_str):
+            if not item:
+                output_stream.write("-- empty list --\n")
+                return
+
+            item_indentation_str = indentation_str + (' ' * 5)
+
+            for index, i in enumerate(item):
+                output_stream.write("{0}{1:<5}".format( indentation_str if index else '',
+                                                        "{})".format(index),
+                                                      ))
+                Impl(i, item_indentation_str)
+
+        # ----------------------------------------------------------------------
+        def Impl(item, indentation_str):
+            if isinstance(item, six.string_types):
+                output_stream.write("{}\n".format(('\n{}'.format(indentation_str)).join(item.split('\n'))))
+            elif isinstance(item, dict):
+                OutputDict(item, indentation_str)
+            elif isinstance(item, list):
+                OutputList(item, indentation_str)
+            else:
+                # ----------------------------------------------------------------------
+                def Display():
+                    try:
+                        # Is the item iterable?
+                        potential_attribute_name = next(iter(item))
+                    except (TypeError, IndexError, StopIteration):
+                        # Not iterable
+                        return False
 
                     # Is the item dict-like?
                     try:
                         ignore_me = item[potential_attribute_name]
                         OutputDict(item, indentation_str)
-                    except TypeError:
+                    except (TypeError, IndexError):
                         # No, it isn't
                         OutputList(item, indentation_str)
 
                     return True
 
-                except (TypeError, IndexError, StopIteration):
-                    # Not iterable
-                    return False
+                # ----------------------------------------------------------------------
 
-            # ----------------------------------------------------------------------
+                if not Display():
+                    content = str(item).strip()
+                    
+                    if "<class" not in content:
+                        content += "{}{}".format( '\n' if content.count('\n') > 1 else ' ',
+                                                  type(item),
+                                                )
+                    
+                    if " object at " in content:
+                        content += "\n\n{}".format(ObjectReprImpl(item))
+                    
+                    output_stream.write("{}\n".format(('\n{}'.format(indentation_str)).join(content.split('\n'))))
 
-            if not Display():
-                content = str(item).strip()
+        # ----------------------------------------------------------------------
 
-                if "<class" not in content:
-                    content += "{}{}".format( '\n' if content.count('\n') > 1 else ' ',
-                                              type(item),
-                                            )
+        Impl(item, '')
+        output_stream.write('\n\n')
 
-                output_stream.write("{}\n".format(('\n{}'.format(indentation_str)).join(content.split('\n'))))
-
-    # ----------------------------------------------------------------------
-
-    Impl(item, '')
-    output_stream.write('\n\n')
+    finally:
+        _describe_stack.remove(unique_id)
 
 # ----------------------------------------------------------------------
 def ObjectToDict(obj):
@@ -159,7 +183,8 @@ def ObjectToDict(obj):
 # ----------------------------------------------------------------------
 def ObjectReprImpl( obj, 
                     include_methods=False,
-                    include_private=True,
+                    include_private=False,
+                    **kwargs                # { "<attribute_name>" : def Func(<attribute_value>) -> string, ... }
                   ):
     """\
     Implementation of an object's __repr__ method.
@@ -168,17 +193,30 @@ def ObjectReprImpl( obj,
         def __repr__(self):
             return CommonEnvironment.ObjReprImpl(self)
     """
-
+    
     d = ObjectToDict(obj)
-
-    if not include_methods or not include_private:
-        for k in list(six.iterkeys(d)):
-            if not include_methods and callable(d[k]):
+    
+    # Displaying builtins prevents anything from being displayed after it
+    if "f_builtins" in d:
+        del d["f_builtins"]
+    
+    for k, v in list(six.iteritems(d)):
+        if callable(v):
+            if include_methods:
+                d[k] = "callable"
+            else:
                 del d[k]
-            elif not include_private and k.startswith('_'):
-                del d[k]
+                continue
+        
+        if not include_private and k.startswith('_'):
+            del d[k]
+            continue
 
     sink = six.moves.StringIO()
-    Describe(d, sink)
+    Describe( d, 
+              sink, 
+              unique_id=(type(obj), id(obj)),
+              **kwargs
+            )
 
     return "{}\n{}\n".format(type(obj), sink.getvalue().rstrip())

@@ -19,7 +19,7 @@ import os
 import sys
 import time
 
-from CommonEnvironment.Interface import staticderived
+from CommonEnvironment.Interface import staticderived, override, DerivedProperty
 from CommonEnvironment import Process
 from CommonEnvironment.TestExecutorImpl import TestExecutorImpl
 
@@ -35,18 +35,20 @@ class TestExecutor(TestExecutorImpl):
 
     # ----------------------------------------------------------------------
     # |  Public Properties
-    Name                                    = "Standard"
-    Description                             = "Executes the test without extracting code coverage information."
+    Name                                    = DerivedProperty("Standard")
+    Description                             = DerivedProperty("Executes the test without extracting code coverage information.")
 
     # ----------------------------------------------------------------------
     # |  Public Methods
     @staticmethod
+    @override
     def IsSupportedCompiler(compiler):
-        # Any compile is supported
+        # All compilers are supported
         return True
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def Execute( cls,
                  compiler,
                  context,

@@ -143,6 +143,7 @@ class SourceControlManagement(Interface):
     
     # ----------------------------------------------------------------------
     @classmethod
+    @extensionmethod
     def IsRoot(cls, repo_dir):
         """Returns True if the given dir is the root dir for the repository"""
         return cls.IsAvailable() and cls.IsActive(repo_dir) and cls.GetRoot(repo_dir) == repo_dir

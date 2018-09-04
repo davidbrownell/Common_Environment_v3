@@ -17,6 +17,8 @@
 import os
 import sys
 
+from CommonEnvironment.Interface import DerivedProperty
+
 from CommonEnvironment.CompilerImpl import CompilerImpl
 from CommonEnvironment.CompilerImpl.CommandLine import CommandLineInvoke, CommandLineCleanOutputDir
 
@@ -32,7 +34,7 @@ class CodeGenerator(CompilerImpl):
     # ----------------------------------------------------------------------
     # |  Public Properties
     IsCodeGenerator                         = True
-    InvokeVerb                              = "Generating"
+    InvokeVerb                              = DerivedProperty("Generating")
 
     # ----------------------------------------------------------------------
     # |  Public Methods

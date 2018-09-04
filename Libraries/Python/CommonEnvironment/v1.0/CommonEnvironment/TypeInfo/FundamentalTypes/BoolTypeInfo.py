@@ -17,7 +17,7 @@
 import os
 import sys
 
-from CommonEnvironment.Interface import staticderived
+from CommonEnvironment.Interface import staticderived, override, DerivedProperty
 from CommonEnvironment.TypeInfo import TypeInfo
 
 # ----------------------------------------------------------------------
@@ -29,11 +29,12 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 class BoolTypeInfo(TypeInfo):
     """Type information for a boolean value"""
 
-    Desc                                    = "Boolean"
-    ConstraintsDesc                         = ''
+    Desc                                    = DerivedProperty("Boolean")
+    ConstraintsDesc                         = DerivedProperty('')
     ExpectedType                            = bool
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def _ValidateItemNoThrowImpl(item):
         return

@@ -26,7 +26,7 @@ import CommonEnvironment
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CommandLine
 from CommonEnvironment import FileSystem
-from CommonEnvironment.Interface import staticderived
+from CommonEnvironment.Interface import staticderived, override, DerivedProperty
 from CommonEnvironment import Process
 from CommonEnvironment.Shell.All import CurrentShell
 from CommonEnvironment.StreamDecorator import StreamDecorator
@@ -55,9 +55,9 @@ class Verifier(VerifierMod.Verifier):
     # |  Public Properties
     # |  
     # ----------------------------------------------------------------------
-    Name                                    = "PyLint"
-    Description                             = "Statically analyzes Python source code, reporting common mistakes and errors."
-    InputTypeInfo                           = FilenameTypeInfo(validation_expression=r".+?\.py")
+    Name                                    = DerivedProperty("PyLint")
+    Description                             = DerivedProperty("Statically analyzes Python source code, reporting common mistakes and errors.")
+    InputTypeInfo                           = DerivedProperty(FilenameTypeInfo(validation_expression=r".+?\.py"))
 
     DEFAULT_PASSING_SCORE                   = 9.0
 
@@ -71,13 +71,20 @@ class Verifier(VerifierMod.Verifier):
     # |  
     # ----------------------------------------------------------------------
     def __repr__(self):
-        return CommonEnvironment.ObjectReprImpl(self, include_private=False)
+        return CommonEnvironment.ObjectReprImpl(self)
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def ItemToTestName(item_name, test_type_name):
         dirname, basename = os.path.split(item_name)
         name, ext = os.path.splitext(basename)
+
+        if name.endswith("Impl"):
+            return None
+
+        if name == "__init__" and ext == ".py" and os.path.getsize(item_name) == 0:
+            return None
 
         return os.path.join(dirname, test_type_name, "{}_{}{}".format( name,
                                                                        inflect.singular_noun(test_type_name) or test_type_name,
@@ -86,6 +93,7 @@ class Verifier(VerifierMod.Verifier):
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def TestToItemName(test_filename):
         dirname, basename = os.path.split(test_filename)
 
@@ -104,17 +112,25 @@ class Verifier(VerifierMod.Verifier):
         return os.path.join(dirname, name)
 
     # ----------------------------------------------------------------------
+    @staticmethod
+    @override
+    def IsSupportedTestItem(item):
+        return os.path.basename(item) != "__init__.py"
+
+    # ----------------------------------------------------------------------
     # |  
     # |  Private Methods
     # |  
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def _GetOptionalMetadata(cls):
         return [ ( "passing_score", None ),
                ] + super(Verifier, cls)._GetOptionalMetadata()
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def _CreateContext(cls, metadata):
         if metadata["passing_score"] is None:
             metadata["passing_score"] = cls.DEFAULT_PASSING_SCORE
@@ -126,6 +142,7 @@ class Verifier(VerifierMod.Verifier):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def _InvokeImpl( cls,
                      invoke_reason,
                      context,

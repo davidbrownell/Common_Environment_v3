@@ -46,8 +46,8 @@ class ScriptsActivationActivity(ActivationActivity):
     # |  Public Properties
     # |  
     # ----------------------------------------------------------------------
-    Name                                    = "Scripts"
-    DelayExecute                            = False
+    Name                                    = CommonEnvironmentImports.Interface.DerivedProperty("Scripts")
+    DelayExecute                            = CommonEnvironmentImports.Interface.DerivedProperty(False)
 
     # ----------------------------------------------------------------------
     # |  
@@ -55,6 +55,7 @@ class ScriptsActivationActivity(ActivationActivity):
     # |  
     # ----------------------------------------------------------------------
     @classmethod
+    @CommonEnvironmentImports.Interface.override
     def _CreateCommandsImpl( cls,
                              output_stream,
                              verbose_stream,
@@ -341,7 +342,7 @@ class ScriptsActivationActivity(ActivationActivity):
 
                                 prev_repo = wrapper_info.ScriptInfo.Repo
 
-                            content = "{0:<68} {1:>78}".format(CommonEnvironmentImports.CurrentShell.CreateScriptName(wrapper_info.Name), wrapper_info.DisplayName)
+                            content = "{0:<68} {1:>78}".format(CommonEnvironmentImports.CurrentShell.CreateScriptName(wrapper_info.Name, filename_only=True), wrapper_info.DisplayName)
                             content += "\n{}\n".format('-' * len(content))
 
                             if wrapper_info.Desc:
@@ -349,7 +350,7 @@ class ScriptsActivationActivity(ActivationActivity):
 
                             these_commands.append(CommonEnvironmentImports.CurrentShell.Commands.Message(CommonEnvironmentImports.StringHelpers.LeftJustify(content, 4, skip_first_line=False)))
 
-                        filename = os.path.join(dest_dir, CommonEnvironmentImports.CurrentShell.CreateScriptName(Constants.SCRIPT_LIST_NAME))
+                        filename = os.path.join(dest_dir, CommonEnvironmentImports.CurrentShell.CreateScriptName(Constants.SCRIPT_LIST_NAME, filename_only=True))
 
                         with open(filename, 'w') as f:
                             f.write(CommonEnvironmentImports.CurrentShell.GenerateCommands(these_commands))

@@ -17,6 +17,7 @@
 import os
 import sys
 
+from CommonEnvironment.Interface import override, DerivedProperty
 from CommonEnvironment.CodeCoverageValidatorImpl import CodeCoverageValidatorImpl
 
 # ----------------------------------------------------------------------
@@ -29,8 +30,8 @@ class CodeCoverageValidator(CodeCoverageValidatorImpl):
 
     # ----------------------------------------------------------------------
     # |  Public Properties
-    Name                                    = "Standard"
-    Description                             = "Ensures that the measured code coverage is at least N%."
+    Name                                    = DerivedProperty("Standard")
+    Description                             = DerivedProperty("Ensures that the measured code coverage is at least N%.")
 
     DEFAULT_MIN_CODE_COVERAGE_PERCENTAGE    = 70.0
 
@@ -45,6 +46,7 @@ class CodeCoverageValidator(CodeCoverageValidatorImpl):
         assert self._min_code_coverage_percentage >= 0.0 and self._min_code_coverage_percentage <= 100.0, self._min_code_coverage_percentage
 
     # ----------------------------------------------------------------------
+    @override
     def Validate(self, filename, measured_code_coverage_percentage):
         return ( 0 if measured_code_coverage_percentage >= self._min_code_coverage_percentage else -1,
                  self._min_code_coverage_percentage,

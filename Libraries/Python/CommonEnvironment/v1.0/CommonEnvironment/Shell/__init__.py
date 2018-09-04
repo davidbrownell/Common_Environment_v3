@@ -15,10 +15,15 @@
 """Contains shell-related tool and functionality."""
 
 import os
+import re
 import stat
 import sys
 import tempfile
 import textwrap
+
+from collections import OrderedDict
+
+import six
 
 from CommonEnvironment.Interface import Interface, \
                                         abstractproperty, \
@@ -83,11 +88,6 @@ class Shell(Interface):
     @abstractproperty
     def AllArgumentsScriptVariable(self):
         """Convention used to indicate all variables should be passed to a script. (e.g. "%*" or "$@")"""
-        raise Exception("Abstract property")
-
-    @abstractproperty
-    def EnvironmentVariableDelimiter(self):
-        """Delimiter to separate environment variables (e.g. ";" or ":")"""
         raise Exception("Abstract property")
 
     @abstractproperty
@@ -160,8 +160,19 @@ class Shell(Interface):
         raise Exception("Abstract method")
 
     # ----------------------------------------------------------------------
+    @staticmethod
+    @abstractmethod
+    def DecorateEnvironmentVariable(var_name):
+        """Return a var name that is decorated so that it can be used in a script"""
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
     @classmethod
-    def GenerateCommands(cls, command_or_commands):
+    def GenerateCommands( cls, 
+                          command_or_commands,
+                          suppress_prefix=False,
+                          suppress_suffix=False,
+                        ):
         """Generates Shell-specific commands from a list of generic commands."""
 
         if command_or_commands is None:
@@ -172,9 +183,10 @@ class Shell(Interface):
 
         results = []
 
-        prefix = cls._GeneratePrefixCommand()
-        if prefix:
-            results.append(prefix)
+        if not suppress_prefix:
+            prefix = cls._GeneratePrefixCommand()
+            if prefix:
+                results.append(prefix)
 
         visitor = cls.CommandVisitor
 
@@ -183,9 +195,10 @@ class Shell(Interface):
             if result:
                 results.append(result)
 
-        suffix = cls._GenerateSuffixCommand()
-        if suffix:
-            results.append(suffix)
+        if not suppress_suffix:
+            suffix = cls._GenerateSuffixCommand()
+            if suffix:
+                results.append(suffix)
 
         return '\n'.join(results)
 
@@ -213,7 +226,7 @@ class Shell(Interface):
         with CallOnExit(lambda: FileSystem.RemoveFile(temp_filename)):
             cls.MakeFileExecutable(temp_filename)
             
-            return Process.Execute( temp_filename,
+            return Process.Execute( cls.CreateScriptName(temp_filename),
                                     output_stream,
                                     environment=environment,
                                   )
@@ -221,21 +234,21 @@ class Shell(Interface):
     # ----------------------------------------------------------------------
     @classmethod
     def EnumEnvironmentVariable(cls, name):
-        """yields all values within an environment variable as delimited by EnvironmentVariableDelimiter."""
+        """yields all values within an environment variable."""
         value = os.getenv(name)
         if not value:
             return
 
-        for item in value.split(cls.EnvironmentVariableDelimiter):
+        for item in value.split(os.pathsep):
             item = item.strip()
             if item:
                 yield item
 
     # ----------------------------------------------------------------------
     @classmethod
-    def CreateScriptName(cls, name):
+    def CreateScriptName(cls, name, filename_only=False):
         ext = cls.ScriptExtension
-        if ext:
+        if ext and not name.endswith(ext):
             name += ext
 
         return name
@@ -274,6 +287,15 @@ class Shell(Interface):
         os.chmod(filename, stat.S_IXUSR | stat.S_IWUSR | stat.S_IRUSR)
 
     # ----------------------------------------------------------------------
+    @staticmethod
+    @extensionmethod
+    def UpdateOwnership(filename_or_directory):
+        """Updates the ownership of a file or a directory to the original user when running as sudo"""
+
+        # By default, do nothing as not all shells support running as sudo
+        pass
+        
+    # ----------------------------------------------------------------------
     @classmethod
     def CreateDataFilename( cls,
                             application_name,
@@ -289,7 +311,7 @@ class Shell(Interface):
         """\
         Creating a symbolic link on some systems is cumbersome. This method handles
         the complexity to ensure that it works on all systems, but may be overkill
-        for those systems where it is a straighforward process.
+        for those systems where it is a straightforward process.
         """
 
         from CommonEnvironment.Shell.Commands import SymbolicLink
@@ -348,3 +370,62 @@ class Shell(Interface):
     @extensionmethod
     def _GenerateSuffixCommand():
         return
+
+    # ----------------------------------------------------------------------
+    @classmethod
+    def _ProcessEscapedChars(cls, value, character_map, escape_char='\\'):
+        """Replaces characters in the provided value according to the character_map, unless preceded by an escape char. This is useful when processing strings for output."""
+
+        # Lazily initialize the data
+        if not hasattr(cls, "_ProcessEscapedChars_func"):
+            escape_char_token = "<<__##EscapeChar##__>>"
+
+            internal_character_map = OrderedDict()
+            needs_postprocess = False
+
+            for k, v in six.iteritems(character_map):
+                assert escape_char not in k, k
+
+                if escape_char in v:
+                    v = v.replace(escape_char, escape_char_token)
+                    needs_postprocess = True
+
+                internal_character_map[k] = v
+
+            regex = re.compile(r"(?<!{})(?P<char>[{}])".format( re.escape(escape_char),
+                                                                ''.join([ re.escape(k) for k in six.iterkeys(internal_character_map) ]),
+                                                              ))
+
+            if needs_postprocess:
+                # ----------------------------------------------------------------------
+                def Postprocess(value):
+                    return value.replace(escape_char_token, escape_char)
+
+                # ----------------------------------------------------------------------
+            else:
+                # ----------------------------------------------------------------------
+                def Postprocess(value):
+                    return value
+
+                # ----------------------------------------------------------------------
+
+            # ----------------------------------------------------------------------
+            def OnMatch(match):
+                char = match.group("char")
+                assert char in internal_character_map, char
+
+                return internal_character_map[char]
+
+            # ----------------------------------------------------------------------
+            def Func(value):
+                value = regex.sub(OnMatch, value)
+                value = value.replace(escape_char, '')
+                value = Postprocess(value)
+                
+                return value
+
+            # ----------------------------------------------------------------------
+
+            setattr(cls, "_ProcessEscapedChars_func", staticmethod(Func))
+            
+        return cls._ProcessEscapedChars_func(value)

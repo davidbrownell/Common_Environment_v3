@@ -18,7 +18,7 @@ import math
 import os
 import sys
 
-import CommonEnvironment
+from CommonEnvironment.Interface import override, DerivedProperty
 from CommonEnvironment.TypeInfo import TypeInfo
 
 # ----------------------------------------------------------------------
@@ -29,7 +29,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 class IntTypeInfo(TypeInfo):
     """Type info for an integer value."""
 
-    Desc                                    = "Integer"
+    Desc                                    = DerivedProperty("Integer")
     ExpectedType                            = int
 
     # ----------------------------------------------------------------------
@@ -55,12 +55,12 @@ class IntTypeInfo(TypeInfo):
             if bytes not in [ 1, 2, 4, 8, ]:
                 raise Exception("Invalid argument - 'bytes'")
 
-            if min is None or max is None:
-                range = (1 << (bytes * 8)) - 1
+            range = (1 << (bytes * 8)) - 1
 
+            if min is None or max is None:
                 if min is None:
                     assert not unsigned
-                    min = -int(math.ceil(range / 2))
+                    min = -int(math.ceil(float(range) / 2))
 
                 if max is None:
                     max = min + range
@@ -74,11 +74,8 @@ class IntTypeInfo(TypeInfo):
         self.Unsigned                       = min is not None and min >= 0
 
     # ----------------------------------------------------------------------
-    def __repr__(self):
-        return CommonEnvironment.ObjectReprImpl(self, include_private=False)
-
-    # ----------------------------------------------------------------------
     @property
+    @override
     def ConstraintsDesc(self):
         constraints = []
 
@@ -94,6 +91,7 @@ class IntTypeInfo(TypeInfo):
         return "Value must be {}".format(', '.join(constraints))
 
     # ----------------------------------------------------------------------
+    @override
     def _ValidateItemNoThrowImpl(self, item):
         if self.Min is not None and item < self.Min:
             return "{} is not >= {}".format(item, self.Min)

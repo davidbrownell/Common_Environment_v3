@@ -57,10 +57,14 @@ def _GetShell():
 
         if result is None:
             import platform
+            import warnings
 
-            dist_result = platform.dist()
-            if dist_result[0]:
-                result = dist_result[0].lower()
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", category=PendingDeprecationWarning)
+                
+                dist_result = platform.dist()
+                if dist_result[0]:
+                    result = dist_result[0].lower()
 
         if result is None:
             result = os.name.lower()

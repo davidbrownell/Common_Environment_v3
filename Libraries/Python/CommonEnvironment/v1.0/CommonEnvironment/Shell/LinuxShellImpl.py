@@ -18,7 +18,9 @@ import os
 import sys
 import textwrap
 
-from CommonEnvironment.Interface import staticderived
+from collections import OrderedDict
+
+from CommonEnvironment.Interface import staticderived, override, DerivedProperty
 from CommonEnvironment.Shell import Shell
 from CommonEnvironment.Shell.Commands import Set, Augment
 from CommonEnvironment.Shell.Commands.Visitor import Visitor
@@ -42,82 +44,85 @@ class LinuxShellImpl(Shell):
     # |  
     # ----------------------------------------------------------------------
     @staticderived
+    @override
     class CommandVisitor(Visitor):
         
         # <Parameters differ from overridden '<...>' method> pylint: disable = W0221
 
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnComment(command):
             return "# {}".format(command)
     
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnMessage(command):
-            replacement_chars = [ ( '$', r'\$' ),
-                                  ( '"', r'\"' ),
-                                ]
-
             output = []
 
             for line in command.Value.split('\n'):
                 if not line.strip():
                     output.append('echo ""')
                 else:
-                    for old_char, new_char in replacement_chars:
-                        line = line.replace(old_char, new_char)
-
-                    output.append('echo "{}"'.format(line))
-
-            return '\n'.join(output)
+                    output.append('echo "{}"'.format(LinuxShellImpl._ProcessEscapedChars( line,
+                                                                                          OrderedDict([ ( '$', r'\$' ),
+                                                                                                        ( '"', r'\"' ),
+                                                                                                      ]),
+                                                                                        )))
+            return ' && '.join(output)
     
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnCall(command):
             return "source {}".format(command.CommandLine)
     
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnExecute(command):
             return command.CommandLine
     
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnSymbolicLink(command):
-            d = { "link" : command.LinkFilename,
-                  "target" : command.Target,
-                }
-
             return textwrap.dedent(
                 """\
-                {remove}ln -fs{dir_flag} "{target}" "{link}"
-                """).format( remove='' if not command.RemoveExisting else 'rm -f "{link}"\n'.format(**d),
+                ln -{force_flag}s{dir_flag} "{target}" "{link}"
+                """).format( force_flag='' if not command.RemoveExisting else 'f',
                              dir_flag='d' if command.IsDir else '',
-                             **d
+                             target=command.Target,
+                             link=command.LinkFilename,
                            )
     
         # ----------------------------------------------------------------------
         @classmethod
+        @override
         def OnPath(cls, command):
             return cls.OnSet(Set("PATH", command.Values))
     
         # ----------------------------------------------------------------------
         @classmethod
+        @override
         def OnAugmentPath(cls, command):
             return cls.OnAugment(Augment("PATH", command.Values))
     
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnSet(command):
             if command.Values is None:
                 return "export {}=".format(command.Name)
 
             assert command.Values
 
-            return "export {}={}".format(command.Name, LinuxShellImpl.EnvironmentVariableDelimiter.join(command.Values))
+            return "export {}={}".format(command.Name, os.pathsep.join(command.Values))    # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
     
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnAugment(command):
             if not command.Values:
                 return None
@@ -131,11 +136,12 @@ class LinuxShellImpl(Shell):
                 return None
 
             return "export {name}={values}:${name}".format( name=command.Name,
-                                                            values=LinuxShellImpl.EnvironmentVariableDelimiter.join(command.Values),
+                                                            values=os.pathsep.join(command.Values),    # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
                                                           )
     
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnExit(command):
             return textwrap.dedent(
                 """\
@@ -163,6 +169,7 @@ class LinuxShellImpl(Shell):
     
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnExitOnError(command):
             variable_name = "${}".format(command.VariableName) if command.VariableName else "$?"
 
@@ -179,21 +186,25 @@ class LinuxShellImpl(Shell):
     
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnRaw(command):
             return command.Value
     
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnEchoOff(command):
             return ""
     
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnCommandPrompt(command):
             return r'PS1="({}) `id -nu`@`hostname -s`:\w$ "'.format(command.Prompt)
     
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnDelete(command):
             if command.IsDir:
                 return 'rm -Rfd "{}"'.format(command.FilenameOrDirectory)
@@ -202,6 +213,7 @@ class LinuxShellImpl(Shell):
     
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnCopy(command):
             return 'cp "{source}" "{dest}"'.format( source=command.Source,
                                                     dest=command.Dest,
@@ -209,6 +221,7 @@ class LinuxShellImpl(Shell):
     
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnMove(command):
             return 'mv "{source}" "{dest}"'.format( source=command.Source,
                                                     dest=command.Dest,
@@ -216,16 +229,19 @@ class LinuxShellImpl(Shell):
     
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnPersistError(command):
             return "{}=$?".format(command.VariableName)
 
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnPushDirectory(command):
             return 'pushd "{}" > /dev/null'.format(command.Directory)
 
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnPopDirectory(command):
             return "popd > /dev/null"
 
@@ -234,16 +250,15 @@ class LinuxShellImpl(Shell):
     # |  Public Properties
     # |  
     # ----------------------------------------------------------------------
-    CategoryName                            = "Linux"
-    ScriptExtension                         = ".sh"
-    ExecutableExtension                     = ''
-    CompressionExtensions                   = [ ".tgz", ".tar", "gz", ]
-    AllArgumentsScriptVariable              = '"$@"'
-    EnvironmentVariableDelimiter            = ':'
-    HasCaseSensitiveFileSystem              = True
-    Architecture                            = "x64"     # I don't know of a reliable, cross-distro way to detect architecture
-    UserDirectory                           = os.path.expanduser("~")
-    TempDirectory                           = "/tmp"
+    CategoryName                            = DerivedProperty("Linux")
+    ScriptExtension                         = DerivedProperty(".sh")
+    ExecutableExtension                     = DerivedProperty('')
+    CompressionExtensions                   = DerivedProperty([ ".tgz", ".tar", "gz", ])
+    AllArgumentsScriptVariable              = DerivedProperty('"$@"')
+    HasCaseSensitiveFileSystem              = DerivedProperty(True)
+    Architecture                            = DerivedProperty("x64")        # I don't know of a reliable, cross-distro way to detect architecture
+    UserDirectory                           = DerivedProperty(os.path.expanduser("~"))
+    TempDirectory                           = DerivedProperty("/tmp")
 
     # ----------------------------------------------------------------------
     # |  
@@ -251,15 +266,38 @@ class LinuxShellImpl(Shell):
     # |  
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def IsActive(cls, platform_name):
         # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
         return cls.Name.lower() in platform_name
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def RemoveDir(path):
         if os.path.isdir(path):
             os.system('rm -Rfd "{}"'.format(path))
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @override
+    def DecorateEnvironmentVariable(var_name):
+        return "\\${}".format(var_name)
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @override
+    def UpdateOwnership(filename_or_directory):
+        if ( hasattr(os, "geteuid") and
+             os.geteuid() == 0 and 
+             not any(var for var in [ "SUDO_UID", "SUDO_GID", ] if var not in os.environ)
+           ):
+           os.system('chown {recursive} {user}:{group} "{input}"' \
+                        .format( recursive="--recursive" if os.path.isdir(filename_or_directory) else '',
+                                 user=os.environ["SUDO_UID"],
+                                 group=os.environ["SUDO_GID"],
+                                 input=filename_or_directory,
+                               ))
 
     # ----------------------------------------------------------------------
     # |  
@@ -267,10 +305,12 @@ class LinuxShellImpl(Shell):
     # |  
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def _GeneratePrefixCommand():
         return "#!/bin/bash"
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def _GenerateSuffixCommand():
         return

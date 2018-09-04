@@ -98,7 +98,7 @@ class Set(object):
             else:
                 from CommonEnvironment.Shell.All import CurrentShell
 
-                os.environ[self.Name] = CurrentShell.EnvironmentVariableDelimiter.join(self.Values)
+                os.environ[self.Name] = os.pathsep.join(self.Values) # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
 
     # ----------------------------------------------------------------------
     def __repr__(self):
@@ -125,7 +125,7 @@ class Augment(object):
                 if value not in existing_values:
                     new_values.append(value)
         
-            os.environ[self.Name] = CurrentShell.EnvironmentVariableDelimiter.join(itertools.chain(new_values, existing_values))
+            os.environ[self.Name] = os.pathsep.join(itertools.chain(new_values, existing_values)) # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
 
     # ----------------------------------------------------------------------
     def __repr__(self):

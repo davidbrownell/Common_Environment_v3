@@ -29,47 +29,50 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 
 # ----------------------------------------------------------------------
 class _MethodTypeInfo(TypeInfo):
-    ConstraintsDesc                         = ''
+    ConstraintsDesc                         = Interface.DerivedProperty('')
     ExpectedTypeIsCallable                  = True
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @Interface.override
     def _ValidateItemNoThrowImpl(item):
         return
 
 # ----------------------------------------------------------------------
 @Interface.staticderived
 class MethodTypeInfo(_MethodTypeInfo):
-    Desc                                    = "Method"
+    Desc                                    = Interface.DerivedProperty("Method")
     ExpectedType                            = staticmethod(Interface.IsStandardMethod)
 
 # ----------------------------------------------------------------------
 @Interface.staticderived
 class ClassMethodTypeInfo(_MethodTypeInfo):
-    Desc                                    = "Class Method"
+    Desc                                    = Interface.DerivedProperty("Class Method")
     ExpectedType                            = staticmethod(Interface.IsClassMethod)
 
 # ----------------------------------------------------------------------
 @Interface.staticderived
 class StaticMethodTypeInfo(_MethodTypeInfo):
-    Desc                                    = "Static Method"
+    Desc                                    = Interface.DerivedProperty("Static Method")
     ExpectedType                            = staticmethod(Interface.IsStaticMethod)
 
 # ----------------------------------------------------------------------
 class ClassTypeInfo(DictTypeInfo):
     """Type that validates a class object."""
 
-    Desc                                    = "Class"
+    Desc                                    = Interface.DerivedProperty("Class")
     ExpectedTypeIsCallable                  = True
     ExpectedType                            = staticmethod(lambda item: True) # Everything is an object
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @Interface.override
     def _GetAttributes(item):
         return dir(item)
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @Interface.override
     def _GetAttributeValue(item, name, type_info):
         if isinstance(type_info, _MethodTypeInfo):
             item = type(item)

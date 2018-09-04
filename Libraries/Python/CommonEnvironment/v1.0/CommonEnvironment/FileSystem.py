@@ -144,7 +144,7 @@ def TrimPath(fullpath, initial_path):
         decorator_func = lambda item: item.lower()
 
     if not decorator_func(fullpath).startswith(decorator_func(initial_path)):
-        raise Exception("'{}' does not begin with '{}'".format(fullpath, iniitial_path))
+        raise Exception("'{}' does not begin with '{}'".format(fullpath, initial_path))
 
     fullpath = fullpath[len(initial_path):]
     if fullpath.startswith(os.path.sep):
@@ -174,12 +174,15 @@ def Normalize(path):
     
     if not CurrentShell.HasCaseSensitiveFileSystem:
         if os.path.exists(path) and CurrentShell.Name == "Windows":
-            import win32api
+            try:
+                import win32api
 
-            # <Module 'win32api' has not 'GetLongPathName' member, but source is unavailable. Consider adding this module to extension-pkg-whitelist if you want to perform analysis based on run-time introspection of living objects.> pylint: disable = I1101
+                # <Module 'win32api' has not 'GetLongPathName' member, but source is unavailable. Consider adding this module to extension-pkg-whitelist if you want to perform analysis based on run-time introspection of living objects.> pylint: disable = I1101
 
-            path = win32api.GetLongPathName(win32api.GetShortPathName(path))
-
+                path = win32api.GetLongPathName(win32api.GetShortPathName(path))
+            except ImportError:
+                pass
+                
         drive, suffix = os.path.splitdrive(path)
         path = "{}{}".format(drive.upper(), suffix)
 
@@ -196,9 +199,15 @@ def GetSizeDisplay(num_bytes, suffix='B'):
     return "%.1f %s%s" % (num_bytes, 'Yi', suffix)
 
 # ----------------------------------------------------------------------
-def MakeDirs(path):
+def MakeDirs( path, 
+              as_user=False,                # If True, ownership of the dir is associated with a calling user and not root
+                                            # (if invoked as sudo)
+            ):
     if not os.path.isdir(path):
         os.makedirs(path)
+
+    if as_user:
+        CurrentShell.UpdateOwnership(path)
 
 # ----------------------------------------------------------------------
 def RemoveTree( path,

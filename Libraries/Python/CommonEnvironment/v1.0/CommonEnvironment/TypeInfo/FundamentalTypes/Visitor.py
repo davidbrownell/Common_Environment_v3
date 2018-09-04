@@ -19,7 +19,8 @@ import sys
 
 from CommonEnvironment.Interface import Interface, \
                                         abstractmethod, \
-                                        staticderived 
+                                        staticderived, \
+                                        override
 
 from CommonEnvironment.TypeInfo.FundamentalTypes.All import *
 
@@ -183,66 +184,79 @@ def CreateSimpleVisitor( on_bool_func=None,             # def Func(type_info, *a
     class SimpleVisitor(Visitor):
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnBool(type_info, *args, **kwargs):
             return on_bool_func(type_info, *args, **kwargs)
 
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnDateTime(type_info, *args, **kwargs):
             return on_date_time_func(type_info, *args, **kwargs)
 
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnDate(type_info, *args, **kwargs):
             return on_date_func(type_info, *args, **kwargs)
 
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnDirectory(type_info, *args, **kwargs):
             return on_directory_func(type_info, *args, **kwargs)
 
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnDuration(type_info, *args, **kwargs):
             return on_duration_func(type_info, *args, **kwargs)
 
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnEnum(type_info, *args, **kwargs):
             return on_enum_func(type_info, *args, **kwargs)
 
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnFilename(type_info, *args, **kwargs):
             return on_filename_func(type_info, *args, **kwargs)
 
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnFloat(type_info, *args, **kwargs):
             return on_float_func(type_info, *args, **kwargs)
 
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnGuid(type_info, *args, **kwargs):
             return on_guid_func(type_info, *args, **kwargs)
 
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnInt(type_info, *args, **kwargs):
             return on_int_func(type_info, *args, **kwargs)
 
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnString(type_info, *args, **kwargs):
             return on_string_func(type_info, *args, **kwargs)
 
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnTime(type_info, *args, **kwargs):
             return on_time_func(type_info, *args, **kwargs)
 
         # ----------------------------------------------------------------------
         @staticmethod
+        @override
         def OnUri(type_info, *args, **kwargs):
             return on_uri_func(type_info, *args, **kwargs)
 

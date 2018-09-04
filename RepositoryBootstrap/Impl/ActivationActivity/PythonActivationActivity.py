@@ -18,6 +18,7 @@ import os
 import re
 import shutil
 import sys
+import textwrap
 
 from collections import OrderedDict
 
@@ -52,8 +53,8 @@ class PythonActivationActivity(ActivationActivity):
     # |  Public Properties
     # |  
     # ----------------------------------------------------------------------
-    Name                                    = "Python"
-    DelayExecute                            = False
+    Name                                    = CommonEnvironmentImports.Interface.DerivedProperty("Python")
+    DelayExecute                            = CommonEnvironmentImports.Interface.DerivedProperty(False)
 
     # Set in __clsinit__
     LibrarySubdirs                          = None
@@ -228,6 +229,7 @@ class PythonActivationActivity(ActivationActivity):
     # |  
     # ----------------------------------------------------------------------
     @classmethod
+    @CommonEnvironmentImports.Interface.override
     def _CreateCommandsImpl( cls,
                              output_stream,
                              verbose_stream,

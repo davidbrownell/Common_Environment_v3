@@ -21,7 +21,7 @@ import textwrap
 
 from CommonEnvironment import CommandLine
 from CommonEnvironment import FileSystem
-from CommonEnvironment.Interface import staticderived
+from CommonEnvironment.Interface import staticderived, override, DerivedProperty
 from CommonEnvironment import Process
 from CommonEnvironment.Shell.All import CurrentShell
 from CommonEnvironment import StringHelpers
@@ -41,11 +41,12 @@ class Compiler(DistutilsCompilerImpl):
 
     # ----------------------------------------------------------------------
     # |  Public Properties
-    Name                                    = "CxFreezeCompiler"
+    Name                                    = DerivedProperty("CxFreezeCompiler")
 
     # ----------------------------------------------------------------------
     # |  Private Methods
     @classmethod
+    @override
     def _GenerateScriptContent(cls, context):
         for attribute_name in [ "comments",
                                 "company_name",
@@ -112,6 +113,7 @@ class Compiler(DistutilsCompilerImpl):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @override
     def _Compile(cls, context, script_filename, output_stream):
         command_line = 'python "{}" build_exe{}'.format( script_filename,
                                                          '' if not context["distutil_args"] else " {}".format(' '.join([ '"{}"'.format(arg) for arg in context["distutils_args"] ])),
