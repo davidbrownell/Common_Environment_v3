@@ -94,9 +94,9 @@ class PythonActivationActivity(ActivationActivity):
         stats = [ 0, ] * len(cls.NormalizeScriptResult)
 
         output_stream.write("Normalizing python scripts...")
-        with output_stream.DoneManager( done_suffixes=[ lambda: "{} modified".format(inflect.no("script", stats[cls.NormalizeScriptResult.Modified])),
-                                                        lambda: "{} matched".format(inflect.no("script", stats[cls.NormalizeScriptResult.Matched])),
-                                                        lambda: "{} skipped".format(inflect.no("script", stats[cls.NormalizeScriptResult.NoMatch])),
+        with output_stream.DoneManager( done_suffixes=[ lambda: "{} modified".format(inflect.no("script", stats[cls.NormalizeScriptResult.Modified.value])),
+                                                        lambda: "{} matched".format(inflect.no("script", stats[cls.NormalizeScriptResult.NoChange.value])),
+                                                        lambda: "{} skipped".format(inflect.no("script", stats[cls.NormalizeScriptResult.NoMatch.value])),
                                                         
                                                       ],
                                         suffix='\n',
@@ -141,7 +141,7 @@ class PythonActivationActivity(ActivationActivity):
                         if not os.path.isfile(fullpath):
                             continue
 
-                        result = cls.NormalizeScript(fullpath)
+                        result = cls.NormalizeScript(fullpath).value
                         stats[result] += 1
 
                         verbose_stream.write("{0:<40} {1}\n".format( "'{}':".format(item), 
@@ -152,9 +152,9 @@ class PythonActivationActivity(ActivationActivity):
 
     # ----------------------------------------------------------------------
     class NormalizeScriptResult(Enum):
-        NoMatch = 1
-        NoChange = 2
-        Modified = 3
+        NoMatch = 0
+        NoChange = 1
+        Modified = 2
 
     NormalizeScriptResultStrings = [ "No Match",
                                      "No Change",
