@@ -26,6 +26,7 @@ import traceback
 from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor
 
+from enum import Enum
 import six
 
 from CommonEnvironment import Nonlocals
@@ -144,10 +145,10 @@ def Execute( tasks,
     prev_statuses = []
 
     # ----------------------------------------------------------------------
-    ( StatusUpdate_Start,
-      StatusUpdate_Status,
-      StatusUpdate_Stop,
-    ) = range(3)
+    class StatusUpdate(Enum):
+        Start = 1
+        Status = 2
+        Stop = 3
 
     # ----------------------------------------------------------------------
     def Invoke( get_status_functor,                     # def Func(future, task, update_type, optional_content) -> string
@@ -212,7 +213,7 @@ def Execute( tasks,
 
             # ----------------------------------------------------------------------
             def OnStatusUpdate(content):
-                UpdateStatus(future, task, StatusUpdate_Status, content)
+                UpdateStatus(future, task, StatusUpdate.Status, content)
 
             # ----------------------------------------------------------------------
 
@@ -265,8 +266,8 @@ def Execute( tasks,
             # We can't combine this loop with the comprehension above, as the
             # update status functor expects a fully constructed list of futures.
             for future, task in six.moves.zip(futures, tasks):
-                UpdateStatus(future, task, StatusUpdate_Start, None)
-                future.add_done_callback(lambda ignore, future=future, task=task: UpdateStatus(future, task, StatusUpdate_Stop, None))
+                UpdateStatus(future, task, StatusUpdate.Start, None)
+                future.add_done_callback(lambda ignore, future=future, task=task: UpdateStatus(future, task, StatusUpdate.Stop, None))
 
             display_thread = threading.Thread(target=DisplayStatusesThreadProc)
             display_thread.start()
@@ -329,7 +330,7 @@ def Execute( tasks,
                  ) as pb:
             # ----------------------------------------------------------------------
             def PBGetStatus(_, task, update_type, optional_content):
-                if update_type == StatusUpdate_Stop:
+                if update_type == StatusUpdate.Stop:
                     with pb_lock:
                         pb.update()
 

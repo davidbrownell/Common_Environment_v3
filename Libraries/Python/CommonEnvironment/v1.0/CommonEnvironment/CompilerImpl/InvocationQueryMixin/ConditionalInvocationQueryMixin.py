@@ -85,8 +85,8 @@ class ConditionalInvocationQueryMixin(InvocationQueryMixin):
         del context["force"]
 
         # Check the basic reasons
-        for invoke_reason, desc, functor in [ ( cls.InvokeReason_Force, "force was specified", lambda: force ),
-                                              ( cls.InvokeReason_PrevContextMissing, "previous context is missing", lambda: not prev_info ),
+        for invoke_reason, desc, functor in [ ( cls.InvokeReason.Force, "force was specified", lambda: force ),
+                                              ( cls.InvokeReason.PrevContextMissing, "previous context is missing", lambda: not prev_info ),
                                             ]:
             if functor():
                 output_stream.write("\nInvoking because {}.\n\n".format(desc))
@@ -218,14 +218,14 @@ class ConditionalInvocationQueryMixin(InvocationQueryMixin):
 
         # ----------------------------------------------------------------------
 
-        for invoke_reason, desc_template, functor in [ ( cls.InvokeReason_NewerGenerators, "generator files have been modified ({result})", HaveGeneratorFilesBeenModified ),
-                                                       ( cls.InvokeReason_DifferentOutput, "items to generate have changed", HaveOutputsChanged ),
-                                                       ( cls.InvokeReason_MissingOutput, "items to generate are missing ({result})", AreGeneratedItemsMissing ),
-                                                       ( cls.InvokeReason_DifferentInput, "input items have changed", HaveInputsChanged ),
-                                                       ( cls.InvokeReason_NewerInput, "input has been modified ({result})", HaveInputsBeenModified ),
-                                                       ( cls.InvokeReason_DifferentMetadata, "metadata has changed ({result}) [standard]", HasMetadataChanged ),
-                                                       ( cls.InvokeReason_DifferentMetadata, "metadata has changed ({result}) [custom]", HasCustomMetadataChanged ),
-                                                       ( cls.InvokeReason_OptIn, "the generator opted-in to generation", ShouldGenerate ),
+        for invoke_reason, desc_template, functor in [ ( cls.InvokeReason.NewerGenerators, "generator files have been modified ({result})", HaveGeneratorFilesBeenModified ),
+                                                       ( cls.InvokeReason.DifferentOutput, "items to generate have changed", HaveOutputsChanged ),
+                                                       ( cls.InvokeReason.MissingOutput, "items to generate are missing ({result})", AreGeneratedItemsMissing ),
+                                                       ( cls.InvokeReason.DifferentInput, "input items have changed", HaveInputsChanged ),
+                                                       ( cls.InvokeReason.NewerInput, "input has been modified ({result})", HaveInputsBeenModified ),
+                                                       ( cls.InvokeReason.DifferentMetadata, "metadata has changed ({result}) [standard]", HasMetadataChanged ),
+                                                       ( cls.InvokeReason.DifferentMetadata, "metadata has changed ({result}) [custom]", HasCustomMetadataChanged ),
+                                                       ( cls.InvokeReason.OptIn, "the generator opted-in to generation", ShouldGenerate ),
                                                      ]:
             result = functor()
             if result:
