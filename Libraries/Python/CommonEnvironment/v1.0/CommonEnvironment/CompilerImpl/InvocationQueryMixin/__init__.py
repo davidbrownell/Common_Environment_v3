@@ -17,6 +17,8 @@
 import os
 import sys
 
+from enum import Enum
+
 from CommonEnvironment.Interface import Interface, abstractmethod, override, mixin
 
 # ----------------------------------------------------------------------
@@ -30,18 +32,18 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 class InvocationQueryMixin(Interface):
     """Object that implements strategies for determining if a compiler should be invoked based on input."""
 
-    ( InvokeReason_Always,
-      InvokeReason_Force,
-      InvokeReason_PrevContextMissing,
-      InvokeReason_NewerGenerators,
-      InvokeReason_MissingOutput,
-      InvokeReason_DifferentOutput,
-      InvokeReason_NewerInput,
-      InvokeReason_DifferentInput,
-      InvokeReason_DifferentMetadata,
-      InvokeReason_OptIn,
-    ) = range(10)
-
+    class InvokeReason(Enum):
+        Always = 1
+        Force = 2
+        PrevContextMissing = 3
+        NewerGenertors = 4
+        MissingOutput = 5
+        DifferentOutput = 6
+        NewerInput = 7
+        DifferentInput = 8
+        DifferentMetadata = 9
+        OptIn = 10
+    
     # ----------------------------------------------------------------------
     # |  Methods defined in CompilerImpl; these methods forward to Impl
     # |  functions to clearly indicate to CompilerImpl that they are handled,
