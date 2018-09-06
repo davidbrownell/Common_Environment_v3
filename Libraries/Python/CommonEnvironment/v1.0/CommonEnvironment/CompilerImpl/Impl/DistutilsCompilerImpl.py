@@ -17,6 +17,7 @@
 import os
 import sys
 
+from enum import Enum
 import six
 
 from CommonEnvironment.CallOnExit import CallOnExit
@@ -54,9 +55,9 @@ class DistutilsCompilerImpl( AtomicInputProcessingMixin,
     Description                             = DerivedProperty("Creates an executable for a python file.")
     InputTypeInfo                           = DerivedProperty(FilenameTypeInfo(validation_expression=r".+\.py"))
 
-    ( BuildType_Console,
-      BuildType_Windows,
-    ) = range(2)
+    class BuildType(Enum):
+        Console = 1
+        Windows = 2
 
     # ----------------------------------------------------------------------
     # |  Public Methods
@@ -73,7 +74,7 @@ class DistutilsCompilerImpl( AtomicInputProcessingMixin,
         return [ ( "preserve_temp_dir", False ),
 
                  # General modifiers
-                 ( "build_type", cls.BuildType_Console ),
+                 ( "build_type", cls.BuildType.Console ),
                  ( "include_tcl", False ),
                  ( "no_optimize", False ),
                  ( "no_bundle", False ),
@@ -232,9 +233,9 @@ def CreateCompileMethod(compiler_type):
         """Creates an executable from one or more python files."""
         
         if build_type == "console":
-            build_type = DistutilsCompilerImpl.BuildType_Console
+            build_type = DistutilsCompilerImpl.BuildType.Console
         elif build_type == "windows":
-            build_type = DistutilsCompilerImpl.BuildType_Windows
+            build_type = DistutilsCompilerImpl.BuildType.Windows
         else:
             assert False, build_type
     

@@ -33,7 +33,7 @@ class AlwaysInvocationQueryMixin(InvocationQueryMixin):
     @classmethod
     @override
     def _GetInvokeReasonImpl(cls, context, output_stream):
-        return cls.InvokeReason_Always
+        return cls.InvokeReason.Always
 
     # ----------------------------------------------------------------------
     @staticmethod

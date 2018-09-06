@@ -22,6 +22,7 @@ import textwrap
 
 from collections import OrderedDict
 
+from enum import Enum
 import inflect as inflect_mod
 import six
 
@@ -90,12 +91,12 @@ class PythonActivationActivity(ActivationActivity):
     # ----------------------------------------------------------------------
     @classmethod
     def Setup(cls, output_stream, verbose):
-        stats = [ 0, ] * cls.NormalizeScriptResult_NumItems
+        stats = [ 0, ] * len(cls.NormalizeScriptResult)
 
         output_stream.write("Normalizing python scripts...")
-        with output_stream.DoneManager( done_suffixes=[ lambda: "{} modified".format(inflect.no("script", stats[cls.NormalizeScriptResult_Modified])),
-                                                        lambda: "{} matched".format(inflect.no("script", stats[cls.NormalizeScriptResult_NoChange])),
-                                                        lambda: "{} skipped".format(inflect.no("script", stats[cls.NormalizeScriptResult_NoMatch])),
+        with output_stream.DoneManager( done_suffixes=[ lambda: "{} modified".format(inflect.no("script", stats[cls.NormalizeScriptResult.Modified])),
+                                                        lambda: "{} matched".format(inflect.no("script", stats[cls.NormalizeScriptResult.Matched])),
+                                                        lambda: "{} skipped".format(inflect.no("script", stats[cls.NormalizeScriptResult.NoMatch])),
                                                         
                                                       ],
                                         suffix='\n',
@@ -150,12 +151,10 @@ class PythonActivationActivity(ActivationActivity):
             return dm.result
 
     # ----------------------------------------------------------------------
-    ( NormalizeScriptResult_NoMatch,
-      NormalizeScriptResult_NoChange,
-      NormalizeScriptResult_Modified,
-
-      NormalizeScriptResult_NumItems,
-    ) = range(4)
+    class NormalizeScriptResult(Enum):
+        NoMatch = 1
+        NoChange = 2
+        Modified = 3
 
     NormalizeScriptResultStrings = [ "No Match",
                                      "No Change",
@@ -184,7 +183,7 @@ class PythonActivationActivity(ActivationActivity):
             content = cls._NormalizeScript_executable_shebang_regex.split(content, maxsplit=1)
 
             if len(content) != 3:
-                return cls.NormalizeScriptResult_NoMatch
+                return cls.NormalizeScriptResult.NoMatch
 
             prev_content = content[1]
             
@@ -194,7 +193,7 @@ class PythonActivationActivity(ActivationActivity):
             content[1] += b'\r\n'
 
             if content[1] == prev_content:
-                return cls.NormalizeScriptResult_NoChange
+                return cls.NormalizeScriptResult.NoChange
 
             with open(script_filename, 'wb') as f:
                 f.write(b''.join(content))
@@ -210,18 +209,18 @@ class PythonActivationActivity(ActivationActivity):
                 content = []
 
             if len(content) != 3:
-                return cls.NormalizeScriptResult_NoMatch
+                return cls.NormalizeScriptResult.NoMatch
 
             prev_content = content[1]
             content[1] = "#!/usr/bin/env python"
 
             if content[1] == prev_content:
-                return cls.NormalizeScriptResult_NoChange
+                return cls.NormalizeScriptResult.NoChange
 
             with open(script_filename, 'w') as f:
                 f.write(''.join(content))
 
-        return cls.NormalizeScriptResult_Modified
+        return cls.NormalizeScriptResult.Modified
 
     # ----------------------------------------------------------------------
     # |  
