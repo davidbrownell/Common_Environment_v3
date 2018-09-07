@@ -96,6 +96,8 @@ def Wrap( content,
             lines = []
 
             for paragraph in _Wrap_regex.split(content):
+                paragraph = paragraph.replace('\n', ' ')
+                    
                 if paragraph.isspace():
                     if not self.replace_whitespace:
                         if self.expand_tabs:
@@ -106,7 +108,7 @@ def Wrap( content,
                         lines.append('')
 
                 else:
-                    lines += textwrap.TextWrapper.wrap(self, paragraph)
+                    lines += super(Wrapper, self).wrap(paragraph)
 
             return lines
 
