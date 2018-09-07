@@ -20,9 +20,9 @@ set +v                                      # Disable output
 should_continue=1
 changed_dir=0
 
-previous_fundamental=$DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL
+previous_fundamental=${DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL}
 
-if [[ $should_continue == 1 ]]
+if [[ ${should_continue} == 1 ]]
 then
     # Get the repo_root, which will be the the directory for the name of the script who links to
     # this script as its target. Note that this code doesn't work on RedHat; when on RedHat the 
@@ -30,7 +30,7 @@ then
     
     distro_name=`uname -a | tr "[:upper:]" "[:lower:]"`
     
-    if [[ $distro_name != *el5* ]]
+    if [[ ${distro_name} != *el5* ]]
     then
         GetCurrentDir()
         {
@@ -49,13 +49,13 @@ then
         }
         
         GetCurrentDir
-        pushd $current_dir > /dev/null                                      # +repo_dir
+        pushd ${current_dir} > /dev/null                                    # +repo_dir
         changed_dir=1
     fi
 fi
 
 # Read data created during setup
-if [[ $should_continue == 1 && ! -e `pwd`/Generated/Linux/EnvironmentBootstrap.data ]]
+if [[ ${should_continue} == 1 && ! -e `pwd`/Generated/Linux/EnvironmentBootstrap.data ]]
 then
     echo ""
     echo "ERROR: It appears that Setup.sh has not been run for this repository. Please run Setup.sh and run this script again."
@@ -67,17 +67,17 @@ then
 fi
 
 # Parse the bootstrap info, extracting the relevant info
-if [[ $should_continue == 1 ]]
+if [[ ${should_continue} == 1 ]]
 then
     while read line;
     do
-        if [[ $line == fundamental_repo* ]]
+        if [[ ${line} == fundamental_repo* ]]
         then
             export DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=`readlink -f ${line#fundamental_repo=}`
-        elif [[ $line == is_mixin_repo* ]]
+        elif [[ ${line} == is_mixin_repo* ]]
         then
             is_mixin_repo=${line#is_mixin_repo=}
-        elif [[ $line == is_configurable* ]]
+        elif [[ ${line} == is_configurable* ]]
         then
             is_configurable=${line#is_configurable=}
         fi
@@ -86,20 +86,20 @@ then
 fi
 
 # Find the python binary
-python_dir=$DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL/Tools/Python
-pushd $python_dir > /dev/null                                               # +python_dir
+python_dir=${DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL}/Tools/Python
+pushd ${python_dir} > /dev/null                                             # +python_dir
 
 for d in $(find v* -maxdepth 0 -type d);
 do
-    if [[ -e $python_dir/$d/Linux/bin/python ]]
+    if [[ -e ${python_dir}/${d}/Linux/bin/python ]]
     then
-        python_binary=$python_dir/$d/Linux/bin/python
+        python_binary=${python_dir}/${d}/Linux/bin/python
     fi
 done
 
 popd > /dev/null                                                            # -python_dir
 
-export PYTHONPATH=$DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL
+export PYTHONPATH=${DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL}
 
 # ----------------------------------------------------------------------
 # |  List configurations if requested
@@ -107,12 +107,12 @@ if [[ "$1" == "ListConfigurations" ]]
 then
     shift 1
 
-    $python_binary -m RepositoryBootstrap.Impl.Activate ListConfigurations "`pwd`" "$@"
+    ${python_binary} -m RepositoryBootstrap.Impl.Activate ListConfigurations "`pwd`" "$@"
     should_continue=0
 fi
 
 # Ensure that the script is being invoked via source ( as it modifies the current environment).
-if [[ $should_continue == 1 && ${0##*/} == Activate.sh ]]
+if [[ ${should_continue} == 1 && ${0##*/} == Activate.sh ]]
 then
     echo ""
     echo "ERROR: This script activates a console for development according to information specific to the repository."
@@ -132,16 +132,16 @@ fi
 
 # If here, we are in a verified activation scenario. Set the previous value to this value, knowing that that is the value
 # that will be committed.
-previous_fundamental=$DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL
+previous_fundamental=${DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL}
 
 # ----------------------------------------------------------------------
 # |  Only allow one activated environment at a time (unless we are activating a mixin repo)
-if [[ $should_continue == 1 && "$DEVELOPMENT_ENVIRONMENT_REPOSITORY" != "" && "$DEVELOPMENT_ENVIRONMENT_REPOSITORY" != "`pwd`" ]]
+if [[ ${should_continue} == 1 && "${DEVELOPMENT_ENVIRONMENT_REPOSITORY}" != "" && "${DEVELOPMENT_ENVIRONMENT_REPOSITORY}" != "`pwd`" ]]
 then
     echo ""
     echo "ERROR: Only one repository can be activated within an environment at a time, and it appears as if one is already active. Please open a new console and run this script again."
     echo ""
-    echo "       [DEVELOPMENT_ENVIRONMENT_REPOSITORY is already defined as \"$DEVELOPMENT_ENVIRONMENT_REPOSITORY\"]"
+    echo "       [DEVELOPMENT_ENVIRONMENT_REPOSITORY is already defined as \"${DEVELOPMENT_ENVIRONMENT_REPOSITORY}\"]"
     echo ""
     
     should_continue=0
@@ -149,7 +149,7 @@ fi
 
 # ----------------------------------------------------------------------
 # |  A mixin repository can't be activated in isolation
-if [[ $should_continue == 1 && $is_mixin_repo == "1" && "$DEVELOPMENT_ENVIRONMENT_REPOSITORY_ACTIVATED_FLAG" != "1" ]]
+if [[ ${should_continue} == 1 && ${is_mixin_repo} == "1" && "${DEVELOPMENT_ENVIRONMENT_REPOSITORY_ACTIVATED_FLAG}" != "1" ]]
 then
     echo ""
     echo "ERROR: A mixin repository cannot be activated in isolation. Activate another repository before activating this one."
@@ -161,9 +161,9 @@ fi
 
 # ----------------------------------------------------------------------
 # |  Prepare the args
-if [[ $should_continue == 1 ]]
+if [[ ${should_continue} == 1 ]]
 then
-    if [[ $is_configurable == "1" ]]
+    if [[ ${is_configurable} == "1" ]]
     then
         if [[ "$1" == "" ]]
         then
@@ -172,7 +172,7 @@ then
             echo ""
             echo "       Available configurations are:"
             echo ""
-            $python_binary -m RepositoryBootstrap.Impl.Activate ListConfigurations `pwd` command_line
+            ${python_binary} -m RepositoryBootstrap.Impl.Activate ListConfigurations `pwd` command_line
             echo ""
             echo ""
             
@@ -180,12 +180,12 @@ then
             
         fi
         
-        if [[ "$DEVELOPMENT_ENVIRONMENT_REPOSITORY_CONFIGURATION" != "" && "$DEVELOPMENT_ENVIRONMENT_REPOSITORY_CONFIGURATION" != "$1" ]]
+        if [[ "${DEVELOPMENT_ENVIRONMENT_REPOSITORY_CONFIGURATION}" != "" && "${DEVELOPMENT_ENVIRONMENT_REPOSITORY_CONFIGURATION}" != "$1" ]]
         then
             echo ""
             echo "ERROR: The environment was previously activated with this repository but using a different configuration. Please open a new console window and activate this repository with the new configuration."
             echo ""
-            echo "       ["$DEVELOPMENT_ENVIRONMENT_REPOSITORY_CONFIGURATION" != "$1"]"
+            echo "       ["${DEVELOPMENT_ENVIRONMENT_REPOSITORY_CONFIGURATION}" != "$1"]"
             echo ""
             
             should_continue=0
@@ -199,37 +199,37 @@ then
 fi
 
 # Generate...
-if [[ $should_continue == 1 ]]
+if [[ ${should_continue} == 1 ]]
 then
     temp_script_name=`mktemp`
-    rm $temp_script_name
+    rm ${temp_script_name}
     
-    $python_binary -m RepositoryBootstrap.Impl.Activate Activate $temp_script_name "`pwd`" $configuration "$@"
+    ${python_binary} -m RepositoryBootstrap.Impl.Activate Activate ${temp_script_name} "`pwd`" ${configuration} "$@"
     generation_error=$?
 
-    if [[ -e $temp_script_name ]]
+    if [[ -e ${temp_script_name} ]]
     then
-        chmod u+x $temp_script_name
-        source $temp_script_name
+        chmod u+x ${temp_script_name}
+        source ${temp_script_name}
     fi
     execution_error=$?
     
-    if [[ $generation_error != 0 ]]
+    if [[ ${generation_error} != 0 ]]
     then
         echo ""
         echo "ERROR: Errors were encountered and the environment has not been successfully activated for development."
         echo ""
-        echo "       [$DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL/RepositoryBootstrap/Impl/Activate.py failed]"
+        echo "       [${DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL}/RepositoryBootstrap/Impl/Activate.py failed]"
         echo ""
         
         should_continue=0
         
-    elif [[ $execution_error != 0 ]]
+    elif [[ ${execution_error} != 0 ]]
     then
         echo ""
         echo "ERROR: Errors were encountered and the environment has not been successfully activated for development."
         echo ""
-        echo "       [$temp_script_name failed]"
+        echo "       [${temp_script_name} failed]"
         echo ""
         
         should_continue=0
@@ -237,9 +237,9 @@ then
 fi
 
 # Cleanup
-[[ ! -f $temp_script_name ]] || rm -f "$temp_script_name"
+[[ ! -f ${temp_script_name} ]] || rm -f "${temp_script_name}"
 
-if [[ $should_continue == 1 ]]
+if [[ ${should_continue} == 1 ]]
 then
     echo "                                                ^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^"
     echo "                                                <                                                                                           >"
@@ -252,13 +252,13 @@ fi
 
 unset PYTHONPATH
 
-if [[ "$previous_fundamental" != "" ]]; then
-    export DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=$previous_fundamental
+if [[ "${previous_fundamental}" != "" ]]; then
+    export DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=${previous_fundamental}
 else
     unset DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL
 fi
 
-if [[ $changed_dir == 1 ]]
+if [[ ${changed_dir} == 1 ]]
 then
     popd > /dev/null                                                        # -repo_dir
 fi

@@ -16,7 +16,7 @@
 set -e                                      # Exit on error
 
 setup_openssl_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-pushd $setup_openssl_dir > /dev/null        # +dir
+pushd ${setup_openssl_dir} > /dev/null      # +dir
 
 echo "Setting up openssl v1.1.0h..."
 
@@ -26,23 +26,23 @@ then
 
     temp_dir=/tmp/openssl
     
-    [[ ! -d $temp_dir ]] || rm -Rfd $temp_dir
-    mkdir -p $temp_dir
+    [[ ! -d ${temp_dir} ]] || rm -Rfd ${temp_dir}
+    mkdir -p ${temp_dir}
 
-    pushd $temp_dir > /dev/null             # +temp_dir
+    pushd ${temp_dir} > /dev/null           # +temp_dir
 
-    tar -xzf $setup_openssl_dir/install.tgz
-    mv * $setup_openssl_dir
+    tar -xzf ${setup_openssl_dir}/install.tgz
+    mv * ${setup_openssl_dir}
 
     popd > /dev/null                        # -temp_dir
-    rmdir $temp_dir
+    rmdir ${temp_dir}
 fi
 
 # Link to the originally compile location
 if [[ ! -e /opt/CommonEnvironment/openssl/1.1.0h ]]
 then
     [[ -d /opt/CommonEnvironment/openssl ]] || mkdir -p "/opt/CommonEnvironment/openssl"
-    ln -fsd $setup_openssl_dir /opt/CommonEnvironment/openssl/1.1.0h
+    ln -fsd ${setup_openssl_dir} /opt/CommonEnvironment/openssl/1.1.0h
 fi
 
 echo "DONE!"
