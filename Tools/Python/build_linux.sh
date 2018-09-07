@@ -66,19 +66,19 @@ BuildOpenSSL()
     echo "# ----------------------------------------------------------------------"
     set -x
 
-    name=openssl-$OPENSSL_VERSION
+    name=openssl-${OPENSSL_VERSION}
 
-    curl https://www.openssl.org/source/$name.tar.gz | gunzip -c | tar xf -
+    curl https://www.openssl.org/source/${name}.tar.gz | gunzip -c | tar xf -
 
-    pushd $name > /dev/null                                                         # +src dir
+    pushd ${name} > /dev/null                                                       # +src dir
 
-    ./config shared --prefix=/opt/CommonEnvironment/openssl/$OPENSSL_VERSION
+    ./config shared --prefix=/opt/CommonEnvironment/openssl/${OPENSSL_VERSION}
     make clean
     make
     make install
 
-    pushd /opt/CommonEnvironment/openssl/$OPENSSL_VERSION > /dev/null               # +install dir
-    tar czf - * > /local/openssl/v$OPENSSL_VERSION/Linux/setup.tgz
+    pushd /opt/CommonEnvironment/openssl/${OPENSSL_VERSION} > /dev/null             # +install dir
+    tar czf - * > /local/openssl/v${OPENSSL_VERSION}/Linux/setup.tgz
     popd > /dev/null                                                                # -install dir
     popd > /dev/null                                                                # -src dir
 }
@@ -93,13 +93,13 @@ BuildPython()
     echo "# ----------------------------------------------------------------------"
     set -x
 
-    curl https://www.python.org/ftp/python/$VERSION/Python-$VERSION.tgz | gunzip -c | tar xf -
+    curl https://www.python.org/ftp/python/${VERSION}/Python-${VERSION}.tgz | gunzip -c | tar xf -
 
-    pushd Python-$VERSION > /dev/null                                               # +src dir
+    pushd Python-${VERSION} > /dev/null                                             # +src dir
     
     # Update Setup.dist
     cp ./Modules/Setup.dist ./Modules/Setup.dist.bak
-    sed -r "s:#SSL=/usr/local/ssl:SSL=/opt/CommonEnvironment/openssl/$OPENSSL_VERSION:" ./Modules/Setup.dist.bak |\
+    sed -r "s:#SSL=/usr/local/ssl:SSL=/opt/CommonEnvironment/openssl/${OPENSSL_VERSION}:" ./Modules/Setup.dist.bak |\
         sed -r "s:#_ssl _ssl.c:    _ssl _ssl.c:" |\
         sed -r "s:#\s+-DUSE_SSL -I\\$\\(SSL\\)/include -I\\$\\(SSL\\)/include/openssl:    -DUSE_SSL -I\\$\\(SSL\\)/include -I\\$\\(SSL\\)/include/openssl:" |\
         sed -r "s:#\s+-L\\$\\(SSL\\)/lib -lssl -lcrypto:    -L\\$\\(SSL\\)/lib -lssl -lcrypto:" \
@@ -107,34 +107,34 @@ BuildPython()
     
     # Update setup.py
     cp setup.py setup.py.bak
-    sed -r "s:search_for_ssl_incs_in = \[:search_for_ssl_incs_in = \[ '/opt/CommonEnvironment/openssl/$OPENSSL_VERSION/include', :" setup.py.bak | \
-        sed -r "s:\['/usr/local/ssl/lib',:\['/opt/CommonEnvironment/openssl/$OPENSSL_VERSION/lib', '/usr/local/ssl/lib',:" \
+    sed -r "s:search_for_ssl_incs_in = \[:search_for_ssl_incs_in = \[ '/opt/CommonEnvironment/openssl/${OPENSSL_VERSION}/include', :" setup.py.bak | \
+        sed -r "s:\['/usr/local/ssl/lib',:\['/opt/CommonEnvironment/openssl/${OPENSSL_VERSION}/lib', '/usr/local/ssl/lib',:" \
         > setup.py
     
-    export LD_LIBRARY_PATH=/opt/CommonEnvironment/openssl/$OPENSSL_VERSION/lib
-    export LDFLAGS="$LDFLAGS -Wl,-rpath,/opt/CommonEnvironment/openssl/$OPENSSL_VERSION/lib"
+    export LD_LIBRARY_PATH=/opt/CommonEnvironment/openssl/${OPENSSL_VERSION}/lib
+    export LDFLAGS="${LDFLAGS} -Wl,-rpath,/opt/CommonEnvironment/openssl/${OPENSSL_VERSION}/lib"
 
-    ./configure --enable-ipv6 --enable-shared --enable-optimizations --with-threads --prefix=/opt/CommonEnvironment/python/$VERSION
+    ./configure --enable-ipv6 --enable-shared --enable-optimizations --with-threads --prefix=/opt/CommonEnvironment/python/${VERSION}
     make clean
     make
     make altinstall
     
-    pushd /opt/CommonEnvironment/python/$VERSION > /dev/null                        # +install dir
+    pushd /opt/CommonEnvironment/python/${VERSION} > /dev/null                      # +install dir
 
     pushd ./bin > /dev/null                                                         # +bin
     
-    ln -fs python$VERSION_SHORT python
-    ln -fs python$VERSION_SHORT python$VERSION_SHORTER
+    ln -fs python${VERSION_SHORT} python
+    ln -fs python${VERSION_SHORT} python${VERSION_SHORTER}
     
     popd > /dev/null                                                                # -bin
 
-    export PATH=/opt/CommonEnvironment/python/$VERSION/bin:$PATH
-    export LD_LIBRARY_PATH=/opt/CommonEnvironment/python/$VERSION/lib:$LD_LIBRARY_PATH
+    export PATH=/opt/CommonEnvironment/python/${VERSION}/bin:${PATH}
+    export LD_LIBRARY_PATH=/opt/CommonEnvironment/python/${VERSION}/lib:${LD_LIBRARY_PATH}
 
     python -m ensurepip --default-pip
     python -m pip install --upgrade pip
     
-    tar czf - * > /local/Python/v$VERSION/Linux/setup.tgz
+    tar czf - * > /local/Python/v${VERSION}/Linux/setup.tgz
 
     popd > /dev/null                                                                # -install dir
     popd > /dev/null                                                                # -src dir

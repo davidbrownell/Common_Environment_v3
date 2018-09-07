@@ -28,11 +28,11 @@ this_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 echo ""
 echo "------------------------  Python 2.7.14  -----------------------------"
 
-source $this_dir/../../../Tools/openssl/v1.0.2o/Linux/Setup.sh
-$this_dir/../../../Tools/Python/v2.7.14/Linux/Setup.sh
+source ${this_dir}/../../../Tools/openssl/v1.0.2o/Linux/Setup.sh
+${this_dir}/../../../Tools/Python/v2.7.14/Linux/Setup.sh
 
 echo "Installing python dependencies for v2.7.14..."
-$this_dir/../../../Tools/Python/v2.7.14/Linux/bin/python -m pip install --quiet --no-warn-script-location --no-cache-dir -r $this_dir/python_requirements.txt -r $this_dir/python_linux_requirements.txt 
+${this_dir}/../../../Tools/Python/v2.7.14/Linux/bin/python -m pip install --quiet --no-warn-script-location --no-cache-dir -r ${this_dir}/python_requirements.txt -r ${this_dir}/python_linux_requirements.txt 
 echo "DONE!"
 
 # ----------------------------------------------------------------------
@@ -40,11 +40,11 @@ echo "DONE!"
 echo ""
 echo "------------------------  Python 3.6.5  ------------------------------"
 
-source $this_dir/../../../Tools/openssl/v1.1.0h/Linux/Setup.sh
-$this_dir/../../../Tools/Python/v3.6.5/Linux/Setup.sh
+source ${this_dir}/../../../Tools/openssl/v1.1.0h/Linux/Setup.sh
+${this_dir}/../../../Tools/Python/v3.6.5/Linux/Setup.sh
 
 echo "Installing python dependencies for v3.6.5..."
-$this_dir/../../../Tools/Python/v3.6.5/Linux/bin/python -m pip install --quiet --no-warn-script-location --no-cache-dir -r $this_dir/python_requirements.txt -r $this_dir/python_linux_requirements.txt 
+${this_dir}/../../../Tools/Python/v3.6.5/Linux/bin/python -m pip install --quiet --no-warn-script-location --no-cache-dir -r ${this_dir}/python_requirements.txt -r ${this_dir}/python_linux_requirements.txt 
 echo "DONE!"
 echo
 echo
@@ -52,7 +52,7 @@ echo
 echo "----------------------------------------------------------------------"
 
 # Invoke fundamental setup activities
-$this_dir/../../../Tools/Python/v3.6.5/Linux/bin/python $this_dir/Setup.py "$@"
+${this_dir}/../../../Tools/Python/v3.6.5/Linux/bin/python ${this_dir}/Setup.py "$@"
 
 echo "----------------------------------------------------------------------"
 echo "----------------------------------------------------------------------"
