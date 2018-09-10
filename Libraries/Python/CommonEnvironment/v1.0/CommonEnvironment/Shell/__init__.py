@@ -316,7 +316,11 @@ class Shell(Interface):
 
         from CommonEnvironment.Shell.Commands import SymbolicLink
 
-        result, output = cls.ExecuteCommands( SymbolicLink(link_filename, target, is_dir),
+        result, output = cls.ExecuteCommands( SymbolicLink( link_filename, 
+                                                            target, 
+                                                            is_dir=is_dir, 
+                                                            remove_existing=True,
+                                                          ),
                                               output_stream=None,
                                             )
         if result != 0:
