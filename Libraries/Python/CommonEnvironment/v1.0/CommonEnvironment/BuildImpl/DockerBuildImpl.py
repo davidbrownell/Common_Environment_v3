@@ -27,6 +27,7 @@ import uuid
 import inflect as inflect_mod
 import six
 
+from CommonEnvironment import Nonlocals
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CommandLine
 from CommonEnvironment import FileSystem
@@ -82,6 +83,7 @@ def CreateRepositoryBuildFunc( repository_name,
     def Build( force=False,
                no_squash=False,
                keep_temporary_image=False,
+               build_dependencies=False,
                output_stream=sys.stdout,
                preserve_ansi_escape_sequences=False,
              ):
@@ -99,6 +101,49 @@ def CreateRepositoryBuildFunc( repository_name,
                     dm.result = -1
 
                     return dm.result
+
+                if build_dependencies:
+                    sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
+                    with CallOnExit(lambda: sys.path.pop(0)):
+                        import RepositoryBootstrap
+                        dependencies = RepositoryBootstrap.GetPrioritizedRepositories()
+
+                    # The last dependency is always this one
+                    assert dependencies
+                    assert dependencies[-1].Root == os.getenv("DEVELOPMENT_ENVIRONMENT_REPOSITORY"), dependencies[-1].Root
+                    
+                    dependencies.pop()
+
+                    if dependencies:
+                        dm.stream.write("Processing dependencies...")
+                        with dm.stream.DoneManager() as dependencies_dm:
+                            for dependency_index, dependency in enumerate(dependencies):
+                                nonlocals = Nonlocals( has_build_file=False,
+                                                     )
+
+                                dependencies_dm.stream.write("Processing '{}' ({} of {})...".format( dependency.Name,
+                                                                                                     dependency_index + 1,
+                                                                                                     len(dependencies),
+                                                                                                   ))
+                                with dependencies_dm.stream.DoneManager( suffix=lambda: '\n' if nonlocals.has_build_file else '',
+                                                                       ) as this_dm:
+                                    potential_filename = os.path.join(dependency.Root, "src", "Docker", "Build.py")
+                                    if not os.path.isfile(potential_filename):
+                                        this_dm.stream.write("No Docker build was found.\n")
+                                        continue
+
+                                    nonlocals.has_build_file = True
+
+                                    this_dm.result = Process.Execute( 'python "{input_filename}" Build {force}{no_squash}{keep_temporary_image}' \
+                                                                        .format( input_filename=potential_filename,
+                                                                                 force='' if not force else " /force",
+                                                                                 no_squash='' if not no_squash else " /no_squash",
+                                                                                 keep_temporary_image='' if not keep_temporary_image else " /keep_temporary_image",
+                                                                               ),
+                                                                      this_dm.stream,
+                                                                    )
+                                    if this_dm.result != 0:
+                                        return this_dm.result
 
                 output_dir = os.path.join(calling_dir, "Generated")
 
@@ -540,3 +585,20 @@ def _GetCallingDir():
 def _VerifyDocker():
     result, output = Process.Execute("docker version")
     return "Client:" in output and "Server:" in output
+
+# ----------------------------------------------------------------------
+def _GetHash(image_name, tag):
+    sink = six.moves.StringIO()
+
+    result = Process.Execute( "docker inspect --format {{{{.Id}}}} {}{}".format(image_name, '' if not tag else ":{}".format(tag)),
+                              sink,
+                            )
+    sink = sink.getvalue()
+
+    if result == 0:
+        return sink.strip()
+
+    if result == 1:
+        return None
+
+    raise Exception(sink)

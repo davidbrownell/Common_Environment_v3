@@ -135,7 +135,7 @@ def _Impl( display_sentinel,
 
     output_stream.write("Parsing dependencies...")
     with output_stream.DoneManager():
-        dependencies = ActivationData.Load(None, None, None).PrioritizedRepositories
+        dependencies = ActivationData.Load(None, None, False).PrioritizedRepositories
 
     has_config_specific = False
 
