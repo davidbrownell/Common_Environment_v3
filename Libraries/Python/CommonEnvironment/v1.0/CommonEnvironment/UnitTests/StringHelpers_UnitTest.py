@@ -44,18 +44,6 @@ class LeftJustifySuite(unittest.TestCase):
 # ----------------------------------------------------------------------
 class WrapSuite(unittest.TestCase):
     def test_Standard(self):
-        print("BugBug\n", Wrap( textwrap.dedent(
-                                      """\
-                                      
-                                      This is a test of some longer text in multiple paragraphs.
-
-                                      
-                                      
-                                      One two three four five six seven eight nine ten eleven.
-                                      
-                                      """),
-                                width=15,
-                              ))
         self.assertEqual( Wrap( textwrap.dedent(
                                       """\
                                       
@@ -77,6 +65,8 @@ class WrapSuite(unittest.TestCase):
                               multiple
                               paragraphs.
 
+
+                                                            
                               One two three
                               four five six
                               seven eight
@@ -107,11 +97,45 @@ class WrapSuite(unittest.TestCase):
                               multiple
                               paragraphs.
                               
+                              
+                              
                               One two three
                               four five six
                               seven eight
                               nine ten
                               eleven."""),
+                        )
+
+        self.assertEqual( Wrap( textwrap.dedent(
+                                    """\
+                                    
+                                    This is a test
+                                    of some longer
+                                    text in
+                                    multiple
+                                    paragraphs.
+
+
+
+                                    One two three
+                                    four five six
+                                    seven eight
+                                    nine ten
+                                    eleven.
+                                    
+                                    """),
+                                width=115,
+                              ),
+                          textwrap.dedent(
+                                      """\
+                                      
+                                      This is a test of some longer text in multiple paragraphs.
+
+                                      
+                                      
+                                      One two three four five six seven eight nine ten eleven.
+                                      
+                                      """),
                         )
 
 # ----------------------------------------------------------------------

@@ -12,7 +12,7 @@
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 # |  
 # ----------------------------------------------------------------------
-"""Functionality to further enhance Common_Enviromnet activation"""
+"""Functionality to further enhance Common_Environment activation"""
 
 import os
 import sys
@@ -49,7 +49,7 @@ def GetCustomActions( output_stream,
                       is_mixin_repo,
                     ):
     """
-    Returns an action or list of actions that should be invoked as part of the activaation process.
+    Returns an action or list of actions that should be invoked as part of the activation process.
 
     Actions are generic command line statements defined in 
     <Common_Environment>/Libraries/Python/CommonEnvironment/v1.0/CommonEnvironment/Shell/Commands/__init__.py
