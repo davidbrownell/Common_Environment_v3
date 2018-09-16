@@ -64,9 +64,9 @@ class WrapSuite(unittest.TestCase):
                               text in
                               multiple
                               paragraphs.
-                              
-                              
-                              
+
+
+                                                            
                               One two three
                               four five six
                               seven eight
@@ -97,11 +97,45 @@ class WrapSuite(unittest.TestCase):
                               multiple
                               paragraphs.
                               
+                              
+                              
                               One two three
                               four five six
                               seven eight
                               nine ten
                               eleven."""),
+                        )
+
+        self.assertEqual( Wrap( textwrap.dedent(
+                                    """\
+                                    
+                                    This is a test
+                                    of some longer
+                                    text in
+                                    multiple
+                                    paragraphs.
+
+
+
+                                    One two three
+                                    four five six
+                                    seven eight
+                                    nine ten
+                                    eleven.
+                                    
+                                    """),
+                                width=115,
+                              ),
+                          textwrap.dedent(
+                                      """\
+                                      
+                                      This is a test of some longer text in multiple paragraphs.
+
+                                      
+                                      
+                                      One two three four five six seven eight nine ten eleven.
+                                      
+                                      """),
                         )
 
 # ----------------------------------------------------------------------

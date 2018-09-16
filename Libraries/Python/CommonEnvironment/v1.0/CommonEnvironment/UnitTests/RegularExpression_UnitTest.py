@@ -69,7 +69,7 @@ class WildcardSearchToRegularExpressionSuite(unittest.TestCase):
 class GenerateSuite(unittest.TestCase):
     def test_Standard(self):
         self.assertEqual(list(Generate(" ", "This is a test")), [ "This", "is", "a", "test", ])
-        self.assertEqual(list(Generate(" ", "This_is_a_test")), [])
+        self.assertEqual(list(Generate(" ", "This_is_a_test")), [ "This_is_a_test", ])
         self.assertEqual(list(Generate(" ", " This is a test")), [ '', "This", "is", "a", "test", ])
         self.assertEqual(list(Generate(" ", "This is a test ")), [ "This", "is", "a", "test", '', ])
 
