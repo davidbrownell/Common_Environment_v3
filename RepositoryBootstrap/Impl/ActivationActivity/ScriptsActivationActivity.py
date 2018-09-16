@@ -254,7 +254,7 @@ class ScriptsActivationActivity(ActivationActivity):
                 with verbose_stream.DoneManager( done_suffix=lambda: "{} written".format(inflect.no("wrapper", len(wrappers))),
                                                ) as dm:
                     # We have a list of script files and the functions used to extract information
-                    # from whem. Files were extracted based on repositories ordered from the lowest 
+                    # from them. Files were extracted based on repositories ordered from the lowest 
                     # to highest level. However, it is likely that the user will want to use scripts 
                     # from high-level repositories more often than lower-level ones when names collide.
                     # Reverse the order of the higher-level scripts get the standard name while conflicts
