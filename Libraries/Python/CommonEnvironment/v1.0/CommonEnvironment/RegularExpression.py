@@ -143,7 +143,7 @@ def Generate( regex_or_regex_string,
     delimiter information that follows it.
 
     If 'leading_delimiter' is True, the generated items will be text and
-    delimiter information that preceeded it.
+    delimiter information that proceeded it.
     """
 
     if isinstance(regex_or_regex_string, six.string_types):
@@ -152,15 +152,17 @@ def Generate( regex_or_regex_string,
         regex = regex_or_regex_string
 
     results = regex.split(content)
-    if len(results) == 1:
-        # If here, there weren't any matches
-        return 
-
+    
     if regex.groups:
+        if len(results) == 1:
+            # If here, there weren't any matches
+            yield { None : results[0] }
+            return
+
         assert len(results) % (regex.groups + 1) in [ 0, 1 ], len(results)
 
         if leading_delimiter:
-            # If there is 1 extra element in the list of the results, that will the
+            # If there is 1 extra element in the list of the results, that will be the
             # first element that doesn't have a corresponding match
             if len(results) % (regex.groups + 1) == 1:
                 index_offset = 1

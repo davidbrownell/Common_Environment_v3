@@ -61,7 +61,7 @@ def LeftJustify( content,
                   )
 
 # ----------------------------------------------------------------------
-_Wrap_regex = re.compile(r"(\r?\n\s*\r?\n)", re.MULTILINE)
+_Wrap_regex = re.compile(r"(?P<suffix>(?:\r?\n[ \t]*\r?\n)+)", re.MULTILINE)
 
 def Wrap( content, 
           width=70,
@@ -70,18 +70,20 @@ def Wrap( content,
         ):
     """Wraps text according to the specified column width."""
 
+    from CommonEnvironment.RegularExpression import Generate
+
     # Get any whitespace at the beginning or end of the content.
     index = 0
     while index < len(content) and content[index].isspace():
         index += 1
-
+    
     prefix = content[:index] if not replace_whitespace else ''
     content = content[index:]
-
+    
     index = -1
     while len(content) > -index and content[index].isspace():
         index -= 1
-
+    
     if index == -1:
         suffix = ''
     else:
@@ -95,21 +97,31 @@ def Wrap( content,
         def wrap(self, content):
             lines = []
 
-            for paragraph in _Wrap_regex.split(content):
-                paragraph = paragraph.replace('\n', ' ')
-                    
-                if paragraph.isspace():
-                    if not self.replace_whitespace:
-                        if self.expand_tabs:
-                            paragraph = paragraph.expandtabs()
+            for match in Generate(_Wrap_regex, content):
+                paragraph = match[None].replace('\n', ' ')
+                
+                lines += [ line.strip() for line in super(Wrapper, self).wrap(paragraph) ]
+                
+                if "suffix" in match:
+                    suffix = match["suffix"]
 
-                        lines.append(paragraph[1:-1])
-                    else:
-                        lines.append('')
+                    # If there is already content, it will have a newline after it - 
+                    # remove one of the explicit newlines
+                    if lines:
+                        if suffix[0] == '\r': suffix = suffix[1:]
+                        if suffix[0] == '\n': suffix = suffix[1:]
 
-                else:
-                    lines += super(Wrapper, self).wrap(paragraph)
+                    # Remove an explicit newline from the end, as it will be added
+                    # when the lines are joined
+                    assert suffix
+                    assert suffix.endswith('\n'), suffix
 
+                    suffix = suffix[:-1]
+                    if suffix.endswith('\r'):
+                        suffix = suffix[:-1]
+
+                    lines.append(suffix)
+                
             return lines
 
     # ----------------------------------------------------------------------
