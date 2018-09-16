@@ -100,7 +100,7 @@ def Wrap( content,
             for match in Generate(_Wrap_regex, content):
                 paragraph = match[None].replace('\n', ' ')
                 
-                lines += [ line.strip() for line in super(Wrapper, self).wrap(paragraph) ]
+                lines += [ line.strip() for line in textwrap.TextWrapper.wrap(self, paragraph) ]
                 
                 if "suffix" in match:
                     suffix = match["suffix"]
