@@ -22,6 +22,7 @@ import textwrap
 import zipfile
 
 import inflect as inflect_mod
+import six
 import tqdm
 
 from CommonEnvironment import Nonlocals
@@ -52,6 +53,8 @@ def Install( uri,
              unique_id=None,
              output_stream=sys.stdout,
            ):
+    """Installs binaries to the specified output directory"""
+
     with StreamDecorator(output_stream).DoneManager( line_prefix='',
                                                      prefix="\nResults: ",
                                                      suffix='\n',
@@ -73,9 +76,10 @@ def Install( uri,
             if prev_installation.UniqueId == unique_id:
                 dm.stream.write(textwrap.dedent(
                     """\
-                    The content at '{}' already exists and will not be overwritten.
-                    Please delete the directory if this content is not valid or needs
-                    to be reacquired.
+                    The content already exists and will not be overwritten. Please delete the directory 
+                    if this content is not valid or needs to be reacquired.
+
+                        {}
 
                     """).format(output_dir))
 
@@ -88,12 +92,8 @@ def Install( uri,
             if dm.result < 0:
                 return dm.result
 
-        if uri.scheme == "file":
-            filename = uri.ToString()
-            assert filename.startswith("file://"), filename
-
-            filename = filename[len("file://"):].replace('/', os.path.sep)
-
+        if uri.Scheme == "file":
+            filename = uri.ToFilename()
             FilenameCleanup = lambda: None
 
         else:
@@ -113,6 +113,7 @@ def Install( uri,
                                                             file=download_dm.stream,
                                                             mininterval=0.5,
                                                             leave=False,
+                                                            ncols=120,
                                                           )
                     else:
                         assert count, block_size
@@ -150,11 +151,12 @@ def Install( uri,
                     with tqdm.tqdm( total=total_bytes,
                                     desc="Extracting",
                                     unit=" bytes",
-                                    file=download_dm.stream,
+                                    file=extract_dm.stream,
                                     mininterval=0.5,
                                     leave=False,
+                                    ncols=120,
                                   ) as progress:
-                        for f in zf.infolost():
+                        for f in zf.infolist():
                             try:
                                 zf.extract(f, temp_directory)
 
@@ -244,7 +246,7 @@ def _CleanImpl(output_dir, original_filenames, output_stream):
         paths_to_remove = []
 
         dm.stream.write("Calculating items to remove...")
-        with dm.stream.DoneManager( done_Suffix=lambda: inflect.no("item", len(paths_to_remove)),
+        with dm.stream.DoneManager( done_suffix=lambda: inflect.no("item", len(paths_to_remove)),
                                   ) as calculate_dm:
             for item in os.listdir(output_dir):
                 if item not in original_filenames:
@@ -254,8 +256,8 @@ def _CleanImpl(output_dir, original_filenames, output_stream):
             return dm.result
 
         with dm.stream.SingleLineDoneManager("Removing items...") as this_dm:
-            this_dm.result = TaskPool.Execute( [ TaskPool.Task(path_to_remove, lambda path_to_remove=path_to_remove: FileSystem.RemoveItem(path_to_remove)) for path_to_remove in paths_to_remove ],
-                                               this_dm.strea,
+            this_dm.result = TaskPool.Execute( [ TaskPool.Task(path_to_remove, (lambda path_to_remove=path_to_remove: 0 if FileSystem.RemoveItem(path_to_remove) else -1)) for path_to_remove in paths_to_remove ],
+                                               this_dm.stream,
                                                progress_bar=True,
                                                num_concurrent_tasks=1,
                                              )
