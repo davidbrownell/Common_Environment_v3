@@ -113,7 +113,7 @@ def Transform( items,
     # ----------------------------------------------------------------------
 
     Execute( [ Task(name_functor(index, item), Impl) for index, item in enumerate(items) ],
-             output_stream=optional_output_stream,
+             optional_output_stream=optional_output_stream,
              progress_bar=bool(optional_output_stream),
              raise_on_error=True,
              display_exception_callstack=display_exception_callstack,

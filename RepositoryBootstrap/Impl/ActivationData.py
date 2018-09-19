@@ -79,8 +79,8 @@ class ActivationData(object):
     # ----------------------------------------------------------------------
     @classmethod
     def Load( cls,
-              repository_root,
-              configuration,
+              repository_root,              # Can be None if run within an activated environment
+              configuration,                # Can be None if run within an activated environment
               is_fast_environment,
               force=False,
             ):

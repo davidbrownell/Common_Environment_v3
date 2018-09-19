@@ -214,6 +214,7 @@ def RemoveTree( path,
                 optional_retry_iterations=5,
               ):
     """Removes a directory and its children in the most efficient way possible"""
+
     if not os.path.isdir(path):
         return False
     
@@ -225,11 +226,26 @@ def RemoveFile( path,
                 optional_retry_iterations=5,
               ):
     """Removes a file in the most efficient way possible."""
+
     if not os.path.isfile(path):
         return False
 
     _RemoveImpl(os.remove, path, optional_retry_iterations)
     return True
+
+# ----------------------------------------------------------------------
+def RemoveItem( path,
+                optional_retry_iterations=5,
+              ):
+    """Removes a directory or file in the most efficient way possible."""
+
+    if os.path.isdir(path):
+        return RemoveTree(path)
+    
+    if os.path.isfile(path):
+        return RemoveFile(path)
+
+    return False
 
 # ----------------------------------------------------------------------
 def CopyTree( source,
@@ -249,7 +265,7 @@ def CopyTree( source,
     regexes = []
 
     for exclude in (excludes or []):
-        execute = exclude.replace(os.path.sep, '/')
+        exclude = exclude.replace(os.path.sep, '/')
         if exclude.startswith('/'):
             exclude = RemoveTrailingSep(source) + exclude
 
