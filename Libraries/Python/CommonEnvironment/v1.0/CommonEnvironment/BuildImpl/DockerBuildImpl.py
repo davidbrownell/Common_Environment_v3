@@ -24,6 +24,8 @@ import textwrap
 import time
 import uuid
 
+from collections import OrderedDict
+
 import inflect as inflect_mod
 import six
 
@@ -155,6 +157,7 @@ def CreateRepositoryBuildFunc( repository_name,
                 image_code_dir = "{}/{}".format( image_code_base,
                                                  repository_name.replace('_', '/'),
                                                )
+                image_hashes = OrderedDict()
 
                 if no_now_tag:
                     now_tag = None
@@ -176,7 +179,7 @@ def CreateRepositoryBuildFunc( repository_name,
                     if not os.path.isdir(source_dir):
                         base_dm.stream.write("Cloning source...")
                         with base_dm.stream.DoneManager() as this_dm:
-                            # Ensure that the parent dir exists, but don't create the dir iteself.
+                            # Ensure that the parent dir exists, but don't create the dir itself.
                             FileSystem.MakeDirs(os.path.dirname(source_dir))
                     
                             # Enlist in the repo. 
@@ -383,6 +386,10 @@ def CreateRepositoryBuildFunc( repository_name,
                         if now_tag:
                             tags.append("base_{}".format(now_tag))
 
+                        for tag in tags:
+                            assert tag not in image_hashes, tag
+                            image_hashes[tag] = _GetHash(docker_image_name, tag)
+
                         command_line = 'docker build "{dir}" {tags}{squash}{force}' \
                                             .format( dir=base_image_dir,
                                                      tags=' '.join([ '--tag "{}:{}"'.format(docker_image_name, tag) for tag in tags ]),
@@ -523,6 +530,10 @@ def CreateRepositoryBuildFunc( repository_name,
                                                 tags = [ "{}_{}".format(configuration, tag) for tag in tags ]
                                                 tags.insert(0, configuration)
 
+                                            for tag in tags:
+                                                assert tag not in image_hashes, tag
+                                                image_hashes[tag] = _GetHash(docker_image_name, tag)
+
                                             command_line = 'docker build "{dir}" {tags}{squash}{force}' \
                                                                 .format( dir=this_activated_dir,
                                                                          tags=' '.join([ '--tag "{}:{}"'.format(docker_image_name, tag) for tag in tags ]),
@@ -536,6 +547,15 @@ def CreateRepositoryBuildFunc( repository_name,
                                 
                 if post_build_func:
                     dm.result = post_build_func(dm.stream) or 0
+
+                # Compare hashes
+                dm.stream.write('\n')
+
+                for tag, prev_hash in six.iteritems(image_hashes):
+                    current_hash = _GetHash(docker_image_name, tag)
+                    dm.stream.write("{0: <80} - {1}\n".format( "{}:{}".format(docker_image_name, tag), 
+                                                               "updated" if current_hash != prev_hash else "not updated",
+                                                             ))
 
                 return dm.result
 
