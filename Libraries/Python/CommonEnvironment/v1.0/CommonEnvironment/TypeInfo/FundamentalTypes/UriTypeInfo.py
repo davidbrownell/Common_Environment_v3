@@ -42,7 +42,7 @@ class Uri(object):
             raise Exception("'{}' is not a valid uri".format(value))
 
         return cls( result.scheme,
-                    result.hostname,
+                    result.netloc if result.scheme == "file" else result.hostname,
                     six.moves.urllib.parse.unquote(result.path or ''),
                     result.query,
                     credentials=None if not (result.username and result.password) else ( six.moves.urllib.parse.unquote(result.username or ''),
@@ -104,6 +104,20 @@ class Uri(object):
                                                    query,
                                                    '',
                                                  ))
+
+    # ----------------------------------------------------------------------
+    def ToFilename(self):
+        if self.Scheme != "file":
+            raise Exception("This method is only valid when the scheme is 'file'")
+
+        filename = self.ToString()
+
+        assert filename.startswith("file://"), filename
+        filename = filename[len("file://"):]
+
+        filename = filename.replace('/', os.path.sep)
+
+        return filename
 
     # ----------------------------------------------------------------------
     def __eq__(self, other):
