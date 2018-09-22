@@ -153,6 +153,20 @@ def TrimPath(fullpath, initial_path):
     return fullpath
 
 # ----------------------------------------------------------------------
+def AddInitialSep(value):
+    if not value.startswith(os.path.sep):
+        value = os.path.sep + value
+
+    return value
+
+# ----------------------------------------------------------------------
+def RemoveInitialSep(value):
+    if value.startswith(os.path.sep):
+        value = value[len(os.path.sep):]
+
+    return value
+    
+# ----------------------------------------------------------------------
 def AddTrailingSep(value):
     if not value.endswith(os.path.sep):
         value += os.path.sep
