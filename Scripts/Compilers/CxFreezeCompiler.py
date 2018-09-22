@@ -55,7 +55,7 @@ class Compiler(DistutilsCompilerImpl):
             if context[attribute_name]:
                 raise Exception("'{}' is not supported by this compiler".format(attribute_name))
 
-        base = "Win32GUI" if CurrentShell.CategoryName == "Windows" and context["build_type"] == cls.BuildType_Windows else "None"
+        base = "Win32GUI" if CurrentShell.CategoryName == "Windows" and context["build_type"] == cls.BuildType.Windows else "None"
         icon_statement = "# No icon" if not context["icon_filename"] else '"icon" : r"{}",'.format(context["icon_filename"])
         copyright_statement = "# No copyright" if not context["copyright"] else '"copyright" : r"{}",'.format(context["copyright"])
         trademark_statement = "# No trademark" if not context["trademark"] else '"trademark" : r"{}",'.format(context["trademark"])
