@@ -99,7 +99,7 @@ class StreamDecorator(object):
             for wrapped_stream, original_stream in [ ( cinit.wrapped_stdout, cinit.orig_stdout ),
                                                      ( cinit.wrapped_stderr, cinit.orig_stderr ),
                                                    ]:
-                original_convertor = wrapped_stream._StreamWraper__convertor
+                original_convertor = wrapped_stream._StreamWrapper__convertor
 
                 if not getattr(original_convertor, "_modified", False):
                     convertor = AnsiToWin32( original_stream,
