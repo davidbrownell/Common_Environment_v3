@@ -16,7 +16,6 @@
 
 import os
 import subprocess
-import string
 import sys
 
 import six
@@ -31,7 +30,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 
 def Execute( command_line,
              optional_output_stream_or_functor=None,    # def Func(content) -> Bool
-             convert_newlines=True,                     # Converts '\r\n' into '\n'
+             convert_newlines=False,                    # Converts '\r\n' into '\n'
              line_delimited_output=False,               # Buffer calls to the provided functor by lines
              environment=None,                          # Environment vars to make available to the process
            ):
@@ -52,28 +51,19 @@ def Execute( command_line,
     # if "PYTHONIOENCODING" not in environment:
     #     environment["PYTHONIOENCODING"] = "UTF_8"
 
-    if sys.version_info[0] == 2:
-        import unicodedata
-
-        # ----------------------------------------------------------------------
-        def ConvertUnicodeToAsciiString(item, errors="ignore"):
-            return unicodedata.normalize('NFKD', item).encode('ascii', errors)
-
-        # ----------------------------------------------------------------------
-
-        if environment:
-            # Keys and values must be strings, which can be a problem if the environment was extraced from unicode data
-            for key in list(six.iterkeys(environment)):
-                value = environment[key]
-
-                if isinstance(key, unicode):                # <Undefined variable> pylint: disable = E0602
-                    del environment[key]
-                    key = ConvertUnicodeToAsciiString(key)
-
-                if isinstance(value, unicode):              # <Undefined variable> pylint: disable = E0602
-                    value = ConvertUnicodeToAsciiString(value)
-
-                environment[key] = value
+    if sys.version_info[0] == 2 and environment:
+        # Keys and values must be strings, which can be a problem if the environment was extraced from unicode data
+        for key in list(six.iterkeys(environment)):
+            value = environment[key]
+        
+            if isinstance(key, unicode):                # <Undefined variable> pylint: disable = E0602
+                del environment[key]
+                key = ConvertUnicodeToAsciiString(key)
+        
+            if isinstance(value, unicode):              # <Undefined variable> pylint: disable = E0602
+                value = ConvertUnicodeToAsciiString(value)
+        
+            environment[key] = value
 
     # Prepare the output
     sink = None
@@ -198,9 +188,13 @@ def ConsumeOutput( input_stream,
 
     # ----------------------------------------------------------------------
     def ToString(value):
+        if len(value) == 1:
+            return chr(value[0])
+        
         result = bytearray(value)
+        
         s = None
-
+        
         for codec in [ "utf-8",
                        "ansi",
                        "ascii",
@@ -208,18 +202,27 @@ def ConsumeOutput( input_stream,
             try:
                 s = result.decode(codec)
                 break
-
+        
             except (UnicodeDecodeError, LookupError):
                 pass
-
+        
         if s is None:
             raise Exception("The content '{}' could not be decoded".format(result))
 
-        if sys.version[0] == 2:
-            # Convert the Unicode string back to an ascii string
-            s = ConvertUnicodeToAsciiString(s, "replace")
-
         return s
+
+    # ----------------------------------------------------------------------
+    if sys.version[0] == 2:
+        original_to_string = ToString
+
+        # ----------------------------------------------------------------------
+        def ToString(value):
+            s = original_to_string(value)
+
+            # Convert the Unicode string back to an ascii string
+            return ConvertUnicodeToAsciiString(s, "replace")
+
+        # ----------------------------------------------------------------------
 
     # ----------------------------------------------------------------------
 
@@ -227,7 +230,7 @@ def ConsumeOutput( input_stream,
     character_stack_type = None
 
     hard_stop = False
-
+    
     while True:
         # Get the next character
         if character_stack_type == CharacterStack.Buffered:
@@ -242,7 +245,7 @@ def ConsumeOutput( input_stream,
                 break
 
             value = ord(c)
-
+            
         content = None
 
         # Process the character
@@ -271,10 +274,11 @@ def ConsumeOutput( input_stream,
             if value >> 6 == 0b10:
                 # Continuation char
                 character_stack.append(value)
+                
                 continue
 
             content = character_stack
-
+            
             character_stack = [ value, ]
             character_stack_type = CharacterStack.Buffered
 
@@ -312,4 +316,3 @@ def ConsumeOutput( input_stream,
         hard_stop = not output_func(ToString(character_stack))
 
     return not hard_stop
-
