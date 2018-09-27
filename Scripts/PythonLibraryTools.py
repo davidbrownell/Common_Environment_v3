@@ -355,20 +355,14 @@ def Move( no_move=False,
         dm.stream.write("Moving content...")
         with dm.stream.DoneManager( suffix='\n',
                                   ) as move_dm:
-            # BugBug: Handle case where existing dest dir isn't os-specific but now needs to be with new changes
-
             # ----------------------------------------------------------------------
             def DestinationIsOSSpecific(dest_dir):
-                # BugBug: I don't think that this works. Should be looking for os-specific names and then python names.
                 if not os.path.isdir(dest_dir):
                     return False
 
                 found_one = False
 
                 for item in os.listdir(dest_dir):
-                    if not item.startswith("python"):
-                        return False
-
                     fullpath = os.path.join(dest_dir, item)
                     if not os.path.isdir(fullpath):
                         return False
@@ -394,13 +388,29 @@ def Move( no_move=False,
                         if library_name.endswith(".py"):
                             library_name = library_name[:-len(".py")]
 
-                        dest_dir = os.path.join(os.getenv("DEVELOPMENT_ENVIRONMENT_REPOSITORY"), RepositoryBootstrapConstants.LIBRARIES_SUBDIR, PythonActivationActivity.Name, library_name, "v{}".format(library_info.version))
+                        dest_dir = os.path.join( os.getenv("DEVELOPMENT_ENVIRONMENT_REPOSITORY"), 
+                                                 RepositoryBootstrapConstants.LIBRARIES_SUBDIR, 
+                                                 PythonActivationActivity.Name, 
+                                                 library_name, 
+                                                 "v{}".format(library_info.version),
+                                               )
                         
-                        has_os_specific_dest_dir = False
+                        prev_dest_is_os_specific = DestinationIsOSSpecific(dest_dir) 
+                        dest_is_os_specific = new_content.HasOSSpecificLibraryExtensions(library_info.Fullpath) or prev_dest_is_os_specific
 
-                        if new_content.HasOSSpecificLibraryExtensions(library_info.Fullpath) or DestinationIsOSSpecific(dest_dir):
+                        if dest_is_os_specific:
+                            if not prev_dest_is_os_specific:
+                                raise Exception(textwrap.dedent(
+                                                    """\
+                                                    The existing directory '{}' is not specific to an operating system and python version, but the new content is. 
+                                                    Please move the existing content to an operating system- and python version-specific directory and run this tool again.
+                                                    
+                                                        Example: {}
+                                                    """).format( dest_dir,
+                                                                 os.path.join(dest_dir, CurrentShell.CategoryName, "<python2|python3>"),
+                                                               ))
+
                             dest_dir = os.path.join(dest_dir, CurrentShell.CategoryName, python_version_dir)
-                            has_os_specific_dest_dir = True
 
                         # Copy the library
                         library_dest_dir = dest_dir
@@ -419,7 +429,7 @@ def Move( no_move=False,
                         # Copy the scripts
                         scripts_dest_dir = os.path.join(dest_dir, SCRIPTS_DIR_NAME)
 
-                        if not has_os_specific_dest_dir and bool(next((script for script in library_info.scripts if os.path.splitext(script)[1] in [ CurrentShell.ScriptExtension, CurrentShell.ExecutableExtension, ]), None)):
+                        if not dest_is_os_specific and bool(next((script for script in library_info.scripts if os.path.splitext(script)[1] in [ CurrentShell.ScriptExtension, CurrentShell.ExecutableExtension, ]), None)):
                             scripts_dest_dir = os.path.join(scripts_dest_dir, CurrentShell.CategoryName)
 
                         for script in library_info.scripts:
