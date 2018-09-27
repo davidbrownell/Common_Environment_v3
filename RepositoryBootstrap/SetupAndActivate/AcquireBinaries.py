@@ -29,6 +29,7 @@ from CommonEnvironment import Nonlocals
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CommandLine
 from CommonEnvironment import FileSystem
+from CommonEnvironment import Process
 from CommonEnvironment.Shell.All import CurrentShell
 from CommonEnvironment.StreamDecorator import StreamDecorator
 from CommonEnvironment import StringHelpers
@@ -145,28 +146,16 @@ def Install( uri,
 
             # Extract the content to a temporary folder
             with dm.stream.SingleLineDoneManager("Extracting content...") as extract_dm:
-                with zipfile.ZipFile(filename) as zf:
-                    total_bytes = sum((f.file_size for f in zf.infolist()))
+                command_line = '7za e -y "-o{output}" "{input}"' \
+                                    .format( output=temp_directory,
+                                             input=filename,
+                                           )
 
-                    with tqdm.tqdm( total=total_bytes,
-                                    desc="Extracting",
-                                    unit=" bytes",
-                                    file=extract_dm.stream,
-                                    mininterval=0.5,
-                                    leave=False,
-                                    ncols=120,
-                                  ) as progress:
-                        for f in zf.infolist():
-                            try:
-                                zf.extract(f, temp_directory)
-
-                                if f.file_size:
-                                    progress.update(f.file_size)
-                            except:
-                                extract_dm.stream.write("ERROR: Unable to extract '{}'.\n".format(f.filename))
-                                extract_dm.result = -1
-
+                sink = six.moves.StringIO()
+                
+                extract_dm.result = Process.Execute(command_line, sink)
                 if extract_dm.result != 0:
+                    extract_dm.stream.write(sink.getvalue())
                     return extract_dm.result
 
             with CallOnExit(lambda: FileSystem.RemoveTree(temp_directory)):
@@ -235,6 +224,44 @@ def Clean( output_dir,
             return dm.result            
 
         return dm.result
+
+# ----------------------------------------------------------------------
+@CommandLine.EntryPoint
+@CommandLine.Constraints( app_name=CommandLine.StringTypeInfo(),
+                          output_dir=CommandLine.DirectoryTypeInfo(ensure_exists=False),
+                          unique_id=CommandLine.StringTypeInfo(),
+                          output_stream=None,
+                        )
+def Verify( app_name,
+            output_dir,
+            unique_id,
+            output_stream=sys.stdout,
+          ):
+    """Verifies that the unique_id associated with a previously installed output directory matches the expected value."""
+
+    if not _PreviousInstallation.Exists(output_dir):
+        output_stream.write("ERROR: The output directory '{}' associated with the application '{}' does not exist.\n".format(output_dir, app_name))
+        return -1
+
+    previous_installation = _PreviousInstallation.Load(output_dir)
+    if previous_installation.UniqueId != unique_id:
+        sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
+        with CallOnExit(lambda: sys.path.pop(0)):
+            from RepositoryBootstrap import Constants
+
+        output_stream.write(textwrap.dedent(
+            """\
+            ERROR: The installation of '{}' at '{}' is not the expected version ('{}' != '{}').
+                   Please run '{}' for this repository to update the installation.
+            """).format( app_name,
+                         output_dir,
+                         previous_installation.UniqueId,
+                         unique_id,
+                         CurrentShell.CreateScriptName(Constants.SETUP_ENVIRONMENT_NAME),
+                       ))
+        return -1
+
+    return 0
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------

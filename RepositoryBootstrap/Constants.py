@@ -37,9 +37,9 @@ GENERATED_BOOTSTRAP_DATA_FILENAME                       = "EnvironmentBootstrap.
 GENERATED_ACTIVATION_FILENAME                           = "EnvironmentActivation.json"
 GENERATED_ACTIVATION_ORIGINAL_ENVIRONMENT_FILENAME      = "EnvironmentActivation.OriginalEnvironment.json"
 
-# Place a file or direectory with this name in the file system to prevent
+# Place a file or directory with this name in the file system to prevent
 # its siblings and their descendants from being scanned as potential repository 
-# locations. This is espectially useful during Continuous Integration processes,
+# locations. This is especially useful during Continuous Integration processes,
 # where code associated with CI working directories should not be considered
 # as potential dependencies for the CI processes itself.
 IGNORE_DIRECTORY_AS_BOOTSTRAP_DEPENDENCY_SENTINEL_FILENAME = "IgnoreAsBootstrapDependency"
