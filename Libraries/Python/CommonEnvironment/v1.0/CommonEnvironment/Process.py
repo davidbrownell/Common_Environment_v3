@@ -19,7 +19,6 @@ import subprocess
 import sys
 
 import six
-from enum import Enum
 
 from CommonEnvironment.CallOnExit import CallOnExit
 
@@ -151,14 +150,6 @@ def Execute( command_line,
     return result, sink.getvalue()
 
 # ----------------------------------------------------------------------
-if sys.version_info[0] == 2:
-    import unicodedata
-    
-    # ----------------------------------------------------------------------
-    def ConvertUnicodeToAsciiString(item, errors="ignore"):
-        return unicodedata.normalize('NFKD', item).encode('ascii', errors)
-
-# ----------------------------------------------------------------------
 def ConsumeOutput( input_stream,
                    output_func,             # def Func(content) -> True to continue, False to quit
                  ):
@@ -167,152 +158,198 @@ def ConsumeOutput( input_stream,
     Returns the value provided by output_func.
     """
 
+    return _ConsumeOutputProcessor( input_stream, 
+                                    output_func,
+                                  ).Execute()
+
+# ----------------------------------------------------------------------
+if sys.version_info[0] == 2:
+    import unicodedata
+    
     # ----------------------------------------------------------------------
-    class CharacterStack(Enum):
-        Escape = 1
-        LineReset = 2
-        Buffered = 3
-        MultiByte = 4
+    def ConvertUnicodeToAsciiString(item, errors="ignore"):
+        return unicodedata.normalize('NFKD', item).encode('ascii', errors)
+
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+class _ConsumeOutputProcessor(object):
+    # ----------------------------------------------------------------------
+    def __init__( self, 
+                  input_stream, 
+                  output_func,              # def Func(content) -> True to continue, False to quit
+                ):
+        self._input_stream                  = input_stream
+        self._output_func                   = output_func
+
+        self._read_functor                  = self._ReadStandard
+        self._process_functor               = self._ProcessStandard
+        self._character_buffer              = []
 
     # ----------------------------------------------------------------------
-    def IsAsciiLetter(value):
-        return (value >= ord('a') and value <= ord('z')) or (value >= ord('A') and value <= ord('Z'))
+    def Execute(self):
+        hard_stop = False
+
+        while True:
+            value = self._read_functor()
+            if value is None:
+                break
+
+            content = self._process_functor(value)
+            if content is None:
+                continue
+
+            if self._output_func(self._ToString(content)) is False:
+                hard_stop = True
+                break
+
+        if not hard_stop and self._character_buffer:
+            hard_stop = self._output_func(self._ToString(self._character_buffer)) is False
+
+        return not hard_stop
 
     # ----------------------------------------------------------------------
-    def IsNewlineish(value):
+    # ----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    _a                                      = ord('a')
+    _z                                      = ord('z')
+    _A                                      = ord('A')
+    _Z                                      = ord('Z')
+
+    @classmethod
+    def _IsAsciiLetter(cls, value):
+        return (value >= cls._a and value <= cls._z) or (value >= cls._A and value <= cls._Z)
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    def _IsNewlineish(value):
         return value in [ 10, 13, ]
 
     # ----------------------------------------------------------------------
-    def IsEscape(value):
+    @staticmethod
+    def _IsEscape(value):
         return value == 27
 
     # ----------------------------------------------------------------------
-    def ToString(value):
+    @staticmethod
+    def _ToStringImpl(value):
         if len(value) == 1:
             return chr(value[0])
-        
+
         result = bytearray(value)
-        
-        s = None
-        
+
         for codec in [ "utf-8",
-                       "ansi",
-                       "ascii",
+                       "utf-16",
+                       "utf-32",
                      ]:
             try:
-                s = result.decode(codec)
-                break
-        
+                return result.decode(codec)
             except (UnicodeDecodeError, LookupError):
                 pass
-        
-        if s is None:
-            raise Exception("The content '{}' could not be decoded".format(result))
 
-        return s
+        raise Exception("The content '{}' could not be decoded".format(result))
 
     # ----------------------------------------------------------------------
     if sys.version[0] == 2:
-        original_to_string = ToString
-
-        # ----------------------------------------------------------------------
-        def ToString(value):
-            s = original_to_string(value)
-
-            # Convert the Unicode string back to an ascii string
-            return ConvertUnicodeToAsciiString(s, "replace")
-
-        # ----------------------------------------------------------------------
+        @classmethod
+        def _ToString(cls, value):
+            return ConvertUnicodeToAsciiString(cls._ToStringImpl(value), "replace")
+    else:
+        @classmethod
+        def _ToString(cls, value):
+            return cls._ToStringImpl(value)
 
     # ----------------------------------------------------------------------
+    def _ReadStandard(self):
+        result = self._input_stream.read(1)
+        if not result:
+            return None
 
-    character_stack = []
-    character_stack_type = None
+        if isinstance(result, (six.string_types, bytes)):
+            result = ord(result)
 
-    hard_stop = False
-    
-    while True:
-        # Get the next character
-        if character_stack_type == CharacterStack.Buffered:
-            value = character_stack.pop()
+        return result
 
-            assert not character_stack
-            character_stack_type = None
+    # ----------------------------------------------------------------------
+    def _ReadBufferedImpl(self, value):
+        # ----------------------------------------------------------------------
+        def Impl():
+            self._read_functor = self._ReadStandard
+            return value
 
-        else:
-            c = input_stream.read(1)
-            if not c:
-                break
+        # ----------------------------------------------------------------------
 
-            value = ord(c)
-            
-        content = None
+        return Impl
 
-        # Process the character
-        if character_stack_type == CharacterStack.Escape:
-            character_stack.append(value)
+    # ----------------------------------------------------------------------
+    def _ProcessStandard(self, value):
+        assert not self._character_buffer
 
-            if not IsAsciiLetter(value):
-                continue
+        if self._IsEscape(value):
+            self._process_functor = self._ProcessEscape
+            self._character_buffer.append(value)
 
-            content = character_stack
+            return None
 
-            character_stack = []
-            character_stack_type = None
+        if self._IsNewlineish(value):
+            self._process_functor = self._ProcessLineReset
+            self._character_buffer.append(value)
 
-        elif character_stack_type == CharacterStack.LineReset:
-            if IsNewlineish(value):
-                character_stack.append(value)
-                continue
+            return None
 
-            content = character_stack
+        if value >> 6 == 0b11:
+            # This is the first char of a multibyte char
+            self._process_functor = self._ProcessMultiByte
+            self._character_buffer.append(value)
 
-            character_stack = [ value, ]
-            character_stack_type = CharacterStack.Buffered
+            return None
 
-        elif character_stack_type == CharacterStack.MultiByte:
-            if value >> 6 == 0b10:
-                # Continuation char
-                character_stack.append(value)
-                
-                continue
+        return [ value, ]
 
-            content = character_stack
-            
-            character_stack = [ value, ]
-            character_stack_type = CharacterStack.Buffered
+    # ----------------------------------------------------------------------
+    def _ProcessEscape(self, value):
+        assert self._character_buffer
+        self._character_buffer.append(value)
 
-        else:
-            assert character_stack_type is None, character_stack_type
+        if not self._IsAsciiLetter(value):
+            return None
 
-            if IsEscape(value):
-                character_stack.append(value)
-                character_stack_type = CharacterStack.Escape
+        self._process_functor = self._ProcessStandard
 
-                continue
+        content = self._character_buffer
+        self._character_buffer = []
 
-            elif IsNewlineish(value):
-                character_stack.append(value)
-                character_stack_type = CharacterStack.LineReset
+        return content
 
-                continue
+    # ----------------------------------------------------------------------
+    def _ProcessLineReset(self, value):
+        assert self._character_buffer
+        
+        if self._IsNewlineish(value):
+            self._character_buffer.append(value)
+            return None
 
-            elif value >> 6 == 0b11:
-                # If the high bit is set, this is the first part of a multi-byte character
-                character_stack.append(value)
-                character_stack_type = CharacterStack.MultiByte
+        self._process_functor = self._ProcessStandard
+        self._read_functor = self._ReadBufferedImpl(value)
 
-                continue
+        content = self._character_buffer
+        self._character_buffer = []
 
-            content = [ value, ]
+        return content
 
-        assert content
+    # ----------------------------------------------------------------------
+    def _ProcessMultiByte(self, value):
+        assert self._character_buffer
 
-        if output_func(ToString(content)) == False:
-            hard_stop = True
-            break
+        if value >> 6 == 0b10:
+            # Continuation char
+            self._character_buffer.append(value)
+            return None
 
-    if not hard_stop and character_stack:
-        hard_stop = not output_func(ToString(character_stack))
+        self._process_functor = self._ProcessStandard
+        self._read_functor = self._ReadBufferedImpl(value)
 
-    return not hard_stop
+        content = self._character_buffer
+        self._character_buffer = []
+
+        return content
