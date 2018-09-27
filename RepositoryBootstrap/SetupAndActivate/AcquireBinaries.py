@@ -44,21 +44,22 @@ inflect                                     = inflect_mod.engine()
 
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint
-@CommandLine.Constraints( uri=CommandLine.UriTypeInfo(),
+@CommandLine.Constraints( name=CommandLine.StringTypeInfo(),
+                          uri=CommandLine.UriTypeInfo(),
                           output_dir=CommandLine.DirectoryTypeInfo(ensure_exists=False),
                           unique_id=CommandLine.StringTypeInfo(arity='?'),
                           output_stream=None,
                         )
-def Install( uri,
+def Install( name,
+             uri,
              output_dir,
              unique_id=None,
              output_stream=sys.stdout,
            ):
     """Installs binaries to the specified output directory"""
 
-    with StreamDecorator(output_stream).DoneManager( line_prefix='',
-                                                     prefix="\nResults: ",
-                                                     suffix='\n',
+    output_stream.write("Processing '{}'...".format(name))
+    with StreamDecorator(output_stream).DoneManager( suffix='\n',
                                                    ) as dm:
         if not _PreviousInstallation.Exists(output_dir):
             prev_installation = None
@@ -81,7 +82,6 @@ def Install( uri,
                     if this content is not valid or needs to be reacquired.
 
                         {}
-
                     """).format(output_dir))
 
                 return dm.result
@@ -145,18 +145,22 @@ def Install( uri,
             temp_directory = CurrentShell.CreateTempDirectory()
 
             # Extract the content to a temporary folder
-            with dm.stream.SingleLineDoneManager("Extracting content...") as extract_dm:
-                command_line = '7za e -y "-o{output}" "{input}"' \
-                                    .format( output=temp_directory,
-                                             input=filename,
+            dm.stream.write("Extracting content...")
+            with dm.stream.DoneManager() as extract_dm:
+                command_line = '7za x -y "{input}"' \
+                                    .format( input=filename,
                                            )
 
                 sink = six.moves.StringIO()
                 
-                extract_dm.result = Process.Execute(command_line, sink)
-                if extract_dm.result != 0:
-                    extract_dm.stream.write(sink.getvalue())
-                    return extract_dm.result
+                previous_dir = os.getcwd()
+                os.chdir(temp_directory)
+
+                with CallOnExit(lambda: os.chdir(previous_dir)):
+                    extract_dm.result = Process.Execute(command_line, sink)
+                    if extract_dm.result != 0:
+                        extract_dm.stream.write(sink.getvalue())
+                        return extract_dm.result
 
             with CallOnExit(lambda: FileSystem.RemoveTree(temp_directory)):
                 # Get a list of the original items
@@ -239,29 +243,35 @@ def Verify( app_name,
           ):
     """Verifies that the unique_id associated with a previously installed output directory matches the expected value."""
 
-    if not _PreviousInstallation.Exists(output_dir):
-        output_stream.write("ERROR: The output directory '{}' associated with the application '{}' does not exist.\n".format(output_dir, app_name))
-        return -1
+    output_stream.write("Verifying '{}'...".format(app_name))
+    with StreamDecorator(output_stream).DoneManager() as dm:
+        if not _PreviousInstallation.Exists(output_dir):
+            dm.stream.write("ERROR: The output directory '{}' associated with the application '{}' does not exist.\n".format(output_dir, app_name))
+            dm.result = -1
 
-    previous_installation = _PreviousInstallation.Load(output_dir)
-    if previous_installation.UniqueId != unique_id:
-        sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
-        with CallOnExit(lambda: sys.path.pop(0)):
-            from RepositoryBootstrap import Constants
+            return dm.result
 
-        output_stream.write(textwrap.dedent(
-            """\
-            ERROR: The installation of '{}' at '{}' is not the expected version ('{}' != '{}').
-                   Please run '{}' for this repository to update the installation.
-            """).format( app_name,
-                         output_dir,
-                         previous_installation.UniqueId,
-                         unique_id,
-                         CurrentShell.CreateScriptName(Constants.SETUP_ENVIRONMENT_NAME),
-                       ))
-        return -1
+        previous_installation = _PreviousInstallation.Load(output_dir)
+        if previous_installation.UniqueId != unique_id:
+            sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
+            with CallOnExit(lambda: sys.path.pop(0)):
+                from RepositoryBootstrap import Constants
 
-    return 0
+            dm.stream.write(textwrap.dedent(
+                """\
+                ERROR: The installation of '{}' at '{}' is not the expected version ('{}' != '{}').
+                       Please run '{}' for this repository to update the installation.
+                """).format( app_name,
+                             output_dir,
+                             previous_installation.UniqueId,
+                             unique_id,
+                             CurrentShell.CreateScriptName(Constants.SETUP_ENVIRONMENT_NAME),
+                           ))
+            dm.result = -1
+
+            return dm.result
+
+        return dm.result
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------

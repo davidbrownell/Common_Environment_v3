@@ -105,6 +105,10 @@ def GetCommonPath(*items):
     return AddTrailingSep(os.path.sep.join(items[0][:path_index]))
 
 # ----------------------------------------------------------------------
+def FilenameToUri(filename):
+    return "file:{}".format(six.moves.urllib.request.pathname2url(filename))
+
+# ----------------------------------------------------------------------
 def GetRelativePath(starting_dir, dest):
     """Creates a relative path from the starting_dir to the dest."""
 

@@ -36,6 +36,10 @@ class Uri(object):
     def FromString(cls, value):
         """Creates a Uri object from a string."""
 
+        # urlparse doesn't handle file:/// well
+        if value.startswith("file:///"):
+            value = "file://{}".format(value[len("file:///"):])
+
         result = six.moves.urllib.parse.urlparse(value)
 
         if not (result.scheme and result.hostname):
@@ -97,13 +101,19 @@ class Uri(object):
         if self.Query:
             query = six.moves.urllib.parse.urlencode(self.Query, True)
 
-        return six.moves.urllib.parse.urlunparse(( self.Scheme,
-                                                   ''.join(host),
-                                                   self.Path or '',
-                                                   '',
-                                                   query,
-                                                   '',
-                                                 ))
+        result = six.moves.urllib.parse.urlunparse(( self.Scheme,
+                                                     ''.join(host),
+                                                     self.Path or '',
+                                                     '',
+                                                     query,
+                                                     '',
+                                                   ))
+
+        # urlunparse doesn't handle 'file:///'
+        if result.startswith("file://"):
+            result = "file:///{}".format(result[len("file://"):])
+
+        return result
 
     # ----------------------------------------------------------------------
     def ToFilename(self):
@@ -112,8 +122,8 @@ class Uri(object):
 
         filename = self.ToString()
 
-        assert filename.startswith("file://"), filename
-        filename = filename[len("file://"):]
+        assert filename.startswith("file:///"), filename
+        filename = filename[len("file:///"):]
 
         filename = filename.replace('/', os.path.sep)
 
