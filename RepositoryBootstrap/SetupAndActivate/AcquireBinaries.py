@@ -29,6 +29,7 @@ from CommonEnvironment import Nonlocals
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CommandLine
 from CommonEnvironment import FileSystem
+from CommonEnvironment import Process
 from CommonEnvironment.Shell.All import CurrentShell
 from CommonEnvironment.StreamDecorator import StreamDecorator
 from CommonEnvironment import StringHelpers
@@ -43,21 +44,22 @@ inflect                                     = inflect_mod.engine()
 
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint
-@CommandLine.Constraints( uri=CommandLine.UriTypeInfo(),
+@CommandLine.Constraints( name=CommandLine.StringTypeInfo(),
+                          uri=CommandLine.UriTypeInfo(),
                           output_dir=CommandLine.DirectoryTypeInfo(ensure_exists=False),
                           unique_id=CommandLine.StringTypeInfo(arity='?'),
                           output_stream=None,
                         )
-def Install( uri,
+def Install( name,
+             uri,
              output_dir,
              unique_id=None,
              output_stream=sys.stdout,
            ):
     """Installs binaries to the specified output directory"""
 
-    with StreamDecorator(output_stream).DoneManager( line_prefix='',
-                                                     prefix="\nResults: ",
-                                                     suffix='\n',
+    output_stream.write("Processing '{}'...".format(name))
+    with StreamDecorator(output_stream).DoneManager( suffix='\n',
                                                    ) as dm:
         if not _PreviousInstallation.Exists(output_dir):
             prev_installation = None
@@ -80,7 +82,6 @@ def Install( uri,
                     if this content is not valid or needs to be reacquired.
 
                         {}
-
                     """).format(output_dir))
 
                 return dm.result
@@ -144,30 +145,22 @@ def Install( uri,
             temp_directory = CurrentShell.CreateTempDirectory()
 
             # Extract the content to a temporary folder
-            with dm.stream.SingleLineDoneManager("Extracting content...") as extract_dm:
-                with zipfile.ZipFile(filename) as zf:
-                    total_bytes = sum((f.file_size for f in zf.infolist()))
+            dm.stream.write("Extracting content...")
+            with dm.stream.DoneManager() as extract_dm:
+                command_line = '7za x -y "{input}"' \
+                                    .format( input=filename,
+                                           )
 
-                    with tqdm.tqdm( total=total_bytes,
-                                    desc="Extracting",
-                                    unit=" bytes",
-                                    file=extract_dm.stream,
-                                    mininterval=0.5,
-                                    leave=False,
-                                    ncols=120,
-                                  ) as progress:
-                        for f in zf.infolist():
-                            try:
-                                zf.extract(f, temp_directory)
+                sink = six.moves.StringIO()
+                
+                previous_dir = os.getcwd()
+                os.chdir(temp_directory)
 
-                                if f.file_size:
-                                    progress.update(f.file_size)
-                            except:
-                                extract_dm.stream.write("ERROR: Unable to extract '{}'.\n".format(f.filename))
-                                extract_dm.result = -1
-
-                if extract_dm.result != 0:
-                    return extract_dm.result
+                with CallOnExit(lambda: os.chdir(previous_dir)):
+                    extract_dm.result = Process.Execute(command_line, sink)
+                    if extract_dm.result != 0:
+                        extract_dm.stream.write(sink.getvalue())
+                        return extract_dm.result
 
             with CallOnExit(lambda: FileSystem.RemoveTree(temp_directory)):
                 # Get a list of the original items
@@ -233,6 +226,50 @@ def Clean( output_dir,
                               )
         if dm.result != 0:
             return dm.result            
+
+        return dm.result
+
+# ----------------------------------------------------------------------
+@CommandLine.EntryPoint
+@CommandLine.Constraints( app_name=CommandLine.StringTypeInfo(),
+                          output_dir=CommandLine.DirectoryTypeInfo(ensure_exists=False),
+                          unique_id=CommandLine.StringTypeInfo(),
+                          output_stream=None,
+                        )
+def Verify( app_name,
+            output_dir,
+            unique_id,
+            output_stream=sys.stdout,
+          ):
+    """Verifies that the unique_id associated with a previously installed output directory matches the expected value."""
+
+    output_stream.write("Verifying '{}'...".format(app_name))
+    with StreamDecorator(output_stream).DoneManager() as dm:
+        if not _PreviousInstallation.Exists(output_dir):
+            dm.stream.write("ERROR: The output directory '{}' associated with the application '{}' does not exist.\n".format(output_dir, app_name))
+            dm.result = -1
+
+            return dm.result
+
+        previous_installation = _PreviousInstallation.Load(output_dir)
+        if previous_installation.UniqueId != unique_id:
+            sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
+            with CallOnExit(lambda: sys.path.pop(0)):
+                from RepositoryBootstrap import Constants
+
+            dm.stream.write(textwrap.dedent(
+                """\
+                ERROR: The installation of '{}' at '{}' is not the expected version ('{}' != '{}').
+                       Please run '{}' for this repository to update the installation.
+                """).format( app_name,
+                             output_dir,
+                             previous_installation.UniqueId,
+                             unique_id,
+                             CurrentShell.CreateScriptName(Constants.SETUP_ENVIRONMENT_NAME),
+                           ))
+            dm.result = -1
+
+            return dm.result
 
         return dm.result
 
