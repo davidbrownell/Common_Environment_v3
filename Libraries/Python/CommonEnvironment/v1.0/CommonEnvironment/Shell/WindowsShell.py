@@ -403,3 +403,11 @@ class WindowsShell(Shell):
                 
             os.system(command_line)
             return None
+    else:
+        # ----------------------------------------------------------------------
+        @classmethod
+        @override
+        def ResolveSymLink(cls, filename):
+            """os.realpath still doesn't work on Windows. os.readlink does."""
+            return os.readlink(filename)
+            
