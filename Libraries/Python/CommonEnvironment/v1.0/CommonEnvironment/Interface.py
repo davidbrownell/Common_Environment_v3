@@ -380,9 +380,9 @@ def CreateCulledCallable(func):
                 else:
                     potential_positional_args.append(kwargs[k])
 
-            for name in positional_arg_names:
-                if name not in kwargs and potential_positional_args:
-                    invoke_kwargs[name] = potential_positional_args.pop(0)
+            for positional_arg_name in positional_arg_names:
+                if positional_arg_name not in kwargs and potential_positional_args:
+                    invoke_kwargs[positional_arg_name] = potential_positional_args.pop(0)
 
             return func(**invoke_kwargs)
 
@@ -602,16 +602,16 @@ class _Entity(object):
         var_names = self.FuncCode.co_varnames[:self.FuncCode.co_argcount]
         default_value_offset = len(var_names) - len(self.FuncDefaults or [])
 
-        for index, name in enumerate(var_names):
+        for index, var_name in enumerate(var_names):
             # Skip the 'self' or 'cls' value as they aren't interesting when
             # it comes to argument comparison.
             if index == 0 and self.Type in [ _Entity.Type.Method, _Entity.Type.ClassMethod, ]:
                 continue
 
             if index >= default_value_offset:
-                params[name] = self.FuncDefaults[index - default_value_offset]
+                params[var_name] = self.FuncDefaults[index - default_value_offset]
             else:
-                params[name] = _Entity.DoesNotExist
+                params[var_name] = _Entity.DoesNotExist
 
         return params
 
@@ -676,8 +676,8 @@ def _ResolveType(verified_types, cls, is_concrete_type):
 
     errors = []
 
-    for name, value in inspect.getmembers(cls):
-        if name.startswith('__'):
+    for member_name, value in inspect.getmembers(cls):
+        if member_name.startswith('__'):
             continue
 
         entity = _Entity(cls, is_mixin, value)
@@ -687,30 +687,30 @@ def _ResolveType(verified_types, cls, is_concrete_type):
         if entity.IsAbstract:
             decorator_count += 1
 
-            if name not in abstracts or not EntityInList(abstracts[name], entity):
-                abstracts.setdefault(name, []).append(entity)
-                these_abstracts.append(name)
+            if member_name not in abstracts or not EntityInList(abstracts[member_name], entity):
+                abstracts.setdefault(member_name, []).append(entity)
+                these_abstracts.append(member_name)
 
         if entity.IsExtension:
             decorator_count += 1
 
-            if name not in extensions or not EntityInList(extensions[name], entity):
-                extensions.setdefault(name, []).append(entity)
-                these_extensions.append(name)
+            if member_name not in extensions or not EntityInList(extensions[member_name], entity):
+                extensions.setdefault(member_name, []).append(entity)
+                these_extensions.append(member_name)
 
         if entity.IsOverride:
             decorator_count += 1
 
-            if name not in overrides or not EntityInList(overrides[name], entity):
-                overrides.setdefault(name, []).append(entity)
-                these_overrides.append(name)
+            if member_name not in overrides or not EntityInList(overrides[member_name], entity):
+                overrides.setdefault(member_name, []).append(entity)
+                these_overrides.append(member_name)
 
-            if not is_mixin and name in overrides and overrides[name][-1].IsMixin:
-                extra_validations.append(name)
+            if not is_mixin and member_name in overrides and overrides[member_name][-1].IsMixin:
+                extra_validations.append(member_name)
 
         if decorator_count > 1:
             assert entity is not None
-            errors.append("Only one of 'abstract/abstractproperty', 'extension', 'override' may be applied to an item ({}, {})".fomrat(name, entity.LocationString()))
+            errors.append("Only one of 'abstract/abstractproperty', 'extension', 'override' may be applied to an item ({}, {})".fomrat(member_name, entity.LocationString()))
 
     if errors:
         raise InterfaceException(errors)
@@ -737,9 +737,9 @@ def _ResolveType(verified_types, cls, is_concrete_type):
 
         result = []
 
-        for name in six.iterkeys(entities):
-            if name in existing_names:
-                result.append(name)
+        for entity_name in six.iterkeys(entities):
+            if entity_name in existing_names:
+                result.append(entity_name)
 
         return result
 
@@ -779,8 +779,8 @@ def _ResolveType(verified_types, cls, is_concrete_type):
         # We should not have items that are both abstract and extensions
         errors = []
         
-        for name, abstract_entity in six.iteritems(abstracts):
-            extension_entity = extensions.get(name, None)
+        for abstract_name, abstract_entity in six.iteritems(abstracts):
+            extension_entity = extensions.get(abstract_name, None)
             if extension_entity is None:
                 continue
         
@@ -895,7 +895,7 @@ def _ResolveType(verified_types, cls, is_concrete_type):
                 if ( (require_exact_match and len(derived_params) != len(base_params)) or
                      not all(k in derived_params and derived_params[k] == v for k, v in six.iteritems(base_params))
                    ):
-                    errors.append(( name,
+                    errors.append(( override,
                                     base_params,
                                     base_entity,
                                     derived_params,
@@ -908,16 +908,16 @@ def _ResolveType(verified_types, cls, is_concrete_type):
                     values = []
                     has_default_value = False
             
-                    for name, default_value in six.iteritems(params):
+                    for param_name, default_value in six.iteritems(params):
                         if default_value != _Entity.DoesNotExist:
                             has_default_value = True
             
-                            values.append("{name:<40}  {default:<20}  {type_}".format( name=name,
+                            values.append("{name:<40}  {default:<20}  {type_}".format( name=param_name,
                                                                                        default=str(default_value),
                                                                                        type_=type(default_value),
                                                                                      ))
                         else:
-                            values.append(name)
+                            values.append(param_name)
             
                     if has_default_value:
                         return '\n'.join([ "            {}".format(value) for value in values ])
@@ -936,23 +936,23 @@ def _ResolveType(verified_types, cls, is_concrete_type):
             
                                                 {derived_params}
             
-                                                """).format( name=name,
+                                                """).format( name=override_name,
                                                              base_location=bentity.LocationString(),
                                                              base_params=DisplayParams(bparams),
                                                              derived_location=dentity.LocationString(),
                                                              derived_params=DisplayParams(dparams),
                                                            )
-                                           for name, bparams, bentity, dparams, dentity in errors 
+                                           for override_name, bparams, bentity, dparams, dentity in errors 
                                          ])
             
             # Ensure that derived items are marked with override
             warnings = []
             
-            for name, value in inspect.getmembers(cls):
-                if name.startswith('__'):
+            for member_name, value in inspect.getmembers(cls):
+                if member_name.startswith('__'):
                     continue
             
-                base_entity = abstracts.get(name, extensions.get(name, None))
+                base_entity = abstracts.get(member_name, extensions.get(member_name, None))
                 if base_entity is None:
                     continue
             
@@ -961,11 +961,11 @@ def _ResolveType(verified_types, cls, is_concrete_type):
                 if entity.IsSameLocation(base_entity):
                     continue
             
-                if name not in overrides or not overrides[name][-1].IsSameLocation(entity):
-                    overrides.setdefault(name, []).append(entity)
+                if member_name not in overrides or not overrides[member_name][-1].IsSameLocation(entity):
+                    overrides.setdefault(member_name, []).append(entity)
             
                     warnings.append("{} '{}' {}".format( entity.TypeString(),
-                                                         name,
+                                                         member_name,
                                                          entity.LocationString(),
                                                        ))
             
@@ -988,12 +988,12 @@ def _ResolveType(verified_types, cls, is_concrete_type):
                 # Ensure that all abstracts are decorated
                 errors = []
             
-                for name, base_entity in six.iteritems(abstracts):
-                    this_entity = _Entity(cls, is_mixin, getattr(cls, name))
+                for abstract_name, base_entity in six.iteritems(abstracts):
+                    this_entity = _Entity(cls, is_mixin, getattr(cls, abstract_name))
             
                     if this_entity.IsSameLocation(base_entity):
                         errors.append("The abstract {} '{}' is missing {}".format( base_entity.TypeString(),
-                                                                                   name,
+                                                                                   abstract_name,
                                                                                    base_entity.LocationString(),
                                                                                  ))
             
