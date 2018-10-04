@@ -914,7 +914,7 @@ class _RepositoriesMap(OrderedDict):
                         func = dependency_info.GetCloneUri
                         if isinstance(func, six.string_types):
                             original_value = func
-                            func = lambda *args, **kwargs: original_value
+                            func = lambda *args, original_value=original_value, **kwargs: original_value
 
                         that_value.get_clone_uri_func = func
 
