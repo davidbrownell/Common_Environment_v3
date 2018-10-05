@@ -32,6 +32,7 @@ from collections import OrderedDict
 
 import six
 
+import CommonEnvironment
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import FileSystem
 from CommonEnvironment.Interface import staticderived, override, DerivedProperty
@@ -45,7 +46,7 @@ from CommonEnvironment.TypeInfo.FundamentalTypes.DateTimeTypeInfo import DateTim
 from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import StringSerialization
 
 # ----------------------------------------------------------------------
-_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
+_script_fullpath = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 

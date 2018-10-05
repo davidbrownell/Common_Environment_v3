@@ -17,15 +17,15 @@
 import os
 import sys
 
-# ----------------------------------------------------------------------
-_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
-_script_dir, _script_name = os.path.split(_script_fullpath)
-# ----------------------------------------------------------------------
-
 sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
 from RepositoryBootstrap.Impl import CommonEnvironmentImports
 from RepositoryBootstrap.Impl.ActivationActivity.PythonActivationActivity import PythonActivationActivity
 del sys.path[0]
+
+# ----------------------------------------------------------------------
+_script_fullpath = CommonEnvironmentImports.CommonEnvironment.ThisFullpath()
+_script_dir, _script_name = os.path.split(_script_fullpath)
+# ----------------------------------------------------------------------
 
 # For convenience, this script is taking all of the arguments that RepositoryBootstrap/Impl/Setup.py takes.
 # In order to decrease coupling, don't using CommandLine (which takes a concrete list of arguments), but

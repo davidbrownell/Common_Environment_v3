@@ -15,14 +15,14 @@
 """All items from this module"""
 
 import os
-import sys
 
+import CommonEnvironment
 from CommonEnvironment.Shell.UbuntuShell import UbuntuShell
 from CommonEnvironment.Shell.WindowsShell import WindowsShell
 from CommonEnvironment.Shell.WindowsPowerShell import WindowsPowerShell
 
 # ----------------------------------------------------------------------
-_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
+_script_fullpath = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 

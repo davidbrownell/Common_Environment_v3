@@ -24,6 +24,7 @@ import time
 from collections import OrderedDict
 from xml.etree import ElementTree as ET
 
+import CommonEnvironment
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import FileSystem
 from CommonEnvironment.Interface import staticderived, override, DerivedProperty
@@ -33,7 +34,7 @@ from CommonEnvironment.Shell.All import CurrentShell
 from CommonEnvironment.TestExecutorImpl import TestExecutorImpl
 
 # ----------------------------------------------------------------------
-_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
+_script_fullpath = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 

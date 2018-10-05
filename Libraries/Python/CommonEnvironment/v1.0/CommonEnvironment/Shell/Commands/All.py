@@ -15,14 +15,14 @@
 """Contains all Commands"""
 
 import os
-import sys
 
 # <Unused import> pylint: disable = W0614
 
+import CommonEnvironment
 from CommonEnvironment.Shell.Commands import *          # <Wildcard import> pylint: disable = W0401
 
 # ----------------------------------------------------------------------
-_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
+_script_fullpath = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 

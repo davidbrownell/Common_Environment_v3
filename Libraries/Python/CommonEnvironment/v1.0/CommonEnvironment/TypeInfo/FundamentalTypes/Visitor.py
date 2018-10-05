@@ -15,8 +15,8 @@
 """Contains types that are helpful when applying the visitor pattern to Fundamental TypeInfo types."""
 
 import os
-import sys
 
+import CommonEnvironment
 from CommonEnvironment.Interface import Interface, \
                                         abstractmethod, \
                                         staticderived, \
@@ -25,7 +25,7 @@ from CommonEnvironment.Interface import Interface, \
 from CommonEnvironment.TypeInfo.FundamentalTypes.All import *
 
 # ----------------------------------------------------------------------
-_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
+_script_fullpath = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 

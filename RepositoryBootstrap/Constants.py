@@ -15,13 +15,7 @@
 """Constants used in the bootstrap process"""
 
 import os
-import sys
 import textwrap
-
-# ----------------------------------------------------------------------
-_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
-_script_dir, _script_name = os.path.split(_script_fullpath)
-# ----------------------------------------------------------------------
 
 SETUP_ENVIRONMENT_NAME                                  = "Setup"
 SETUP_ENVIRONMENT_CUSTOMIZATION_FILENAME                = "{}_custom.py".format(SETUP_ENVIRONMENT_NAME)
