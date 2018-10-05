@@ -15,7 +15,6 @@
 """Constructs used when defining types."""
 
 import os
-import sys
 
 import inflect as inflect_mod
 import six
@@ -26,7 +25,7 @@ from CommonEnvironment.Interface import Interface, \
                                         abstractproperty
 
 # ----------------------------------------------------------------------
-_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
+_script_fullpath = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 

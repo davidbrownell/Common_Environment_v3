@@ -29,10 +29,6 @@ import RepositoryBootstrap
 from RepositoryBootstrap import Constants
 
 # ----------------------------------------------------------------------
-_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
-_script_dir, _script_name = os.path.split(_script_fullpath)
-# ----------------------------------------------------------------------
-
 COMMON_ENVIRONMENT_PATH                     = os.path.join(RepositoryBootstrap.GetFundamentalRepository(), Constants.LIBRARIES_SUBDIR, "Python", "CommonEnvironment", "v1.0")
 
 assert os.path.isdir(COMMON_ENVIRONMENT_PATH), COMMON_ENVIRONMENT_PATH

@@ -15,8 +15,8 @@
 """All items from this module"""
 
 import os
-import sys
 
+import CommonEnvironment
 from CommonEnvironment.TypeInfo.AnyOfTypeInfo import AnyOfTypeInfo
 from CommonEnvironment.TypeInfo.ClassTypeInfo import ClassTypeInfo, MethodTypeInfo, ClassMethodTypeInfo, StaticMethodTypeInfo
 from CommonEnvironment.TypeInfo.DictTypeInfo import DictTypeInfo
@@ -27,7 +27,7 @@ from CommonEnvironment.TypeInfo.ListTypeInfo import ListTypeInfo
 from CommonEnvironment.TypeInfo.FundamentalTypes.All import *               # <Wildcard import> pylint: disable = W0401
 
 # ----------------------------------------------------------------------
-_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
+_script_fullpath = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 

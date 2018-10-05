@@ -20,6 +20,7 @@ import sys
 from enum import Enum
 import six
 
+import CommonEnvironment
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CommandLine
 from CommonEnvironment.Interface import abstractmethod, override, DerivedProperty
@@ -34,7 +35,7 @@ from CommonEnvironment.CompilerImpl.OutputMixin.MultipleOutputMixin import Multi
 from CommonEnvironment.TypeInfo.FundamentalTypes.FilenameTypeInfo import FilenameTypeInfo
 
 # ----------------------------------------------------------------------
-_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
+_script_fullpath = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 

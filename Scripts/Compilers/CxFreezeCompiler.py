@@ -19,6 +19,7 @@ import shutil
 import sys
 import textwrap
 
+import CommonEnvironment
 from CommonEnvironment import CommandLine
 from CommonEnvironment import FileSystem
 from CommonEnvironment.Interface import staticderived, override, DerivedProperty
@@ -31,7 +32,7 @@ from CommonEnvironment.CompilerImpl.Impl.DistutilsCompilerImpl import DistutilsC
                                                                       CreateCleanMethod
 
 # ----------------------------------------------------------------------
-_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
+_script_fullpath = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 

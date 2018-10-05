@@ -15,15 +15,15 @@
 """Contains the Compiler object"""
 
 import os
-import sys
 
+import CommonEnvironment
 from CommonEnvironment.Interface import extensionmethod, DerivedProperty
 
 from CommonEnvironment.CompilerImpl import CompilerImpl
 from CommonEnvironment.CompilerImpl.CommandLine import CommandLineInvoke, CommandLineCleanOutputDir
 
 # ----------------------------------------------------------------------
-_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
+_script_fullpath = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 

@@ -22,11 +22,6 @@ import sys
 from collections import OrderedDict
 
 # ----------------------------------------------------------------------
-_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
-_script_dir, _script_name = os.path.split(_script_fullpath)
-# ----------------------------------------------------------------------
-
-# ----------------------------------------------------------------------
 def GetFundamentalRepository():
     """Returns the location of the fundamental repository."""
 

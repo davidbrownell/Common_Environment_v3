@@ -15,13 +15,13 @@
 """Contains the CodeCoverageValidator object"""
 
 import os
-import sys
 
+import CommonEnvironment
 from CommonEnvironment.Interface import override, DerivedProperty
 from CommonEnvironment.CodeCoverageValidatorImpl import CodeCoverageValidatorImpl
 
 # ----------------------------------------------------------------------
-_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
+_script_fullpath = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 

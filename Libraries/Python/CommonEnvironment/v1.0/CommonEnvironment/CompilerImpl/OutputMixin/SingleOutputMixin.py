@@ -15,8 +15,8 @@
 """Contains the SingleOutputMixin object"""
 
 import os
-import sys
 
+import CommonEnvironment
 from CommonEnvironment import FileSystem
 from CommonEnvironment.Interface import override, mixin
 from CommonEnvironment.StreamDecorator import StreamDecorator
@@ -24,7 +24,7 @@ from CommonEnvironment.StreamDecorator import StreamDecorator
 from CommonEnvironment.CompilerImpl.OutputMixin import OutputMixin
 
 # ----------------------------------------------------------------------
-_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
+_script_fullpath = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 

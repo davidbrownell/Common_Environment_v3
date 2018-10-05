@@ -21,10 +21,6 @@ import sys
 from collections import OrderedDict
 
 # ----------------------------------------------------------------------
-_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
-_script_dir, _script_name = os.path.split(_script_fullpath)
-# ----------------------------------------------------------------------
-
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 from RepositoryBootstrap import GetFundamentalRepository as _GetFundamentalRepository
 sys.path.pop(0)

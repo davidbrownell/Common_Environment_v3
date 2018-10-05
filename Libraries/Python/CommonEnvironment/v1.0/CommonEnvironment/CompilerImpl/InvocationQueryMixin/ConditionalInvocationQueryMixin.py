@@ -18,13 +18,13 @@ import base64
 import inspect
 import os
 import stat
-import sys
 import textwrap
 
 import inflect as inflect_mod
 import six
 import six.moves.cPickle as pickle
 
+import CommonEnvironment
 from CommonEnvironment import FileSystem
 from CommonEnvironment.Interface import extensionmethod, override, mixin
 from CommonEnvironment import RegularExpression
@@ -35,7 +35,7 @@ from CommonEnvironment.TypeInfo.FundamentalTypes.DirectoryTypeInfo import Direct
 from CommonEnvironment.TypeInfo.FundamentalTypes.FilenameTypeInfo import FilenameTypeInfo
 
 # ----------------------------------------------------------------------
-_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
+_script_fullpath = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
