@@ -36,7 +36,7 @@ from CommonEnvironment.Shell.All import CurrentShell
 from CommonEnvironment.SourceControlManagement.All import GetSCM
 
 # ----------------------------------------------------------------------
-_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
+_script_fullpath = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 

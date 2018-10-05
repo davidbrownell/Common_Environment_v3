@@ -15,8 +15,8 @@
 """Contains the CommandVisitor object"""
 
 import os
-import sys
 
+import CommonEnvironment
 from CommonEnvironment.Interface import Interface, \
                                         abstractmethod, \
                                         staticderived, \
@@ -27,7 +27,7 @@ from CommonEnvironment.Interface import Interface, \
 from CommonEnvironment.Shell.Commands.All import *      # <Wildcard import> pylint: disable = W0401
 
 # ----------------------------------------------------------------------
-_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
+_script_fullpath = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 

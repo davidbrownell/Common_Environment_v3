@@ -16,7 +16,6 @@
 
 import json
 import os
-import sys
 import textwrap
 
 from collections import OrderedDict
@@ -33,7 +32,7 @@ from RepositoryBootstrap.Impl import Utilities
 from RepositoryBootstrap.SetupAndActivate import Configuration
 
 # ----------------------------------------------------------------------
-_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
+_script_fullpath = CommonEnvironmentImports.CommonEnvironment.ThisFullpath()
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 

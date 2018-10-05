@@ -15,15 +15,15 @@
 """Contains the MethodTypeInfo, ClassMethodTypeInfo, StateMethodTypeInfo, and ClassTypeInfo objects"""
 
 import os
-import sys
 
+import CommonEnvironment
 from CommonEnvironment import Interface
 
 from CommonEnvironment.TypeInfo import TypeInfo
 from CommonEnvironment.TypeInfo.DictTypeInfo import DictTypeInfo
 
 # ----------------------------------------------------------------------
-_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
+_script_fullpath = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 

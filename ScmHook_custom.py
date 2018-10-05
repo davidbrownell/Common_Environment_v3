@@ -24,17 +24,16 @@ from collections import OrderedDict
 import inflect as inflect_mod
 import six
 
+sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
+from RepositoryBootstrap.Impl import CommonEnvironmentImports
+del sys.path[0]
+
 # ----------------------------------------------------------------------
-_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
+_script_fullpath = CommonEnvironmentImports.CommonEnvironment.ThisFullpath()
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
-sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
-from RepositoryBootstrap.Impl import CommonEnvironmentImports
-
 FileSystem                                  = CommonEnvironmentImports.FileSystem
-
-del sys.path[0]
 
 # ----------------------------------------------------------------------
 

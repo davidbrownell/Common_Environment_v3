@@ -15,18 +15,18 @@
 """Contains the LinuxShellImpl object"""
 
 import os
-import sys
 import textwrap
 
 from collections import OrderedDict
 
+import CommonEnvironment
 from CommonEnvironment.Interface import staticderived, override, DerivedProperty
 from CommonEnvironment.Shell import Shell
 from CommonEnvironment.Shell.Commands import Set, Augment
 from CommonEnvironment.Shell.Commands.Visitor import Visitor
 
 # ----------------------------------------------------------------------
-_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
+_script_fullpath = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 

@@ -25,6 +25,7 @@ import inflect as inflect_mod
 import six
 import tqdm
 
+import CommonEnvironment
 from CommonEnvironment import Nonlocals
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CommandLine
@@ -36,7 +37,7 @@ from CommonEnvironment import StringHelpers
 from CommonEnvironment import TaskPool
 
 # ----------------------------------------------------------------------
-_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
+_script_fullpath = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 

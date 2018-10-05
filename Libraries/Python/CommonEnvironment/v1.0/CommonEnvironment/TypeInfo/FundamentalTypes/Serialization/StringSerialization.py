@@ -18,12 +18,12 @@ import datetime
 import math
 import os
 import re
-import sys
 import textwrap
 import uuid
 
 import six
 
+import CommonEnvironment
 from CommonEnvironment import FileSystem
 from CommonEnvironment.Interface import staticderived, override
 from CommonEnvironment import RegularExpression
@@ -38,7 +38,7 @@ from CommonEnvironment.TypeInfo.FundamentalTypes.Visitor import Visitor
 from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization import Serialization
 
 # ----------------------------------------------------------------------
-_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
+_script_fullpath = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
