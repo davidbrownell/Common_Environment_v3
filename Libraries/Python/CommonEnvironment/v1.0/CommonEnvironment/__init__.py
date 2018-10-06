@@ -62,14 +62,9 @@ def ThisFullpath():
 
     import inspect
     
-    frame = inspect.stack()[1][0]
+    filename = os.path.realpath(os.path.abspath(inspect.stack()[1].filename))
+    assert os.path.exists(filename), filename
     
-    mod = inspect.getmodule(frame)
-    if not mod:
-        sys.stdout.write(inspect.stack())
-        raise Exception("Unexpected error")
-
-    filename = os.path.realpath(os.path.abspath(mod.__file__))
     if os.path.islink(filename):
         filename = os.readlink(filename)
 
