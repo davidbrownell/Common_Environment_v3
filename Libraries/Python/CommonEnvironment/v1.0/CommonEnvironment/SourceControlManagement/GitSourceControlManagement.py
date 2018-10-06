@@ -78,7 +78,6 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
 
         result, content = Process.Execute( command,
                                            environment=os.environ,
-                                           convert_newlines=True,
                                          )
 
         if strip:
