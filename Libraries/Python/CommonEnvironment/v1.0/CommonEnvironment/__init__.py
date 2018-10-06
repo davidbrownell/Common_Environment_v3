@@ -62,9 +62,14 @@ def ThisFullpath():
 
     import inspect
     
-    filename = os.path.realpath(os.path.abspath(inspect.stack()[1].filename))
+    if sys.version_info[0] == 2:
+        frame = inspect.stack()[1][0]
+        filename = inspect.getframeinfo(frame).filename
+    else:
+        filename = os.path.realpath(os.path.abspath(inspect.stack()[1].filename))
+
     assert os.path.exists(filename), filename
-    
+
     if os.path.islink(filename):
         filename = os.readlink(filename)
 
