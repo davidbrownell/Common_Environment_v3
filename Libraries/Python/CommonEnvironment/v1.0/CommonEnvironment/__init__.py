@@ -63,7 +63,11 @@ def ThisFullpath():
     import inspect
     
     frame = inspect.stack()[1][0]
+    
     mod = inspect.getmodule(frame)
+    if not mod:
+        sys.stdout.write(inspect.stack())
+        raise Exception("Unexpected error")
 
     filename = os.path.realpath(os.path.abspath(mod.__file__))
     if os.path.islink(filename):
