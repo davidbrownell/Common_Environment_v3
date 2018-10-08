@@ -22,6 +22,11 @@ import CommonEnvironment
 from CommonEnvironment.Interface import *
 
 # ----------------------------------------------------------------------
+_script_fullpath = CommonEnvironment.ThisFullpath()
+_script_dir, _script_name = os.path.split(_script_fullpath)
+# ----------------------------------------------------------------------
+
+# ----------------------------------------------------------------------
 class InterfaceSuite(unittest.TestCase):
     # # ----------------------------------------------------------------------
     # def assertRaises(self, exception, func, *args, **kwargs):

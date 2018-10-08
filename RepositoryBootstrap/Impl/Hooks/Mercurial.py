@@ -21,10 +21,6 @@ import textwrap
 import time
 
 # ----------------------------------------------------------------------
-_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
-_script_dir, _script_name = os.path.split(_script_fullpath)
-# ----------------------------------------------------------------------
-
 try:
     import mercurial                        # <Unable to import> pylint: disable = F0401
 

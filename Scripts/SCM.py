@@ -25,6 +25,7 @@ from collections import OrderedDict, namedtuple
 import inflect as inflect_mod
 import six
 
+import CommonEnvironment
 from CommonEnvironment import Describe, Nonlocals
 from CommonEnvironment import CommandLine
 from CommonEnvironment import Interface
@@ -38,7 +39,7 @@ from CommonEnvironment.SourceControlManagement import UpdateMergeArgs
 from CommonEnvironment import TaskPool
 
 # ----------------------------------------------------------------------
-_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
+_script_fullpath = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 

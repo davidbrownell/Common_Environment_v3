@@ -36,7 +36,7 @@ from RepositoryBootstrap.Impl import Utilities
 from RepositoryBootstrap.SetupAndActivate.Configuration import Configuration, Dependency
 
 # ----------------------------------------------------------------------
-_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
+_script_fullpath = CommonEnvironmentImports.CommonEnvironment.ThisFullpath()
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
@@ -210,16 +210,19 @@ def List( repository_root,
 
     with CommonEnvironmentImports.CallOnExit(OnExit):
         if json:
+            sink = six.moves.StringIO()
+
             repo_map = _CreateRepoMap( repository_root,
                                        configuration,
                                        recurse,
-                                       CommonEnvironmentImports.StreamDecorator(None),
+                                       CommonEnvironmentImports.StreamDecorator(sink),
                                        verbose,
                                        search_depth=search_depth,
                                        max_num_searches=max_num_searches,
                                        required_ancestor_dir=required_ancestor_dir,
                                      )
             if isinstance(repo_map, int):
+                output_stream.write(sink.getvalue())
                 return repo_map
         
             output_stream.write(json_mod.dumps([ { "name" : value.Name,
@@ -914,7 +917,7 @@ class _RepositoriesMap(OrderedDict):
                         func = dependency_info.GetCloneUri
                         if isinstance(func, six.string_types):
                             original_value = func
-                            func = lambda *args, **kwargs: original_value
+                            func = lambda *args, original_value=original_value, **kwargs: original_value
 
                         that_value.get_clone_uri_func = func
 

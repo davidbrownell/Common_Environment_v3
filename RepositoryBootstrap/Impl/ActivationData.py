@@ -16,7 +16,6 @@
 
 import json
 import os
-import sys
 import textwrap
 
 from collections import OrderedDict
@@ -33,7 +32,7 @@ from RepositoryBootstrap.Impl import Utilities
 from RepositoryBootstrap.SetupAndActivate import Configuration
 
 # ----------------------------------------------------------------------
-_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
+_script_fullpath = CommonEnvironmentImports.CommonEnvironment.ThisFullpath()
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
@@ -334,6 +333,8 @@ class ActivationData(object):
             raise Exception(textwrap.dedent(
                 """\
                 ********************************************************************************
+                {repo_root}
+                ********************************************************************************
                 ********************************************************************************
                 It appears that one or more of the repositories that this repository depends on
                 have changed.
@@ -344,7 +345,8 @@ class ActivationData(object):
         
                 ********************************************************************************
                 ********************************************************************************
-                """).format( setup=CommonEnvironmentImports.CurrentShell.CreateScriptName(Constants.SETUP_ENVIRONMENT_NAME),
+                """).format( repo_root=repository_root,
+                             setup=CommonEnvironmentImports.CurrentShell.CreateScriptName(Constants.SETUP_ENVIRONMENT_NAME),
                              status=CommonEnvironmentImports.StringHelpers.LeftJustify('\n'.join(lines), 4),
                            ))
 

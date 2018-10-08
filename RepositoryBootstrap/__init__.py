@@ -22,11 +22,6 @@ import sys
 from collections import OrderedDict
 
 # ----------------------------------------------------------------------
-_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
-_script_dir, _script_name = os.path.split(_script_fullpath)
-# ----------------------------------------------------------------------
-
-# ----------------------------------------------------------------------
 def GetFundamentalRepository():
     """Returns the location of the fundamental repository."""
 
@@ -123,7 +118,7 @@ def GetRepoMapFromSetup( repository_root,
                                  '' if not required_ancestor_dir else " /required_ancestor_dir_EQ_{}".format(required_ancestor_dir),
                                ))
     if result != 0:
-        raise Exception("Unable to invoke list:\n\n{}\n".format(output))
+        raise Exception("Unable to invoke the repository's list functionality:\n\n{}\n".format(output))
 
     match = re.search( r"//--//--//--//--//--//--//--//--//--//--//--//--//--//--//--//\s+(?P<content>.+?)\s+//--//--//--//--//--//--//--//--//--//--//--//--//--//--//--//",
                        output,

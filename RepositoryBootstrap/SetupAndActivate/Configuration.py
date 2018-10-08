@@ -15,12 +15,11 @@
 """Types used to customize repository setup and activation."""
 
 import os
-import sys
 
 from RepositoryBootstrap.Impl import CommonEnvironmentImports
 
 # ----------------------------------------------------------------------
-_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
+_script_fullpath = CommonEnvironmentImports.CommonEnvironment.ThisFullpath()
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 

@@ -20,16 +20,20 @@ import sys
 
 import six
 
+import CommonEnvironment
 from CommonEnvironment.CallOnExit import CallOnExit
+from CommonEnvironment.Shell.All import CurrentShell
 
 # ----------------------------------------------------------------------
-_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
+_script_fullpath = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
+CONVERT_NEWLINES_DEFAULT                    = CurrentShell.CategoryName == "Windows"
+
 def Execute( command_line,
              optional_output_stream_or_functor=None,    # def Func(content) -> Bool
-             convert_newlines=False,                    # Converts '\r\n' into '\n'
+             convert_newlines=CONVERT_NEWLINES_DEFAULT, # Converts '\r\n' into '\n'
              line_delimited_output=False,               # Buffer calls to the provided functor by lines
              environment=None,                          # Environment vars to make available to the process
            ):

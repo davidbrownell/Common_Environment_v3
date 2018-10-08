@@ -25,11 +25,6 @@ from contextlib import contextmanager
 import six
 
 # ----------------------------------------------------------------------
-_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
-_script_dir, _script_name = os.path.split(_script_fullpath)
-# ----------------------------------------------------------------------
-
-# ----------------------------------------------------------------------
 # |  
 # |  Public Types
 # |  
@@ -58,6 +53,28 @@ class Nonlocals(object):
 # |  
 # |  Public Methods
 # |  
+# ----------------------------------------------------------------------
+def ThisFullpath():
+    """Returns the filename of the caller, taking into account symlinks and frozen executables."""
+
+    if "python" not in sys.executable.lower():
+        return sys.executable
+
+    import inspect
+    
+    if sys.version_info[0] == 2:
+        frame = inspect.stack()[1][0]
+        filename = inspect.getframeinfo(frame).filename
+    else:
+        filename = os.path.realpath(os.path.abspath(inspect.stack()[1].filename))
+
+    assert os.path.exists(filename), filename
+
+    if os.path.islink(filename):
+        filename = os.readlink(filename)
+
+    return filename
+
 # ----------------------------------------------------------------------
 # Data type used to short-circuit infinite loops when attempting to describe
 # object with circular dependencies. 
