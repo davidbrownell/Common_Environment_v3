@@ -210,16 +210,19 @@ def List( repository_root,
 
     with CommonEnvironmentImports.CallOnExit(OnExit):
         if json:
+            sink = six.moves.StringIO()
+
             repo_map = _CreateRepoMap( repository_root,
                                        configuration,
                                        recurse,
-                                       CommonEnvironmentImports.StreamDecorator(None),
+                                       CommonEnvironmentImports.StreamDecorator(sink),
                                        verbose,
                                        search_depth=search_depth,
                                        max_num_searches=max_num_searches,
                                        required_ancestor_dir=required_ancestor_dir,
                                      )
             if isinstance(repo_map, int):
+                output_stream.write(sink.getvalue())
                 return repo_map
         
             output_stream.write(json_mod.dumps([ { "name" : value.Name,
