@@ -246,11 +246,11 @@ class ObjectReprImpl(unittest.TestCase):
                 """\
                 <class '__main__.Object'>
                 a : one
+                b : 2 <type 'int'>
                 c : <class '__main__.Object'>
                     a : 3.0 <type 'float'>
-                    c : True <type 'bool'>
                     b : four
-                b : 2 <type 'int'>
+                    c : True <type 'bool'>
                 """))
         else:
             self.assertEqual(str(CreateObj(False)), textwrap.dedent(
@@ -270,18 +270,18 @@ class ObjectReprImpl(unittest.TestCase):
             self.assertEqual(str(CreateObj(True)), textwrap.dedent(
                 """\
                 <class '__main__.Object'>
-                a            : one
-                c            : <class '__main__.Object'>
-                               a            : 3.0 <type 'float'>
-                               c            : True <type 'bool'>
-                               b            : four
-                               ClassMethod  : callable
-                               StaticMethod : callable
-                               Method       : callable
-                b            : 2 <type 'int'>
                 ClassMethod  : callable
-                StaticMethod : callable
                 Method       : callable
+                StaticMethod : callable
+                a            : one
+                b            : 2 <type 'int'>
+                c            : <class '__main__.Object'>
+                               ClassMethod  : callable
+                               Method       : callable
+                               StaticMethod : callable
+                               a            : 3.0 <type 'float'>
+                               b            : four
+                               c            : True <type 'bool'>
                 """))
 
         else:
