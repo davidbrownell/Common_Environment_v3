@@ -19,7 +19,6 @@ import os
 import shutil
 import sys
 import textwrap
-import zipfile
 
 import inflect as inflect_mod
 import six
