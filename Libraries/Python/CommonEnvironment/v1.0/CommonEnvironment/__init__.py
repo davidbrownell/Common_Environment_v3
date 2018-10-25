@@ -119,9 +119,12 @@ def Describe( item,                         # str, dict, iterable, obj
                                                              key_name,
                                                              max_length,
                                                            ))
-
+                
                 if key in kwargs:
-                    output_stream.write("{}\n".format(kwargs[key](item[key])))
+                    result = kwargs[key](item[key])
+                    
+                    if result is not None:
+                        output_stream.write("{}\n".format(result))
                 else:
                     Impl(item[key], item_indentation_str)
 
@@ -195,13 +198,16 @@ def ObjectToDict(obj):
     """Converts an object into a dict."""
 
     keys = [ k for k in dir(obj) if not k.startswith("__") ]
-    return { k : getattr(obj, k) for k in keys }
+
+    return OrderedDict( [ ( "<<<id>>>", id(obj) ), ] + 
+                        [ ( k, getattr(obj, k) ) for k in keys ]
+                      )
 
 # ----------------------------------------------------------------------
 def ObjectReprImpl( obj, 
                     include_methods=False,
                     include_private=False,
-                    **kwargs                # { "<attribute_name>" : def Func(<attribute_value>) -> string, ... }
+                    **kwargs                            # { "<attribute_name>" : def Func(<attribute_value>) -> string, ... }
                   ):
     """\
     Implementation of an object's __repr__ method.
@@ -212,7 +218,7 @@ def ObjectReprImpl( obj,
     """
     
     d = ObjectToDict(obj)
-    
+
     # Displaying builtins prevents anything from being displayed after it
     if "f_builtins" in d:
         del d["f_builtins"]
@@ -230,6 +236,7 @@ def ObjectReprImpl( obj,
             continue
 
     sink = six.moves.StringIO()
+
     Describe( d, 
               sink, 
               unique_id=(type(obj), id(obj)),
