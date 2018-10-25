@@ -210,7 +210,7 @@ class ObjectToDictSuite(unittest.TestCase):
 
         obj = Object("one", 2, 3.0)
 
-        self.assertEqual(CommonEnvironment.ObjectToDict(obj), { "a" : obj.a, "b" : obj.b, "c" : obj.c, "Method" : obj.Method, "StaticMethod" : obj.StaticMethod, "ClassMethod" : obj.ClassMethod, })
+        self.assertEqual(CommonEnvironment.ObjectToDict(obj, include_id=False), { "a" : obj.a, "b" : obj.b, "c" : obj.c, "Method" : obj.Method, "StaticMethod" : obj.StaticMethod, "ClassMethod" : obj.ClassMethod, })
 
 # ----------------------------------------------------------------------
 class ObjectReprImpl(unittest.TestCase):
@@ -232,7 +232,10 @@ class ObjectReprImpl(unittest.TestCase):
                 def ClassMethod(cls): pass
 
                 def __repr__(self):
-                    return CommonEnvironment.ObjectReprImpl(self, include_methods=include_methods)
+                    return CommonEnvironment.ObjectReprImpl( self, 
+                                                             include_methods=include_methods,
+                                                             include_id=False,
+                                                           )
 
             return Object("one", 2, Object(3.0, "four", True))
 

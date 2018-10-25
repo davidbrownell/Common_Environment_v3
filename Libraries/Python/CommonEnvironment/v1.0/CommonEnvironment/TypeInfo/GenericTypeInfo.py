@@ -31,7 +31,7 @@ class GenericTypeInfo(TypeInfo):
 
     Desc                                    = DerivedProperty("Generic")
     ConstraintsDesc                         = DerivedProperty('')
-    ExpectedType                            = lambda item: True
+    ExpectedType                            = staticmethod(lambda item: True)
     ExpectedTypeIsCallable                  = True
 
     # ----------------------------------------------------------------------

@@ -194,19 +194,24 @@ def Describe( item,                         # str, dict, iterable, obj
         _describe_stack.remove(unique_id)
 
 # ----------------------------------------------------------------------
-def ObjectToDict(obj):
+def ObjectToDict(obj, include_id=True):
     """Converts an object into a dict."""
 
-    keys = [ k for k in dir(obj) if not k.startswith("__") ]
+    kvps = []
 
-    return OrderedDict( [ ( "<<<id>>>", id(obj) ), ] + 
-                        [ ( k, getattr(obj, k) ) for k in keys ]
-                      )
+    if include_id:
+        kvps.append(( "<<<id>>>", id(obj) ))
+
+    keys = [ k for k in dir(obj) if not k.startswith("__") ]
+    kvps += [ ( k, getattr(obj, k) ) for k in keys ]
+    
+    return OrderedDict(kvps)
 
 # ----------------------------------------------------------------------
 def ObjectReprImpl( obj, 
                     include_methods=False,
                     include_private=False,
+                    include_id=True,
                     **kwargs                            # { "<attribute_name>" : def Func(<attribute_value>) -> string, ... }
                   ):
     """\
@@ -217,7 +222,7 @@ def ObjectReprImpl( obj,
             return CommonEnvironment.ObjReprImpl(self)
     """
     
-    d = ObjectToDict(obj)
+    d = ObjectToDict(obj, include_id=include_id)
 
     # Displaying builtins prevents anything from being displayed after it
     if "f_builtins" in d:
