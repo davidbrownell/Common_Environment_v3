@@ -16,10 +16,12 @@
 
 import os
 
+import six
+
 import CommonEnvironment
 from CommonEnvironment.Interface import staticderived, override
 
-from CommonEnvironment.TypeInfo.FundamentalTypes.Visitor import Visitor
+from CommonEnvironment.TypeInfo.Visitor import Visitor
 
 # ----------------------------------------------------------------------
 _script_fullpath = CommonEnvironment.ThisFullpath()
@@ -181,6 +183,78 @@ class PythonCodeVisitor(Visitor):
     def OnUri(cls, type_info):
         return "UriTypeInfo({})".format(cls._ArityString(type_info.Arity))
 
+    # ----------------------------------------------------------------------
+    @classmethod
+    @override
+    def OnAnyOf(cls, type_info):
+        args = [ '[ {} ]'.format(', '.join([ cls.Accept(eti) for eti in type_info.ElementTypeInfos ])),
+                 cls._ArityString(type_info.Arity),
+               ]
+
+        return "AnyOfTypeInfo({})".format( ', '.join([ arg for arg in args if arg ]))
+
+    # ----------------------------------------------------------------------
+    @classmethod
+    @override
+    def OnClass(cls, type_info):
+        args = [ "OrderedDict([ {} ])".format(', '.join([ '( "{}", {} )'.format(k, cls.Accept(v)) for k, v in six.iteritems(type_info.Items) ])), 
+               ]
+
+        if type_info.RequireExactMatchDefault is not None:
+            args.append("require_exact_match={}".format(type_info.RequireExactMatchDefault))
+
+        args.append(cls._ArityString(type_info.Arity))
+
+        return "ClassTypeInfo({})".format(', '.join([ arg for arg in args if arg ]))
+        
+    # ----------------------------------------------------------------------
+    @classmethod
+    @override
+    def OnMethod(cls, type_info):
+        return "MethodTypeInfo({})".format(cls._ArityString(type_info.Arity))
+        
+    # ----------------------------------------------------------------------
+    @classmethod
+    @override
+    def OnClassMethod(cls, type_info):
+        return "ClassMethodTypeInfo({})".format(cls._ArityString(type_info.Arity))
+        
+    # ----------------------------------------------------------------------
+    @classmethod
+    @override
+    def OnStaticMethod(cls, type_info):
+        return "StaticMethodTypeInfo({})".format(cls._ArityString(type_info.Arity))
+        
+    # ----------------------------------------------------------------------
+    @classmethod
+    @override
+    def OnDict(cls, type_info):
+        args = [ "OrderedDict([ {} ])".format(', '.join([ '( "{}", {} )'.format(k, cls.Accept(v)) for k, v in six.iteritems(type_info.Items) ])),
+               ]
+
+        if type_info.RequireExactMatchDefault is not None:
+            args.append("require_exact_match={}".format(type_info.RequireExactMatchDefault))
+
+        args.append(cls._ArityString(type_info.Arity))
+
+        return "DictTypeInfo({})".format(', '.join([ arg for arg in args if arg ]))
+
+    # ----------------------------------------------------------------------
+    @classmethod
+    @override
+    def OnGeneric(cls, type_info):
+        return "GenericTypeInfo({})".format(cls._ArityString(type_info.Arity))
+        
+    # ----------------------------------------------------------------------
+    @classmethod
+    @override
+    def OnList(cls, type_info):
+        args = [ cls.Accept(type_info.ElementTypeInfo),
+                 cls._ArityString(type_info.Arity),
+               ]
+
+        return "ListTypeInfo({})".format(', '.join([ arg for arg in args if arg ]))
+        
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------

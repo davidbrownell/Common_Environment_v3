@@ -51,7 +51,12 @@ class DictTypeInfo(TypeInfo):
                                             collection_validation_func=collection_validation_func,
                                           )
 
-        self.Items                          = items or {}
+        items = items or {}
+
+        if any(ti is None for ti in six.itervalues(items)):
+            raise Exception("All type info objects must be valid")
+
+        self.Items                          = items
         self.RequireExactMatchDefault       = require_exact_match
 
         for k, v in six.iteritems(kwargs):
