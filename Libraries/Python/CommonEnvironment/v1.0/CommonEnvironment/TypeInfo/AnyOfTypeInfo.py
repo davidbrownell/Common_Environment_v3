@@ -38,6 +38,9 @@ class AnyOfTypeInfo(TypeInfo):
         if not type_info_list:
             raise Exception("A list of TypeInfo objects must be provided")
 
+        if any(ti for ti in type_info_list if ti is None):
+            raise Exception("All type info objects must be valid")
+
         self.ElementTypeInfos               = type_info_list
 
     # ----------------------------------------------------------------------

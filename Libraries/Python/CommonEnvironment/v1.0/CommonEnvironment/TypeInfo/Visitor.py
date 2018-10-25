@@ -78,6 +78,12 @@ class Visitor(FundamentalVisitor):
     # ----------------------------------------------------------------------
     @staticmethod
     @abstractmethod
+    def OnGeneric(type_info, *args, **kwargs):
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @abstractmethod
     def OnList(type_info, *args, **kwargs):
         raise Exception("Abstract method")
 
@@ -92,6 +98,7 @@ class Visitor(FundamentalVisitor):
                    ClassMethodTypeInfo      : cls.OnClassMethod,
                    StaticMethodTypeInfo     : cls.OnStaticMethod,
                    DictTypeInfo             : cls.OnDict,
+                   GenericTypeInfo          : cls.OnGeneric,
                    ListTypeInfo             : cls.OnList,
                  }
 
@@ -113,6 +120,7 @@ def CreateSimpleVisitor( on_any_of_func=None,           # def Func(type_info, *a
                          on_class_method_func=None,     # def Func(type_info, *args, **kwargs)
                          on_static_method_func=None,    # def Func(type_info, *args, **kwargs)
                          on_dict_func=None,             # def Func(type_info, *args, **kwargs)
+                         on_generic_func=None,          # def Func(type_info, *args, **kwargs)
                          on_list_func=None,             # def Func(type_info, *args, **kwargs)
 
                          on_default_func=None,          # def Func(type_info, *args, **kwargs)
@@ -129,6 +137,7 @@ def CreateSimpleVisitor( on_any_of_func=None,           # def Func(type_info, *a
     on_class_method_func = on_class_method_func or on_default_func
     on_static_method_func = on_static_method_func or on_default_func
     on_dict_func = on_dict_func or on_default_func
+    on_generic_func = on_generic_func or on_default_func
     on_list_func = on_list_func or on_default_func
 
     # ----------------------------------------------------------------------
@@ -174,6 +183,12 @@ def CreateSimpleVisitor( on_any_of_func=None,           # def Func(type_info, *a
         def OnDict(type_info, *args, **kwargs):
             return on_dict_func(type_info, *args, **kwargs)
 
+        # ----------------------------------------------------------------------
+        @staticmethod
+        @override
+        def OnGeneric(type_info, *args, **kwargs):
+            return on_generic_func(type_info, *args, **kwargs)
+            
         # ----------------------------------------------------------------------
         @staticmethod
         @override

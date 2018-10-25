@@ -36,7 +36,7 @@ class InvocationQueryMixin(Interface):
         Always = 1
         Force = 2
         PrevContextMissing = 3
-        NewerGenertors = 4
+        NewerGenerators = 4
         MissingOutput = 5
         DifferentOutput = 6
         NewerInput = 7
