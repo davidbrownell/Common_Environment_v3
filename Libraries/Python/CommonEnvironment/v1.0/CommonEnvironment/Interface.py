@@ -181,7 +181,7 @@ def override(func):
     """
     Decorator that indicates that the method is overriding an abstract or extension
     method defined in a base class. Note that this decorator has no impact on
-    the method's functionalty.
+    the method's functionality.
     """
 
     if isinstance(func, (staticmethod, classmethod)):
@@ -201,14 +201,14 @@ def staticderived(cls):
     Decorator designed to be used by concreate classes that only implement
     static abstract methods.
 
-    When a conrete class implements an interface, the object's __new__ method
+    When a concrete class implements an interface, the object's __new__ method
     is used to verify that all methods and properties have been implemented as
     expected.
 
     Unfortunately, __new__ is only invoked when an instance of an object is created.
     When it comes to static methods, it is possible to invoke the method without
     creating an instance of the object, meaning __new__ will never fire and the
-    abstract verification code will never be caled.
+    abstract verification code will never be called.
 
     This decorator, when used in conjunction with the concrete class based on the
     abstract interface, will ensure that __new__ is properly invoked and that the
@@ -281,7 +281,7 @@ def clsinit(cls):
 # ----------------------------------------------------------------------
 def DerivedProperty(value):
     """
-    Helper when implementating a derived property that isn't dependent upon the
+    Helper when implementing a derived property that isn't dependent upon the
     instance's state. In python, a class may implement a property A) using the property
     decorator (which is valuable when the value depends on instance state or B) by
     assigning a class-level variable:
