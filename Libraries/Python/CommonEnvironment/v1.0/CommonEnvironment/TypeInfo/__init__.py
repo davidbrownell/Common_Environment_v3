@@ -284,6 +284,10 @@ class TypeInfo(Interface):
         return CommonEnvironment.ObjectReprImpl(self)
 
     # ----------------------------------------------------------------------
+    def __eq__(self, other):
+        return self.__dict__ == other.__dict__
+        
+    # ----------------------------------------------------------------------
     def IsExpectedType(self, item):
         """Returns True if the item is the expected Python type"""
         if self.ExpectedTypeIsCallable:

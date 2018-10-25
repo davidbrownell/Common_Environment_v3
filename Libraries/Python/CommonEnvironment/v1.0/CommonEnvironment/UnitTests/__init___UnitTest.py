@@ -210,7 +210,7 @@ class ObjectToDictSuite(unittest.TestCase):
 
         obj = Object("one", 2, 3.0)
 
-        self.assertEqual(CommonEnvironment.ObjectToDict(obj), { "a" : obj.a, "b" : obj.b, "c" : obj.c, "Method" : obj.Method, "StaticMethod" : obj.StaticMethod, "ClassMethod" : obj.ClassMethod, })
+        self.assertEqual(CommonEnvironment.ObjectToDict(obj, include_id=False), { "a" : obj.a, "b" : obj.b, "c" : obj.c, "Method" : obj.Method, "StaticMethod" : obj.StaticMethod, "ClassMethod" : obj.ClassMethod, })
 
 # ----------------------------------------------------------------------
 class ObjectReprImpl(unittest.TestCase):
@@ -232,7 +232,10 @@ class ObjectReprImpl(unittest.TestCase):
                 def ClassMethod(cls): pass
 
                 def __repr__(self):
-                    return CommonEnvironment.ObjectReprImpl(self, include_methods=include_methods)
+                    return CommonEnvironment.ObjectReprImpl( self, 
+                                                             include_methods=include_methods,
+                                                             include_id=False,
+                                                           )
 
             return Object("one", 2, Object(3.0, "four", True))
 
@@ -243,11 +246,11 @@ class ObjectReprImpl(unittest.TestCase):
                 """\
                 <class '__main__.Object'>
                 a : one
+                b : 2 <type 'int'>
                 c : <class '__main__.Object'>
                     a : 3.0 <type 'float'>
-                    c : True <type 'bool'>
                     b : four
-                b : 2 <type 'int'>
+                    c : True <type 'bool'>
                 """))
         else:
             self.assertEqual(str(CreateObj(False)), textwrap.dedent(
@@ -267,18 +270,18 @@ class ObjectReprImpl(unittest.TestCase):
             self.assertEqual(str(CreateObj(True)), textwrap.dedent(
                 """\
                 <class '__main__.Object'>
-                a            : one
-                c            : <class '__main__.Object'>
-                               a            : 3.0 <type 'float'>
-                               c            : True <type 'bool'>
-                               b            : four
-                               ClassMethod  : callable
-                               StaticMethod : callable
-                               Method       : callable
-                b            : 2 <type 'int'>
                 ClassMethod  : callable
-                StaticMethod : callable
                 Method       : callable
+                StaticMethod : callable
+                a            : one
+                b            : 2 <type 'int'>
+                c            : <class '__main__.Object'>
+                               ClassMethod  : callable
+                               Method       : callable
+                               StaticMethod : callable
+                               a            : 3.0 <type 'float'>
+                               b            : four
+                               c            : True <type 'bool'>
                 """))
 
         else:

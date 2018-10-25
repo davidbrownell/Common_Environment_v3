@@ -20,6 +20,7 @@ import CommonEnvironment
 from CommonEnvironment.TypeInfo.AnyOfTypeInfo import AnyOfTypeInfo
 from CommonEnvironment.TypeInfo.ClassTypeInfo import ClassTypeInfo, MethodTypeInfo, ClassMethodTypeInfo, StaticMethodTypeInfo
 from CommonEnvironment.TypeInfo.DictTypeInfo import DictTypeInfo
+from CommonEnvironment.TypeInfo.GenericTypeInfo import GenericTypeInfo
 from CommonEnvironment.TypeInfo.ListTypeInfo import ListTypeInfo
 
 # <Unused import> pylint: disable = W0614
@@ -42,6 +43,7 @@ ALL_NON_FUNDAMENTAL_TYPES                   = [ AnyOfTypeInfo,
                                                 ClassMethodTypeInfo,
                                                 StaticMethodTypeInfo,
                                                 DictTypeInfo,
+                                                GenericTypeInfo,
                                                 ListTypeInfo,
                                               ]
 

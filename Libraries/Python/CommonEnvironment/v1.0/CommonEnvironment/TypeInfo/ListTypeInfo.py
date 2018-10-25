@@ -31,6 +31,9 @@ class ListTypeInfo(TypeInfo):
     Validates lists of items:
 
         values = [ [ 1, 2 ], [ 3, 4, 5 ], ... ]
+
+    Note that this object should only be used for list of lists; single dimension
+    lists should be implemented via a TypeInfo's arity.
     """
 
     Desc                                    = DerivedProperty("List")
@@ -38,20 +41,23 @@ class ListTypeInfo(TypeInfo):
     
     # ----------------------------------------------------------------------
     def __init__( self,
-                  element_type_info,
+                  item_type_info,
                   **type_info_args
                 ):
         super(ListTypeInfo, self).__init__(**type_info_args)
 
-        self.ElementTypeInfo                = element_type_info
+        if item_type_info is None:
+            raise Exception("All type info objects must be valid")
+            
+        self.ItemTypeInfo                   = item_type_info
 
     # ----------------------------------------------------------------------
     @property
     @override
     def ConstraintsDesc(self):
-        desc = [ "List of '{}' values".format(self.ElementTypeInfo.Desc), ]
+        desc = [ "List of '{}' values".format(self.ItemTypeInfo.Desc), ]
 
-        constraint_desc = self.ElementTypeInfo.ConstraintsDesc
+        constraint_desc = self.ItemTypeInfo.ConstraintsDesc
         if constraint_desc:
             desc.append(" where each {}{}".format(constraint_desc[0].lower(), constraint_desc[1:]))
 
@@ -60,4 +66,4 @@ class ListTypeInfo(TypeInfo):
     # ----------------------------------------------------------------------
     @override
     def _ValidateItemNoThrowImpl(self, item):
-        return self.ElementTypeInfo.ValidateNoThrow(item)
+        return self.ItemTypeInfo.ValidateNoThrow(item)
