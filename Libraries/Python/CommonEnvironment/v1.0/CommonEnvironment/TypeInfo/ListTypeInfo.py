@@ -41,23 +41,23 @@ class ListTypeInfo(TypeInfo):
     
     # ----------------------------------------------------------------------
     def __init__( self,
-                  item_type_info,
+                  element_type_info,
                   **type_info_args
                 ):
         super(ListTypeInfo, self).__init__(**type_info_args)
 
-        if item_type_info is None:
+        if element_type_info is None:
             raise Exception("All type info objects must be valid")
             
-        self.ItemTypeInfo                   = item_type_info
+        self.ElementTypeInfo                = element_type_info
 
     # ----------------------------------------------------------------------
     @property
     @override
     def ConstraintsDesc(self):
-        desc = [ "List of '{}' values".format(self.ItemTypeInfo.Desc), ]
+        desc = [ "List of '{}' values".format(self.ElementTypeInfo.Desc), ]
 
-        constraint_desc = self.ItemTypeInfo.ConstraintsDesc
+        constraint_desc = self.ElementTypeInfo.ConstraintsDesc
         if constraint_desc:
             desc.append(" where each {}{}".format(constraint_desc[0].lower(), constraint_desc[1:]))
 
@@ -66,4 +66,4 @@ class ListTypeInfo(TypeInfo):
     # ----------------------------------------------------------------------
     @override
     def _ValidateItemNoThrowImpl(self, item):
-        return self.ItemTypeInfo.ValidateNoThrow(item)
+        return self.ElementTypeInfo.ValidateNoThrow(item)
