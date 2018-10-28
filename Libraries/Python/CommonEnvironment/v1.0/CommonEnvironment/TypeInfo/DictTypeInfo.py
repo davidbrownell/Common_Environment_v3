@@ -39,7 +39,8 @@ class DictTypeInfo(TypeInfo):
                   items=None,               # { "<attribute>" : <TypeInfo>, }
                   require_exact_match=None,
 
-                  # TypeInfo args
+                  # TypeInfo args; we are calling them out here so that they
+                  # aren't consumed by the kwargs below.
                   arity=None,
                   validation_func=None,
                   collection_validation_func=None,
