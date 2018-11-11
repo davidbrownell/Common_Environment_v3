@@ -108,11 +108,14 @@ class Visitor(Interface):
         # as static methods with an implementation that forwards to the instance's
         # member function.
         methods = {}
-        for k in six.iterkeys(bases[1].__dict__):
-            if k.startswith('_') or k == "Accept":
-                continue
 
-            methods[k] = staticmethod(getattr(instance, k))
+        # Ensure that we capture methods from all potential bases
+        for base_index in range(1, 1 + len(bases) - 4):
+            for k in six.iterkeys(bases[base_index].__dict__):
+                if k.startswith('_') or k == "Accept":
+                    continue
+
+                methods[k] = staticmethod(getattr(instance, k))
 
         Wrapper = type("Wrapper", ( bases[1], ), methods)                   # <Variable name "Wrapper" doesn't conform to snake_case naming style> pylint: disable = C0103
 
