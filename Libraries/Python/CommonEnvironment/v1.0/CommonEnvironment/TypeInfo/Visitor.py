@@ -17,9 +17,7 @@
 import os
 
 import CommonEnvironment
-from CommonEnvironment.Interface import abstractmethod, \
-                                        staticderived, \
-                                        override
+from CommonEnvironment.Interface import abstractmethod, override, staticderived
 
 # <Unused import> pylint: disable = W0614
 
