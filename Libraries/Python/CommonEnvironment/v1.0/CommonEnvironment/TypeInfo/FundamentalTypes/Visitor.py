@@ -17,10 +17,8 @@
 import os
 
 import CommonEnvironment
-from CommonEnvironment.Interface import Interface, \
-                                        abstractmethod, \
-                                        staticderived, \
-                                        override
+from CommonEnvironment.Interface import abstractmethod, override, staticderived
+from CommonEnvironment.Visitor import Visitor as VisitorBase
 
 from CommonEnvironment.TypeInfo.FundamentalTypes.All import *
 
@@ -34,7 +32,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # |  Public Types
 # |  
 # ----------------------------------------------------------------------
-class Visitor(Interface):
+class Visitor(VisitorBase):
 
     # ----------------------------------------------------------------------
     @staticmethod
