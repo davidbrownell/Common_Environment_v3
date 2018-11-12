@@ -54,15 +54,15 @@ class DictTypeInfo(TypeInfo):
 
         items = items or {}
 
+        for k, v in six.iteritems(kwargs):
+            assert k not in items, k
+            items[k] = v
+
         if any(ti is None for ti in six.itervalues(items)):
             raise Exception("All type info objects must be valid")
 
         self.Items                          = items
         self.RequireExactMatchDefault       = require_exact_match
-
-        for k, v in six.iteritems(kwargs):
-            assert k not in self.Items, k
-            self.Items[k] = v
 
         if require_exact_match and not self.Items:
             raise Exception("Attributes must be provided")
