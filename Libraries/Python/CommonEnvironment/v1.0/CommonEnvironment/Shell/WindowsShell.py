@@ -295,16 +295,27 @@ class WindowsShell(Shell):
         return "\\%{}\\%".format(var_name)
 
     # ----------------------------------------------------------------------
-    @staticmethod
-    @override
-    def IsSymLink(filename):
-        import win32file
 
-        # <Module 'win32file' has not 'GetFileAttributes' member, but source is unavailable. Consider adding this module to extension-pkg-whitelist if you want to perform analysis based on run-time introspection of living objects.> pylint: disable = I1101
-
-        file_attribute_reparse_point = 1024
+    # We are using ctypes here rather than win32api for better compatibility,
+    # especially when it comes to running on nanoserver.
+    _kernel32                               = None
+    _GetFileAttributesW                     = None
     
-        return os.path.exists(filename) and win32file.GetFileAttributes(filename) & file_attribute_reparse_point == file_attribute_reparse_point
+    @classmethod
+    @override
+    def IsSymLink(cls, filename):
+        if cls._GetFileAttributesW is None:
+            import ctypes
+            import ctypes.wintypes
+
+            cls._kernel32                               = ctypes.WinDLL("kernel32")
+            cls._GetFileAttributesW                     = cls._kernel32.GetFileAttributesW
+            cls._GetFileAttributesW.restype             = ctypes.wintypes.DWORD
+            cls._GetFileAttributesW.argtypes            = ( ctypes.wintypes.LPCWSTR, )
+
+        FILE_ATTRIBUTE_REPARSE_POINT        = 1024
+        
+        return os.path.exists(filename) and cls._GetFileAttributesW(filename) & FILE_ATTRIBUTE_REPARSE_POINT == FILE_ATTRIBUTE_REPARSE_POINT
 
     # ----------------------------------------------------------------------
     if sys.version_info[0] == 2:
@@ -411,4 +422,3 @@ class WindowsShell(Shell):
         def ResolveSymLink(cls, filename):
             """os.realpath still doesn't work on Windows. os.readlink does."""
             return os.readlink(filename)
-            
