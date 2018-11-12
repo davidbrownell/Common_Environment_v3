@@ -129,14 +129,14 @@ class StandardSuite(unittest.TestCase):
         
     # ----------------------------------------------------------------------
     def test_DictRecursive(self):
-        dti = DictTypeInfo(a=IntTypeInfo(), b=BoolTypeInfo(), child=DictTypeInfo(one=StringTypeInfo(), c2=True))
+        dti = DictTypeInfo(a=IntTypeInfo(), b=BoolTypeInfo(), child=DictTypeInfo(c2=True, one=StringTypeInfo()))
         dti.Items["child"].Items["c2"] = dti.Items["child"]
 
         result = PythonCodeVisitor.Accept(dti)
         
         from collections import OrderedDict
 
-        self.assertEqual(result, '''PythonCodeVisitor.LoadTypeInfo(DictTypeInfo(OrderedDict([ ( "a", IntTypeInfo() ), ( "b", BoolTypeInfo() ), ( "child", DictTypeInfo(OrderedDict([ ( "one", StringTypeInfo(min_length=1) ), ( "c2", 3 ) ])) ) ])))''')
+        self.assertEqual(result, '''PythonCodeVisitor.LoadTypeInfo(DictTypeInfo(OrderedDict([ ( "a", IntTypeInfo() ), ( "b", BoolTypeInfo() ), ( "child", DictTypeInfo(OrderedDict([ ( "c2", 3 ), ( "one", StringTypeInfo(min_length=1) ) ])) ) ])))''')
 
         dti2 = eval(result)
 
