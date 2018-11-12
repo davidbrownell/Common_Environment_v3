@@ -18,9 +18,6 @@ import os
 import sys
 import textwrap
 
-import ctypes
-import ctypes.wintypes
-
 from collections import OrderedDict
 
 import CommonEnvironment
@@ -301,17 +298,24 @@ class WindowsShell(Shell):
 
     # We are using ctypes here rather than win32api for better compatibility,
     # especially when it comes to running on nanoserver.
-    _kernel32                               = ctypes.WinDLL("kernel32")
-    _GetFileAttributesW                     = _kernel32.GetFileAttributesW
-    _GetFileAttributesW.restype             = ctypes.wintypes.DWORD
-    _GetFileAttributesW.argtypes            = ( ctypes.wintypes.LPCWSTR, )
-
-    _FILE_ATTRIBUTE_REPARSE_POINT           = 1024
-
+    _kernel32                               = None
+    _GetFileAttributesW                     = None
+    
     @classmethod
     @override
     def IsSymLink(cls, filename):
-        return os.path.exists(filename) and cls._GetFileAttributesW(filename) & cls._FILE_ATTRIBUTE_REPARSE_POINT == cls._FILE_ATTRIBUTE_REPARSE_POINT
+        if cls._GetFileAttributesW is None:
+            import ctypes
+            import ctypes.wintypes
+
+            cls._kernel32                               = ctypes.WinDLL("kernel32")
+            cls._GetFileAttributesW                     = cls._kernel32.GetFileAttributesW
+            cls._GetFileAttributesW.restype             = ctypes.wintypes.DWORD
+            cls._GetFileAttributesW.argtypes            = ( ctypes.wintypes.LPCWSTR, )
+
+        FILE_ATTRIBUTE_REPARSE_POINT        = 1024
+        
+        return os.path.exists(filename) and cls._GetFileAttributesW(filename) & FILE_ATTRIBUTE_REPARSE_POINT == FILE_ATTRIBUTE_REPARSE_POINT
 
     # ----------------------------------------------------------------------
     if sys.version_info[0] == 2:
