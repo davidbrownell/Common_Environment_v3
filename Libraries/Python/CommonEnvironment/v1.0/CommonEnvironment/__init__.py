@@ -16,6 +16,7 @@
 
 import datetime
 import os
+import re
 import sys
 import time
 
@@ -88,10 +89,12 @@ def Describe( item,                         # str, dict, iterable, obj
     """Writes information about the item to the provided stream."""
 
     if unique_id is None:
-        unique_id = (type(item), id(item))
+        unique_id = (id(item), type(item))
 
     if unique_id in _describe_stack:
-        output_stream.write("The item '{}' has already been described.\n".format(unique_id))
+        # Display this value in a way that is similar to what is done inline so that normalization
+        # functions normalize this value too.
+        output_stream.write("The item '<<<id>>> : {} {}' has already been described.\n".format(id(item), type(item)))
         return
 
     _describe_stack.add(unique_id)
@@ -249,3 +252,23 @@ def ObjectReprImpl( obj,
             )
 
     return "{}\n{}\n".format(type(obj), sink.getvalue().rstrip())
+
+# ----------------------------------------------------------------------
+def NormalizeObjectReprOutput(output):
+    """\
+    Remove id specific information from the __repr__ output of an object so
+    that it can be compared with another object.
+    """
+
+    # ----------------------------------------------------------------------
+    def Sub(match):
+        return "{} : __scrubbed_id__ {}".format( match.group("prefix"),
+                                                 match.group("suffix"),
+                                               )
+
+    # ----------------------------------------------------------------------
+
+    return re.sub( r"(?P<prefix>\<\<\<id\>\>\>\s*?) : (?P<id>\d+) (?P<suffix>[^\n]*?)",
+                   Sub,
+                   output,
+                 )

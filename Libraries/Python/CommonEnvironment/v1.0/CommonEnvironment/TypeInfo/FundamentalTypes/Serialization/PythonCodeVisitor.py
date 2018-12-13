@@ -34,6 +34,12 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 @staticderived
 class PythonCodeVisitor(Visitor):
     # ----------------------------------------------------------------------
+    @staticmethod
+    def LoadTypeInfo(*args, **kwargs):
+        # Convenience method for code below
+        return LoadTypeInfo(*args, **kwargs)
+
+    # ----------------------------------------------------------------------
     @classmethod
     @override
     def OnBool(cls, type_info):
@@ -197,15 +203,7 @@ class PythonCodeVisitor(Visitor):
     @classmethod
     @override
     def OnClass(cls, type_info):
-        args = [ "OrderedDict([ {} ])".format(', '.join([ '( "{}", {} )'.format(k, cls.Accept(v)) for k, v in six.iteritems(type_info.Items) ])), 
-               ]
-
-        if type_info.RequireExactMatchDefault is not None:
-            args.append("require_exact_match={}".format(type_info.RequireExactMatchDefault))
-
-        args.append(cls._ArityString(type_info.Arity))
-
-        return "ClassTypeInfo({})".format(', '.join([ arg for arg in args if arg ]))
+        return cls._OnDictLikeImpl(type_info)
         
     # ----------------------------------------------------------------------
     @classmethod
@@ -229,15 +227,7 @@ class PythonCodeVisitor(Visitor):
     @classmethod
     @override
     def OnDict(cls, type_info):
-        args = [ "OrderedDict([ {} ])".format(', '.join([ '( "{}", {} )'.format(k, cls.Accept(v)) for k, v in six.iteritems(type_info.Items) ])),
-               ]
-
-        if type_info.RequireExactMatchDefault is not None:
-            args.append("require_exact_match={}".format(type_info.RequireExactMatchDefault))
-
-        args.append(cls._ArityString(type_info.Arity))
-
-        return "DictTypeInfo({})".format(', '.join([ arg for arg in args if arg ]))
+        return cls._OnDictLikeImpl(type_info)
 
     # ----------------------------------------------------------------------
     @classmethod
@@ -275,3 +265,89 @@ class PythonCodeVisitor(Visitor):
         return "arity=Arity({},{})".format( arity.Min,
                                             arity.Max or "None",
                                           )
+
+    # ----------------------------------------------------------------------
+    @classmethod
+    def _OnDictLikeImpl(cls, type_info):
+        # Dict-like structures may be recursive, which complicates how we persist and create the items.
+        # This code will enumerate through the type and create the child if it hasn't been seen yet or 
+        # has been seen and is complete. If it has been seen but is not yet complete (this is the recursive
+        # scenario), we create a bread crumb that can be used to assemble the complete type at runtime.
+        from CommonEnvironment.TypeInfo.DictTypeInfo import DictTypeInfo
+
+        type_infos = {}
+        nonlocals = CommonEnvironment.Nonlocals( recursive=False,
+                                               )
+
+        # ----------------------------------------------------------------------
+        def Impl(ti):
+            lookup_key = id(ti)
+
+            if lookup_key in type_infos:
+                index, content = type_infos[lookup_key]
+
+                if content is None:
+                    nonlocals.recursive = True
+                    return str(index)
+
+                return content
+
+            type_infos[lookup_key] = [ len(type_infos), None, ]
+
+            if isinstance(ti, DictTypeInfo):
+                values = []
+
+                for k, v in six.iteritems(ti.Items):
+                    values.append('( "{}", {} )'.format(k, Impl(v)))
+
+                args = [ "OrderedDict([ {} ])".format(', '.join(values)),
+                       ]
+
+                if ti.RequireExactMatchDefault is not None:
+                    args.append("require_exact_match={}".format(ti.RequireExactMatchDefault))
+
+                args.append(cls._ArityString(ti.Arity))
+
+                content = "{}({})".format( type(ti).__name__,
+                                           ', '.join([ arg for arg in args if arg ]),
+                                         )
+            else:
+                content = cls.Accept(ti)
+
+            type_infos[lookup_key][1] = content 
+            return type_infos[lookup_key][1]
+
+        # ----------------------------------------------------------------------
+
+        content = Impl(type_info)
+
+        if nonlocals.recursive:
+            return "PythonCodeVisitor.LoadTypeInfo({})".format(content)
+
+        return content
+
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+def LoadTypeInfo(type_info):
+    from CommonEnvironment.TypeInfo.DictTypeInfo import DictTypeInfo
+
+    type_infos = []
+
+    # ----------------------------------------------------------------------
+    def Impl(ti):
+        type_infos.append(ti)
+
+        if isinstance(ti, DictTypeInfo):
+            for k, v in six.iteritems(ti.Items):
+                if isinstance(v, int):
+                    assert v < len(type_infos), (k, v, len(type_infos))
+                    ti.Items[k] = type_infos[v]
+                else:
+                    Impl(v)
+
+    # ----------------------------------------------------------------------
+
+    Impl(type_info)
+
+    return type_info
