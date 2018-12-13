@@ -47,7 +47,7 @@ class ListTypeInfo(TypeInfo):
         super(ListTypeInfo, self).__init__(**type_info_args)
 
         if element_type_info is None:
-            raise Exception("All type info objects must be valid")
+            raise Exception("'element_type_info' is None'")
             
         self.ElementTypeInfo                = element_type_info
 

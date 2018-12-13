@@ -20,7 +20,7 @@ import unittest
 
 import CommonEnvironment
 from CommonEnvironment.TypeInfo import Arity
-from CommonEnvironment.TypeInfo.FundamentalTypes.All import *
+from CommonEnvironment.TypeInfo.All import *
 from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.PythonCodeVisitor import PythonCodeVisitor
 
 # ----------------------------------------------------------------------
@@ -121,6 +121,26 @@ class StandardSuite(unittest.TestCase):
     def test_Uri(self):
         self.assertEqual(PythonCodeVisitor().Accept(UriTypeInfo()), "UriTypeInfo()")
         self.assertEqual(PythonCodeVisitor().Accept(UriTypeInfo(arity=Arity.FromString('?'))), "UriTypeInfo(arity=Arity.FromString('?'))")
+
+    # ----------------------------------------------------------------------
+    def test_Dict(self):
+        self.assertEqual(PythonCodeVisitor.Accept(DictTypeInfo(a=IntTypeInfo(), b=BoolTypeInfo(arity=Arity.FromString('*')))), '''DictTypeInfo(OrderedDict([ ( "a", IntTypeInfo() ), ( "b", BoolTypeInfo(arity=Arity.FromString('*')) ) ]))''')
+        self.assertEqual(PythonCodeVisitor.Accept(ClassTypeInfo(a=IntTypeInfo(), b=BoolTypeInfo(arity=Arity.FromString('*')))), '''ClassTypeInfo(OrderedDict([ ( "a", IntTypeInfo() ), ( "b", BoolTypeInfo(arity=Arity.FromString('*')) ) ]))''')
+        
+    # ----------------------------------------------------------------------
+    def test_DictRecursive(self):
+        dti = DictTypeInfo(a=IntTypeInfo(), b=BoolTypeInfo(), child=DictTypeInfo(c2=True, one=StringTypeInfo()))
+        dti.Items["child"].Items["c2"] = dti.Items["child"]
+
+        result = PythonCodeVisitor.Accept(dti)
+        
+        from collections import OrderedDict
+
+        self.assertEqual(result, '''PythonCodeVisitor.LoadTypeInfo(DictTypeInfo(OrderedDict([ ( "a", IntTypeInfo() ), ( "b", BoolTypeInfo() ), ( "child", DictTypeInfo(OrderedDict([ ( "c2", 3 ), ( "one", StringTypeInfo(min_length=1) ) ])) ) ])))''')
+
+        dti2 = eval(result)
+
+        self.assertEqual(CommonEnvironment.NormalizeObjectReprOutput(str(dti)), CommonEnvironment.NormalizeObjectReprOutput(str(dti2)))
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------

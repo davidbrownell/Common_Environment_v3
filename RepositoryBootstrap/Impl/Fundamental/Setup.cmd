@@ -23,6 +23,15 @@ echo ----------------------------------------------------------------------
 
 @REM ----------------------------------------------------------------------
 @REM |  Python v2.7.14
+
+REM Python 2.7 will never work on nanoserver, so skip if detected.
+if exist C:\License.txt (
+    findstr /I /M "/C:CONTAINER OS IMAGE" C:\License.txt >nul
+    if "%ERRORLEVEL%" EQU "0" (
+        goto :after_27_install
+    )
+)
+
 echo.
 echo ------------------------  Python 2.7.14  -----------------------------
 
@@ -44,6 +53,8 @@ if "%_error%" NEQ "0" (
 )
 del %_SETUP_FUNDAMENTAL_TEMP_SCRIPT_NAME%
 echo DONE!
+
+:after_27_install
 
 @REM ----------------------------------------------------------------------
 @REM |  Python v3.6.5
@@ -98,4 +109,3 @@ endlocal & set _SETUP_FUNDAMENTAL_TEMP_SCRIPT_NAME=%_filename%
 
 if exist "%_SETUP_FUNDAMENTAL_TEMP_SCRIPT_NAME%" goto :CreateTempScriptName
 goto :EOF
-

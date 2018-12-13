@@ -125,7 +125,17 @@ class PythonActivationActivity(ActivationActivity):
                     sub_dict = cls._CreateSubDict(python_version)
 
                     script_dir = os.path.join(fullpath, *[ sub_dir.format(**sub_dict) for sub_dir in cls.ScriptSubdirs ])
-                    assert os.path.isdir(script_dir), script_dir
+
+                    # We won't always expand all versions of Python in all cases. For example, Python 2.7 isn't supported
+                    # on Windows nanoserver, so we don't expand it. Skip this version if we don't see a valid script dir
+                    if not os.path.isdir(script_dir):
+                        # Ensure that there aren't any other dirs here. We want to skip the scenario where we didn't expand
+                        # the content for this version, but still capture potential errors associated with bad script dir
+                        # names.
+                        valid_dirs = [ dirname for dirname in os.listdir(fullpath) if os.path.isdir(os.path.join(fullpath, dirname)) ]
+                        assert not valid_dirs, (fullpath, valid_dirs)
+                        
+                        continue
 
                     # Process the files
                     verbose_stream = CommonEnvironmentImports.StreamDecorator(this_dm.stream if verbose else None)
