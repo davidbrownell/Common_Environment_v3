@@ -628,7 +628,7 @@ def Normalize( script_filename_or_dir,
                                                                     index + 1,
                                                                     len(script_filenames),
                                                                   ))
-            with dm.stream.DoneManager( done_suffix=lambda: PythonActivationActivity.NormalizeScriptResultStrings[nonlocals.result],
+            with dm.stream.DoneManager( done_suffix=lambda: PythonActivationActivity.NormalizeScriptResultStrings[nonlocals.result.value],
                                       ):
                 nonlocals.result = PythonActivationActivity.NormalizeScript(script_filename)
         
