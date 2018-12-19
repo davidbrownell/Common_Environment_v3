@@ -619,7 +619,7 @@ def format_file_contents(
 
 
 def format_str(
-    src_contents: str, line_length: int, *, mode: FileMode = FileMode.AUTO_DETECT
+    src_contents: str, line_length: int, *, mode: FileMode = FileMode.AUTO_DETECT, postprocess_lines_func: Any = None
 ) -> FileContent:
     """Reformat a string and return new contents.
 
@@ -642,15 +642,22 @@ def format_str(
     elt = EmptyLineTracker(is_pyi=is_pyi)
     empty_line = Line()
     after = 0
+
+    dst_lines = []
+
     for current_line in lines.visit(src_node):
         for _ in range(after):
-            dst_contents += str(empty_line)
+            dst_lines.append(empty_line)
         before, after = elt.maybe_empty_lines(current_line)
         for _ in range(before):
-            dst_contents += str(empty_line)
+            dst_lines.append(empty_line)
         for line in split_line(current_line, line_length=line_length, py36=py36):
-            dst_contents += str(line)
-    return dst_contents
+            dst_lines.append(line)
+
+    if postprocess_lines_func is not None:
+        dst_lines = postprocess_lines_func(dst_lines)
+
+    return ''.join([str(line) for line in dst_lines])
 
 
 def decode_bytes(src: bytes) -> Tuple[FileContent, Encoding, NewLine]:
