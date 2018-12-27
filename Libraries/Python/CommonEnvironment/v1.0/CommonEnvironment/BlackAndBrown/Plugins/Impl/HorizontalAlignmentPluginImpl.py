@@ -70,6 +70,10 @@ class HorizontalAlignmentPluginImpl(PluginBase):
                     if leaf == alignment_leaf:
                         break
 
+                    # Comments don't count when calculating maximum line lengths
+                    if leaf.value.startswith('#'):
+                        continue
+
                     contents += [ leaf.prefix, leaf.value ]
 
                 line_length = len(''.join(contents)) + 4 * line.depth

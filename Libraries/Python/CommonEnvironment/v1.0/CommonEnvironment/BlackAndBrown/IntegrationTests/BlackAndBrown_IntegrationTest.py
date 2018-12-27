@@ -166,20 +166,20 @@ class AlignTrailingCommentsSuite(TestBase):
         self._Format(
             textwrap.dedent("""\
                 value = [
-                    # Overrides the displayed script name; the calling file's name
-                    # will be used if not provided.
+                                                            # Overrides the displayed script name; the calling file's name
+                                                            # will be used if not provided.
                     "CommandLineScriptName",                # def Func() -> string
 
-                    # Overrides the script description; the calling file's docstring
-                    # will be used if not provided.
+                                                            # Overrides the script description; the calling file's docstring
+                                                            # will be used if not provided.
                     "CommandLineScritpDescription",         # def Func() -> string
 
-                    # Content displayed after the description but before usage
-                    # information; no prefix will be displayed if not provided.
+                                                            # Content displayed after the description but before usage
+                                                            # information; no prefix will be displayed if not provided.
                     "CommandLineDocPrefix",                 # def Func() -> string
 
-                    # Content displayed after usage information; no prefix will 
-                    # be displayed if not provided.
+                                                            # Content displayed after usage information; no prefix will 
+                                                            # be displayed if not provided.
                     "CommandLineDocSuffix",                 # def Func() -> string
                 ]
                 """),
@@ -187,19 +187,16 @@ class AlignTrailingCommentsSuite(TestBase):
                 value = [
                     # Overrides the displayed script name; the calling file's name
                     # will be used if not provided.
-                    "CommandLineScriptName",     # def Func() -> string
-
-                    # Overrides the script description; the calling file's docstring
-                    # will be used if not provided.
+                    "CommandLineScriptName",        # def Func() -> string
+                                                    # Overrides the script description; the calling file's docstring
+                                                    # will be used if not provided.
                     "CommandLineScritpDescription", # def Func() -> string
-
-                    # Content displayed after the description but before usage
-                    # information; no prefix will be displayed if not provided.
-                    "CommandLineDocPrefix",      # def Func() -> string
-
-                    # Content displayed after usage information; no prefix will
-                    # be displayed if not provided.
-                    "CommandLineDocSuffix",      # def Func() -> string
+                                                    # Content displayed after the description but before usage
+                                                    # information; no prefix will be displayed if not provided.
+                    "CommandLineDocPrefix",         # def Func() -> string
+                                                    # Content displayed after usage information; no prefix will
+                                                    # be displayed if not provided.
+                    "CommandLineDocSuffix",         # def Func() -> string
                 ]
                 """),
         )
@@ -414,8 +411,11 @@ class SplitLongFunctionsSuite(TestBase):
         return super(SplitLongFunctionsSuite, self)._Format(
             original,
             expected,
-            "SplitLongFunctions",
-            SplitLongFunctions=[ 20, ],
+            "SplitFunctionArgs",
+            SplitFunctionArgs={ 
+                "max_line_length" : 20,
+                "split_arg_with_default" : False,
+            },
         )
 
     # ----------------------------------------------------------------------
@@ -431,8 +431,8 @@ class SplitLongFunctionsSuite(TestBase):
                     pass
 
 
-                Func1(one, two)
-                Func2(one, two, three, four)
+                Func3(one, two)
+                Func4(one, two, three, four)
                 """),
             textwrap.dedent(
                 """\
@@ -449,8 +449,8 @@ class SplitLongFunctionsSuite(TestBase):
                     pass
 
 
-                Func1(one, two)
-                Func2(
+                Func3(one, two)
+                Func4(
                     one,
                     two,
                     three,
@@ -466,7 +466,11 @@ class SplitFunctionsWithDefaultsSuite(TestBase):
         return super(SplitFunctionsWithDefaultsSuite, self)._Format(
             original,
             expected,
-            "SplitFunctionsWithDefaults",
+            "SplitFunctionArgs",
+            SplitFunctionArgs={ 
+                "max_line_length": 400,
+                "split_arg_with_default": True,
+            },
         )
 
     # ----------------------------------------------------------------------
@@ -568,17 +572,249 @@ class SplitFunctionsWithDefaultsSuite(TestBase):
                 Executor().Invoke(output_stream=output_stream, verbose=verbose, print_results=print_results, allow_exceptions=allow_exceptions)
                 """),
             textwrap.dedent("""\
-                Executor().Invoke(
-                    output_stream=output_stream,
-                    verbose=verbose,
-                    print_results=print_results,
-                    allow_exceptions=allow_exceptions,
+                Executor() \\
+                    .Invoke(
+                        output_stream=output_stream,
+                        verbose=verbose,
+                        print_results=print_results,
+                        allow_exceptions=allow_exceptions,
+                    )
+                """),
+        )
+
+    # ----------------------------------------------------------------------
+    def testGenerator(self):
+        self._Format(
+            textwrap.dedent("""\
+                for filename in FileSystem.WalkFiles(plugin_input_dir, include_file_extensions=[".py"], include_file_base_names=[lambda basename: basename.endswith("Plugin")]):
+                    pass
+                """),
+            textwrap.dedent("""\
+                for filename in FileSystem.WalkFiles(
+                    plugin_input_dir,
+                    include_file_extensions=[".py"],
+                    include_file_base_names=[lambda basename: basename.endswith("Plugin")],
+                ):
+                    pass
+                """),
+        )
+
+    # ----------------------------------------------------------------------
+    def testReturn(self):
+        self._Format(
+            textwrap.dedent("""\
+                return self.Usage(verbose=True, potential_method_name=potential_method_name)
+                """),
+            textwrap.dedent("""\
+                return self.Usage(
+                    verbose=True,
+                    potential_method_name=potential_method_name,
                 )
                 """),
         )
 
-        # BugBug: More variations here:
-        #   - Defaults in ctor
+class SplitFunctionsSuite(TestBase):
+    # ----------------------------------------------------------------------
+    def _Format(self, original, expected):
+        return super(SplitFunctionsSuite, self)._Format(
+            original,
+            expected,
+            "SplitFunctionArgs",
+            SplitFunctionArgs={ 
+                "max_line_length": 78,
+                "split_arg_with_default": True,
+            },
+        )
+
+    # ----------------------------------------------------------------------
+    def testGeneral(self):
+        self._Format(
+            textwrap.dedent(
+            """\
+            Func1(Func2(1, two=2), 3)
+
+
+            Func3(Func4(1, two), 3)
+
+
+            (func1 or func2)(a, b, c)
+
+
+            EmptyFunc()
+
+
+            def Func1(one, two, three=3, four=Func(a, Func(1, 2), c)): pass
+            
+            
+            def Func2(one, two, three=3, four=Func(a, Func(1, two=2), c)): pass
+
+
+            class Foo(object):
+                def __init__(self):
+                    self.func(1, 2, 3)
+
+
+            Another(one, two=Func(1, 2))
+
+
+            return self.Usage(verbose=True, another=Func(1, 2, 3), potential_method_name=potential_method_name)
+
+
+            Func1(1, 2, 3)
+
+
+            def Func2(one, two, three, four, five, six, seven, eight, nine, ten, eleven, twelve): pass
+            
+            
+            Func3(one, Func(two, three, four, five, six, seven, eight, nine, ten, eleven, twelve, thirteen, kwargs), **other)
+
+
+            def Func__(one, two, three=3): print("output")
+            
+            
+            def Func__2(one, two, three): print("output2")
+            
+
+            Executor(one, two).Other(a, b, c=10).More(a, b)
+
+
+            Executor(one, two).Other(a, b, c).More(a, b=2)
+
+
+            """),
+            textwrap.dedent(
+            """\
+            Func1(
+                Func2(
+                    1,
+                    two=2,
+                ),
+                3,
+            )
+
+
+            Func3(Func4(1, two), 3)
+
+
+            (func1 or func2)(a, b, c)
+
+
+            EmptyFunc()
+
+
+            def Func1(
+                one,
+                two,
+                three=3,
+                four=Func(a, Func(1, 2), c),
+            ):
+                pass
+
+
+            def Func2(
+                one,
+                two,
+                three=3,
+                four=Func(
+                    a,
+                    Func(
+                        1,
+                        two=2,
+                    ),
+                    c,
+                ),
+            ):
+                pass
+
+
+            class Foo(object):
+                def __init__(self):
+                    self.func(1, 2, 3)
+
+
+            Another(
+                one,
+                two=Func(1, 2),
+            )
+
+
+            return self.Usage(
+                verbose=True,
+                another=Func(1, 2, 3),
+                potential_method_name=potential_method_name,
+            )
+
+
+            Func1(1, 2, 3)
+
+
+            def Func2(
+                one,
+                two,
+                three,
+                four,
+                five,
+                six,
+                seven,
+                eight,
+                nine,
+                ten,
+                eleven,
+                twelve,
+            ):
+                pass
+            
+            
+            Func3(
+                one,
+                Func(
+                    two,
+                    three,
+                    four,
+                    five,
+                    six,
+                    seven,
+                    eight,
+                    nine,
+                    ten,
+                    eleven,
+                    twelve,
+                    thirteen,
+                    kwargs,
+                ),
+                **other
+            )
+
+
+            def Func__(
+                one,
+                two,
+                three=3,
+            ):
+                print("output")
+
+
+            def Func__2(one, two, three):
+                print("output2")
+
+
+            Executor(one, two) \\
+                .Other(
+                    a,
+                    b,
+                    c=10,
+                ) \\
+                .More(a, b)
+
+
+            Executor(one, two) \\
+                .Other(a, b, c) \\
+                .More(
+                    a,
+                    b=2,
+                )
+            """),
+        )
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------

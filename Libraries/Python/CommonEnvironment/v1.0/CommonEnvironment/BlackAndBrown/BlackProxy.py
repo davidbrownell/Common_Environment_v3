@@ -45,7 +45,7 @@ def Convert(
 ):
     """Converts the provided input"""
 
-    if True: # BugBug try:
+    try:
         # BugBug: Use argparse to match Black's Interface
         args = arg
         del arg
@@ -57,12 +57,18 @@ def Convert(
         with CallOnExit(lambda: FileSystem.RemoveFile(temp_filename)):
             output = Executor(
                 sys.stdout, 
-                AlignAssignments=[[45, 57, 77], 7], 
-                AlignTrailingComments=[[45, 57, 77]], 
-                SplitLongFunctions=[78],
-            ).Format(
-                input_filename, black_line_length=180
-            )
+                AlignAssignments={ 
+                    "alignment_columns" : [45, 57, 77], 
+                    "flags" : 7,
+                }, 
+                AlignTrailingComments={
+                    "alignment_columns" : [45, 57, 77],
+                }, 
+                SplitFunctionArgs={
+                    "max_line_length" : 78,
+                    "split_arg_with_default" : True,
+                },
+            ).Format(input_filename, black_line_length=180)
 
             with open(temp_filename, "w") as f:
                 f.write(output)
@@ -91,12 +97,12 @@ def Convert(
             output_stream.write(diff)
 
             return 0
-    # BugBug except:
-    # BugBug     import traceback
-    # BugBug 
-    # BugBug     with open(r"C:\Temp\BlackAndBrown.txt", "w") as f:
-    # BugBug         f.write(traceback.format_exc())
-    # BugBug         return -1
+    except:
+        import traceback
+    
+        with open(r"C:\Temp\BlackAndBrown.txt", "w") as f:
+            f.write(traceback.format_exc())
+            return -1
 
 
 # ----------------------------------------------------------------------

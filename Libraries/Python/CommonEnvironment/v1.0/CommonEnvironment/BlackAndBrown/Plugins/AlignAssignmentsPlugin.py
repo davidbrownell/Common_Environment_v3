@@ -54,8 +54,16 @@ class Plugin(HorizontalAlignmentPluginImpl):
     @classmethod
     @Interface.override
     def _GetAlignmentLeaf(cls, line, is_initial_line, flags):
+        nested = 0
+
         for leaf in line.leaves:
-            if leaf.value == '=':
+            if leaf.value == '(':
+                nested += 1
+            
+            elif leaf.value == ')':
+                nested -= 1
+
+            elif leaf.value == '=' and nested == 0:
 
                 node = leaf.parent
 

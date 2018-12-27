@@ -124,7 +124,18 @@ class Executor(object):
             ]
 
             for plugin in plugins:
-                lines = plugin.Decorate(lines, *self._plugin_args.get(plugin.Name, []))
+                args = []
+                kwargs = {}
+
+                defaults = self._plugin_args.get(plugin.Name, None)
+                if isinstance(defaults, (list, tuple)):
+                    args = defaults
+                elif isinstance(defaults, dict):
+                    kwargs = defaults
+                else:
+                    assert False, defaults
+
+                lines = plugin.Decorate(lines, *args, **kwargs)
 
             return lines
 
