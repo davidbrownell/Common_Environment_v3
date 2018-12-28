@@ -48,7 +48,12 @@ class Plugin(PluginBase):
     # ----------------------------------------------------------------------
     @classmethod
     @Interface.override
-    def Decorate(cls, lines, max_line_length, split_arg_with_default):
+    def Decorate(
+        cls, 
+        lines, 
+        max_line_length=100, 
+        split_arg_with_default=True,
+    ):
         # ----------------------------------------------------------------------
         def ShouldSplit(line, clauses):
             if split_arg_with_default and any(clause for clause in clauses if clause.HasDefaultArg()):
