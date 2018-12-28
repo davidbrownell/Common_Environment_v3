@@ -26,8 +26,8 @@ from CommonEnvironment.BlackAndBrown.Plugins.AlignTrailingCommentsPlugin import 
 from CommonEnvironment.BlackAndBrown.Plugins.Impl.HorizontalAlignmentPluginImpl import HorizontalAlignmentPluginImpl
 
 # ----------------------------------------------------------------------
-_script_fullpath = CommonEnvironment.ThisFullpath()
-_script_dir, _script_name = os.path.split(_script_fullpath)
+_script_fullpath                            = CommonEnvironment.ThisFullpath()
+_script_dir, _script_name                   = os.path.split(_script_fullpath)
 #  ----------------------------------------------------------------------
 
 # ----------------------------------------------------------------------
@@ -35,18 +35,20 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 class Plugin(HorizontalAlignmentPluginImpl):
     # ----------------------------------------------------------------------
     # |  Types
-    
+
     # Not using Python3 enum to maintain compatibility with Python2
-    ModuleLevel                             = 1	        # Align assignments at the module level
-    ClassLevel                              = 2	        # Align assignments at the class level
-    InitLevel                               = 4	        # Align self-based assignments in __init__ methods
-    InitAnyLevel                            = 8	        # Align (any) assignments in __init__ methods
-    MethodLevel                             = 16	    # Align assignments in modules (except __init__)
+    ModuleLevel                             = 1         # Align assignments at the module level
+    ClassLevel                              = 2         # Align assignments at the class level
+    InitLevel                               = 4         # Align self-based assignments in __init__ methods
+    InitAnyLevel                            = 8         # Align (any) assignments in __init__ methods
+    MethodLevel                             = 16        # Align assignments in modules (except __init__)
 
     # ----------------------------------------------------------------------
     # |  Properties
     Name                                    = Interface.DerivedProperty("AlignAssignments")
-    Priority                                = Interface.DerivedProperty(AlignTrailingCommentsPlugin.Priority - 1)
+    Priority                                = Interface.DerivedProperty(
+        AlignTrailingCommentsPlugin.Priority - 1
+    )
 
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
@@ -54,24 +56,24 @@ class Plugin(HorizontalAlignmentPluginImpl):
     @classmethod
     @Interface.override
     def _GetAlignmentLeaf(
-        cls, 
-        line, 
-        is_initial_line, 
+        cls,
+        line,
+        is_initial_line,
         flags=None,
     ):
         if flags is None:
             flags = cls.ModuleLevel | cls.ClassLevel | cls.InitLevel
-            
+
         nested = 0
 
         for leaf in line.leaves:
-            if leaf.value == '(':
+            if leaf.value == "(":
                 nested += 1
-            
-            elif leaf.value == ')':
+
+            elif leaf.value == ")":
                 nested -= 1
 
-            elif leaf.value == '=' and nested == 0:
+            elif leaf.value == "=" and nested == 0:
 
                 node = leaf.parent
 
@@ -81,23 +83,21 @@ class Plugin(HorizontalAlignmentPluginImpl):
 
                     if node.type == python_symbols.funcdef:
                         # This code will be hit on the first leaf of a line
-                        # that is a function def. Look at the function 
-                        # definition's name to determine what kind of method 
+                        # that is a function def. Look at the function
+                        # definition's name to determine what kind of method
                         # it is.
                         assert len(node.children) > 2, node.children
                         if node.children[1].value == "__init__":
                             if flags & cls.InitAnyLevel:
                                 return leaf
 
-                            if flags & cls.InitLevel and \
-                               line.leaves[0].value == "self" and \
-                               line.leaves[1].value == '.':
+                            if flags & cls.InitLevel and line.leaves[0].value == "self" and line.leaves[1].value == ".":
                                 return leaf
 
                             return None
-                        
+
                         return leaf if flags & cls.MethodLevel else None
-                        
+
                     node = node.parent
 
                 return leaf if flags & cls.ModuleLevel else None

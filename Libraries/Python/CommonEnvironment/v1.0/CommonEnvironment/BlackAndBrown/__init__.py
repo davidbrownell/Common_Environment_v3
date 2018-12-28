@@ -28,8 +28,8 @@ from CommonEnvironment.TypeInfo.FundamentalTypes.All import *
 from black import format_str as Blackify
 
 # ----------------------------------------------------------------------
-_script_fullpath = CommonEnvironment.ThisFullpath()
-_script_dir, _script_name = os.path.split(_script_fullpath)
+_script_fullpath                            = CommonEnvironment.ThisFullpath()
+_script_dir, _script_name                   = os.path.split(_script_fullpath)
 #  ----------------------------------------------------------------------
 
 # ----------------------------------------------------------------------
@@ -40,16 +40,11 @@ class Executor(object):
     """
 
     # ----------------------------------------------------------------------
-    def __init__(
-        self, 
-        output_stream, 
-        *plugin_input_dirs,
-        **plugin_args
-    ):
+    def __init__(self, output_stream, *plugin_input_dirs, **plugin_args):
         plugins = []
 
         for plugin_input_dir in itertools.chain(
-            [ os.path.join(_script_dir, "Plugins"), ],
+            [os.path.join(_script_dir, "Plugins")],
             plugin_input_dirs,
         ):
             if not os.path.isdir(plugin_input_dir):
@@ -59,18 +54,20 @@ class Executor(object):
             with CallOnExit(lambda: sys.path.pop(0)):
                 for filename in FileSystem.WalkFiles(
                     plugin_input_dir,
-                    include_file_extensions=[ ".py", ],
-                    include_file_base_names=[ lambda basename: basename.endswith("Plugin"), ],
+                    include_file_extensions=[".py"],
+                    include_file_base_names=[lambda basename: basename.endswith("Plugin")],
                 ):
                     plugin_name = os.path.splitext(os.path.basename(filename))[0]
 
                     mod = importlib.import_module(plugin_name)
                     if mod is None:
-                        output_stream.write("WARNING: Unable to import the module at '{}'.\n".format(filename))
+                        output_stream.write(
+                            "WARNING: Unable to import the module at '{}'.\n".format(filename)
+                        )
                         continue
 
                     potential_class = None
-                    potential_class_names = [ plugin_name, "Plugin", ]
+                    potential_class_names = [plugin_name, "Plugin"]
 
                     for potential_class_name in potential_class_names:
                         potential_class = getattr(mod, potential_class_name, None)
@@ -78,13 +75,20 @@ class Executor(object):
                             break
 
                     if potential_class is None:
-                        output_stream.write("WARNING: The module at '{}' does not contain a supported class ({}).\n" \
-                            .format(filename, ', '.join([ "'{}'".format(pcn) for pcn in potential_class_names ])))
+                        output_stream.write(
+                            "WARNING: The module at '{}' does not contain a supported class ({}).\n".format(
+                                filename, ", ".join(
+                                    ["'{}'".format(pcn) for pcn in potential_class_names]
+                                )
+                            )
+                        )
                         continue
 
                     plugins.append(potential_class)
 
-        plugins.sort(key=lambda plugin: (plugin.Priority, plugin.Name))
+        plugins.sort(
+            key=lambda plugin: (plugin.Priority, plugin.Name)
+        )
 
         self._plugins                       = plugins
         self._plugin_args                   = plugin_args
@@ -105,23 +109,20 @@ class Executor(object):
         """Formats the input file or content and returns the results"""
 
         assert black_line_length > 0, black_line_length
-        
+
         if os.path.isfile(input_filename_or_content):
-            input_filename_or_content = open(input_filename_or_content).read()
+            input_filename_or_content = open(input_filename_or_content) \
+                .read()
 
         input_content = input_filename_or_content
         del input_filename_or_content
-        
+
         include_plugin_names = include_plugin_names or set()
         exclude_plugin_names = exclude_plugin_names or set()
 
         # ----------------------------------------------------------------------
         def Postprocess(lines):
-            plugins = [ 
-                plugin for plugin in self.Plugins if 
-                plugin.Name not in exclude_plugin_names and 
-                (not include_plugin_names or plugin.Name in include_plugin_names)
-            ]
+            plugins = [plugin for plugin in self.Plugins if plugin.Name not in exclude_plugin_names and (not include_plugin_names or plugin.Name in include_plugin_names)]
 
             for plugin in plugins:
                 args = []

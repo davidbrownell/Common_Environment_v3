@@ -28,16 +28,18 @@ from CommonEnvironment import StringHelpers
 from CommonEnvironment.BlackAndBrown import Executor
 
 # ----------------------------------------------------------------------
-_script_fullpath = CommonEnvironment.ThisFullpath()
-_script_dir, _script_name = os.path.split(_script_fullpath)
+_script_fullpath                            = CommonEnvironment.ThisFullpath()
+_script_dir, _script_name                   = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint(
-    arg=CommandLine.EntryPoint.Parameter("Argument passed to Black"),
+    arg=CommandLine.EntryPoint.Parameter("Argument passed to Black")
 )
 @CommandLine.Constraints(
-    arg=CommandLine.StringTypeInfo(arity="+"), 
+    arg=CommandLine.StringTypeInfo(
+        arity="+"
+    ),
     output_stream=None,
 )
 def Convert(
@@ -48,15 +50,15 @@ def Convert(
 
     args = arg
     del arg
-    
+
     input_filename = None
     is_diff = False
-    
+
     try:
         for arg in args:
             if arg == "--diff":
                 is_diff = True
-            elif arg in [ "--quiet", ]:
+            elif arg in ["--quiet"]:
                 # Ignore these
                 pass
             elif input_filename is None and os.path.isfile(arg):
@@ -66,8 +68,9 @@ def Convert(
 
         if input_filename is None:
             raise Exception("Please provide a filename on the command line")
-            
-        output = Executor(sys.stdout).Format(input_filename)
+
+        output = Executor(sys.stdout) \
+            .Format(input_filename)
         result = 0
 
     except:
@@ -92,25 +95,25 @@ def Convert(
                 ********************************************************************************
                 ********************************************************************************
                 {}
-                """).format(
-                    StringHelpers.LeftJustify(exception_content, 8),
-                    output,
-                )
+                """
+            ).format(StringHelpers.LeftJustify(exception_content, 8), output)
         else:
             output = exception_content
 
     if is_diff:
         # Create a diff of the input and generated file
         diff = difflib.unified_diff(
-            open(input_filename).readlines(), 
+            open(input_filename) \
+                .readlines(),
             ["{}\n".format(line) for line in output.split("\n")],
         )
-    
+
         output = "".join(diff)
-    
+
     output_stream.write(output)
 
     return result
+
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------

@@ -23,15 +23,17 @@ from CommonEnvironment import Interface
 from CommonEnvironment.BlackAndBrown.Plugins.Impl.HorizontalAlignmentPluginImpl import HorizontalAlignmentPluginImpl
 
 # ----------------------------------------------------------------------
-_script_fullpath = CommonEnvironment.ThisFullpath()
-_script_dir, _script_name = os.path.split(_script_fullpath)
+_script_fullpath                            = CommonEnvironment.ThisFullpath()
+_script_dir, _script_name                   = os.path.split(_script_fullpath)
 #  ----------------------------------------------------------------------
 
 # ----------------------------------------------------------------------
 @Interface.staticderived
 class Plugin(HorizontalAlignmentPluginImpl):
     Name                                    = Interface.DerivedProperty("AlignTrailingComments")
-    Priority                                = Interface.DerivedProperty(HorizontalAlignmentPluginImpl.STANDARD_PRIORITY)
+    Priority                                = Interface.DerivedProperty(
+        HorizontalAlignmentPluginImpl.STANDARD_PRIORITY
+    )
 
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
@@ -49,9 +51,9 @@ class Plugin(HorizontalAlignmentPluginImpl):
 
         if comment_leaf is None:
             for index, leaf in enumerate(line.leaves):
-                if getattr(leaf, "value", '').startswith('#') and \
-                   (not is_initial_line or index != 0):
-                    comment_leaf = leaf 
+                if getattr(leaf, "value", "") \
+                    .startswith("#") and (not is_initial_line or index != 0):
+                    comment_leaf = leaf
                     break
 
         if comment_leaf and comment_leaf.value.startswith("# BugBug"):

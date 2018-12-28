@@ -31,8 +31,8 @@ from CommonEnvironment import Interface
 from CommonEnvironment.BlackAndBrown.Plugins import Plugin as PluginBase
 
 # ----------------------------------------------------------------------
-_script_fullpath = CommonEnvironment.ThisFullpath()
-_script_dir, _script_name = os.path.split(_script_fullpath)
+_script_fullpath                            = CommonEnvironment.ThisFullpath()
+_script_dir, _script_name                   = os.path.split(_script_fullpath)
 #  ----------------------------------------------------------------------
 
 # ----------------------------------------------------------------------
@@ -43,20 +43,24 @@ class Plugin(PluginBase):
     # ----------------------------------------------------------------------
     # |  Properties
     Name                                    = Interface.DerivedProperty("SplitFunctionArgs")
-    Priority                                = Interface.DerivedProperty(PluginBase.STANDARD_PRIORITY)
+    Priority                                = Interface.DerivedProperty(
+        PluginBase.STANDARD_PRIORITY
+    )
 
     # ----------------------------------------------------------------------
     @classmethod
     @Interface.override
     def Decorate(
-        cls, 
-        lines, 
-        max_line_length=100, 
+        cls,
+        lines,
+        max_line_length=100,
         split_arg_with_default=True,
     ):
         # ----------------------------------------------------------------------
         def ShouldSplit(line, clauses):
-            if split_arg_with_default and any(clause for clause in clauses if clause.HasDefaultArg()):
+            if split_arg_with_default and any(
+                clause for clause in clauses if clause.HasDefaultArg()
+            ):
                 return True
 
             offset = line.depth * 4
@@ -111,11 +115,17 @@ class Plugin(PluginBase):
                 continue
 
             # Create new lines
-            new_lines = [ black.Line(line.depth, []), ]
+            new_lines = [black.Line(line.depth, [])]
             col_offset = line.depth * 4
 
             for clause in clauses:
-                col_offset = clause.GenerateLines(max_line_length, split_arg_with_default, line, new_lines, col_offset)
+                col_offset = clause.GenerateLines(
+                    max_line_length,
+                    split_arg_with_default,
+                    line,
+                    new_lines,
+                    col_offset,
+                )
 
             modifications[line_index] = new_lines
 
@@ -140,8 +150,8 @@ class Plugin(PluginBase):
         # ----------------------------------------------------------------------
         @classmethod
         def Parse(cls, line, index):
-            assert line.leaves[index].value == '(', line.leaves[index]
-            
+            assert line.leaves[index].value == "(", line.leaves[index]
+
             open_index = index
             close_index = None
 
@@ -151,17 +161,17 @@ class Plugin(PluginBase):
             while index < len(line.leaves):
                 leaf = line.leaves[index]
 
-                if leaf.value == ')':
+                if leaf.value == ")":
                     close_index = index
                     index += 1
                     break
 
-                elif leaf.value == ',':
+                elif leaf.value == ",":
                     index += 1
-                
+
                 else:
                     parameters.append(Plugin._Clause.Parse(line, index))
-                
+
                     index = parameters[-1].EndingIndex
 
             return cls(
@@ -197,20 +207,29 @@ class Plugin(PluginBase):
             return Plugin._CalculateLength(line, self.OpenIndex, self.EndingIndex)
 
         # ----------------------------------------------------------------------
-        def GenerateLines(self, max_line_length, split_arg_with_default, line, new_lines, col_offset):
+        def GenerateLines(
+            self,
+            max_line_length,
+            split_arg_with_default,
+            line,
+            new_lines,
+            col_offset,
+        ):
             if col_offset + self.OriginalLength(line) > max_line_length or (
-                split_arg_with_default and any(param for param in self.Parameters if param.HasDefaultArg())
+                split_arg_with_default and any(
+                    param for param in self.Parameters if param.HasDefaultArg()
+                )
             ):
                 # Open paren
                 new_lines[-1].leaves.append(line.leaves[self.OpenIndex])
-                
+
                 new_depth = new_lines[-1].depth + 1
                 col_offset = new_depth * 4
                 multiple_parameters = len(self.Parameters) > 1
 
                 for param in self.Parameters:
                     new_lines.append(black.Line(new_depth, []))
-                    
+
                     param.GenerateLines(
                         max_line_length,
                         split_arg_with_default,
@@ -221,11 +240,11 @@ class Plugin(PluginBase):
                     )
 
                     if multiple_parameters and not param.IsKwargs:
-                        new_lines[-1].leaves.append(black.Leaf(python_tokens.COMMA, ','))
+                        new_lines[-1].leaves.append(black.Leaf(python_tokens.COMMA, ","))
 
                 # Close paren
-                new_lines.append(black.Line(new_depth - 1, [ line.leaves[self.CloseIndex], ]))
-                
+                new_lines.append(black.Line(new_depth - 1, [line.leaves[self.CloseIndex]]))
+
             else:
                 for index in range(self.OpenIndex, self.EndingIndex):
                     leaf = line.leaves[index]
@@ -234,7 +253,7 @@ class Plugin(PluginBase):
 
                     col_offset += len(leaf.prefix)
                     col_offset += len(leaf.value)
-                
+
             return col_offset
 
         # ----------------------------------------------------------------------
@@ -245,17 +264,15 @@ class Plugin(PluginBase):
             # Function invocation...
             if line.leaves[index].parent is not None and line.leaves[index].parent.type == python_symbols.trailer:
                 return True
-        
+
             # Function definition...
             if (
-                index + 1 != len(line.leaves) and
-                line.leaves[index + 1].parent is not None and (
-                    line.leaves[index + 1].parent.type in black.VARARGS_PARENTS or
-                    line.leaves[index + 1].parent.type in [ python_symbols.parameters, ]
-                )
+                index + 1 != len(line.leaves)
+                and line.leaves[index + 1].parent is not None
+                and (line.leaves[index + 1].parent.type in black.VARARGS_PARENTS or line.leaves[index + 1].parent.type in [python_symbols.parameters])
             ):
                 return True
-        
+
             return False
 
     # ----------------------------------------------------------------------
@@ -273,18 +290,18 @@ class Plugin(PluginBase):
             while index < len(line.leaves):
                 leaf = line.leaves[index]
 
-                if leaf.value in [ ',', ')', ]:
+                if leaf.value in [",", ")"]:
                     break
-                
-                elif leaf.value == '(':
+
+                elif leaf.value == "(":
                     parens.append(Plugin._ParenInfo.Parse(line, index))
                     index = parens[-1].EndingIndex
 
                 else:
-                    if leaf.value == '=':
+                    if leaf.value == "=":
                         assert is_default_arg is False
                         is_default_arg = True
-                    elif leaf.value == '**':
+                    elif leaf.value == "**":
                         assert is_kwargs is False
                         is_kwargs = True
 
@@ -293,14 +310,7 @@ class Plugin(PluginBase):
             return cls(starting_index, index, parens, is_default_arg, is_kwargs)
 
         # ----------------------------------------------------------------------
-        def __init__(
-            self, 
-            starting_index, 
-            ending_index, 
-            parens, 
-            is_default_arg,
-            is_kwargs,
-        ):
+        def __init__(self, starting_index, ending_index, parens, is_default_arg, is_kwargs):
             self.StartingIndex              = starting_index
             self.EndingIndex                = ending_index
             self.Parens                     = parens
@@ -329,11 +339,11 @@ class Plugin(PluginBase):
 
         # ----------------------------------------------------------------------
         def GenerateLines(
-            self, 
-            max_line_length, 
-            split_arg_with_default, 
-            line, 
-            new_lines, 
+            self,
+            max_line_length,
+            split_arg_with_default,
+            line,
+            new_lines,
             col_offset,
             trim_prefix=False,
         ):
@@ -364,16 +374,22 @@ class Plugin(PluginBase):
 
                         # If we are looking at a chained method call, move this invocation
                         # to a newline...
-                        if leaf.value == '.':
+                        if leaf.value == ".":
                             # ... unless there is only a trailing paren on the current line
                             if col_offset - (original_depth * 4) > 1:
-                                new_lines[-1].leaves.append(black.Leaf(python_tokens.ENDMARKER, '\\', prefix=' '))
+                                new_lines[-1].leaves.append(
+                                    black.Leaf(
+                                        python_tokens.ENDMARKER,
+                                        "\\",
+                                        prefix=" ",
+                                    )
+                                )
 
                                 new_lines.append(black.Line(original_depth + 1, []))
                                 col_offset = new_lines[-1].depth * 4
 
                         if trim_prefix:
-                            leaf.prefix = ''
+                            leaf.prefix = ""
                             trim_prefix = False
 
                     new_lines[-1].leaves.append(leaf)
@@ -384,7 +400,13 @@ class Plugin(PluginBase):
                 if paren is None:
                     continue
 
-                col_offset = paren.GenerateLines(max_line_length, split_arg_with_default, line, new_lines, col_offset)
+                col_offset = paren.GenerateLines(
+                    max_line_length,
+                    split_arg_with_default,
+                    line,
+                    new_lines,
+                    col_offset,
+                )
 
                 assert paren.EndingIndex == paren.CloseIndex + 1, paren
                 index = paren.EndingIndex

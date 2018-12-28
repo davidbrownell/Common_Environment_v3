@@ -21,8 +21,8 @@ import CommonEnvironment
 from CommonEnvironment import Interface
 
 # ----------------------------------------------------------------------
-_script_fullpath = CommonEnvironment.ThisFullpath()
-_script_dir, _script_name = os.path.split(_script_fullpath)
+_script_fullpath                            = CommonEnvironment.ThisFullpath()
+_script_dir, _script_name                   = os.path.split(_script_fullpath)
 #  ----------------------------------------------------------------------
 
 # ----------------------------------------------------------------------
@@ -30,7 +30,7 @@ class Plugin(Interface.Interface):
     # ----------------------------------------------------------------------
     # |  Types
     STANDARD_PRIORITY                       = 10000
-    
+
     # ----------------------------------------------------------------------
     # |  Properties
     @Interface.abstractproperty
@@ -42,7 +42,7 @@ class Plugin(Interface.Interface):
     def Priority(self):
         """Integer priority value; plugins with lower priorities are executed first"""
         raise Exception("Abstract property")
-    
+
     # ----------------------------------------------------------------------
     # |  Methods
     @staticmethod
