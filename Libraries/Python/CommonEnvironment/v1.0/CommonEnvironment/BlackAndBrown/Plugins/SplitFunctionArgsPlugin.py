@@ -206,6 +206,7 @@ class Plugin(PluginBase):
                 
                 new_depth = new_lines[-1].depth + 1
                 col_offset = new_depth * 4
+                multiple_parameters = len(self.Parameters) > 1
 
                 for param in self.Parameters:
                     new_lines.append(black.Line(new_depth, []))
@@ -219,7 +220,7 @@ class Plugin(PluginBase):
                         trim_prefix=True,
                     )
 
-                    if not param.IsKwargs:
+                    if multiple_parameters and not param.IsKwargs:
                         new_lines[-1].leaves.append(black.Leaf(python_tokens.COMMA, ','))
 
                 # Close paren
