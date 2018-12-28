@@ -572,13 +572,12 @@ class SplitFunctionsWithDefaultsSuite(TestBase):
                 Executor().Invoke(output_stream=output_stream, verbose=verbose, print_results=print_results, allow_exceptions=allow_exceptions)
                 """),
             textwrap.dedent("""\
-                Executor() \\
-                    .Invoke(
-                        output_stream=output_stream,
-                        verbose=verbose,
-                        print_results=print_results,
-                        allow_exceptions=allow_exceptions,
-                    )
+                Executor().Invoke(
+                    output_stream=output_stream,
+                    verbose=verbose,
+                    print_results=print_results,
+                    allow_exceptions=allow_exceptions,
+                )
                 """),
         )
 
@@ -798,21 +797,17 @@ class SplitFunctionsSuite(TestBase):
                 print("output2")
 
 
-            Executor(one, two) \\
-                .Other(
-                    a,
-                    b,
-                    c=10,
-                ) \\
-                .More(a, b)
+            Executor(one, two).Other(
+                a,
+                b,
+                c=10,
+            ).More(a, b)
 
 
-            Executor(one, two) \\
-                .Other(a, b, c) \\
-                .More(
-                    a,
-                    b=2,
-                )
+            Executor(one, two).Other(a, b, c).More(
+                a,
+                b=2,
+            )
             """),
         )
 

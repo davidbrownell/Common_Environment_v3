@@ -51,8 +51,9 @@ class Plugin(HorizontalAlignmentPluginImpl):
 
         if comment_leaf is None:
             for index, leaf in enumerate(line.leaves):
-                if getattr(leaf, "value", "") \
-                    .startswith("#") and (not is_initial_line or index != 0):
+                if getattr(leaf, "value", "").startswith("#") and (
+                    not is_initial_line or index != 0
+                ):
                     comment_leaf = leaf
                     break
 

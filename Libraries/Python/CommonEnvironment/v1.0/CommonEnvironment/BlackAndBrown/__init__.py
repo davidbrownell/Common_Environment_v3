@@ -111,8 +111,7 @@ class Executor(object):
         assert black_line_length > 0, black_line_length
 
         if os.path.isfile(input_filename_or_content):
-            input_filename_or_content = open(input_filename_or_content) \
-                .read()
+            input_filename_or_content = open(input_filename_or_content).read()
 
         input_content = input_filename_or_content
         del input_filename_or_content

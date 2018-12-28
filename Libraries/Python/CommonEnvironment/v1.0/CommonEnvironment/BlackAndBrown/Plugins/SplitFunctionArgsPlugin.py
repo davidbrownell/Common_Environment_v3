@@ -363,34 +363,13 @@ class Plugin(PluginBase):
             for ending_index, paren in GenerateIndexAndParenInfo():
                 assert index <= ending_index, (index, ending_index)
 
-                is_first = True
-
                 while index != ending_index:
                     leaf = line.leaves[index]
                     index += 1
 
-                    if is_first:
-                        is_first = False
-
-                        # If we are looking at a chained method call, move this invocation
-                        # to a newline...
-                        if leaf.value == ".":
-                            # ... unless there is only a trailing paren on the current line
-                            if col_offset - (original_depth * 4) > 1:
-                                new_lines[-1].leaves.append(
-                                    black.Leaf(
-                                        python_tokens.ENDMARKER,
-                                        "\\",
-                                        prefix=" ",
-                                    )
-                                )
-
-                                new_lines.append(black.Line(original_depth + 1, []))
-                                col_offset = new_lines[-1].depth * 4
-
-                        if trim_prefix:
-                            leaf.prefix = ""
-                            trim_prefix = False
+                    if trim_prefix:
+                        leaf.prefix = ""
+                        trim_prefix = False
 
                     new_lines[-1].leaves.append(leaf)
 
