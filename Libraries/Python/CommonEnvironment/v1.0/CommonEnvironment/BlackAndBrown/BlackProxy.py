@@ -69,8 +69,7 @@ def Convert(
         if input_filename is None:
             raise Exception("Please provide a filename on the command line")
 
-        output = Executor(sys.stdout) \
-            .Format(input_filename)
+        output = Executor(sys.stdout).Format(input_filename)
         result = 0
 
     except:
@@ -103,8 +102,7 @@ def Convert(
     if is_diff:
         # Create a diff of the input and generated file
         diff = difflib.unified_diff(
-            open(input_filename) \
-                .readlines(),
+            open(input_filename).readlines(),
             ["{}\n".format(line) for line in output.split("\n")],
         )
 
