@@ -49,7 +49,7 @@ def Convert(
     args = arg
     del arg
     
-    input_filename = args.pop()
+    input_filename = None
     is_diff = False
     
     try:
@@ -59,9 +59,14 @@ def Convert(
             elif arg in [ "--quiet", ]:
                 # Ignore these
                 pass
+            elif input_filename is None and os.path.isfile(arg):
+                input_filename = arg
             else:
                 raise Exception("The argument '{}' is not supported".format(arg))
 
+        if input_filename is None:
+            raise Exception("Please provide a filename on the command line")
+            
         output = Executor(sys.stdout).Format(input_filename)
         result = 0
 

@@ -53,7 +53,15 @@ class Plugin(HorizontalAlignmentPluginImpl):
     # ----------------------------------------------------------------------
     @classmethod
     @Interface.override
-    def _GetAlignmentLeaf(cls, line, is_initial_line, flags):
+    def _GetAlignmentLeaf(
+        cls, 
+        line, 
+        is_initial_line, 
+        flags=None,
+    ):
+        if flags is None:
+            flags = cls.ModuleLevel | cls.ClassLevel | cls.InitLevel
+            
         nested = 0
 
         for leaf in line.leaves:

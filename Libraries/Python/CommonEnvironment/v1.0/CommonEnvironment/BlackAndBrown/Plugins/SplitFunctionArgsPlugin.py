@@ -72,6 +72,11 @@ class Plugin(PluginBase):
 
             while index < len(line.leaves):
                 clauses.append(cls._Clause.Parse(line, index))
+
+                # Account for commas and parens at this root level
+                if clauses[-1].EndingIndex < len(line.leaves) and line.leaves[clauses[-1].EndingIndex].value in [",", ")"]:
+                    clauses[-1].EndingIndex += 1
+
                 index = clauses[-1].EndingIndex
 
             # We only process balanced lines
@@ -194,11 +199,11 @@ class Plugin(PluginBase):
                 # Open paren
                 new_lines[-1].leaves.append(line.leaves[self.OpenIndex])
                 
-                depth = new_lines[-1].depth + 1
-                col_offset = new_lines[-1].depth * 4
+                new_depth = new_lines[-1].depth + 1
+                col_offset = new_depth * 4
 
                 for param in self.Parameters:
-                    new_lines.append(black.Line(depth, []))
+                    new_lines.append(black.Line(new_depth, []))
                     
                     param.GenerateLines(
                         max_line_length,
@@ -213,7 +218,7 @@ class Plugin(PluginBase):
                         new_lines[-1].leaves.append(black.Leaf(python_tokens.COMMA, ','))
 
                 # Close paren
-                new_lines.append(black.Line(depth - 1, [ line.leaves[self.CloseIndex], ]))
+                new_lines.append(black.Line(new_depth - 1, [ line.leaves[self.CloseIndex], ]))
                 
             else:
                 for index in range(self.OpenIndex, self.EndingIndex):
@@ -351,11 +356,15 @@ class Plugin(PluginBase):
                     if is_first:
                         is_first = False
 
+                        # If we are looking at a chained method call, move this invocation
+                        # to a newline...
                         if leaf.value == '.':
-                            new_lines[-1].leaves.append(black.Leaf(python_tokens.ENDMARKER, '\\', prefix=' '))
+                            # ... unless there is only a trailing paren on the current line
+                            if col_offset - (original_depth * 4) > 1:
+                                new_lines[-1].leaves.append(black.Leaf(python_tokens.ENDMARKER, '\\', prefix=' '))
 
-                            new_lines.append(black.Line(original_depth + 1, []))
-                            col_offset = new_lines[-1].depth * 4
+                                new_lines.append(black.Line(original_depth + 1, []))
+                                col_offset = new_lines[-1].depth * 4
 
                         if trim_prefix:
                             leaf.prefix = ''

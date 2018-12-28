@@ -98,7 +98,7 @@ class Executor(object):
     def Format(
         self,
         input_filename_or_content,
-        black_line_length,
+        black_line_length=180,
         include_plugin_names=None,
         exclude_plugin_names=None,
     ):
@@ -128,12 +128,13 @@ class Executor(object):
                 kwargs = {}
 
                 defaults = self._plugin_args.get(plugin.Name, None)
-                if isinstance(defaults, (list, tuple)):
-                    args = defaults
-                elif isinstance(defaults, dict):
-                    kwargs = defaults
-                else:
-                    assert False, defaults
+                if defaults is not None:
+                    if isinstance(defaults, (list, tuple)):
+                        args = defaults
+                    elif isinstance(defaults, dict):
+                        kwargs = defaults
+                    else:
+                        assert False, defaults
 
                 lines = plugin.Decorate(lines, *args, **kwargs)
 

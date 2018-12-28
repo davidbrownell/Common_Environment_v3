@@ -39,15 +39,22 @@ class Plugin(HorizontalAlignmentPluginImpl):
     @staticmethod
     @Interface.override
     def _GetAlignmentLeaf(line, is_initial_line):
+        comment_leaf = None
+
         if line.comments:
             assert len(line.comments) == 1
             assert isinstance(line.comments[0], tuple), line.comments[0]
 
-            return line.comments[0][1]
+            comment_leaf = line.comments[0][1]
 
-        for index, leaf in enumerate(line.leaves):
-            if getattr(leaf, "value", '').startswith('#') and \
-               (not is_initial_line or index != 0):
-                return leaf
+        if comment_leaf is None:
+            for index, leaf in enumerate(line.leaves):
+                if getattr(leaf, "value", '').startswith('#') and \
+                   (not is_initial_line or index != 0):
+                    comment_leaf = leaf 
+                    break
 
-        return None
+        if comment_leaf and comment_leaf.value.startswith("# BugBug"):
+            comment_leaf = None
+
+        return comment_leaf

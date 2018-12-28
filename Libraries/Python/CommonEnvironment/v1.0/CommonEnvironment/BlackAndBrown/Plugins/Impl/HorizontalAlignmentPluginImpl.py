@@ -35,7 +35,15 @@ class HorizontalAlignmentPluginImpl(PluginBase):
     # |  Public Methods
     @classmethod
     @Interface.override
-    def Decorate(cls, lines, alignment_columns, *args, **kwargs):
+    def Decorate(
+        cls, 
+        lines, 
+        alignment_columns=None, 
+        *args, 
+        **kwargs
+    ):
+        alignment_columns = alignment_columns or [45, 57, 77]
+        
         line_index = 0
         while line_index < len(lines):
             line = lines[line_index]
