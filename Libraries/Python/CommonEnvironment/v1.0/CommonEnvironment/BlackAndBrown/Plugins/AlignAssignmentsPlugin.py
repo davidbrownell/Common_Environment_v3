@@ -17,8 +17,6 @@
 
 import os
 
-from blib2to3.pygram import python_symbols
-
 import CommonEnvironment
 from CommonEnvironment import Interface
 
@@ -61,6 +59,9 @@ class Plugin(HorizontalAlignmentPluginImpl):
         is_initial_line,
         flags=None,
     ):
+        # Importing here as black isn't supported by python2
+        from blib2to3.pygram import python_symbols
+
         if flags is None:
             flags = cls.ModuleLevel | cls.ClassLevel | cls.InitLevel
 

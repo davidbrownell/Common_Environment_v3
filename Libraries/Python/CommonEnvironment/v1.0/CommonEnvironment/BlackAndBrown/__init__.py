@@ -25,8 +25,6 @@ from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import FileSystem
 from CommonEnvironment.TypeInfo.FundamentalTypes.All import *
 
-from black import format_str as Blackify
-
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name                   = os.path.split(_script_fullpath)
@@ -141,6 +139,9 @@ class Executor(object):
             return lines
 
         # ----------------------------------------------------------------------
+
+        # Importing here as black isn't supported by python2
+        from black import format_str as Blackify
 
         return Blackify(
             input_content,

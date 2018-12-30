@@ -815,5 +815,11 @@ class SplitFunctionsSuite(TestBase):
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 if __name__ == "__main__":
-    try: sys.exit(unittest.main(verbosity=2))
-    except KeyboardInterrupt: pass
+    try:
+        if sys.version[0] == '2':
+            sys.stdout.write("The script does not run with python2.\n")
+            sys.exit(1)
+        else: 
+            sys.exit(unittest.main(verbosity=2))
+    except KeyboardInterrupt: 
+        pass
