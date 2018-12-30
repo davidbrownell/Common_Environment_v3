@@ -20,6 +20,11 @@ import itertools
 import os
 import sys
 
+from collections import defaultdict
+
+import six
+import toml
+
 import CommonEnvironment
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import FileSystem
@@ -36,6 +41,11 @@ class Executor(object):
     Object that is capable of formatting source based on Black and
     one or more plugins.
     """
+
+    TOML_FILENAME                           = "pyproject.toml"
+    TOML_BLACK_AND_BROWN_SECTION_NAME       = "tool.blackandbrown"
+
+    DEFAULT_BLACK_LINE_LENGTH               = 180
 
     # ----------------------------------------------------------------------
     def __init__(self, output_stream, *plugin_input_dirs, **plugin_args):
@@ -100,22 +110,79 @@ class Executor(object):
     def Format(
         self,
         input_filename_or_content,
-        black_line_length=180,
+        black_line_length=None,
         include_plugin_names=None,
         exclude_plugin_names=None,
     ):
         """Formats the input file or content and returns the results"""
 
-        assert black_line_length > 0, black_line_length
-
         if os.path.isfile(input_filename_or_content):
+            # Search all ancestor directories for toml files
+            toml_filenames = []
+
+            directory = os.path.dirname(input_filename_or_content)
+            while True:
+                potential_filename = os.path.join(directory, self.TOML_FILENAME)
+                if os.path.isfile(potential_filename):
+                    toml_filenames.append(potential_filename)
+
+                parent_directory = os.path.dirname(directory)
+                if parent_directory == directory:
+                    break
+
+                directory = parent_directory
+
+            if toml_filenames:
+                toml_filenames.reverse()
+
+                # ----------------------------------------------------------------------
+                def GetTomlSection(data, section_name):
+                    for part in section_name.split('.'):
+                        data = data.get(part, None)
+                        if data is None:
+                            return {}
+
+                    return data
+
+                # ----------------------------------------------------------------------
+
+                plugin_args = defaultdict(dict)
+
+                for toml_filename in toml_filenames:
+                    try:
+                        with open(toml_filename) as f:
+                            data = toml.load(f)
+
+                        black_data = GetTomlSection(data, "tool.black")
+                        if "line-length" in black_data:
+                            black_line_length = black_data["line-length"]
+
+                        black_and_brown_data = GetTomlSection(data, self.TOML_BLACK_AND_BROWN_SECTION_NAME)
+                        for plugin_name, plugin_values in six.iteritems(black_and_brown_data):
+                            for k, v in six.iteritems(plugin_values):
+                                plugin_args[plugin_name][k] = v
+
+                    except Exception as ex:
+                        raise Exception("The toml file at '{}' is not valid ({})".format(toml_filename, str(ex)))
+
+                # Apply the provided args
+                for plugin_name, plugin_values in six.iteritems(self._plugin_args):
+                    for k, v in six.iteritems(plugin_values):
+                        plugin_args[plugin_name][k] = v
+
+            # Read the content
             input_filename_or_content = open(input_filename_or_content).read()
+        else:
+            plugin_args = self._plugin_args
 
         input_content = input_filename_or_content
         del input_filename_or_content
 
         include_plugin_names = include_plugin_names or set()
         exclude_plugin_names = exclude_plugin_names or set()
+
+        if black_line_length is None:
+            black_line_length = self.DEFAULT_BLACK_LINE_LENGTH
 
         # ----------------------------------------------------------------------
         def Postprocess(lines):
@@ -125,7 +192,7 @@ class Executor(object):
                 args = []
                 kwargs = {}
 
-                defaults = self._plugin_args.get(plugin.Name, None)
+                defaults = plugin_args.get(plugin.Name, None)
                 if defaults is not None:
                     if isinstance(defaults, (list, tuple)):
                         args = defaults
