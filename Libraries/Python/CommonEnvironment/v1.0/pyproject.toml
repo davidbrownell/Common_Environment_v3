@@ -1,0 +1,16 @@
+[tool.black]
+line-length = 180
+
+[tool.blackandbrown.AlignAssignments]
+alignment_columns = [45,57,77]
+
+# AlignAssignmentPlugin.Plugin.ModuleLevel | AlignAssignmentPlugin.Plugin.ClassLevel | AlignAssignmentPlugin.Plugin.InitLevel
+#                      1	                 |                      2	                 |                      4
+flags = 7
+
+[tool.blackandbrown.AlignTrailingComments]
+alignment_columns = [45,57,77]
+
+[tool.blackandbrown.SplitFunctionArgs]
+max_line_length = 180
+split_arg_with_default = true
