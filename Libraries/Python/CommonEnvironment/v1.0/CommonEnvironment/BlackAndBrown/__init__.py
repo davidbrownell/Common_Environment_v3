@@ -109,6 +109,8 @@ class Executor(object):
     ):
         """Formats the input file or content and returns the results"""
 
+        plugin_args = self._plugin_args
+
         if os.path.isfile(input_filename_or_content):
             # Search all ancestor directories for toml files
             toml_filenames = []
@@ -126,6 +128,8 @@ class Executor(object):
                 directory = parent_directory
 
             if toml_filenames:
+                plugin_args = defaultdict(dict)
+
                 toml_filenames.reverse()
 
                 # ----------------------------------------------------------------------
@@ -138,8 +142,6 @@ class Executor(object):
                     return data
 
                 # ----------------------------------------------------------------------
-
-                plugin_args = defaultdict(dict)
 
                 for toml_filename in toml_filenames:
                     try:
@@ -165,8 +167,6 @@ class Executor(object):
 
             # Read the content
             input_filename_or_content = open(input_filename_or_content).read()
-        else:
-            plugin_args = self._plugin_args
 
         input_content = input_filename_or_content
         del input_filename_or_content
