@@ -51,10 +51,7 @@ class Executor(object):
     def __init__(self, output_stream, *plugin_input_dirs, **plugin_args):
         plugins = []
 
-        for plugin_input_dir in itertools.chain(
-            [os.path.join(_script_dir, "Plugins")],
-            plugin_input_dirs,
-        ):
+        for plugin_input_dir in itertools.chain([os.path.join(_script_dir, "Plugins")], plugin_input_dirs):
             if not os.path.isdir(plugin_input_dir):
                 raise Exception("'{}' is not a valid directory".format(plugin_input_dir))
 
@@ -69,9 +66,7 @@ class Executor(object):
 
                     mod = importlib.import_module(plugin_name)
                     if mod is None:
-                        output_stream.write(
-                            "WARNING: Unable to import the module at '{}'.\n".format(filename)
-                        )
+                        output_stream.write("WARNING: Unable to import the module at '{}'.\n".format(filename))
                         continue
 
                     potential_class = None
@@ -85,9 +80,7 @@ class Executor(object):
                     if potential_class is None:
                         output_stream.write(
                             "WARNING: The module at '{}' does not contain a supported class ({}).\n".format(
-                                filename, ", ".join(
-                                    ["'{}'".format(pcn) for pcn in potential_class_names]
-                                )
+                                filename, ", ".join(["'{}'".format(pcn) for pcn in potential_class_names])
                             )
                         )
                         continue
@@ -137,7 +130,7 @@ class Executor(object):
 
                 # ----------------------------------------------------------------------
                 def GetTomlSection(data, section_name):
-                    for part in section_name.split('.'):
+                    for part in section_name.split("."):
                         data = data.get(part, None)
                         if data is None:
                             return {}
