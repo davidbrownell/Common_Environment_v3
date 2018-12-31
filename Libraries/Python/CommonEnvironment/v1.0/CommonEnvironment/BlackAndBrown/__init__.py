@@ -35,6 +35,8 @@ _script_fullpath                            = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name                   = os.path.split(_script_fullpath)
 #  ----------------------------------------------------------------------
 
+# <Wrong Hanging Indentation> pylint: disable = C0330
+
 # ----------------------------------------------------------------------
 class Executor(object):
     """\
@@ -51,7 +53,10 @@ class Executor(object):
     def __init__(self, output_stream, *plugin_input_dirs, **plugin_args):
         plugins = []
 
-        for plugin_input_dir in itertools.chain([os.path.join(_script_dir, "Plugins")], plugin_input_dirs):
+        for plugin_input_dir in itertools.chain(
+            [os.path.join(_script_dir, "Plugins")],
+            plugin_input_dirs,
+        ):
             if not os.path.isdir(plugin_input_dir):
                 raise Exception("'{}' is not a valid directory".format(plugin_input_dir))
 
@@ -66,7 +71,9 @@ class Executor(object):
 
                     mod = importlib.import_module(plugin_name)
                     if mod is None:
-                        output_stream.write("WARNING: Unable to import the module at '{}'.\n".format(filename))
+                        output_stream.write(
+                            "WARNING: Unable to import the module at '{}'.\n".format(filename)
+                        )
                         continue
 
                     potential_class = None
@@ -80,7 +87,9 @@ class Executor(object):
                     if potential_class is None:
                         output_stream.write(
                             "WARNING: The module at '{}' does not contain a supported class ({}).\n".format(
-                                filename, ", ".join(["'{}'".format(pcn) for pcn in potential_class_names])
+                                filename, ", ".join(
+                                    ["'{}'".format(pcn) for pcn in potential_class_names]
+                                )
                             )
                         )
                         continue
@@ -152,13 +161,18 @@ class Executor(object):
                         if "line-length" in black_data:
                             black_line_length = black_data["line-length"]
 
-                        black_and_brown_data = GetTomlSection(data, self.TOML_BLACK_AND_BROWN_SECTION_NAME)
+                        black_and_brown_data = GetTomlSection(
+                            data,
+                            self.TOML_BLACK_AND_BROWN_SECTION_NAME,
+                        )
                         for plugin_name, plugin_values in six.iteritems(black_and_brown_data):
                             for k, v in six.iteritems(plugin_values):
                                 plugin_args[plugin_name][k] = v
 
                     except Exception as ex:
-                        raise Exception("The toml file at '{}' is not valid ({})".format(toml_filename, str(ex)))
+                        raise Exception(
+                            "The toml file at '{}' is not valid ({})".format(toml_filename, str(ex))
+                        )
 
                 # Apply the provided args
                 for plugin_name, plugin_values in six.iteritems(self._plugin_args):
