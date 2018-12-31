@@ -109,7 +109,14 @@ class Verifier(VerifierMod.Verifier):
         if dirname and os.path.basename(dirname) == inflect.plural(test_type):
             dirname = os.path.dirname(dirname)
 
-        return os.path.join(dirname, name)
+        filename = os.path.join(dirname, name)
+        if not os.path.isfile(filename):
+            # Is this a module name?
+            potential_module_name = os.path.join(os.path.dirname(filename), "__init__.py")
+            if os.path.isfile(potential_module_name):
+                filename = potential_module_name
+            
+        return filename
 
     # ----------------------------------------------------------------------
     @staticmethod
