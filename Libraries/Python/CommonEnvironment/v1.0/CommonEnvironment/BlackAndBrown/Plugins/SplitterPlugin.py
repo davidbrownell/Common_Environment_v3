@@ -167,7 +167,7 @@ class _TokenParser(Interface.Interface):
     @Interface.abstractmethod
     def GenerateLines(
         self,
-        max_line_length,
+        max_func_line_length,
         line,
         new_lines,
         col_offset,
@@ -257,7 +257,7 @@ class _OpenCloseImpl(_TokenParser):
     @Interface.override
     def GenerateLines(
         self,
-        max_line_length,
+        max_func_line_length,
         line,
         new_lines,
         col_offset,
@@ -267,7 +267,12 @@ class _OpenCloseImpl(_TokenParser):
         if should_trim_prefix:
             line.leaves[self.OpenIndex].prefix = ""
 
-        if col_offset + self.OriginalLength(line) > max_line_length or self.ShouldBeSplit(**should_be_split_kwargs):
+        if (
+            ( 
+                self._ShouldSplitBasedOnLineLength() and 
+                col_offset + self.OriginalLength(line) > max_func_line_length
+            ) or self.ShouldBeSplit(**should_be_split_kwargs)
+        ):
             # Open token
             new_lines[-1].leaves.append(line.leaves[self.OpenIndex])
 
@@ -275,11 +280,13 @@ class _OpenCloseImpl(_TokenParser):
             new_depth = new_lines[-1].depth + 1
             col_offset = new_depth * 4
 
+            has_multiple_children = len(self.Children) > 1
+
             for child in self.Children:
                 new_lines.append(black.Line(new_depth, []))
 
                 child.GenerateLines(
-                    max_line_length,
+                    max_func_line_length,
                     line,
                     new_lines,
                     col_offset,
@@ -287,7 +294,7 @@ class _OpenCloseImpl(_TokenParser):
                     **should_be_split_kwargs
                 )
 
-                if child.AllowTrailingComma():
+                if has_multiple_children and child.AllowTrailingComma():
                     new_lines[-1].leaves.append(black.Leaf(python_tokens.COMMA, ","))
 
             # Close token
@@ -309,6 +316,12 @@ class _OpenCloseImpl(_TokenParser):
                 col_offset += len(leaf.value)
 
         return col_offset
+
+    # ----------------------------------------------------------------------
+    # |  Private Methods
+    @Interface.extensionmethod
+    def _ShouldSplitBasedOnLineLength(self):
+        return False
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
@@ -379,7 +392,7 @@ class Clause(_TokenParser):
     @Interface.override
     def GenerateLines(
         self,
-        max_line_length,
+        max_func_line_length,
         line,
         new_lines,
         col_offset,
@@ -416,7 +429,7 @@ class Clause(_TokenParser):
                 continue
 
             col_offset = child.GenerateLines(
-                max_line_length,
+                max_func_line_length,
                 line,
                 new_lines,
                 col_offset,
@@ -514,6 +527,13 @@ class Parens(_OpenCloseImpl):
             return True
         
         return False
+
+    # ----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    @Interface.override
+    def _ShouldSplitBasedOnLineLength(self):
+        return self.Type == self.__class__.Type.Func
 
 # ----------------------------------------------------------------------
 class Braces(_OpenCloseImpl):
