@@ -222,7 +222,7 @@ def staticderived(cls):
 # ----------------------------------------------------------------------
 def mixin(cls):
     """
-    Decorate applied to a class that indicates the class is a mixin and should not
+    Decorator applied to a class that indicates the class is a mixin and should not
     participate in interface verification until it is part of another class.
 
     Example:
@@ -296,7 +296,7 @@ def DerivedProperty(value):
         class Foo(object):
             AProperty = 10
 
-    However, things become more complicated when implemeting a property that is abstract in
+    However, things become more complicated when implementing a property that is abstract in
     the base class but overridden in the derived class, as the detection logic needs something
     to use to detect the user's intent (in this case, that they are overridding something that
     should be defined in the base class). This method provides that implementation using a fairly
