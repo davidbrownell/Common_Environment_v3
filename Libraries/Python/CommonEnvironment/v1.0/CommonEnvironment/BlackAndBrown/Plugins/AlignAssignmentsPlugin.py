@@ -82,12 +82,7 @@ class Plugin(HorizontalAlignmentPluginImpl):
                 nested_brackets += 1
             elif leaf.value == "]":
                 nested_brackets -= 1
-            elif (
-                leaf.value == "=" and 
-                nested_parens == 0 and
-                nested_braces == 0 and 
-                nested_brackets == 0
-            ):
+            elif leaf.value == "=" and nested_parens == 0 and nested_braces == 0 and nested_brackets == 0:
                 node = leaf.parent
 
                 while node:

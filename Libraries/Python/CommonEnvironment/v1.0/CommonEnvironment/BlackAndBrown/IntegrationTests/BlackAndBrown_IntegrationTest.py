@@ -274,10 +274,7 @@ else:
                 )
 
             return super(AlignAssignmentsSuite, self)._Format(
-                original, expected, "AlignAssignments", "AlignTrailingComments", AlignAssignments=[
-                    [10, 20, 30],
-                    flags,
-                ], AlignTrailingComments=[[10, 20, 30]]
+                original, expected, "AlignAssignments", "AlignTrailingComments", AlignAssignments=[[10, 20, 30], flags], AlignTrailingComments=[[10, 20, 30]]
             )
 
         # ----------------------------------------------------------------------
@@ -872,8 +869,8 @@ if __name__ == "__main__":
     try:
         sys.exit(
             unittest.main(
-                verbosity=2,
-            ),
+                verbosity=2
+            )
         )
     except KeyboardInterrupt:
         pass

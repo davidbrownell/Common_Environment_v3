@@ -42,7 +42,9 @@ class Plugin(PluginBase):
     # ----------------------------------------------------------------------
     # |  Properties
     Name                                    = Interface.DerivedProperty("Splitter")
-    Priority                                = Interface.DerivedProperty(PluginBase.STANDARD_PRIORITY)
+    Priority                                = Interface.DerivedProperty(
+        PluginBase.STANDARD_PRIORITY
+    )
 
     # ----------------------------------------------------------------------
     # |  Methods
@@ -139,6 +141,7 @@ class Plugin(PluginBase):
 
         return lines
 
+
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
@@ -150,7 +153,7 @@ class _TokenParser(Interface.Interface):
     def OriginalLength(self, line):
         """Returns the length of the original tokens"""
         raise Exception("Abstract method")
-    
+
     # ----------------------------------------------------------------------
     @Interface.abstractmethod
     def IsBalanced(self):
@@ -162,7 +165,7 @@ class _TokenParser(Interface.Interface):
     def ShouldBeSplit(self, **should_be_split_kwargs):
         """Returns True if the collection of tokens should be split"""
         raise Exception("Abstract method")
-    
+
     # ----------------------------------------------------------------------
     @Interface.abstractmethod
     def GenerateLines(
@@ -180,7 +183,7 @@ class _TokenParser(Interface.Interface):
     # ----------------------------------------------------------------------
     def __repr__(self):
         return CommonEnvironment.ObjectReprImpl(self)
-    
+
     # ----------------------------------------------------------------------
     # |  Protected Methods
     @staticmethod
@@ -195,6 +198,7 @@ class _TokenParser(Interface.Interface):
 
         return length
 
+
 # ----------------------------------------------------------------------
 class _OpenCloseImpl(_TokenParser):
 
@@ -204,7 +208,7 @@ class _OpenCloseImpl(_TokenParser):
     def OpenTokenValue(self):
         """Token value that opens the pair"""
         raise Exception("Abstract property")
-    
+
     # ----------------------------------------------------------------------
     @Interface.abstractproperty
     def CloseTokenValue(self):
@@ -267,11 +271,8 @@ class _OpenCloseImpl(_TokenParser):
         if should_trim_prefix:
             line.leaves[self.OpenIndex].prefix = ""
 
-        if (
-            ( 
-                self._ShouldSplitBasedOnLineLength() and 
-                col_offset + self.OriginalLength(line) > max_func_line_length
-            ) or self.ShouldBeSplit(**should_be_split_kwargs)
+        if (self._ShouldSplitBasedOnLineLength() and col_offset + self.OriginalLength(line) > max_func_line_length) or self.ShouldBeSplit(
+            **should_be_split_kwargs
         ):
             # Open token
             new_lines[-1].leaves.append(line.leaves[self.OpenIndex])
@@ -323,12 +324,18 @@ class _OpenCloseImpl(_TokenParser):
     def _ShouldSplitBasedOnLineLength(self):
         return False
 
+
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 class Clause(_TokenParser):
 
-    TERMINATORS                             = [",", ")", "}", "]"]
+    TERMINATORS                             = [
+        ",",
+        ")",
+        "}",
+        "]",
+    ]
 
     # ----------------------------------------------------------------------
     def __init__(self, line, index):
@@ -386,7 +393,9 @@ class Clause(_TokenParser):
     # ----------------------------------------------------------------------
     @Interface.override
     def ShouldBeSplit(self, **should_be_split_kwargs):
-        return self.IsDefaultArg or any(child for child in self.Children if child.ShouldBeSplit(**should_be_split_kwargs))
+        return self.IsDefaultArg or any(
+            child for child in self.Children if child.ShouldBeSplit(**should_be_split_kwargs)
+        )
 
     # ----------------------------------------------------------------------
     @Interface.override
@@ -448,6 +457,7 @@ class Clause(_TokenParser):
     def AllowTrailingComma(self):
         return not self.IsKwargs
 
+
 # ----------------------------------------------------------------------
 class Parens(_OpenCloseImpl):
 
@@ -466,10 +476,10 @@ class Parens(_OpenCloseImpl):
     # |  Methods
     def __init__(self, line, index):
         super(Parens, self).__init__(line, index)
-        
+
         # ----------------------------------------------------------------------
         def GetType():
-            if not self.IsBalanced:
+            if not self.IsBalanced():
                 return None
 
             # Function invocation
@@ -501,7 +511,7 @@ class Parens(_OpenCloseImpl):
     # ----------------------------------------------------------------------
     @Interface.override
     def ShouldBeSplit(
-        self, 
+        self,
         split_funcs_num_args,
         split_func_args_with_default,
         split_tuples_num_args,
@@ -511,21 +521,27 @@ class Parens(_OpenCloseImpl):
             if split_funcs_num_args is not None and len(self.Children) >= split_funcs_num_args:
                 return True
 
-            if split_func_args_with_default and len(self.Children) > 1 and any(child for child in self.Children if child.IsDefaultArg):
+            if split_func_args_with_default and len(self.Children) > 1 and any(
+                child for child in self.Children if child.IsDefaultArg
+            ):
                 return True
-               
+
         elif self.Type == self.__class__.Type.Tuple:
             if split_tuples_num_args is not None and len(self.Children) >= split_tuples_num_args:
                 return True
 
-        if any(child for child in self.Children if child.ShouldBeSplit(
-            split_funcs_num_args=split_funcs_num_args,
-            split_func_args_with_default=split_func_args_with_default,
-            split_tuples_num_args=split_tuples_num_args,
-            **should_be_split_kwargs
-        )):
+        if any(
+            child
+            for child in self.Children
+            if child.ShouldBeSplit(
+                split_funcs_num_args=split_funcs_num_args,
+                split_func_args_with_default=split_func_args_with_default,
+                split_tuples_num_args=split_tuples_num_args,
+                **should_be_split_kwargs
+            )
+        ):
             return True
-        
+
         return False
 
     # ----------------------------------------------------------------------
@@ -534,6 +550,7 @@ class Parens(_OpenCloseImpl):
     @Interface.override
     def _ShouldSplitBasedOnLineLength(self):
         return self.Type == self.__class__.Type.Func
+
 
 # ----------------------------------------------------------------------
 class Braces(_OpenCloseImpl):
@@ -546,21 +563,20 @@ class Braces(_OpenCloseImpl):
     # ----------------------------------------------------------------------
     # |  Methods
     @Interface.override
-    def ShouldBeSplit(
-        self,
-        split_dictionaries_num_args,
-        **should_be_split_kwargs
-    ):
+    def ShouldBeSplit(self, split_dictionaries_num_args, **should_be_split_kwargs):
         if split_dictionaries_num_args is not None and len(self.Children) >= split_dictionaries_num_args:
             return True
 
-        if any(child for child in self.Children if child.ShouldBeSplit(
-            split_dictionaries_num_args=split_dictionaries_num_args,
-            **should_be_split_kwargs
-        )):
+        if any(
+            child for child in self.Children if child.ShouldBeSplit(
+                split_dictionaries_num_args=split_dictionaries_num_args,
+                **should_be_split_kwargs
+            )
+        ):
             return True
 
         return False
+
 
 # ----------------------------------------------------------------------
 class Brackets(_OpenCloseImpl):
@@ -577,7 +593,7 @@ class Brackets(_OpenCloseImpl):
 
         # ----------------------------------------------------------------------
         def IsList():
-            if not self.IsBalanced:
+            if not self.IsBalanced():
                 return False
 
             # No args
@@ -596,21 +612,19 @@ class Brackets(_OpenCloseImpl):
 
     # ----------------------------------------------------------------------
     @Interface.override
-    def ShouldBeSplit(
-        self,
-        split_lists_num_args,
-        **should_be_split_kwargs
-    ):
+    def ShouldBeSplit(self, split_lists_num_args, **should_be_split_kwargs):
         if not self.IsList:
             return False
 
         if split_lists_num_args is not None and len(self.Children) >= split_lists_num_args:
             return True
 
-        if any(child for child in self.Children if child.ShouldBeSplit(
-            split_lists_num_args=split_lists_num_args,
-            **should_be_split_kwargs
-        )):
+        if any(
+            child for child in self.Children if child.ShouldBeSplit(
+                split_lists_num_args=split_lists_num_args,
+                **should_be_split_kwargs
+            )
+        ):
             return True
 
         return False
