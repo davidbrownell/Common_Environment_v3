@@ -15,6 +15,6 @@ alignment_columns = [45,57,77]
 max_func_line_length = 100
 split_dictionaries_num_args = 2
 split_funcs_num_args = null
-split_func_arg_with_default = true
+split_func_args_with_default = true
 split_lists_num_args = 4
 split_tuples_num_args = 4

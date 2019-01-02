@@ -422,10 +422,10 @@ else:
             return super(SplitLongFunctionsSuite, self)._Format(
                 original,
                 expected,
-                "SplitFunctionArgs",
-                SplitFunctionArgs={ 
-                    "max_line_length" : 20,
-                    "split_arg_with_default" : False,
+                "Splitter",
+                Splitter={ 
+                    "max_func_line_length" : 20,
+                    "split_func_args_with_default" : False,
                 },
             )
 
@@ -477,10 +477,10 @@ else:
             return super(SplitFunctionsWithDefaultsSuite, self)._Format(
                 original,
                 expected,
-                "SplitFunctionArgs",
-                SplitFunctionArgs={ 
-                    "max_line_length": 400,
-                    "split_arg_with_default": True,
+                "Splitter",
+                Splitter={ 
+                    "max_func_line_length": 400,
+                    "split_func_args_with_default": True,
                 },
             )
 
@@ -629,10 +629,10 @@ else:
             return super(SplitFunctionsSuite, self)._Format(
                 original,
                 expected,
-                "SplitFunctionArgs",
-                SplitFunctionArgs={ 
-                    "max_line_length": 78,
-                    "split_arg_with_default": True,
+                "Splitter",
+                Splitter={ 
+                    "max_func_line_length": 78,
+                    "split_func_args_with_default": True,
                 },
             )
 
