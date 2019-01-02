@@ -25,18 +25,19 @@ from CommonEnvironment.BlackAndBrown import *
 from CommonEnvironment.BlackAndBrown.Plugins.AlignAssignmentsPlugin import Plugin as AlignAssignmentsPlugin
 
 # ----------------------------------------------------------------------
-_script_fullpath = CommonEnvironment.ThisFullpath()
-_script_dir, _script_name = os.path.split(_script_fullpath)
+_script_fullpath                            = CommonEnvironment.ThisFullpath()
+_script_dir, _script_name                   = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 # ----------------------------------------------------------------------
-if sys.version[0] == '2':
+if sys.version[0] == "2":
     sys.stdout.write("The script does not run with python2.\n")
 
     # ----------------------------------------------------------------------
     class TestSuite(unittest.TestCase):
         def testStandard(self):
             self.assertTrue(True)
+
 
 else:
 
@@ -47,13 +48,7 @@ else:
             self.maxDiff = None
 
         # ----------------------------------------------------------------------
-        def _Format(
-            self,
-            original, 
-            expected,
-            *plugin_names,
-            **plugin_args
-        ):
+        def _Format(self, original, expected, *plugin_names, **plugin_args):
             executor = Executor(sys.stdout, **plugin_args)
 
             result = executor.Format(
@@ -72,13 +67,14 @@ else:
                 original,
                 expected,
                 "AlignTrailingComments",
-                AlignTrailingComments=[ [ 10, 20, 30, ], ],
+                AlignTrailingComments=[[10, 20, 30]],
             )
 
         # ----------------------------------------------------------------------
         def testStandard(self):
             self._Format(
-                textwrap.dedent("""\
+                textwrap.dedent(
+                    """\
                     one # Comment 1
                     two # Comment 2
                     skip
@@ -107,8 +103,10 @@ else:
 
                     def Func3():
                         var_____________ # Comment C
-                    """),
-                textwrap.dedent("""\
+                    """
+                ),
+                textwrap.dedent(
+                    """\
                     one      # Comment 1
                     two      # Comment 2
                     skip
@@ -137,45 +135,55 @@ else:
 
                     def Func3():
                         var_____________         # Comment C
-                    """),
+                    """
+                ),
             )
 
         # ----------------------------------------------------------------------
         def testLeadingComments(self):
             self._Format(
-                textwrap.dedent("""\
+                textwrap.dedent(
+                    """\
                     # This is a test
                     one # Comment 1
                     two # Comment 2
-                    """),
-                textwrap.dedent("""\
+                    """
+                ),
+                textwrap.dedent(
+                    """\
                     # This is a test
                     one      # Comment 1
                     two      # Comment 2
-                    """),
+                    """
+                ),
             )
 
         # ----------------------------------------------------------------------
         def testTrailingComments(self):
             self._Format(
-                textwrap.dedent("""\
+                textwrap.dedent(
+                    """\
                     # This is a test
                     one # Comment 1
                     two # Comment 2
                     # More Testing
-                    """),
-                textwrap.dedent("""\
+                    """
+                ),
+                textwrap.dedent(
+                    """\
                     # This is a test
                     one      # Comment 1
                     two      # Comment 2
                              # More Testing
-                    """),
+                    """
+                ),
             )
 
         # ----------------------------------------------------------------------
         def testInlineComments(self):
             self._Format(
-                textwrap.dedent("""\
+                textwrap.dedent(
+                    """\
                     value = [
                                                                 # Overrides the displayed script name; the calling file's name
                                                                 # will be used if not provided.
@@ -193,8 +201,10 @@ else:
                                                                 # be displayed if not provided.
                         "CommandLineDocSuffix",                 # def Func() -> string
                     ]
-                    """),
-                textwrap.dedent("""\
+                    """
+                ),
+                textwrap.dedent(
+                    """\
                     value = [
                         # Overrides the displayed script name; the calling file's name
                         # will be used if not provided.
@@ -209,32 +219,42 @@ else:
                                                         # be displayed if not provided.
                         "CommandLineDocSuffix",         # def Func() -> string
                     ]
-                    """),
+                    """
+                ),
             )
 
         # ----------------------------------------------------------------------
         def testLongLine(self):
             self._Format(
-                textwrap.dedent("""\
+                textwrap.dedent(
+                    """\
                     Line_1
                     Line_2 # Comment
                     This_is_a_really_long_line
                     comment_should_come_after_the_end_of_the_content
                     Line_3 # Comment
-                    """),
-                textwrap.dedent("""\
+                    """
+                ),
+                textwrap.dedent(
+                    """\
                     Line_1
                     Line_2                                           # Comment
                     This_is_a_really_long_line
                     comment_should_come_after_the_end_of_the_content
                     Line_3                                           # Comment
-                    """),
+                    """
+                ),
             )
 
     # ----------------------------------------------------------------------
     class AlignAssignmentsSuite(TestBase):
         # ----------------------------------------------------------------------
-        def _Format(self, expected, flags, original=None):
+        def _Format(
+            self,
+            expected,
+            flags,
+            original=None,
+        ):
             if original is None:
                 original = textwrap.dedent(
                     """\
@@ -250,15 +270,14 @@ else:
 
                         def method(self):
                             c = 30
-                    """)
+                    """
+                )
 
             return super(AlignAssignmentsSuite, self)._Format(
-                original,
-                expected,
-                "AlignAssignments",
-                "AlignTrailingComments",
-                AlignAssignments=[ [ 10, 20, 30, ], flags ],
-                AlignTrailingComments=[ [ 10, 20, 30, ], ],
+                original, expected, "AlignAssignments", "AlignTrailingComments", AlignAssignments=[
+                    [10, 20, 30],
+                    flags,
+                ], AlignTrailingComments=[[10, 20, 30]]
             )
 
         # ----------------------------------------------------------------------
@@ -278,7 +297,8 @@ else:
 
                         def method(self):
                             c = 30
-                    """),
+                    """
+                ),
                 AlignAssignmentsPlugin.ModuleLevel,
             )
 
@@ -299,9 +319,10 @@ else:
 
                         def method(self):
                             c = 30
-                    """),
+                    """
+                ),
                 AlignAssignmentsPlugin.ClassLevel,
-            )   
+            )
 
         # ----------------------------------------------------------------------
         def testInit(self):
@@ -320,7 +341,8 @@ else:
 
                         def method(self):
                             c = 30
-                    """),
+                    """
+                ),
                 AlignAssignmentsPlugin.InitLevel,
             )
 
@@ -341,7 +363,8 @@ else:
 
                         def method(self):
                             c = 30
-                    """),
+                    """
+                ),
                 AlignAssignmentsPlugin.InitAnyLevel,
             )
 
@@ -362,7 +385,8 @@ else:
 
                         def method(self):
                             c          = 30
-                    """),
+                    """
+                ),
                 AlignAssignmentsPlugin.MethodLevel,
             )
 
@@ -383,7 +407,8 @@ else:
 
                         def method(self):
                             c = 30
-                    """),
+                    """
+                ),
                 AlignAssignmentsPlugin.ModuleLevel | AlignAssignmentsPlugin.ClassLevel | AlignAssignmentsPlugin.InitLevel,
             )
 
@@ -400,7 +425,8 @@ else:
 
                     one                = 1       # Comment
                     two_____           = 2       # Comment
-                    """),
+                    """
+                ),
                 AlignAssignmentsPlugin.ModuleLevel,
                 original=textwrap.dedent(
                     """\
@@ -412,7 +438,8 @@ else:
 
                     one = 1 # Comment
                     two_____ = 2 # Comment
-                    """),
+                    """
+                ),
             )
 
     # ----------------------------------------------------------------------
@@ -423,9 +450,9 @@ else:
                 original,
                 expected,
                 "Splitter",
-                Splitter={ 
-                    "max_func_line_length" : 20,
-                    "split_func_args_with_default" : False,
+                Splitter={
+                    "max_func_line_length": 20,
+                    "split_func_args_with_default": False,
                 },
             )
 
@@ -444,7 +471,8 @@ else:
 
                     Func3(one, two)
                     Func4(one, two, three, four)
-                    """),
+                    """
+                ),
                 textwrap.dedent(
                     """\
                     def Func1(one, two):
@@ -467,7 +495,8 @@ else:
                         three,
                         four,
                     )
-                    """),
+                    """
+                ),
             )
 
     # ----------------------------------------------------------------------
@@ -475,13 +504,10 @@ else:
         # ----------------------------------------------------------------------
         def _Format(self, original, expected):
             return super(SplitFunctionsWithDefaultsSuite, self)._Format(
-                original,
-                expected,
-                "Splitter",
-                Splitter={ 
+                original, expected, "Splitter", Splitter={
                     "max_func_line_length": 400,
                     "split_func_args_with_default": True,
-                },
+                }
             )
 
         # ----------------------------------------------------------------------
@@ -519,7 +545,8 @@ else:
                         two, three=3
                     )
                     Func8(one, two, three)
-                    """),
+                    """
+                ),
                 textwrap.dedent(
                     """\
                     def Func1(one, two, three):
@@ -573,54 +600,67 @@ else:
                         three=3,
                     )
                     Func8(one, two, three)
-                    """),
+                    """
+                ),
             )
 
         # ----------------------------------------------------------------------
         def testChainedCall(self):
             self._Format(
-                textwrap.dedent("""\
+                textwrap.dedent(
+                    """\
                     Executor().Invoke(output_stream=output_stream, verbose=verbose, print_results=print_results, allow_exceptions=allow_exceptions)
-                    """),
-                textwrap.dedent("""\
+                    """
+                ),
+                textwrap.dedent(
+                    """\
                     Executor().Invoke(
                         output_stream=output_stream,
                         verbose=verbose,
                         print_results=print_results,
                         allow_exceptions=allow_exceptions,
                     )
-                    """),
+                    """
+                ),
             )
 
         # ----------------------------------------------------------------------
         def testGenerator(self):
             self._Format(
-                textwrap.dedent("""\
+                textwrap.dedent(
+                    """\
                     for filename in FileSystem.WalkFiles(plugin_input_dir, include_file_extensions=[".py"], include_file_base_names=[lambda basename: basename.endswith("Plugin")]):
                         pass
-                    """),
-                textwrap.dedent("""\
+                    """
+                ),
+                textwrap.dedent(
+                    """\
                     for filename in FileSystem.WalkFiles(
                         plugin_input_dir,
                         include_file_extensions=[".py"],
                         include_file_base_names=[lambda basename: basename.endswith("Plugin")],
                     ):
                         pass
-                    """),
+                    """
+                ),
             )
 
         # ----------------------------------------------------------------------
         def testReturn(self):
             self._Format(
-                textwrap.dedent("""\
+                textwrap.dedent(
+                    """\
                     return self.Usage(verbose=True, potential_method_name=potential_method_name)
-                    """),
-                textwrap.dedent("""\
+                    """
+                ),
+                textwrap.dedent(
+                    """\
                     return self.Usage(
                         verbose=True,
                         potential_method_name=potential_method_name,
                     )
-                    """),
+                    """
+                ),
             )
 
     class SplitFunctionsSuite(TestBase):
@@ -630,7 +670,7 @@ else:
                 original,
                 expected,
                 "Splitter",
-                Splitter={ 
+                Splitter={
                     "max_func_line_length": 78,
                     "split_func_args_with_default": True,
                 },
@@ -640,7 +680,7 @@ else:
         def testGeneral(self):
             self._Format(
                 textwrap.dedent(
-                """\
+                    """\
                 Func1(Func2(1, two=2), 3)
 
 
@@ -691,9 +731,10 @@ else:
                 Executor(one, two).Other(a, b, c).More(a, b=2)
 
 
-                """),
+                """
+                ),
                 textwrap.dedent(
-                """\
+                    """\
                 Func1(
                     Func2(
                         1,
@@ -819,14 +860,20 @@ else:
                     a,
                     b=2,
                 )
-                """),
+                """
+                ),
             )
+
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 if __name__ == "__main__":
     try:
-        sys.exit(unittest.main(verbosity=2))
-    except KeyboardInterrupt: 
+        sys.exit(
+            unittest.main(
+                verbosity=2,
+            ),
+        )
+    except KeyboardInterrupt:
         pass

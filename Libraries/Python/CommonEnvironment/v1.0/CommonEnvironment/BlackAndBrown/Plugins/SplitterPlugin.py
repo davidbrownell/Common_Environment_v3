@@ -121,7 +121,7 @@ class Plugin(PluginBase):
                     line,
                     new_lines,
                     col_offset,
-                    should_trim_prefix=True,
+                    should_trim_prefix=False,
                     **should_be_split_kwargs
                 )
 
@@ -498,7 +498,7 @@ class Parens(_OpenCloseImpl):
             if split_funcs_num_args is not None and len(self.Children) >= split_funcs_num_args:
                 return True
 
-            if split_func_args_with_default and any(child for child in self.Children if child.IsDefaultArg):
+            if split_func_args_with_default and len(self.Children) > 1 and any(child for child in self.Children if child.IsDefaultArg):
                 return True
                
         elif self.Type == self.__class__.Type.Tuple:

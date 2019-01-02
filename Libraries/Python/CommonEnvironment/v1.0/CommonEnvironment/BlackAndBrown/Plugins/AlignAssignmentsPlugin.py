@@ -65,17 +65,29 @@ class Plugin(HorizontalAlignmentPluginImpl):
         if flags is None:
             flags = cls.ModuleLevel | cls.ClassLevel | cls.InitLevel
 
-        nested = 0
+        nested_parens = 0
+        nested_braces = 0
+        nested_brackets = 0
 
         for leaf in line.leaves:
             if leaf.value == "(":
-                nested += 1
-
+                nested_parens += 1
             elif leaf.value == ")":
-                nested -= 1
-
-            elif leaf.value == "=" and nested == 0:
-
+                nested_parens -= 1
+            elif leaf.value == "{":
+                nested_braces += 1
+            elif leaf.value == "}":
+                nested_braces -= 1
+            elif leaf.value == "[":
+                nested_brackets += 1
+            elif leaf.value == "]":
+                nested_brackets -= 1
+            elif (
+                leaf.value == "=" and 
+                nested_parens == 0 and
+                nested_braces == 0 and 
+                nested_brackets == 0
+            ):
                 node = leaf.parent
 
                 while node:
