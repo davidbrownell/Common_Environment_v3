@@ -274,7 +274,12 @@ else:
                 )
 
             return super(AlignAssignmentsSuite, self)._Format(
-                original, expected, "AlignAssignments", "AlignTrailingComments", AlignAssignments=[[10, 20, 30], flags], AlignTrailingComments=[[10, 20, 30]]
+                original,
+                expected,
+                "AlignAssignments",
+                "AlignTrailingComments",
+                AlignAssignments=[[10, 20, 30], flags],
+                AlignTrailingComments=[[10, 20, 30]],
             )
 
         # ----------------------------------------------------------------------
@@ -501,10 +506,13 @@ else:
         # ----------------------------------------------------------------------
         def _Format(self, original, expected):
             return super(SplitFunctionsWithDefaultsSuite, self)._Format(
-                original, expected, "Splitter", Splitter={
+                original,
+                expected,
+                "Splitter",
+                Splitter={
                     "max_func_line_length": 400,
                     "split_func_args_with_default": True,
-                }
+                },
             )
 
         # ----------------------------------------------------------------------
@@ -728,6 +736,30 @@ else:
                 Executor(one, two).Other(a, b, c).More(a, b=2)
 
 
+                # Real-world examples that have been problematic
+                _Format(original, expected, "AlignAssignments", "AlignTrailingComments", AlignAssignments=[ [ 10, 20, 30, 40, ], flags ], AlignTrailingComments=[ [ 10, 20, 30, ], ], an_arg_to_make_it_longer___=10)
+
+
+                return super(AlignAssignmentsSuite, self)._Format(
+                    AlignAssignments=[ [ 10, 20, 30, 40], flags ],
+                    AlignTrailingComments=[ 100, 200, 300, 400, ],
+                    more={ "a": 1, "b": 2, "c": 3, "d": 4 },
+                )
+
+
+                output_stream.write(textwrap.dedent(
+                    '''\
+
+                    INFO: Calling '{name}' with the arguments:
+                    {args}
+
+                    ''').format( name=entry_point.Name,
+                                 args='\\n'.join([ "    {k:<20}  {v}".format( k="{}:".format(k),
+                                                                             v=v,
+                                                                           )
+                                                  for k, v in six.iteritems(kwargs)
+                                                ]),
+                               ))
                 """
                 ),
                 textwrap.dedent(
@@ -856,6 +888,72 @@ else:
                 Executor(one, two).Other(a, b, c).More(
                     a,
                     b=2,
+                )
+
+
+                # Real-world examples that have been problematic
+                _Format(
+                    original,
+                    expected,
+                    "AlignAssignments",
+                    "AlignTrailingComments",
+                    AlignAssignments=[
+                        [
+                            10,
+                            20,
+                            30,
+                            40,
+                        ],
+                        flags,
+                    ],
+                    AlignTrailingComments=[[10, 20, 30]],
+                    an_arg_to_make_it_longer___=10,
+                )
+
+
+                return super(AlignAssignmentsSuite, self)._Format(
+                    AlignAssignments=[
+                        [
+                            10,
+                            20,
+                            30,
+                            40,
+                        ],
+                        flags,
+                    ],
+                    AlignTrailingComments=[
+                        100,
+                        200,
+                        300,
+                        400,
+                    ],
+                    more={
+                        "a": 1,
+                        "b": 2,
+                        "c": 3,
+                        "d": 4,
+                    },
+                )
+
+
+                output_stream.write(
+                    textwrap.dedent(
+                        \"\"\"
+                    INFO: Calling '{name}' with the arguments:
+                    {args}
+
+                    \"\"\"
+                    ).format(
+                        name=entry_point.Name,
+                        args="\\n".join(
+                            [
+                                "    {k:<20}  {v}".format(
+                                    k="{}:".format(k),
+                                    v=v,
+                                ) for k, v in six.iteritems(kwargs)
+                            ]
+                        ),
+                    )
                 )
                 """
                 ),
