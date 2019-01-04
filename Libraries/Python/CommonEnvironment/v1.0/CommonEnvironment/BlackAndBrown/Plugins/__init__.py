@@ -46,6 +46,13 @@ class Plugin(Interface.Interface):
     # ----------------------------------------------------------------------
     # |  Methods
     @staticmethod
+    @Interface.extensionmethod
+    def PreprocessLines(lines):
+        """Preprocesses the provided lines"""
+        return lines
+    
+    # ----------------------------------------------------------------------
+    @staticmethod
     @Interface.abstractmethod
     def Decorate(lines, *args, **kwargs):
         """Returns a list of decorated lines"""

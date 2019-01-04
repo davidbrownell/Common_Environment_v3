@@ -728,6 +728,15 @@ else:
                 Executor(one, two).Other(a, b, c).More(a, b=2)
 
 
+                # Real-world examples that have been problematic
+                _Format(original, expected, "AlignAssignments", "AlignTrailingComments", AlignAssignments=[ [ 10, 20, 30, 40, ], flags ], AlignTrailingComments=[ [ 10, 20, 30, ], ], an_arg_to_make_it_longer___=10)
+
+
+                return super(AlignAssignmentsSuite, self)._Format(
+                    AlignAssignments=[ [ 10, 20, 30, 40], flags ],
+                    AlignTrailingComments=[ 100, 200, 300, 400, ],
+                    more={ "a": 1, "b": 2, "c": 3, "d": 4 },
+                )
                 """
                 ),
                 textwrap.dedent(
@@ -856,6 +865,51 @@ else:
                 Executor(one, two).Other(a, b, c).More(
                     a,
                     b=2,
+                )
+
+
+                # Real-world examples that have been problematic
+                _Format(
+                    original,
+                    expected,
+                    "AlignAssignments",
+                    "AlignTrailingComments",
+                    AlignAssignments=[
+                        [
+                            10,
+                            20,
+                            30,
+                            40,
+                        ],
+                        flags,
+                    ],
+                    AlignTrailingComments=[[10, 20, 30]],
+                    an_arg_to_make_it_longer___=10,
+                )
+
+
+                return super(AlignAssignmentsSuite, self)._Format(
+                    AlignAssignments=[
+                        [
+                            10,
+                            20,
+                            30,
+                            40,
+                        ],
+                        flags,
+                    ],
+                    AlignTrailingComments=[
+                        100,
+                        200,
+                        300,
+                        400,
+                    ],
+                    more={
+                        "a": 1,
+                        "b": 2,
+                        "c": 3,
+                        "d": 4,
+                    },
                 )
                 """
                 ),
