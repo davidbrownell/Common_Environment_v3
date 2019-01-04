@@ -46,8 +46,53 @@ class Plugin(PluginBase):
         PluginBase.STANDARD_PRIORITY
     )
 
+    IS_FIRST_FUNC_ARG_ATTRIBUTE_NAME        = "_is_first_func_arg"
+    IS_LAST_FUNC_ARG_ATTRIBUTE_NAME         = "_is_last_func_arg"
+
     # ----------------------------------------------------------------------
     # |  Methods
+    @classmethod
+    @Interface.override
+    def PreprocessLines(cls, lines):
+        # Decorate all parens that are associated with function calls. We must do this
+        # here, as black may move all of the parameters to their own line (since it
+        # prefers to split after an opening paren and before a closing paren). With this
+        # decoration, plugins can apply argument formatting even if the parens that
+        # delimit the arguments appear on different lines.
+        for line in lines:
+            nested_count = 0
+            paren_pairs = {}
+
+            for leaf_index, leaf in enumerate(line.leaves):
+                if leaf.value == "(":
+                    if cls.IsFunc(line, leaf_index):
+                        assert nested_count not in paren_pairs, nested_count
+                        paren_pairs[nested_count] = leaf_index
+
+                    nested_count += 1
+
+                elif leaf.value == ")":
+                    nested_count -= 1
+
+                    if nested_count in paren_pairs:
+                        # Make sure that there is at least 1 arg
+                        if paren_pairs[nested_count] + 1 != leaf_index:
+                            setattr(
+                                line.leaves[paren_pairs[nested_count] + 1],
+                                cls.IS_FIRST_FUNC_ARG_ATTRIBUTE_NAME,
+                                True,
+                            )
+                            setattr(
+                                line.leaves[leaf_index - 1],
+                                cls.IS_LAST_FUNC_ARG_ATTRIBUTE_NAME,
+                                True,
+                            )
+
+                        del paren_pairs[nested_count]
+
+        return lines
+
+    # ----------------------------------------------------------------------
     @classmethod
     @Interface.override
     def Decorate(
@@ -88,13 +133,12 @@ class Plugin(PluginBase):
 
         for line_index, line in enumerate(lines):
             clauses = []
-            leaf_index = 0
 
+            leaf_index = 0
             while leaf_index < len(line.leaves):
                 clauses.append(Clause(line, leaf_index))
 
-                # Account for clause terminators
-                if clauses[-1].EndingIndex < len(line.leaves) and line.leaves[clauses[-1].EndingIndex].value in Clause.TERMINATORS:
+                if leaf_index < len(line.leaves) and line.leaves[leaf_index].value == ",":
                     clauses[-1].EndingIndex += 1
 
                 leaf_index = clauses[-1].EndingIndex
@@ -140,6 +184,23 @@ class Plugin(PluginBase):
                     lines.insert(line_index, new_line)
 
         return lines
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    def IsFunc(line, leaf_index):
+        # Function invocation
+        if line.leaves[leaf_index].parent is not None and line.leaves[leaf_index].parent.type == python_symbols.trailer:
+            return True
+
+        # Function definition
+        if (
+            leaf_index + 1 != len(line.leaves)
+            and line.leaves[leaf_index + 1].parent is not None
+            and (line.leaves[leaf_index + 1].parent.type in black.VARARGS_PARENTS or line.leaves[leaf_index + 1].parent.type in [python_symbols.parameters])
+        ):
+            return True
+
+        return False
 
 
 # ----------------------------------------------------------------------
@@ -200,51 +261,57 @@ class _TokenParser(Interface.Interface):
 
 
 # ----------------------------------------------------------------------
-class _OpenCloseImpl(_TokenParser):
+class _OpenCloseTokenImpl(_TokenParser):
 
     # ----------------------------------------------------------------------
     # |  Properties
     @Interface.abstractproperty
     def OpenTokenValue(self):
-        """Token value that opens the pair"""
         raise Exception("Abstract property")
 
     # ----------------------------------------------------------------------
     @Interface.abstractproperty
     def CloseTokenValue(self):
-        """Token value that closes the pair"""
         raise Exception("Abstract property")
 
     # ----------------------------------------------------------------------
     # |  Methods
-    def __init__(self, line, index):
-        assert line.leaves[index].value == self.OpenTokenValue, line.leaves[index]
+    def __init__(self, line, leaf_index):
+        assert line.leaves[leaf_index].value == self.OpenTokenValue, line.leaves[leaf_index]
 
-        open_index = index
+        open_index = leaf_index
         close_index = None
 
         children = []
 
-        index += 1
-        while index < len(line.leaves):
-            leaf = line.leaves[index]
+        leaf_index += 1
+        while leaf_index < len(line.leaves):
+            leaf = line.leaves[leaf_index]
 
             if leaf.value == self.CloseTokenValue:
-                close_index = index
-                index += 1
+                close_index = leaf_index
+                leaf_index += 1
 
                 break
 
-            elif leaf.value == ",":
-                index += 1
+            elif line.leaves[leaf_index].value == ",":
+                leaf_index += 1
 
             else:
-                children.append(Clause(line, index))
-                index = children[-1].EndingIndex
+                children.append(
+                    Clause(
+                        line,
+                        leaf_index,
+                        is_terminated_func=lambda line,
+                        leaf_index: line.leaves[leaf_index].value == self.CloseTokenValue,
+                    )
+                )
+
+                leaf_index = children[-1].EndingIndex
 
         self.OpenIndex                      = open_index
         self.CloseIndex                     = close_index
-        self.EndingIndex                    = index
+        self.EndingIndex                    = leaf_index
         self.Children                       = children
 
     # ----------------------------------------------------------------------
@@ -283,7 +350,7 @@ class _OpenCloseImpl(_TokenParser):
 
             has_multiple_children = len(self.Children) > 1
 
-            for child in self.Children:
+            for child_index, child in enumerate(self.Children):
                 new_lines.append(black.Line(new_depth, []))
 
                 child.GenerateLines(
@@ -295,7 +362,7 @@ class _OpenCloseImpl(_TokenParser):
                     **should_be_split_kwargs
                 )
 
-                if has_multiple_children and child.AllowTrailingComma():
+                if has_multiple_children and child.AllowTrailingComma(child_index):
                     new_lines[-1].leaves.append(black.Leaf(python_tokens.COMMA, ","))
 
             # Close token
@@ -330,52 +397,62 @@ class _OpenCloseImpl(_TokenParser):
 # ----------------------------------------------------------------------
 class Clause(_TokenParser):
 
-    TERMINATORS                             = [
-        ",",
-        ")",
-        "}",
-        "]",
-    ]
-
     # ----------------------------------------------------------------------
-    def __init__(self, line, index):
-        starting_index = index
+    def __init__(
+        self,
+        line,
+        leaf_index,
+        is_terminated_func=None,
+        process_single_line_func_args=True,
+    ):
+        is_terminated_func = is_terminated_func or (lambda line, leaf_index: False)
+
+        starting_index = leaf_index
 
         children = []
 
         is_default_arg = False
         is_kwargs = False
 
-        while index < len(line.leaves):
-            leaf = line.leaves[index]
+        while leaf_index < len(line.leaves) and not is_terminated_func(line, leaf_index):
+            leaf = line.leaves[leaf_index]
 
-            if leaf.value in self.TERMINATORS:
+            # Treat commas as delimiters unless the commas are part of an expression list
+            # (tuple assignment)
+            if leaf.value == "," and (leaf.parent is None or leaf.parent.type != python_symbols.exprlist):
                 break
 
             elif leaf.value == "(":
-                children.append(Parens(line, index))
-                index = children[-1].EndingIndex
+                children.append(Parens(line, leaf_index))
+                leaf_index = children[-1].EndingIndex
 
             elif leaf.value == "{":
-                children.append(Braces(line, index))
-                index = children[-1].EndingIndex
+                children.append(Braces(line, leaf_index))
+                leaf_index = children[-1].EndingIndex
 
             elif leaf.value == "[":
-                children.append(Brackets(line, index))
-                index = children[-1].EndingIndex
+                children.append(Brackets(line, leaf_index))
+                leaf_index = children[-1].EndingIndex
+
+            elif process_single_line_func_args and leaf_index == 0 and SingleLineFuncArguments.IsSingleLineFuncArguments(
+                line
+            ):
+                children.append(SingleLineFuncArguments(line))
+                leaf_index = len(line.leaves)
 
             else:
                 if leaf.value == "=":
                     assert is_default_arg is False
                     is_default_arg = True
+
                 elif leaf.value == "**":
                     assert is_kwargs is False
                     is_kwargs = True
 
-                index += 1
+                leaf_index += 1
 
         self.StartingIndex                  = starting_index
-        self.EndingIndex                    = index
+        self.EndingIndex                    = leaf_index
         self.Children                       = children
         self.IsDefaultArg                   = is_default_arg
         self.IsKwargs                       = is_kwargs
@@ -417,13 +494,13 @@ class Clause(_TokenParser):
 
         # ----------------------------------------------------------------------
 
-        index = self.StartingIndex
+        leaf_index = self.StartingIndex
         for ending_index, child in GenerateIndexAndChild():
-            assert index <= ending_index, (index, ending_index)
+            assert leaf_index <= ending_index, (leaf_index, ending_index)
 
-            while index != ending_index:
-                leaf = line.leaves[index]
-                index += 1
+            while leaf_index != ending_index:
+                leaf = line.leaves[leaf_index]
+                leaf_index += 1
 
                 if should_trim_prefix:
                     leaf.prefix = ""
@@ -447,19 +524,103 @@ class Clause(_TokenParser):
             )
 
             should_trim_prefix = False
-
-            assert child.EndingIndex == child.CloseIndex + 1, child
-            index = child.EndingIndex
+            leaf_index = child.EndingIndex
 
         return col_offset
 
     # ----------------------------------------------------------------------
-    def AllowTrailingComma(self):
+    def AllowTrailingComma(self, child_index):
         return not self.IsKwargs
 
 
 # ----------------------------------------------------------------------
-class Parens(_OpenCloseImpl):
+class SingleLineFuncArguments(_TokenParser):
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    def IsSingleLineFuncArguments(line):
+        return line.leaves and getattr(
+            line.leaves[0],
+            Plugin.IS_FIRST_FUNC_ARG_ATTRIBUTE_NAME,
+            None,
+        ) and getattr(line.leaves[-1], Plugin.IS_LAST_FUNC_ARG_ATTRIBUTE_NAME, None)
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @Interface.override
+    def ShouldBeSplit(**should_be_split_kwargs):
+        return True
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @Interface.override
+    def IsBalanced():
+        return True
+
+    # ----------------------------------------------------------------------
+    def __init__(self, line):
+        children = []
+
+        leaf_index = 0
+        while leaf_index < len(line.leaves):
+            if line.leaves[leaf_index].value == ",":
+                leaf_index += 1
+
+            children.append(
+                Clause(
+                    line,
+                    leaf_index,
+                    process_single_line_func_args=False,
+                )
+            )
+            leaf_index = children[-1].EndingIndex
+
+        self.Children                       = children
+        self.OpenIndex                      = 0
+        self.EndingIndex                    = len(line.leaves)
+
+    # ----------------------------------------------------------------------
+    @Interface.override
+    def OriginalLength(self, line):
+        return self._OriginalLengthImpl(line, 0, len(line.leaves))
+
+    # ----------------------------------------------------------------------
+    @Interface.override
+    def GenerateLines(
+        self,
+        max_func_line_length,
+        line,
+        new_lines,
+        col_offset,
+        should_trim_prefix,
+        **should_be_split_kwargs
+    ):
+        new_depth = new_lines[-1].depth
+        col_offset = new_depth * 4
+
+        has_multiple_children = len(self.Children) > 1
+
+        for child_index, child in enumerate(self.Children):
+            if child_index != 0:
+                new_lines.append(black.Line(new_depth, []))
+
+            child.GenerateLines(
+                max_func_line_length,
+                line,
+                new_lines,
+                col_offset,
+                should_trim_prefix=True,
+                **should_be_split_kwargs
+            )
+
+            if has_multiple_children and child.AllowTrailingComma(child_index):
+                new_lines[-1].leaves.append(black.Leaf(python_tokens.COMMA, ","))
+
+        return col_offset
+
+
+# ----------------------------------------------------------------------
+class Parens(_OpenCloseTokenImpl):
 
     # ----------------------------------------------------------------------
     # |  Types
@@ -474,24 +635,16 @@ class Parens(_OpenCloseImpl):
 
     # ----------------------------------------------------------------------
     # |  Methods
-    def __init__(self, line, index):
-        super(Parens, self).__init__(line, index)
+    def __init__(self, line, leaf_index):
+        super(Parens, self).__init__(line, leaf_index)
 
         # ----------------------------------------------------------------------
         def GetType():
             if not self.IsBalanced():
                 return None
 
-            # Function invocation
-            if line.leaves[index].parent is not None and line.leaves[index].parent.type == python_symbols.trailer:
-                return self.__class__.Type.Func
-
-            # Function definition
-            if (
-                index + 1 != len(line.leaves)
-                and line.leaves[index + 1].parent is not None
-                and (line.leaves[index + 1].parent.type in black.VARARGS_PARENTS or line.leaves[index + 1].parent.type in [python_symbols.parameters])
-            ):
+            # Function
+            if Plugin.IsFunc(line, leaf_index):
                 return self.__class__.Type.Func
 
             # Empty tuple
@@ -553,7 +706,7 @@ class Parens(_OpenCloseImpl):
 
 
 # ----------------------------------------------------------------------
-class Braces(_OpenCloseImpl):
+class Braces(_OpenCloseTokenImpl):
 
     # ----------------------------------------------------------------------
     # |  Properties
@@ -579,7 +732,7 @@ class Braces(_OpenCloseImpl):
 
 
 # ----------------------------------------------------------------------
-class Brackets(_OpenCloseImpl):
+class Brackets(_OpenCloseTokenImpl):
 
     # ----------------------------------------------------------------------
     # |  Properties
@@ -588,8 +741,8 @@ class Brackets(_OpenCloseImpl):
 
     # ----------------------------------------------------------------------
     # |  Methods
-    def __init__(self, line, index):
-        super(Brackets, self).__init__(line, index)
+    def __init__(self, line, leaf_index):
+        super(Brackets, self).__init__(line, leaf_index)
 
         # ----------------------------------------------------------------------
         def IsList():
@@ -600,11 +753,13 @@ class Brackets(_OpenCloseImpl):
             if self.CloseIndex == self.OpenIndex + 1:
                 return True
 
+            # An item is a list if it isn't an index (where an index is indicated
+            # by a trailer)
             first_leaf = line.leaves[self.OpenIndex + 1]
-            if first_leaf.parent and first_leaf.parent.type == python_symbols.listmaker:
-                return True
+            if first_leaf.parent and first_leaf.parent.type in [python_symbols.trailer, python_symbols.subscriptlist]:
+                return False
 
-            return False
+            return True
 
         # ----------------------------------------------------------------------
 

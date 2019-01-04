@@ -87,9 +87,8 @@ class Executor(object):
                     if potential_class is None:
                         output_stream.write(
                             "WARNING: The module at '{}' does not contain a supported class ({}).\n".format(
-                                filename, ", ".join(
-                                    ["'{}'".format(pcn) for pcn in potential_class_names]
-                                )
+                                filename,
+                                ", ".join(["'{}'".format(pcn) for pcn in potential_class_names]),
                             )
                         )
                         continue
@@ -191,10 +190,17 @@ class Executor(object):
         if black_line_length is None:
             black_line_length = self.DEFAULT_BLACK_LINE_LENGTH
 
+        plugins = [plugin for plugin in self.Plugins if plugin.Name not in exclude_plugin_names and (not include_plugin_names or plugin.Name in include_plugin_names)]
+
+        # ----------------------------------------------------------------------
+        def Preprocess(lines):
+            for plugin in plugins:
+                lines = plugin.PreprocessLines(lines)
+
+            return lines
+
         # ----------------------------------------------------------------------
         def Postprocess(lines):
-            plugins = [plugin for plugin in self.Plugins if plugin.Name not in exclude_plugin_names and (not include_plugin_names or plugin.Name in include_plugin_names)]
-
             for plugin in plugins:
                 args = []
                 kwargs = {}
@@ -220,5 +226,6 @@ class Executor(object):
         return Blackify(
             input_content,
             line_length=black_line_length,
+            preprocess_lines_func=Preprocess,
             postprocess_lines_func=Postprocess,
         )
