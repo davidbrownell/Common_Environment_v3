@@ -129,10 +129,11 @@ class Plugin(PluginBase):
             leaf_index = 0
             while leaf_index < len(line.leaves):
                 clauses.append(Clause(line, leaf_index))
-                leaf_index = clauses[-1].EndingIndex
-
+                
                 if leaf_index < len(line.leaves) and line.leaves[leaf_index].value == ",":
-                    leaf_index += 1
+                    clauses[-1].EndingIndex += 1
+
+                leaf_index = clauses[-1].EndingIndex
 
             # We only process balanced clauses
             is_balanced = True
@@ -436,7 +437,6 @@ class Clause(_TokenParser):
                 if leaf.value == "=":
                     assert is_default_arg is False
                     is_default_arg = True
-                    leaf.prefix = ""
 
                 elif leaf.value == "**":
                     assert is_kwargs is False
