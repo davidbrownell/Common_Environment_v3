@@ -419,10 +419,7 @@ class Clause(_TokenParser):
 
             # Treat commas as delimiters unless the commas are part of an expression list
             # (tuple assignment)
-            if leaf.value == "," and (
-                leaf.parent is None
-                or leaf.parent.type != python_symbols.exprlist
-            ):
+            if leaf.value == "," and (leaf.parent is None or leaf.parent.type != python_symbols.exprlist):
                 break
 
             elif leaf.value == "(":

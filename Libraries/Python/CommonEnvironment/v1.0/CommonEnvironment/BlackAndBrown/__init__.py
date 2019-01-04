@@ -87,9 +87,8 @@ class Executor(object):
                     if potential_class is None:
                         output_stream.write(
                             "WARNING: The module at '{}' does not contain a supported class ({}).\n".format(
-                                filename, ", ".join(
-                                    ["'{}'".format(pcn) for pcn in potential_class_names]
-                                )
+                                filename,
+                                ", ".join(["'{}'".format(pcn) for pcn in potential_class_names]),
                             )
                         )
                         continue
@@ -199,7 +198,7 @@ class Executor(object):
                 lines = plugin.PreprocessLines(lines)
 
             return lines
-            
+
         # ----------------------------------------------------------------------
         def Postprocess(lines):
             for plugin in plugins:

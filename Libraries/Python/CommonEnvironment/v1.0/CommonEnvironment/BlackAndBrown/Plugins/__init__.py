@@ -50,7 +50,7 @@ class Plugin(Interface.Interface):
     def PreprocessLines(lines):
         """Preprocesses the provided lines"""
         return lines
-    
+
     # ----------------------------------------------------------------------
     @staticmethod
     @Interface.abstractmethod
