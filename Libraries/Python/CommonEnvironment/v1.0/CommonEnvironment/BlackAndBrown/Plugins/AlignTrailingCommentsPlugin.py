@@ -32,9 +32,7 @@ _script_dir, _script_name                   = os.path.split(_script_fullpath)
 @Interface.staticderived
 class Plugin(HorizontalAlignmentPluginImpl):
     Name                                    = Interface.DerivedProperty("AlignTrailingComments")
-    Priority                                = Interface.DerivedProperty(
-        AlignAssignmentsPlugin.Priority + 1
-    )
+    Priority                                = Interface.DerivedProperty(AlignAssignmentsPlugin.Priority + 1)
 
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
