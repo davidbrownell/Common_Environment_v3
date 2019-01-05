@@ -20,6 +20,7 @@ import os
 import CommonEnvironment
 from CommonEnvironment import Interface
 
+from CommonEnvironment.BlackAndBrown.Plugins.AlignAssignmentsPlugin import Plugin as AlignAssignmentsPlugin
 from CommonEnvironment.BlackAndBrown.Plugins.Impl.HorizontalAlignmentPluginImpl import HorizontalAlignmentPluginImpl
 
 # ----------------------------------------------------------------------
@@ -32,7 +33,7 @@ _script_dir, _script_name                   = os.path.split(_script_fullpath)
 class Plugin(HorizontalAlignmentPluginImpl):
     Name                                    = Interface.DerivedProperty("AlignTrailingComments")
     Priority                                = Interface.DerivedProperty(
-        HorizontalAlignmentPluginImpl.STANDARD_PRIORITY
+        AlignAssignmentsPlugin.Priority + 1
     )
 
     # ----------------------------------------------------------------------
