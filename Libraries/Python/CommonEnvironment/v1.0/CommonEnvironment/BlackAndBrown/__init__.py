@@ -223,9 +223,28 @@ class Executor(object):
         # Importing here as black isn't supported by python2
         from black import format_str as Blackify
 
-        return Blackify(
+        formatted_content = Blackify(
             input_content,
             line_length=black_line_length,
             preprocess_lines_func=Preprocess,
             postprocess_lines_func=Postprocess,
         )
+
+        return formatted_content, formatted_content != input_content
+
+    # ----------------------------------------------------------------------
+    def HasChanges(
+        self,
+        input_filename_or_content,
+        black_line_length=None,
+        include_plugin_names=None,
+        exclude_plugin_names=None,
+    ):
+        """Returns True if the provided content will change with formatting and False if it will not"""
+
+        return self.Format(
+            input_filename_or_content,
+            black_line_length=black_line_length,
+            include_plugin_names=include_plugin_names,
+            exclude_plugin_names=exclude_plugin_names,
+        )[1]

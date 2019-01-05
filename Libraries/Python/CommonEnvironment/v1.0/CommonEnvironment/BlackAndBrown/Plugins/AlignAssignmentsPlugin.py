@@ -17,10 +17,12 @@
 
 import os
 
+import black
+from blib2to3.pygram import python_symbols
+
 import CommonEnvironment
 from CommonEnvironment import Interface
 
-from CommonEnvironment.BlackAndBrown.Plugins.AlignTrailingCommentsPlugin import Plugin as AlignTrailingCommentsPlugin
 from CommonEnvironment.BlackAndBrown.Plugins.Impl.HorizontalAlignmentPluginImpl import HorizontalAlignmentPluginImpl
 
 # ----------------------------------------------------------------------
@@ -44,9 +46,7 @@ class Plugin(HorizontalAlignmentPluginImpl):
     # ----------------------------------------------------------------------
     # |  Properties
     Name                                    = Interface.DerivedProperty("AlignAssignments")
-    Priority                                = Interface.DerivedProperty(
-        AlignTrailingCommentsPlugin.Priority - 1
-    )
+    Priority                                = Interface.DerivedProperty(HorizontalAlignmentPluginImpl.STANDARD_PRIORITY + 10)
 
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
@@ -86,6 +86,10 @@ class Plugin(HorizontalAlignmentPluginImpl):
                 node = leaf.parent
 
                 while node:
+                    # Do not alter parameters
+                    if node.type in black.VARARGS_PARENTS or node.type in [python_symbols.parameters]:
+                        return None
+
                     if node.type == python_symbols.classdef:
                         return leaf if flags & cls.ClassLevel else None
 
