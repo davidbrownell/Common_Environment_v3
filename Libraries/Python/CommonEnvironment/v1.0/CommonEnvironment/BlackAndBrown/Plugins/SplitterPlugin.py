@@ -42,9 +42,7 @@ class Plugin(PluginBase):
     # ----------------------------------------------------------------------
     # |  Properties
     Name                                    = Interface.DerivedProperty("Splitter")
-    Priority                                = Interface.DerivedProperty(
-        PluginBase.STANDARD_PRIORITY
-    )
+    Priority                                = Interface.DerivedProperty(PluginBase.STANDARD_PRIORITY)
 
     IS_FIRST_FUNC_ARG_ATTRIBUTE_NAME        = "_is_first_func_arg"
     IS_LAST_FUNC_ARG_ATTRIBUTE_NAME         = "_is_last_func_arg"
