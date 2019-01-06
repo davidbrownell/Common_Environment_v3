@@ -55,7 +55,7 @@ else:
                 original,
                 black_line_length=200,
                 include_plugin_names=plugin_names,
-            )
+            )[0]
 
             self.assertEqual(result, expected)
 

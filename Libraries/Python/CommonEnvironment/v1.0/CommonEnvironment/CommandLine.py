@@ -547,7 +547,11 @@ class Executor(object):
                     arg_strings.append(line)
 
         # Parse the command line
-        result = self._ParseCommandLine(entry_point, arg_strings)
+        try:
+            result = self._ParseCommandLine(entry_point, arg_strings)
+        except Exception as ex:
+            result = str(ex)
+
         if isinstance(result, six.string_types):
             return self.Usage( error=result,
                                verbose=verbose,
@@ -768,31 +772,47 @@ class Executor(object):
         # ----------------------------------------------------------------------
         def ApplyImpl(parameter, arg):
             if isinstance(parameter.TypeInfo, DictTypeInfo):
+                argument_values.setdefault(parameter.Name, OrderedDict())
+
                 # Add the dictionary values; we will validate later.
+                this_dict = argument_values[parameter.Name]
+                tags = []
+
                 match = self._dict_regex.match(arg)
                 if not match:
                     return "'{}' is not a valid dictionary entry".format(arg)
 
-                tag = match.group("tag")
-                tag = tag.replace("\\{}".format(self.CommandLineDictTagValueSeparator), self.CommandLineDictTagValueSeparator)
+                while True:
+                    assert match
 
-                value = match.group("value")
+                    tag = match.group("tag")
+                    tag = tag.replace("\\{}".format(self.CommandLineDictTagValueSeparator), self.CommandLineDictTagValueSeparator)
+                    tags.append(tag)
 
-                argument_values.setdefault(parameter.Name, OrderedDict())
+                    value = match.group("value")
 
-                if tag not in argument_values[parameter.Name]:
-                    if parameter.AllowDuplicates:
-                        argument_values[parameter.Name][tag] = [ value, ]
+                    match = self._dict_regex.match(value)
+                    if match:
+                        this_dict = this_dict.setdefault(tag, OrderedDict())
                     else:
-                        argument_values[parameter.Name][tag] = value
-                else:
-                    if not parameter.AllowDuplicates:
-                        return "A value for '{}'s tag '{}' has already been provided ({})".format( parameter.Name,
-                                                                                                   tag,
-                                                                                                   argument_values[parameter.Name][tag],
-                                                                                                 )
+                        if parameter.PostprocessFunc:
+                            value = parameter.PostprocessFunc((tags, value))[1]
 
-                    argument_values[parameter.Name][tag].append(value)
+                        if tag not in this_dict:
+                            if parameter.AllowDuplicates:
+                                this_dict[tag] = [ value, ]
+                            else:
+                                this_dict[tag] = value
+                        else:
+                            if not parameter.AllowDuplicates:
+                                return "A value for '{}'s tag '{}' has already been provided ({})".format( parameter.Name,
+                                                                                                           tag,
+                                                                                                           this_dict[tag],
+                                                                                                         )
+
+                            this_dict[tag].append(value)
+
+                        break
 
                 return None
 
