@@ -43,7 +43,7 @@ class Plugin(HorizontalAlignmentPluginImpl):
         comment_leaf = None
 
         if line.comments:
-            assert len(line.comments) == 1
+            assert line.comments, line
             assert isinstance(line.comments[0], tuple), line.comments[0]
 
             comment_leaf = line.comments[0][1]
