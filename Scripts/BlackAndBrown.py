@@ -17,6 +17,7 @@
 
 import os
 import sys
+import textwrap
 
 import inflect as inflect_mod
 
@@ -38,6 +39,10 @@ inflect                                     = inflect_mod.engine()
 # These methods are similar in the type and number of args taken as input.
 # The following objects describe parameters common to all methods.
 _common_constraints                                     = {
+    "input": CommandLine.FilenameTypeInfo(
+        match_any=True,
+        arity="+",
+    ),
     "black_line_length": CommandLine.IntTypeInfo(
         min=10,
         arity="?",
@@ -60,13 +65,7 @@ _common_constraints                                     = {
 
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint()
-@CommandLine.Constraints(
-    input=CommandLine.FilenameTypeInfo(
-        match_any=True,
-        arity="+",
-    ),
-    **_common_constraints
-)
+@CommandLine.Constraints(**_common_constraints)
 def Format(
     input,
     overwrite=False,
@@ -157,13 +156,7 @@ def Format(
 
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint()
-@CommandLine.Constraints(
-    input=CommandLine.FilenameTypeInfo(
-        match_any=True,
-        arity="+",
-    ),
-    **_common_constraints
-)
+@CommandLine.Constraints(**_common_constraints)
 def HasChanges(
     input,
     black_line_length=None,
@@ -220,6 +213,9 @@ def HasChanges(
             "exclude_plugin_names": exclude_plugins,
         }
 
+        changed = 0
+        unchanged = 0
+
         dm.stream.write("Processing input files...")
         with dm.stream.DoneManager() as processing_dm:
             for index, input_filename in enumerate(input_filenames):
@@ -228,7 +224,37 @@ def HasChanges(
                 )
                 with processing_dm.stream.DoneManager() as this_dm:
                     if executor.HasChanges(input_filename, **invocation_kwargs):
+                        changed += 1
                         this_dm.result = 1
+                    else:
+                        unchanged += 1
+
+        total = changed + unchanged
+
+        # ----------------------------------------------------------------------
+        def Percentage(value):
+            if total == 0:
+                return 0.00
+
+            return (float(value) / total) * 100
+
+        # ----------------------------------------------------------------------
+
+        dm.stream.write(
+            textwrap.dedent(
+                """\
+
+            Files with changes:             {changed} ({changed_percent:.02f}%)
+            Files unchanged:                {unchanged} ({unchanged_percent:.02f}%)
+            
+            """
+            ).format(
+                changed=changed,
+                unchanged=unchanged,
+                changed_percent=Percentage(changed),
+                unchanged_percent=Percentage(unchanged),
+            )
+        )
 
         return dm.result
 
