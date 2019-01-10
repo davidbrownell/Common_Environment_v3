@@ -736,6 +736,19 @@ else:
                 Executor(one, two).Other(a, b, c).More(a, b=2)
 
 
+                # Comprehensions
+                [a for a in [one, two, three, four, five] if a & 1]
+
+
+                {k: k + 1 for k in [one, two, three, four, five] if k & 1}
+
+
+                {k: v for k, v in [(one, 1), (two, 2), (three, 3), (four, 4), (five, 5)] if k & 1}
+
+
+                (a for a in [one, two, three, four, five] if a & 1)
+
+
                 # Real-world examples that have been problematic
                 _Format(original, expected, "AlignAssignments", "AlignTrailingComments", AlignAssignments=[ [ 10, 20, 30, 40, ], flags ], AlignTrailingComments=[ [ 10, 20, 30, ], ], an_arg_to_make_it_longer___=10)
 
@@ -891,6 +904,51 @@ else:
                 )
 
 
+                # Comprehensions
+                [
+                    a for a in [
+                        one,
+                        two,
+                        three,
+                        four,
+                        five,
+                    ] if a & 1
+                ]
+
+
+                {
+                    k: k + 1 for k in [
+                        one,
+                        two,
+                        three,
+                        four,
+                        five,
+                    ] if k & 1
+                }
+
+
+                {
+                    k: v for k, v in [
+                        (one, 1),
+                        (two, 2),
+                        (three, 3),
+                        (four, 4),
+                        (five, 5),
+                    ] if k & 1
+                }
+
+
+                (
+                    a for a in [
+                        one,
+                        two,
+                        three,
+                        four,
+                        five,
+                    ] if a & 1
+                )
+
+                
                 # Real-world examples that have been problematic
                 _Format(
                     original,

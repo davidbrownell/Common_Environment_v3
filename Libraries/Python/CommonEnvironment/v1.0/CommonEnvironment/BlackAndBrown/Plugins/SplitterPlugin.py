@@ -240,6 +240,11 @@ class _TokenParser(Interface.Interface):
         raise Exception("Abstract method")
 
     # ----------------------------------------------------------------------
+    @Interface.abstractmethod
+    def AllowTrailingComma(self):
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
     def __repr__(self):
         return CommonEnvironment.ObjectReprImpl(self)
 
@@ -331,6 +336,7 @@ class _OpenCloseTokenImpl(_TokenParser):
         new_lines,
         col_offset,
         should_trim_prefix,
+        suppress_final_comma,
         **should_be_split_kwargs
     ):
         if should_trim_prefix:
@@ -358,7 +364,13 @@ class _OpenCloseTokenImpl(_TokenParser):
                     **should_be_split_kwargs
                 )
 
-                if child.AllowTrailingComma(child_index):
+                if (
+                    child.AllowTrailingComma()
+                    and (
+                        not suppress_final_comma
+                        or child_index != len(self.Children) - 1
+                    )
+                ):
                     new_lines[-1].leaves.append(black.Leaf(python_tokens.COMMA, ","))
 
             # Close token
@@ -382,32 +394,32 @@ class _OpenCloseTokenImpl(_TokenParser):
         return col_offset
 
     # ----------------------------------------------------------------------
-    @Interface.abstractmethod
-    def AllowTrailingComma(self):
-        raise Exception("Abstract method")
-
-    # ----------------------------------------------------------------------
     # |  Protected Methods
     def _IsComprehension(self, line):
-        # The item is a comprehension if a non-child leaf is a 
-        # for statement
+        # Comprehensions will only have a single child
+        if len(self.Children) != 1:
+            return False
+
+        clause = self.Children[0]
+
+        # Enumerate the children of the clause
 
         # ----------------------------------------------------------------------
         def GenerateIndexRange():
-            if not self.Children:
-                yield 0, self.EndingIndex
+            start = clause.StartingIndex
+
+            if not clause.Children:
+                yield start, clause.EndingIndex
                 return
                 
-            start = 0
+            for child in clause.Children:
+                if child.OpenIndex != start:
+                    yield start, child.OpenIndex
 
-            for child in self.Children:
-                if child.StartingIndex != start:
-                    yield start, child.StartingIndex
+                start = child.CloseIndex
 
-                start = child.EndingIndex
-
-            if child.EndingIndex != self.EndingIndex:
-                yield child.EndingIndex, self.EndingIndex
+            if start != clause.EndingIndex:
+                yield start, clause.EndingIndex
 
         # ----------------------------------------------------------------------
 
@@ -415,7 +427,10 @@ class _OpenCloseTokenImpl(_TokenParser):
             for index in range(start, end):
                 leaf = line.leaves[index]
 
-                if leaf.parent and leaf.parent.type == python_symbols.old_comp_for:
+                if leaf.parent and leaf.parent.type in [
+                    python_symbols.old_comp_for,
+                    python_symbols.comp_for,
+                ]:
                     return True
 
         return False
@@ -555,6 +570,7 @@ class Clause(_TokenParser):
                 new_lines,
                 col_offset,
                 should_trim_prefix,
+                suppress_final_comma=not child.AllowTrailingComma(),
                 **should_be_split_kwargs
             )
 
@@ -564,8 +580,9 @@ class Clause(_TokenParser):
         return col_offset
 
     # ----------------------------------------------------------------------
-    def AllowTrailingComma(self, child_index):
-        return not self.IsKwargs and not any(child for child in self.Children if not child.AllowTrailingComma())
+    @Interface.override
+    def AllowTrailingComma(self):
+        return not self.IsKwargs
 
 
 # ----------------------------------------------------------------------
@@ -646,10 +663,15 @@ class SingleLineFuncArguments(_TokenParser):
                 **should_be_split_kwargs
             )
 
-            if child.AllowTrailingComma(child_index):
+            if child.AllowTrailingComma():
                 new_lines[-1].leaves.append(black.Leaf(python_tokens.COMMA, ","))
 
         return col_offset
+
+    # ----------------------------------------------------------------------
+    @Interface.override
+    def AllowTrailingComma(self):
+        return True
 
 
 # ----------------------------------------------------------------------
@@ -809,7 +831,7 @@ class Brackets(_OpenCloseTokenImpl):
     class Type(Enum):
         Index                               = auto()
         Comprehension                       = auto()
-        Standard                            = auto()
+        List                                = auto()
 
     # ----------------------------------------------------------------------
     # |  Properties
@@ -826,6 +848,9 @@ class Brackets(_OpenCloseTokenImpl):
             if not self.IsBalanced():
                 return None
 
+            if self._IsComprehension(line):
+                return self.__class__.Type.Comprehension
+
             if (
                 line.leaves[self.OpenIndex].parent is None
                 or line.leaves[self.OpenIndex].parent.type != python_symbols.atom 
@@ -834,10 +859,7 @@ class Brackets(_OpenCloseTokenImpl):
             ):
                 return self.__class__.Type.Index
 
-            if self._IsComprehension(line):
-                return self.__class__.Type.Comprehension
-
-            return self.__class__.Type.Standard
+            return self.__class__.Type.List
 
         # ----------------------------------------------------------------------
 
@@ -865,4 +887,4 @@ class Brackets(_OpenCloseTokenImpl):
     # ----------------------------------------------------------------------
     @Interface.override
     def AllowTrailingComma(self):
-        return self.Type == self.__class__.Type.Standard
+        return self.Type == self.__class__.Type.List
