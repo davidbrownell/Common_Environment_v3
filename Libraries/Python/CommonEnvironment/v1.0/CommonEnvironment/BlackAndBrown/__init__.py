@@ -52,6 +52,7 @@ class Executor(object):
     # ----------------------------------------------------------------------
     def __init__(self, output_stream, *plugin_input_dirs, **plugin_args):
         plugins = []
+        debug_plugin = None
 
         for plugin_input_dir in itertools.chain(
             [os.path.join(_script_dir, "Plugins")],
@@ -95,12 +96,16 @@ class Executor(object):
 
                     plugins.append(potential_class)
 
+                    if debug_plugin is None and potential_class.Name == "Debug":
+                        debug_plugin = potential_class
+
         plugins.sort(
             key=lambda plugin: (plugin.Priority, plugin.Name)
         )
 
         self._plugins                       = plugins
         self._plugin_args                   = plugin_args
+        self._debug_plugin                  = debug_plugin
 
     # ----------------------------------------------------------------------
     @property
@@ -114,9 +119,10 @@ class Executor(object):
         black_line_length=None,
         include_plugin_names=None,
         exclude_plugin_names=None,
+        debug=False,
     ):
         """Formats the input file or content and returns the results"""
-
+        
         plugin_args = self._plugin_args
 
         if os.path.isfile(input_filename_or_content):
@@ -184,8 +190,14 @@ class Executor(object):
         input_content = input_filename_or_content
         del input_filename_or_content
 
-        include_plugin_names = include_plugin_names or set()
-        exclude_plugin_names = exclude_plugin_names or set()
+        include_plugin_names = set(include_plugin_names or [])
+        exclude_plugin_names = set(exclude_plugin_names or [])
+
+        if debug:
+            if include_plugin_names:
+                include_plugin_names.add(self._debug_plugin.Name)
+        else:
+            exclude_plugin_names.add(self._debug_plugin.Name)
 
         if black_line_length is None:
             black_line_length = self.DEFAULT_BLACK_LINE_LENGTH
