@@ -34,11 +34,11 @@ _script_dir, _script_name                   = os.path.split(_script_fullpath)
 
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint(
-    arg=CommandLine.EntryPoint.Parameter("Argument passed to Black")
+    arg=CommandLine.EntryPoint.Parameter("Argument passed to Black"),
 )
 @CommandLine.Constraints(
     arg=CommandLine.StringTypeInfo(
-        arity="+"
+        arity="+",
     ),
     output_stream=None,
 )
@@ -102,7 +102,7 @@ def Convert(
             ********************************************************************************
             ********************************************************************************
             {}
-            """
+            """,
         ).format(StringHelpers.LeftJustify(exception_content, 8), original_content)
 
         has_changes = True
