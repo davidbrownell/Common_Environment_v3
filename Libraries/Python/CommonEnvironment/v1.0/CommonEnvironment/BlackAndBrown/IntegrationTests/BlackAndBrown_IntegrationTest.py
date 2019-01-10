@@ -942,7 +942,7 @@ else:
                     INFO: Calling '{name}' with the arguments:
                     {args}
 
-                    \"\"\"
+                    \"\"\",
                     ).format(
                         name=entry_point.Name,
                         args="\\n".join(
@@ -951,7 +951,7 @@ else:
                                     k="{}:".format(k),
                                     v=v,
                                 ) for k, v in six.iteritems(kwargs)
-                            ]
+                            ],
                         ),
                     )
                 )
