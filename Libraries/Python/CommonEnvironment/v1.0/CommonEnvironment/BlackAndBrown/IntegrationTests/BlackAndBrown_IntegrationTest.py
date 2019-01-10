@@ -103,7 +103,7 @@ else:
 
                     def Func3():
                         var_____________ # Comment C
-                    """
+                    """,
                 ),
                 textwrap.dedent(
                     """\
@@ -135,7 +135,7 @@ else:
 
                     def Func3():
                         var_____________         # Comment C
-                    """
+                    """,
                 ),
             )
 
@@ -147,14 +147,14 @@ else:
                     # This is a test
                     one # Comment 1
                     two # Comment 2
-                    """
+                    """,
                 ),
                 textwrap.dedent(
                     """\
                     # This is a test
                     one      # Comment 1
                     two      # Comment 2
-                    """
+                    """,
                 ),
             )
 
@@ -167,7 +167,7 @@ else:
                     one # Comment 1
                     two # Comment 2
                     # More Testing
-                    """
+                    """,
                 ),
                 textwrap.dedent(
                     """\
@@ -175,7 +175,7 @@ else:
                     one      # Comment 1
                     two      # Comment 2
                              # More Testing
-                    """
+                    """,
                 ),
             )
 
@@ -201,7 +201,7 @@ else:
                                                                 # be displayed if not provided.
                         "CommandLineDocSuffix",                 # def Func() -> string
                     ]
-                    """
+                    """,
                 ),
                 textwrap.dedent(
                     """\
@@ -219,7 +219,7 @@ else:
                                                         # be displayed if not provided.
                         "CommandLineDocSuffix",         # def Func() -> string
                     ]
-                    """
+                    """,
                 ),
             )
 
@@ -233,7 +233,7 @@ else:
                     This_is_a_really_long_line
                     comment_should_come_after_the_end_of_the_content
                     Line_3 # Comment
-                    """
+                    """,
                 ),
                 textwrap.dedent(
                     """\
@@ -242,7 +242,7 @@ else:
                     This_is_a_really_long_line
                     comment_should_come_after_the_end_of_the_content
                     Line_3                                           # Comment
-                    """
+                    """,
                 ),
             )
 
@@ -270,7 +270,7 @@ else:
 
                         def method(self):
                             c = 30
-                    """
+                    """,
                 )
 
             return super(AlignAssignmentsSuite, self)._Format(
@@ -299,7 +299,7 @@ else:
 
                         def method(self):
                             c = 30
-                    """
+                    """,
                 ),
                 AlignAssignmentsPlugin.ModuleLevel,
             )
@@ -321,7 +321,7 @@ else:
 
                         def method(self):
                             c = 30
-                    """
+                    """,
                 ),
                 AlignAssignmentsPlugin.ClassLevel,
             )
@@ -343,7 +343,7 @@ else:
 
                         def method(self):
                             c = 30
-                    """
+                    """,
                 ),
                 AlignAssignmentsPlugin.InitLevel,
             )
@@ -365,7 +365,7 @@ else:
 
                         def method(self):
                             c = 30
-                    """
+                    """,
                 ),
                 AlignAssignmentsPlugin.InitAnyLevel,
             )
@@ -387,7 +387,7 @@ else:
 
                         def method(self):
                             c          = 30
-                    """
+                    """,
                 ),
                 AlignAssignmentsPlugin.MethodLevel,
             )
@@ -409,7 +409,7 @@ else:
 
                         def method(self):
                             c = 30
-                    """
+                    """,
                 ),
                 AlignAssignmentsPlugin.ModuleLevel | AlignAssignmentsPlugin.ClassLevel | AlignAssignmentsPlugin.InitLevel,
             )
@@ -427,7 +427,7 @@ else:
 
                     one                = 1       # Comment
                     two_____           = 2       # Comment
-                    """
+                    """,
                 ),
                 AlignAssignmentsPlugin.ModuleLevel,
                 original=textwrap.dedent(
@@ -440,7 +440,7 @@ else:
 
                     one = 1 # Comment
                     two_____ = 2 # Comment
-                    """
+                    """,
                 ),
             )
 
@@ -473,7 +473,7 @@ else:
 
                     Func3(one, two)
                     Func4(one, two, three, four)
-                    """
+                    """,
                 ),
                 textwrap.dedent(
                     """\
@@ -497,7 +497,7 @@ else:
                         three,
                         four,
                     )
-                    """
+                    """,
                 ),
             )
 
@@ -550,7 +550,7 @@ else:
                         two, three=3
                     )
                     Func8(one, two, three)
-                    """
+                    """,
                 ),
                 textwrap.dedent(
                     """\
@@ -605,7 +605,7 @@ else:
                         three=3,
                     )
                     Func8(one, two, three)
-                    """
+                    """,
                 ),
             )
 
@@ -615,7 +615,7 @@ else:
                 textwrap.dedent(
                     """\
                     Executor().Invoke(output_stream=output_stream, verbose=verbose, print_results=print_results, allow_exceptions=allow_exceptions)
-                    """
+                    """,
                 ),
                 textwrap.dedent(
                     """\
@@ -625,7 +625,7 @@ else:
                         print_results=print_results,
                         allow_exceptions=allow_exceptions,
                     )
-                    """
+                    """,
                 ),
             )
 
@@ -636,7 +636,7 @@ else:
                     """\
                     for filename in FileSystem.WalkFiles(plugin_input_dir, include_file_extensions=[".py"], include_file_base_names=[lambda basename: basename.endswith("Plugin")]):
                         pass
-                    """
+                    """,
                 ),
                 textwrap.dedent(
                     """\
@@ -646,7 +646,7 @@ else:
                         include_file_base_names=[lambda basename: basename.endswith("Plugin")],
                     ):
                         pass
-                    """
+                    """,
                 ),
             )
 
@@ -656,7 +656,7 @@ else:
                 textwrap.dedent(
                     """\
                     return self.Usage(verbose=True, potential_method_name=potential_method_name)
-                    """
+                    """,
                 ),
                 textwrap.dedent(
                     """\
@@ -664,7 +664,7 @@ else:
                         verbose=True,
                         potential_method_name=potential_method_name,
                     )
-                    """
+                    """,
                 ),
             )
 
@@ -736,6 +736,19 @@ else:
                 Executor(one, two).Other(a, b, c).More(a, b=2)
 
 
+                # Comprehensions
+                [a for a in [one, two, three, four, five] if a & 1]
+
+
+                {k: k + 1 for k in [one, two, three, four, five] if k & 1}
+
+
+                {k: v for k, v in [(one, 1), (two, 2), (three, 3), (four, 4), (five, 5)] if k & 1}
+
+
+                (a for a in [one, two, three, four, five] if a & 1)
+
+
                 # Real-world examples that have been problematic
                 _Format(original, expected, "AlignAssignments", "AlignTrailingComments", AlignAssignments=[ [ 10, 20, 30, 40, ], flags ], AlignTrailingComments=[ [ 10, 20, 30, ], ], an_arg_to_make_it_longer___=10)
 
@@ -760,7 +773,7 @@ else:
                                                   for k, v in six.iteritems(kwargs)
                                                 ]),
                                ))
-                """
+                """,
                 ),
                 textwrap.dedent(
                     """\
@@ -891,6 +904,51 @@ else:
                 )
 
 
+                # Comprehensions
+                [
+                    a for a in [
+                        one,
+                        two,
+                        three,
+                        four,
+                        five,
+                    ] if a & 1
+                ]
+
+
+                {
+                    k: k + 1 for k in [
+                        one,
+                        two,
+                        three,
+                        four,
+                        five,
+                    ] if k & 1
+                }
+
+
+                {
+                    k: v for k, v in [
+                        (one, 1),
+                        (two, 2),
+                        (three, 3),
+                        (four, 4),
+                        (five, 5),
+                    ] if k & 1
+                }
+
+
+                (
+                    a for a in [
+                        one,
+                        two,
+                        three,
+                        four,
+                        five,
+                    ] if a & 1
+                )
+
+                
                 # Real-world examples that have been problematic
                 _Format(
                     original,
@@ -942,7 +1000,7 @@ else:
                     INFO: Calling '{name}' with the arguments:
                     {args}
 
-                    \"\"\"
+                    \"\"\",
                     ).format(
                         name=entry_point.Name,
                         args="\\n".join(
@@ -951,11 +1009,11 @@ else:
                                     k="{}:".format(k),
                                     v=v,
                                 ) for k, v in six.iteritems(kwargs)
-                            ]
+                            ],
                         ),
                     )
                 )
-                """
+                """,
                 ),
             )
 
@@ -967,8 +1025,8 @@ if __name__ == "__main__":
     try:
         sys.exit(
             unittest.main(
-                verbosity=2
-            )
+                verbosity=2,
+            ),
         )
     except KeyboardInterrupt:
         pass
