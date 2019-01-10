@@ -645,6 +645,7 @@ class SingleLineFuncArguments(_TokenParser):
         new_lines,
         col_offset,
         should_trim_prefix,
+        suppress_final_comma,
         **should_be_split_kwargs
     ):
         new_depth = new_lines[-1].depth
@@ -663,7 +664,13 @@ class SingleLineFuncArguments(_TokenParser):
                 **should_be_split_kwargs
             )
 
-            if child.AllowTrailingComma():
+            if (
+                child.AllowTrailingComma()
+                and (
+                    not suppress_final_comma
+                    or child_index != len(self.Children) - 1
+                )
+            ):
                 new_lines[-1].leaves.append(black.Leaf(python_tokens.COMMA, ","))
 
         return col_offset
