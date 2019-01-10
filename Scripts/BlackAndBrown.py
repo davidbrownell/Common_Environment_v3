@@ -48,17 +48,17 @@ _common_constraints                                     = {
         arity="?",
     ),
     "plugin_dir": CommandLine.DirectoryTypeInfo(
-        arity="*"
+        arity="*",
     ),
     "plugin_arg": CommandLine.DictTypeInfo(
         require_exact_match=False,
         arity="?",
     ),
     "include_plugin": CommandLine.StringTypeInfo(
-        arity="*"
+        arity="*",
     ),
     "exclude_plugin": CommandLine.StringTypeInfo(
-        arity="*"
+        arity="*",
     ),
     "output_stream": None,
 }
@@ -74,6 +74,7 @@ def Format(
     plugin_arg=None,
     include_plugin=None,
     exclude_plugin=None,
+    debug=False,
     output_stream=sys.stdout,
 ):
     """Formats the provided input using BlackAndBrown"""
@@ -102,7 +103,7 @@ def Format(
 
         dm.stream.write("Resolving input...")
         with dm.stream.DoneManager(
-            done_suffix=lambda: "{} found".format(inflect.no("input file", len(input_filenames)))
+            done_suffix=lambda: "{} found".format(inflect.no("input file", len(input_filenames))),
         ):
             for input in inputs:
                 if os.path.isfile(input):
@@ -117,31 +118,29 @@ def Format(
 
         executor = BlackAndBrownMod.Executor(dm.stream, *plugin_dirs, **plugin_args)
 
-        invocation_kwargs = {
-            "black_line_length": black_line_length,
-            "include_plugin_names": include_plugins,
-            "exclude_plugin_names": exclude_plugins,
-        }
-
         dm.stream.write("Processing input files...")
         with dm.stream.DoneManager() as processing_dm:
             nonlocals = CommonEnvironment.Nonlocals(
-                content_written=False
+                content_written=False,
             )
 
             for index, input_filename in enumerate(input_filenames):
                 nonlocals.content_written = False
 
                 processing_dm.stream.write(
-                    "'{}' ({} of {})...".format(input_filename, index + 1, len(input_filenames))
+                    "'{}' ({} of {})...".format(input_filename, index + 1, len(input_filenames)),
                 )
                 with processing_dm.stream.DoneManager(
-                    suffix=lambda: "\n" if nonlocals.content_written else ""
+                    suffix=lambda: "\n" if nonlocals.content_written else "",
                 ) as this_dm:
                     formatted_content, has_changes = executor.Format(
                         input_filename,
-                        **invocation_kwargs
+                        black_line_length=black_line_length,
+                        include_plugin_names=include_plugins,
+                        exclude_plugin_names=exclude_plugins,
+                        debug=debug,
                     )
+
                     if not has_changes:
                         this_dm.result = 1
                     elif overwrite:
@@ -192,7 +191,7 @@ def HasChanges(
 
         dm.stream.write("Resolving input...")
         with dm.stream.DoneManager(
-            done_suffix=lambda: "{} found".format(inflect.no("input file", len(input_filenames)))
+            done_suffix=lambda: "{} found".format(inflect.no("input file", len(input_filenames))),
         ):
             for input in inputs:
                 if os.path.isfile(input):
@@ -220,7 +219,7 @@ def HasChanges(
         with dm.stream.DoneManager() as processing_dm:
             for index, input_filename in enumerate(input_filenames):
                 processing_dm.stream.write(
-                    "'{}' ({} of {})...".format(input_filename, index + 1, len(input_filenames))
+                    "'{}' ({} of {})...".format(input_filename, index + 1, len(input_filenames)),
                 )
                 with processing_dm.stream.DoneManager() as this_dm:
                     if executor.HasChanges(input_filename, **invocation_kwargs):
