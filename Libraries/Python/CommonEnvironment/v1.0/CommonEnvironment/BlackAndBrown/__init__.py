@@ -73,7 +73,7 @@ class Executor(object):
                     mod = importlib.import_module(plugin_name)
                     if mod is None:
                         output_stream.write(
-                            "WARNING: Unable to import the module at '{}'.\n".format(filename)
+                            "WARNING: Unable to import the module at '{}'.\n".format(filename),
                         )
                         continue
 
@@ -100,7 +100,7 @@ class Executor(object):
                         debug_plugin = potential_class
 
         plugins.sort(
-            key=lambda plugin: (plugin.Priority, plugin.Name)
+            key=lambda plugin: (plugin.Priority, plugin.Name),
         )
 
         self._plugins                       = plugins
@@ -122,7 +122,7 @@ class Executor(object):
         debug=False,
     ):
         """Formats the input file or content and returns the results"""
-        
+
         plugin_args = self._plugin_args
 
         if os.path.isfile(input_filename_or_content):
@@ -176,7 +176,7 @@ class Executor(object):
 
                     except Exception as ex:
                         raise Exception(
-                            "The toml file at '{}' is not valid ({})".format(toml_filename, str(ex))
+                            "The toml file at '{}' is not valid ({})".format(toml_filename, str(ex)),
                         )
 
                 # Apply the provided args

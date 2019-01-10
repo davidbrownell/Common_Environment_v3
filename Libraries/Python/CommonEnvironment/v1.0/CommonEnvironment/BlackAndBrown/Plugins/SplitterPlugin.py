@@ -307,7 +307,7 @@ class _OpenCloseTokenImpl(_TokenParser):
                         leaf_index,
                         is_terminated_func=lambda line,
                         leaf_index: line.leaves[leaf_index].value == self.CloseTokenValue,
-                    )
+                    ),
                 )
 
                 leaf_index = children[-1].EndingIndex
@@ -364,13 +364,7 @@ class _OpenCloseTokenImpl(_TokenParser):
                     **should_be_split_kwargs
                 )
 
-                if (
-                    child.AllowTrailingComma()
-                    and (
-                        not suppress_final_comma
-                        or child_index != len(self.Children) - 1
-                    )
-                ):
+                if child.AllowTrailingComma() and (not suppress_final_comma or child_index != len(self.Children) - 1):
                     new_lines[-1].leaves.append(black.Leaf(python_tokens.COMMA, ","))
 
             # Close token
@@ -411,7 +405,7 @@ class _OpenCloseTokenImpl(_TokenParser):
             if not clause.Children:
                 yield start, clause.EndingIndex
                 return
-                
+
             for child in clause.Children:
                 if child.OpenIndex != start:
                     yield start, child.OpenIndex
@@ -427,10 +421,7 @@ class _OpenCloseTokenImpl(_TokenParser):
             for index in range(start, end):
                 leaf = line.leaves[index]
 
-                if leaf.parent and leaf.parent.type in [
-                    python_symbols.old_comp_for,
-                    python_symbols.comp_for,
-                ]:
+                if leaf.parent and leaf.parent.type in [python_symbols.old_comp_for, python_symbols.comp_for]:
                     return True
 
         return False
@@ -485,7 +476,7 @@ class Clause(_TokenParser):
                 leaf_index = children[-1].EndingIndex
 
             elif process_single_line_func_args and leaf_index == 0 and SingleLineFuncArguments.IsSingleLineFuncArguments(
-                line
+                line,
             ):
                 children.append(SingleLineFuncArguments(line))
                 leaf_index = len(line.leaves)
@@ -520,9 +511,7 @@ class Clause(_TokenParser):
     # ----------------------------------------------------------------------
     @Interface.override
     def ShouldBeSplit(self, **should_be_split_kwargs):
-        return self.IsDefaultArg or any(
-            child for child in self.Children if child.ShouldBeSplit(**should_be_split_kwargs)
-        )
+        return self.IsDefaultArg or any(child for child in self.Children if child.ShouldBeSplit(**should_be_split_kwargs))
 
     # ----------------------------------------------------------------------
     @Interface.override
@@ -623,7 +612,7 @@ class SingleLineFuncArguments(_TokenParser):
                     line,
                     leaf_index,
                     process_single_line_func_args=False,
-                )
+                ),
             )
             leaf_index = children[-1].EndingIndex
 
@@ -664,13 +653,7 @@ class SingleLineFuncArguments(_TokenParser):
                 **should_be_split_kwargs
             )
 
-            if (
-                child.AllowTrailingComma()
-                and (
-                    not suppress_final_comma
-                    or child_index != len(self.Children) - 1
-                )
-            ):
+            if child.AllowTrailingComma() and (not suppress_final_comma or child_index != len(self.Children) - 1):
                 new_lines[-1].leaves.append(black.Leaf(python_tokens.COMMA, ","))
 
         return col_offset
@@ -739,9 +722,7 @@ class Parens(_OpenCloseTokenImpl):
             if split_funcs_num_args is not None and len(self.Children) >= split_funcs_num_args:
                 return True
 
-            if split_func_args_with_default and len(self.Children) > 1 and any(
-                child for child in self.Children if child.IsDefaultArg
-            ):
+            if split_func_args_with_default and len(self.Children) > 1 and any(child for child in self.Children if child.IsDefaultArg):
                 return True
 
         elif self.Type == self.__class__.Type.Tuple:
@@ -860,7 +841,7 @@ class Brackets(_OpenCloseTokenImpl):
 
             if (
                 line.leaves[self.OpenIndex].parent is None
-                or line.leaves[self.OpenIndex].parent.type != python_symbols.atom 
+                or line.leaves[self.OpenIndex].parent.type != python_symbols.atom
                 or line.leaves[self.CloseIndex].parent is None
                 or line.leaves[self.CloseIndex].parent.type != python_symbols.atom
             ):

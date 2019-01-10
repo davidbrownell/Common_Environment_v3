@@ -62,20 +62,26 @@ class Plugin(PluginBase):
 
         symbol_table = black.pygram.python_grammar.number2symbol
 
-        sys.stdout.write(textwrap.dedent(
-            """\
+        sys.stdout.write(
+            textwrap.dedent(
+                """\
             # ----------------------------------------------------------------------
             # |
             # |  {}
             # |
-            """).format(header))
+            """,
+            ).format(header)
+        )
 
         for line_index, line in enumerate(lines):
-            sys.stdout.write(textwrap.dedent(
-                """\
+            sys.stdout.write(
+                textwrap.dedent(
+                    """\
                 # ----------------------------------------------------------------------
                 {0:>3}) {1}
-                """).format(line_index + 1, line))
+                """,
+                ).format(line_index + 1, line)
+            )
 
             for leaf_index, leaf in enumerate(line.leaves):
                 symbol = "<None>"
@@ -83,10 +89,13 @@ class Plugin(PluginBase):
                 if leaf.parent is not None:
                     symbol = symbol_table[leaf.parent.type]
 
-                sys.stdout.write(textwrap.dedent(
-                    """\
+                sys.stdout.write(
+                    textwrap.dedent(
+                        """\
                     {0:>3}) {1:25}  {2:>2}  {3}
-                    """).format(leaf_index, leaf.value, len(leaf.prefix), symbol))
+                    """,
+                    ).format(leaf_index, leaf.value, len(leaf.prefix), symbol)
+                )
 
             sys.stdout.write("\n")
 
