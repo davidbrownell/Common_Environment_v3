@@ -197,7 +197,7 @@ else:
                                                                 # information; no prefix will be displayed if not provided.
                         "CommandLineDocPrefix",                 # def Func() -> string
 
-                                                                # Content displayed after usage information; no prefix will 
+                                                                # Content displayed after usage information; no prefix will
                                                                 # be displayed if not provided.
                         "CommandLineDocSuffix",                 # def Func() -> string
                     ]
@@ -668,6 +668,7 @@ else:
                 ),
             )
 
+    # ----------------------------------------------------------------------
     class SplitFunctionsSuite(TestBase):
         # ----------------------------------------------------------------------
         def _Format(self, original, expected):
@@ -686,181 +687,163 @@ else:
             self._Format(
                 textwrap.dedent(
                     """\
-                Func1(Func2(1, two=2), 3)
+                    Func1(Func2(1, two=2), 3)
 
 
-                Func3(Func4(1, two), 3)
+                    Func3(Func4(1, two), 3)
 
 
-                (func1 or func2)(a, b, c)
+                    (func1 or func2)(a, b, c)
 
 
-                EmptyFunc()
+                    EmptyFunc()
 
 
-                def Func1(one, two, three=3, four=Func(a, Func(1, 2), c)): pass
-                
-                
-                def Func2(one, two, three=3, four=Func(a, Func(1, two=2), c)): pass
+                    def Func1(one, two, three=3, four=Func(a, Func(1, 2), c)): pass
 
 
-                class Foo(object):
-                    def __init__(self):
-                        self.func(1, 2, 3)
+                    def Func2(one, two, three=3, four=Func(a, Func(1, two=2), c)): pass
 
 
-                Another(one, two=Func(1, 2))
+                    class Foo(object):
+                        def __init__(self):
+                            self.func(1, 2, 3)
 
 
-                return self.Usage(verbose=True, another=Func(1, 2, 3), potential_method_name=potential_method_name)
+                    Another(one, two=Func(1, 2))
 
 
-                Func1(1, 2, 3)
+                    return self.Usage(verbose=True, another=Func(1, 2, 3), potential_method_name=potential_method_name)
 
 
-                def Func2(one, two, three, four, five, six, seven, eight, nine, ten, eleven, twelve): pass
-                
-                
-                Func3(one, Func(two, three, four, five, six, seven, eight, nine, ten, eleven, twelve, thirteen, kwargs), **other)
+                    Func1(1, 2, 3)
 
 
-                def Func__(one, two, three=3): print("output")
-                
-                
-                def Func__2(one, two, three): print("output2")
-                
-
-                Executor(one, two).Other(a, b, c=10).More(a, b)
+                    def Func2(one, two, three, four, five, six, seven, eight, nine, ten, eleven, twelve): pass
 
 
-                Executor(one, two).Other(a, b, c).More(a, b=2)
+                    Func3(one, Func(two, three, four, five, six, seven, eight, nine, ten, eleven, twelve, thirteen, kwargs), **other)
 
 
-                # Comprehensions
-                [a for a in [one, two, three, four, five] if a & 1]
+                    def Func__(one, two, three=3): print("output")
 
 
-                {k: k + 1 for k in [one, two, three, four, five] if k & 1}
+                    def Func__2(one, two, three): print("output2")
 
 
-                {k: v for k, v in [(one, 1), (two, 2), (three, 3), (four, 4), (five, 5)] if k & 1}
+                    Executor(one, two).Other(a, b, c=10).More(a, b)
 
 
-                (a for a in [one, two, three, four, five] if a & 1)
+                    Executor(one, two).Other(a, b, c).More(a, b=2)
 
 
-                # Real-world examples that have been problematic
-                _Format(original, expected, "AlignAssignments", "AlignTrailingComments", AlignAssignments=[ [ 10, 20, 30, 40, ], flags ], AlignTrailingComments=[ [ 10, 20, 30, ], ], an_arg_to_make_it_longer___=10)
+                    # Comprehensions
+                    [a for a in [one, two, three, four, five] if a & 1]
 
 
-                return super(AlignAssignmentsSuite, self)._Format(
-                    AlignAssignments=[ [ 10, 20, 30, 40], flags ],
-                    AlignTrailingComments=[ 100, 200, 300, 400, ],
-                    more={ "a": 1, "b": 2, "c": 3, "d": 4 },
-                )
+                    {k: k + 1 for k in [one, two, three, four, five] if k & 1}
 
 
-                output_stream.write(textwrap.dedent(
-                    '''\
+                    {k: v for k, v in [(one, 1), (two, 2), (three, 3), (four, 4), (five, 5)] if k & 1}
 
-                    INFO: Calling '{name}' with the arguments:
-                    {args}
 
-                    ''').format( name=entry_point.Name,
-                                 args='\\n'.join([ "    {k:<20}  {v}".format( k="{}:".format(k),
-                                                                             v=v,
-                                                                           )
-                                                  for k, v in six.iteritems(kwargs)
-                                                ]),
-                               ))
-                """,
+                    (a for a in [one, two, three, four, five] if a & 1)
+
+
+                    # Real-world examples that have been problematic
+                    _Format(original, expected, "AlignAssignments", "AlignTrailingComments", AlignAssignments=[ [ 10, 20, 30, 40, ], flags ], AlignTrailingComments=[ [ 10, 20, 30, ], ], an_arg_to_make_it_longer___=10)
+
+
+                    return super(AlignAssignmentsSuite, self)._Format(
+                        AlignAssignments=[ [ 10, 20, 30, 40], flags ],
+                        AlignTrailingComments=[ 100, 200, 300, 400, ],
+                        more={ "a": 1, "b": 2, "c": 3, "d": 4 },
+                    )
+
+
+                    output_stream.write(textwrap.dedent(
+                        '''\
+
+                        INFO: Calling '{name}' with the arguments:
+                        {args}
+
+                        ''').format( name=entry_point.Name,
+                                     args='\\n'.join([ "    {k:<20}  {v}".format( k="{}:".format(k),
+                                                                                 v=v,
+                                                                               )
+                                                      for k, v in six.iteritems(kwargs)
+                                                    ]),
+                                   ))
+                    """,
                 ),
                 textwrap.dedent(
                     """\
-                Func1(
-                    Func2(
-                        1,
-                        two=2,
-                    ),
-                    3,
-                )
-
-
-                Func3(Func4(1, two), 3)
-
-
-                (func1 or func2)(a, b, c)
-
-
-                EmptyFunc()
-
-
-                def Func1(
-                    one,
-                    two,
-                    three=3,
-                    four=Func(a, Func(1, 2), c),
-                ):
-                    pass
-
-
-                def Func2(
-                    one,
-                    two,
-                    three=3,
-                    four=Func(
-                        a,
-                        Func(
+                    Func1(
+                        Func2(
                             1,
                             two=2,
                         ),
-                        c,
-                    ),
-                ):
-                    pass
+                        3,
+                    )
 
 
-                class Foo(object):
-                    def __init__(self):
-                        self.func(1, 2, 3)
+                    Func3(Func4(1, two), 3)
 
 
-                Another(
-                    one,
-                    two=Func(1, 2),
-                )
+                    (func1 or func2)(a, b, c)
 
 
-                return self.Usage(
-                    verbose=True,
-                    another=Func(1, 2, 3),
-                    potential_method_name=potential_method_name,
-                )
+                    EmptyFunc()
 
 
-                Func1(1, 2, 3)
+                    def Func1(
+                        one,
+                        two,
+                        three=3,
+                        four=Func(a, Func(1, 2), c),
+                    ):
+                        pass
 
 
-                def Func2(
-                    one,
-                    two,
-                    three,
-                    four,
-                    five,
-                    six,
-                    seven,
-                    eight,
-                    nine,
-                    ten,
-                    eleven,
-                    twelve,
-                ):
-                    pass
+                    def Func2(
+                        one,
+                        two,
+                        three=3,
+                        four=Func(
+                            a,
+                            Func(
+                                1,
+                                two=2,
+                            ),
+                            c,
+                        ),
+                    ):
+                        pass
 
 
-                Func3(
-                    one,
-                    Func(
+                    class Foo(object):
+                        def __init__(self):
+                            self.func(1, 2, 3)
+
+
+                    Another(
+                        one,
+                        two=Func(1, 2),
+                    )
+
+
+                    return self.Usage(
+                        verbose=True,
+                        another=Func(1, 2, 3),
+                        potential_method_name=potential_method_name,
+                    )
+
+
+                    Func1(1, 2, 3)
+
+
+                    def Func2(
+                        one,
                         two,
                         three,
                         four,
@@ -872,148 +855,254 @@ else:
                         ten,
                         eleven,
                         twelve,
-                        thirteen,
-                        kwargs,
-                    ),
-                    **other
-                )
+                    ):
+                        pass
 
 
-                def Func__(
-                    one,
-                    two,
-                    three=3,
-                ):
-                    print("output")
-
-
-                def Func__2(one, two, three):
-                    print("output2")
-
-
-                Executor(one, two).Other(
-                    a,
-                    b,
-                    c=10,
-                ).More(a, b)
-
-
-                Executor(one, two).Other(a, b, c).More(
-                    a,
-                    b=2,
-                )
-
-
-                # Comprehensions
-                [
-                    a for a in [
+                    Func3(
                         one,
-                        two,
-                        three,
-                        four,
-                        five,
-                    ] if a & 1
-                ]
-
-
-                {
-                    k: k + 1 for k in [
-                        one,
-                        two,
-                        three,
-                        four,
-                        five,
-                    ] if k & 1
-                }
-
-
-                {
-                    k: v for k, v in [
-                        (one, 1),
-                        (two, 2),
-                        (three, 3),
-                        (four, 4),
-                        (five, 5),
-                    ] if k & 1
-                }
-
-
-                (
-                    a for a in [
-                        one,
-                        two,
-                        three,
-                        four,
-                        five,
-                    ] if a & 1
-                )
-
-                
-                # Real-world examples that have been problematic
-                _Format(
-                    original,
-                    expected,
-                    "AlignAssignments",
-                    "AlignTrailingComments",
-                    AlignAssignments=[
-                        [
-                            10,
-                            20,
-                            30,
-                            40,
-                        ],
-                        flags,
-                    ],
-                    AlignTrailingComments=[[10, 20, 30]],
-                    an_arg_to_make_it_longer___=10,
-                )
-
-
-                return super(AlignAssignmentsSuite, self)._Format(
-                    AlignAssignments=[
-                        [
-                            10,
-                            20,
-                            30,
-                            40,
-                        ],
-                        flags,
-                    ],
-                    AlignTrailingComments=[
-                        100,
-                        200,
-                        300,
-                        400,
-                    ],
-                    more={
-                        "a": 1,
-                        "b": 2,
-                        "c": 3,
-                        "d": 4,
-                    },
-                )
-
-
-                output_stream.write(
-                    textwrap.dedent(
-                        \"\"\"
-                    INFO: Calling '{name}' with the arguments:
-                    {args}
-
-                    \"\"\",
-                    ).format(
-                        name=entry_point.Name,
-                        args="\\n".join(
-                            [
-                                "    {k:<20}  {v}".format(
-                                    k="{}:".format(k),
-                                    v=v,
-                                ) for k, v in six.iteritems(kwargs)
-                            ],
+                        Func(
+                            two,
+                            three,
+                            four,
+                            five,
+                            six,
+                            seven,
+                            eight,
+                            nine,
+                            ten,
+                            eleven,
+                            twelve,
+                            thirteen,
+                            kwargs,
                         ),
+                        **other
                     )
-                )
-                """,
+
+
+                    def Func__(
+                        one,
+                        two,
+                        three=3,
+                    ):
+                        print("output")
+
+
+                    def Func__2(one, two, three):
+                        print("output2")
+
+
+                    Executor(one, two).Other(
+                        a,
+                        b,
+                        c=10,
+                    ).More(a, b)
+
+
+                    Executor(one, two).Other(a, b, c).More(
+                        a,
+                        b=2,
+                    )
+
+
+                    # Comprehensions
+                    [
+                        a for a in [
+                            one,
+                            two,
+                            three,
+                            four,
+                            five,
+                        ] if a & 1
+                    ]
+
+
+                    {
+                        k: k + 1 for k in [
+                            one,
+                            two,
+                            three,
+                            four,
+                            five,
+                        ] if k & 1
+                    }
+
+
+                    {
+                        k: v for k, v in [
+                            (one, 1),
+                            (two, 2),
+                            (three, 3),
+                            (four, 4),
+                            (five, 5),
+                        ] if k & 1
+                    }
+
+
+                    (
+                        a for a in [
+                            one,
+                            two,
+                            three,
+                            four,
+                            five,
+                        ] if a & 1
+                    )
+
+
+                    # Real-world examples that have been problematic
+                    _Format(
+                        original,
+                        expected,
+                        "AlignAssignments",
+                        "AlignTrailingComments",
+                        AlignAssignments=[
+                            [
+                                10,
+                                20,
+                                30,
+                                40,
+                            ],
+                            flags,
+                        ],
+                        AlignTrailingComments=[[10, 20, 30]],
+                        an_arg_to_make_it_longer___=10,
+                    )
+
+
+                    return super(AlignAssignmentsSuite, self)._Format(
+                        AlignAssignments=[
+                            [
+                                10,
+                                20,
+                                30,
+                                40,
+                            ],
+                            flags,
+                        ],
+                        AlignTrailingComments=[
+                            100,
+                            200,
+                            300,
+                            400,
+                        ],
+                        more={
+                            "a": 1,
+                            "b": 2,
+                            "c": 3,
+                            "d": 4,
+                        },
+                    )
+
+
+                    output_stream.write(
+                        textwrap.dedent(
+                            \"\"\"
+                        INFO: Calling '{name}' with the arguments:
+                        {args}
+
+                        \"\"\",
+                        ).format(
+                            name=entry_point.Name,
+                            args="\\n".join(
+                                [
+                                    "    {k:<20}  {v}".format(
+                                        k="{}:".format(k),
+                                        v=v,
+                                    ) for k, v in six.iteritems(kwargs)
+                                ],
+                            ),
+                        )
+                    )
+                    """,
+                ),
+            )
+
+    # ----------------------------------------------------------------------
+    class TextwrapDedentPlugin(TestBase):
+        # ----------------------------------------------------------------------
+        def _Format(self, original, expected):
+            return super(TextwrapDedentPlugin, self)._Format(
+                original,
+                expected,
+                "Splitter",
+                "TextwrapDedent",
+                Splitter={
+                    "max_func_line_length": 78,
+                    "split_func_args_with_default": True,
+                },
+            )
+
+        # ----------------------------------------------------------------------
+        def testStandard(self):
+            self._Format(
+                textwrap.dedent(
+                    """\
+                    Func1_________________(Func2_____________________(textwrap.dedent(
+                        \"\"\"\\
+                        This is a test
+                        \"\"\").format(a_______________________________=b)))
+
+                    Func(textwrap.dedent(\"\"\"One line\"\"\"))
+
+                    Func3(textwrap.dedent(
+                        '''Line 0
+                                    Line 1
+
+                        Line 3
+                            Line 4
+                                '''))
+
+                    Func4(textwrap.dedent(
+                        # This is a test
+                        '''
+                            Line 1
+
+                        Line 3
+                            Line 4
+                                '''))
+
+                    """,
+                ),
+                textwrap.dedent(
+                    """\
+                    Func1_________________(
+                        Func2_____________________(
+                            textwrap.dedent(
+                                \"\"\"\\
+                                This is a test
+                                \"\"\",
+                            ).format(
+                                a_______________________________=b,
+                            )
+                        )
+                    )
+
+                    Func(textwrap.dedent(\"\"\"One line\"\"\"))
+
+                    Func3(
+                        textwrap.dedent(
+                            \"\"\"Line 0
+                                        Line 1
+
+                            Line 3
+                                Line 4
+                                    \"\"\",
+                        )
+                    )
+
+                    Func4(
+                        textwrap.dedent(
+                            # This is a test
+                            \"\"\"
+                                Line 1
+
+                            Line 3
+                                Line 4
+                                    \"\"\"
+                        )
+                    )
+                    """,
                 ),
             )
 
