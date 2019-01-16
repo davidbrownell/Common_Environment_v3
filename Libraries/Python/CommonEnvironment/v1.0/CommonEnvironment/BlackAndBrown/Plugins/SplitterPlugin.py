@@ -129,7 +129,7 @@ class Plugin(PluginBase):
 
         modifications = OrderedDict()
 
-        for line_index, line in enumerate(lines):
+        for line_index, line in cls.EnumerateLines(lines):
             clauses = []
 
             leaf_index = 0
