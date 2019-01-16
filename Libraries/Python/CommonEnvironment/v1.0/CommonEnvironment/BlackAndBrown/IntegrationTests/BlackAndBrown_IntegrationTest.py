@@ -246,6 +246,61 @@ else:
                 ),
             )
 
+        # ----------------------------------------------------------------------
+        def testIgnore(self):
+            self._Format(
+                textwrap.dedent(
+                    """\
+                    Line_1
+                    Line_2 # Comment
+                    Line_3 # fmt: off
+                    Line_4 # Comment
+                    Line_5 # yapf: disable
+
+                    Line_7 # fmt: off
+
+                    # fmt: off
+                    Line_1 # Comment 1
+                    Line_2 # Comment 2
+                    # fmt: on
+
+                    Line_3 # Comment 3
+
+                    # yapf: disable
+                    Line_4 # Comment 4
+                    Line_5 # Comment 5
+                    # yapf: enable
+
+                    Line_6 # Comment 6
+                    """,
+                ),
+                textwrap.dedent(
+                    """\
+                    Line_1
+                    Line_2   # Comment
+                    Line_3  # fmt: off
+                    Line_4   # Comment
+                    Line_5  # yapf: disable
+
+                    Line_7  # fmt: off
+
+                    # fmt: off
+                    Line_1 # Comment 1
+                    Line_2 # Comment 2
+                    # fmt: on
+
+                    Line_3   # Comment 3
+
+                    # yapf: disable
+                    Line_4 # Comment 4
+                    Line_5 # Comment 5
+                    # yapf: enable
+
+                    Line_6   # Comment 6
+                    """,
+                ),
+            )
+
     # ----------------------------------------------------------------------
     class AlignAssignmentsSuite(TestBase):
         # ----------------------------------------------------------------------
@@ -440,6 +495,64 @@ else:
 
                     one = 1 # Comment
                     two_____ = 2 # Comment
+                    """,
+                ),
+            )
+
+        # ----------------------------------------------------------------------
+        def testIgnore(self):
+            self._Format(
+                textwrap.dedent(
+                    """\
+                    one      = 1
+                    two = 2  # fmt: off
+                    three = 3  # fmt: off
+                    four     = 4
+                    five = 5  # yapf: disable
+                    six      = 6
+
+                    # fmt: off
+                    a = a
+                    b = b
+                    c = c
+                    # fmt: on
+
+                    d        = d
+
+                    # yapf: disable
+                    e = e
+                    f = f
+                    g = g
+                    # yapf: enable
+
+                    h        = h
+                    """,
+                ),
+                AlignAssignmentsPlugin.ModuleLevel,
+                original=textwrap.dedent(
+                    """\
+                    one = 1
+                    two = 2  # fmt: off
+                    three = 3  # fmt: off
+                    four = 4
+                    five = 5  # yapf: disable
+                    six = 6
+
+                    # fmt: off
+                    a = a
+                    b = b
+                    c = c
+                    # fmt: on
+
+                    d = d
+
+                    # yapf: disable
+                    e = e
+                    f = f
+                    g = g
+                    # yapf: enable
+
+                    h = h
                     """,
                 ),
             )
@@ -774,6 +887,9 @@ else:
                                                       for k, v in six.iteritems(kwargs)
                                                     ]),
                                    ))
+
+
+
                     """,
                 ),
                 textwrap.dedent(
@@ -1014,6 +1130,59 @@ else:
                             ),
                         )
                     )
+                    """,
+                ),
+            )
+
+        # ----------------------------------------------------------------------
+        def testIgnore(self):
+            self._Format(
+                textwrap.dedent(
+                    """\
+                    Func1(Func2(1, two=2), 3)  # fmt: off
+
+
+                    Func3(Func4(1, two), 3)  # yapf: disable
+
+
+                    # fmt: off
+                    Func1(Func2(1, two=2), 3)
+
+
+                    Func3(Func4(1, two), 3)
+                    # fmt: on
+
+
+                    # yapf: disable
+                    Func1(Func2(1, two=2), 3)
+
+
+                    Func3(Func4(1, two), 3)
+                    # yapf: enable
+                    """,
+                ),
+                textwrap.dedent(
+                    """\
+                    Func1(Func2(1, two=2), 3)  # fmt: off
+
+
+                    Func3(Func4(1, two), 3)  # yapf: disable
+
+
+                    # fmt: off
+                    Func1(Func2(1, two=2), 3)
+
+
+                    Func3(Func4(1, two), 3)
+                    # fmt: on
+
+
+                    # yapf: disable
+                    Func1(Func2(1, two=2), 3)
+
+
+                    Func3(Func4(1, two), 3)
+                    # yapf: enable
                     """,
                 ),
             )
