@@ -44,34 +44,19 @@ class HorizontalAlignmentPluginImpl(PluginBase):
     ):
         alignment_columns = alignment_columns or [45, 57, 77]
 
-        line_index = 0
-        while line_index < len(lines):
-            line = lines[line_index]
-
-            # Does this line have a leaf that should be aligned
-            if cls._GetAlignmentLeaf(line, True, *args, **kwargs) is None:
-                line_index += 1
-                continue
-
-            # Get the length of all leaves prior to the one that should be aligned
-            is_initial_line = True
-
+        for _, block_lines in cls.EnumerateBlocks(lines):
             alignment_leaves = []
             max_line_length = 0
 
-            while True:
-                if line_index == len(lines):
-                    break
+            for line in block_lines:
+                if cls.IgnoreLine(line):
+                    continue
 
-                line = lines[line_index]
-                line_index += 1
+                alignment_leaf = cls._GetAlignmentLeaf(line, not alignment_leaves, *args, **kwargs)
+                if alignment_leaf is None and not alignment_leaves:
+                    continue
 
-                if not line.leaves:
-                    break
-
-                alignment_leaf = cls._GetAlignmentLeaf(line, is_initial_line, *args, **kwargs)
-                is_initial_line = False
-
+                # Get the contents before the leaf
                 contents = []
 
                 for leaf in line.leaves:
@@ -90,6 +75,9 @@ class HorizontalAlignmentPluginImpl(PluginBase):
 
                 if alignment_leaf is not None:
                     alignment_leaves.append((alignment_leaf, line_length))
+
+            if not alignment_leaves:
+                continue
 
             # Calculate the alignment value
             alignment_column = max_line_length + 2
