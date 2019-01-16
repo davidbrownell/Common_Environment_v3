@@ -64,7 +64,10 @@ class Plugin(Interface.Interface):
     @classmethod
     def EnumerateLines(cls, lines):
         """Enumerates all non-ignored lines in the collection of lines."""
-        yield from cls._EnumerateLinesImpl(lines)
+
+        # Maintain compatibility with python 2.7
+        for result in cls._EnumerateLinesImpl(lines):
+            yield result
 
     # ----------------------------------------------------------------------
     @classmethod
