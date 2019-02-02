@@ -192,8 +192,17 @@ class PythonCodeVisitor(Visitor):
     # ----------------------------------------------------------------------
     @classmethod
     @override
-    def OnAnyOf(cls, type_info):
-        args = [ '[ {} ]'.format(', '.join([ cls.Accept(eti) for eti in type_info.ElementTypeInfos ])),
+    def OnAnyOf(cls, type_info, element_type_infos_code=None):
+        if element_type_infos_code is None:
+            element_type_infos_code = [ None, ] * len(type_info.ElementTypeInfos)
+        else:
+            assert len(element_type_infos_code) == len(type_info.ElementTypeInfos)
+
+        for index, eti in enumerate(type_info.ElementTypeInfos):
+            if element_type_infos_code[index] is None:
+                element_type_infos_code[index] = cls.Accept(eti)
+
+        args = [ '[ {} ]'.format(', '.join(element_type_infos_code)),
                  cls._ArityString(type_info.Arity),
                ]
 
@@ -238,8 +247,11 @@ class PythonCodeVisitor(Visitor):
     # ----------------------------------------------------------------------
     @classmethod
     @override
-    def OnList(cls, type_info):
-        args = [ cls.Accept(type_info.ElementTypeInfo),
+    def OnList(cls, type_info, element_type_info_code=None):
+        if element_type_info_code is None:
+            element_type_info_code = cls.Accept(type_info.ElementTypeInfo)
+
+        args = [ element_type_info_code,
                  cls._ArityString(type_info.Arity),
                ]
 
@@ -282,15 +294,12 @@ class PythonCodeVisitor(Visitor):
         # ----------------------------------------------------------------------
         def Impl(ti):
             lookup_key = id(ti)
-
+            
             if lookup_key in type_infos:
                 index, content = type_infos[lookup_key]
 
-                if content is None:
-                    nonlocals.recursive = True
-                    return str(index)
-
-                return content
+                nonlocals.recursive = True
+                return str(index)
 
             type_infos[lookup_key] = [ len(type_infos), None, ]
 
@@ -298,7 +307,12 @@ class PythonCodeVisitor(Visitor):
                 values = []
 
                 for k, v in six.iteritems(ti.Items):
-                    values.append('( "{}", {} )'.format(k, Impl(v)))
+                    if k is None:
+                        k = "None"
+                    else:
+                        k = '"{}"'.format(k)
+
+                    values.append('( {}, {} )'.format(k, Impl(v)))
 
                 args = [ "OrderedDict([ {} ])".format(', '.join(values)),
                        ]
@@ -312,7 +326,35 @@ class PythonCodeVisitor(Visitor):
                                            ', '.join([ arg for arg in args if arg ]),
                                          )
             else:
-                content = cls.Accept(ti)
+                kwargs = {}
+
+                if hasattr(ti, "ElementTypeInfo"):
+                    eti_lookup_key = id(ti.ElementTypeInfo)
+
+                    existing_type_info = type_infos.get(eti_lookup_key, None)
+                    if existing_type_info is not None:
+                        nonlocals.recursive = True
+                        kwargs["element_type_info_code"] = str(existing_type_info[0])
+
+                elif hasattr(ti, "ElementTypeInfos"):
+                    element_type_infos_code = []
+                    found_one = False
+
+                    for eti in ti.ElementTypeInfos:
+                        eti_lookup_key = id(eti)
+
+                        existing_type_info = type_infos.get(eti_lookup_key, None)
+                        if existing_type_info is not None:
+                            found_one = True
+                            existing_type_info = str(existing_type_info[0])
+
+                        element_type_infos_code.append(existing_type_info)
+
+                    if found_one:
+                        nonlocals.recursive = True
+                        kwargs["element_type_infos_code"] = element_type_infos_code
+            
+                content = cls.Accept(ti, **kwargs)
 
             type_infos[lookup_key][1] = content 
             return type_infos[lookup_key][1]
@@ -345,6 +387,15 @@ def LoadTypeInfo(type_info):
                     ti.Items[k] = type_infos[v]
                 else:
                     Impl(v)
+        
+        elif hasattr(ti, "ElementTypeInfo"):
+            if isinstance(ti.ElementTypeInfo, int):
+                ti.ElementTypeInfo = type_infos[ti.ElementTypeInfo]
+        
+        elif hasattr(ti, "ElementTypeInfos"):
+            for eti_index, eti in enumerate(ti.ElementTypeInfos):
+                if isinstance(eti, int):
+                    ti.ElementTypeInfos[eti_index] = type_infos[eti]
 
     # ----------------------------------------------------------------------
 

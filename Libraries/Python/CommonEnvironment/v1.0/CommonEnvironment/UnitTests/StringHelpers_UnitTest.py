@@ -40,7 +40,8 @@ class LeftJustifySuite(unittest.TestCase):
         self.assertEqual(LeftJustify("one\ntwo\nthree\n", 4), "one\n    two\n    three\n")
         self.assertEqual(LeftJustify("one\ntwo\nthree\n", 4, skip_first_line=False), "    one\n    two\n    three\n")
         self.assertEqual(LeftJustify("\none\ntwo\nthree\n", 4), "\n    one\n    two\n    three\n")
-        self.assertEqual(LeftJustify("\none\ntwo\nthree\n", 4, skip_first_line=False), "    \n    one\n    two\n    three\n")
+        self.assertEqual(LeftJustify("\none\ntwo\nthree\n", 4, skip_first_line=False), "\n    one\n    two\n    three\n")
+        self.assertEqual(LeftJustify("\none\ntwo\nthree\n", 4, skip_first_line=False, skip_empty_lines=False), "    \n    one\n    two\n    three\n")
 
 # ----------------------------------------------------------------------
 class WrapSuite(unittest.TestCase):

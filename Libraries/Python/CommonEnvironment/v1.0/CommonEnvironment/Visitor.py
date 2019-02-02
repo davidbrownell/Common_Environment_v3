@@ -123,6 +123,6 @@ class Visitor(Interface):
         # All of this is necessary so that we can maintain the original implementation
         # of Accept, which is expecting to invoke static methods.
 
-        instance.Accept = Wrapper.Accept	# <Class 'Wrapper' has no 'Accept' member> pylint: disable = E1101
+        instance.Accept = Wrapper.Accept  # <Class 'Wrapper' has no 'Accept' member> pylint: disable = E1101
 
         return instance
