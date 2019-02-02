@@ -29,23 +29,35 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 def Prepend( prefix, 
              content,
              skip_first_line=True,
+             skip_empty_lines=False,
            ):
     """Prepends the prefix to each line of the provided content."""
 
-    content = content.split('\n')
-    if content and not content[-1]:
-        newline_suffix = True
-        content = content[:-1]
-    else:
-        newline_suffix = False
+    lines = content.split('\n')
     
-    content = ("\n{}".format(prefix)).join(content)
+    # We don't want to append the prefix to a trailing newline, regardless
+    # of the setting of skip_empty_lines.
+    if lines and len(lines) > 1 and not lines[-1]:
+        trailing_newline = True
+        lines.pop()
+    else:
+        trailing_newline = False
 
-    if newline_suffix:
+    # Create the new content
+    content = []
+
+    for line in lines:
+        if skip_first_line:
+            skip_first_line = False
+        elif line or not skip_empty_lines:
+            line = "{}{}".format(prefix, line)
+
+        content.append(line)
+
+    content = '\n'.join(content)
+    
+    if trailing_newline:
         content += '\n'
-
-    if not skip_first_line:
-        content = "{}{}".format(prefix, content)
 
     return content
 
@@ -53,12 +65,14 @@ def Prepend( prefix,
 def LeftJustify( content, 
                  indentation,
                  skip_first_line=True,
+                 skip_empty_lines=True,
                ):
     """Left justifies the provided content."""
 
-    return Prepend( ' ' * indentation, 
+    return Prepend( ' ' * indentation,
                     content,
                     skip_first_line=skip_first_line,
+                    skip_empty_lines=skip_empty_lines,
                   )
 
 # ----------------------------------------------------------------------
