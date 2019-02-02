@@ -227,8 +227,10 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
             """)):
             return 0, "<<Skipped>>"
 
-        commands = [ "git reset --hard",
-                     "git clean -df",
+        commands = [ "git clean -xfd",
+                     "git submodule foreach --recursive git clean -xfd",
+                     "git reset --hard",
+                     "git submodule foreach --recursive git reset --hard",
                    ]
 
         return cls.Execute(repo_root, " && ".join(commands))
