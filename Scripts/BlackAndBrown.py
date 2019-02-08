@@ -223,6 +223,8 @@ def HasChanges(
                 )
                 with processing_dm.stream.DoneManager() as this_dm:
                     if executor.HasChanges(input_filename, **invocation_kwargs):
+                        this_dm.stream.write("***** Has Changes *****\n")
+
                         changed += 1
                         this_dm.result = 1
                     else:

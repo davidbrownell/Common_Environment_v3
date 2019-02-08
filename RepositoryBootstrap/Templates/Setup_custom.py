@@ -1,25 +1,25 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Setup_custom.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-05-03 22:12:13
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-19.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Performs repository-specific setup activities."""
 
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  To setup an environment, run:
-# | 
+# |
 # |     Setup(.cmd|.ps1|.sh) [/debug] [/verbose] [/configuration=<config_name>]*
-# |  
+# |
 # ----------------------------------------------------------------------
 
 import os
@@ -30,8 +30,8 @@ from collections import OrderedDict
 import CommonEnvironment
 
 # ----------------------------------------------------------------------
-_script_fullpath = CommonEnvironment.ThisFullpath()
-_script_dir, _script_name = os.path.split(_script_fullpath)
+_script_fullpath                            = CommonEnvironment.ThisFullpath()
+_script_dir, _script_name                   = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 # <Missing function docstring> pylint: disable = C0111
@@ -42,13 +42,14 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # <Wildcard import> pylint: disable = W0401
 # <Unused argument> pylint: disable = W0613
 
-fundamental_repo = os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL")
+fundamental_repo                                                            = os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL")
 assert os.path.isdir(fundamental_repo), fundamental_repo
 
 sys.path.insert(0, fundamental_repo)
 from RepositoryBootstrap import *                                           # <Unused import> pylint: disable = W0614
 from RepositoryBootstrap.SetupAndActivate import CurrentShell               # <Unused import> pylint: disable = W0614
 from RepositoryBootstrap.SetupAndActivate.Configuration import *            # <Unused import> pylint: disable = W0614
+
 del sys.path[0]
 
 # ----------------------------------------------------------------------
@@ -56,14 +57,14 @@ del sys.path[0]
 # repository may be activated within an environment at a time while any number
 # of mixin repositories can be activated within a standard repository environment.
 # Standard repositories may be dependent on other repositories (thereby inheriting
-# their functionality), support multiple configurations, and specify version 
+# their functionality), support multiple configurations, and specify version
 # information for tools and libraries in themselves or its dependencies.
 #
 # Mixin repositories are designed to augment other repositories. They cannot
-# have configurations or dependencies and may not be activated on their own. 
-# 
-# These difference are summarized in this table: 
-# 
+# have configurations or dependencies and may not be activated on their own.
+#
+# These difference are summarized in this table:
+#
 #                                                       Standard  Mixin
 #                                                       --------  -----
 #      Can be activated in isolation                       X
@@ -73,10 +74,10 @@ del sys.path[0]
 #      Can be activated within any other Standard                  X
 #        repository
 #
-# Consider a script that wraps common Git commands. This functionality is useful 
-# across a number of different repositories, yet doesn't have functionality that 
-# is useful on its own; it provides functionality that augments other repositories. 
-# This functionality should be included within a repository that is classified 
+# Consider a script that wraps common Git commands. This functionality is useful
+# across a number of different repositories, yet doesn't have functionality that
+# is useful on its own; it provides functionality that augments other repositories.
+# This functionality should be included within a repository that is classified
 # as a mixin repository.
 #
 # To classify a repository as a Mixin repository, decorate the GetDependencies method
@@ -93,66 +94,84 @@ def GetDependencies():
     (aka is configurable) or a single Configuration if not.
     """
 
-    raise Exception("Remove this exception once you have updated the configuration for your new repository (GetDependencies).")
+    raise Exception(
+        "Remove this exception once you have updated the configuration for your new repository (GetDependencies).",
+    )
 
     # To support multiple configurations...
-    return OrderedDict([ ( "Config1", Configuration( "A description of Config1; this configuration uses python36",
-                                                     [ Dependency( "0EAA1DCF22804F90AD9F5A3B85A5D706",                              # Id for Common_Environment; found in <Common_Environment>/__RepositoryId__
-                                                                   "Common_Environment",                                            # Name used if Common_Environment cannot be found during setup
-                                                                   "python36",                                                      # Configuration value used when activating Common_Environment (can be None or skipped for repos that only support a single configuration)
-                                                                   "https://github.com/davidbrownell/Common_Environment_v3.git",    # Uri for repo; can be string or def Func(scm_or_none) -> string
-                                                                 ),
-                                                       # Other dependencies go here (if any)    
-                                                     ],
-                                                     # By default, the most recent version of all tools and libraries will be activated for this repository and its dependencies.
-                                                     # If necessary, you can override this behavior by specifying specific versions for tools that should be used when activating
-                                                     # this repository with this configuration.
-                                                     VersionSpecs( # Tools
-                                                                   [ VersionInfo("Some Tool", "v0.0.1"), ],
-                                                                   # Libraries, organized by language
-                                                                   { "Python" : [ VersionInfo("Some Library", "v1.2.3"), ],
-                                                                   },
-                                                                 ),
-                                                    ) ),
-                         ( "Config2", Configuration( "A description of Config2; this configuration uses python27",
-                                                     [ Dependency( "0EAA1DCF22804F90AD9F5A3B85A5D706",                              # Id for Common_Environment; found in <Common_Environment>/__RepositoryId__
-                                                                  "Common_Environment",                                             # Name used if Common_Environment cannot be found during setup
-                                                                  "python27",                                                       # Configuration value used when activating Common_Environment (can be None or skipped for repos that only support a single configuration)
-                                                                  "https://github.com/davidbrownell/Common_Environment_v3.git",     # Uri for repo; can be string or def Func(scm_or_none) -> string
-                                                                ),
-                                                       # Other dependencies go here (if any)
-                                                     ],
-                                                     # By default, the most recent version of all tools and libraries will be activated for this repository and its dependencies.
-                                                     # If necessary, you can override this behavior by specifying specific versions for tools that should be used when activating
-                                                     # this repository with this configuration.
-                                                     VersionSpecs( # Tools
-                                                                   [ VersionInfo("Some Other Tool", "v0.2.1"), ],
-                                                                   # Libraries, organized by language
-                                                                   { "C++" : [ VersionInfo("Some Library", "v1.2.3"), ],
-                                                                   },
-                                                                 ),
-                                                   ) ),
-                       ])
+    return OrderedDict(
+        [
+            (
+                "Config1",
+                Configuration(
+                    "A description of Config1; this configuration uses python36",
+                    [
+                        Dependency(
+                            "0EAA1DCF22804F90AD9F5A3B85A5D706",                           # Id for Common_Environment; found in <Common_Environment>/__RepositoryId__
+                            "Common_Environment",                                         # Name used if Common_Environment cannot be found during setup
+                            "python36",                                                   # Configuration value used when activating Common_Environment (can be None or skipped for repos that only support a single configuration)
+                            "https://github.com/davidbrownell/Common_Environment_v3.git", # Uri for repo; can be string or def Func(scm_or_none) -> string
+                        ),
+                                                                                          # Other dependencies go here (if any)
+                    ],
+                                                                                          # By default, the most recent version of all tools and libraries will be activated for this repository and its dependencies.
+                                                                                          # If necessary, you can override this behavior by specifying specific versions for tools that should be used when activating
+                                                                                          # this repository with this configuration.
+                    VersionSpecs(                                                         # Tools
+                        [VersionInfo("Some Tool", "v0.0.1")],
+                                                                                          # Libraries, organized by language
+                        {"Python": [VersionInfo("Some Library", "v1.2.3")]},
+                    ),
+                ),
+            ),
+            (
+                "Config2",
+                Configuration(
+                    "A description of Config2; this configuration uses python27",
+                    [
+                        Dependency(
+                            "0EAA1DCF22804F90AD9F5A3B85A5D706",                           # Id for Common_Environment; found in <Common_Environment>/__RepositoryId__
+                            "Common_Environment",                                         # Name used if Common_Environment cannot be found during setup
+                            "python27",                                                   # Configuration value used when activating Common_Environment (can be None or skipped for repos that only support a single configuration)
+                            "https://github.com/davidbrownell/Common_Environment_v3.git", # Uri for repo; can be string or def Func(scm_or_none) -> string
+                        ),
+                                                                                          # Other dependencies go here (if any)
+                    ],
+                                                                                          # By default, the most recent version of all tools and libraries will be activated for this repository and its dependencies.
+                                                                                          # If necessary, you can override this behavior by specifying specific versions for tools that should be used when activating
+                                                                                          # this repository with this configuration.
+                    VersionSpecs(                                                         # Tools
+                        [VersionInfo("Some Other Tool", "v0.2.1")],
+                                                                                          # Libraries, organized by language
+                        {"C++": [VersionInfo("Some Library", "v1.2.3")]},
+                    ),
+                ),
+            ),
+        ]
+    )
 
     # To support a single (unnamed) configuration...
-    return Configuration( "A description of Config1; this configuration uses python36",
-                          [ Dependency( "0EAA1DCF22804F90AD9F5A3B85A5D706",                             # Id for Common_Environment; found in <Common_Environment>/__RepositoryId__
-                                        "Common_Environment",                                           # Name used if Common_Environment cannot be found during setup
-                                        "python36",                                                     # Configuration value used when activating Common_Environment (can be None or skipped for repos that only support a single configuration)
-                                        "https://github.com/davidbrownell/Common_Environment_v3.git",   # Uri for repo; can be string or def Func(scm_or_none) -> string
-                                      ),
-                            # Other dependencies go here (if any)    
-                          ],
-                          # By default, the most recent version of all tools and libraries will be activated for this repository and its dependencies.
-                          # If necessary, you can override this behavior by specifying specific versions for tools that should be used when activating
-                          # this repository with this configuration.
-                          VersionSpecs( # Tools
-                                        [ VersionInfo("Some Tool", "v0.0.1"), ],
-                                        # Libraries, organized by language
-                                        { "Python" : [ VersionInfo("Some Library", "v1.2.3"), ],
-                                        },
-                                      ),
-                        )
+    return Configuration(
+        "A description of Config1; this configuration uses python36",
+        [
+            Dependency(
+                "0EAA1DCF22804F90AD9F5A3B85A5D706",                           # Id for Common_Environment; found in <Common_Environment>/__RepositoryId__
+                "Common_Environment",                                         # Name used if Common_Environment cannot be found during setup
+                "python36",                                                   # Configuration value used when activating Common_Environment (can be None or skipped for repos that only support a single configuration)
+                "https://github.com/davidbrownell/Common_Environment_v3.git", # Uri for repo; can be string or def Func(scm_or_none) -> string
+            ),
+                                                                              # Other dependencies go here (if any)
+        ],
+                                                                              # By default, the most recent version of all tools and libraries will be activated for this repository and its dependencies.
+                                                                              # If necessary, you can override this behavior by specifying specific versions for tools that should be used when activating
+                                                                              # this repository with this configuration.
+        VersionSpecs(                                                         # Tools
+            [VersionInfo("Some Tool", "v0.0.1")],
+                                                                              # Libraries, organized by language
+            {"Python": [VersionInfo("Some Library", "v1.2.3")]},
+        ),
+    )
+
 
 # ----------------------------------------------------------------------
 def GetCustomActions(debug, verbose, explicit_configurations):
@@ -165,7 +184,8 @@ def GetCustomActions(debug, verbose, explicit_configurations):
     cases, this is Bash on Linux systems and Batch or PowerShell on Windows systems.
     """
 
-    raise Exception("Remove this exception once you have updated the custom actions for your new repository (GetCustomActions).")
+    raise Exception(
+        "Remove this exception once you have updated the custom actions for your new repository (GetCustomActions).",
+    )
 
-    return [ CurrentShell.Commands.Message("This is a sample message"),
-           ]
+    return [CurrentShell.Commands.Message("This is a sample message")]
