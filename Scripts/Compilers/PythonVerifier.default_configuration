@@ -135,6 +135,7 @@ disable=print-statement,
         exception-escape,
         comprehension-escape,
         C0111,                              # Missing docstring
+        C0303,                              # Trailing whitespace (TODO: Remove this once formatting everything)
         C0321,                              # More than one statement on a single line
         C0326,                              # Exactly one space required before assignment
         C0330,                              # Wrong hanging indentation (current bug in pylint that doesn't recognize valid indentation)
