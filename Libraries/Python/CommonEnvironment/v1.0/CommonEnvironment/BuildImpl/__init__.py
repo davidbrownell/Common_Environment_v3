@@ -196,7 +196,6 @@ class CompleteConfiguration(Configuration):
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
     _VIEW_METADATA_TEMPLATE                             = textwrap.dedent(
-        # <Wrong hanging indentation> pylint: disable = C0330
        r"""
         Name:                                                   {name}
         Priority:                                               {priority}

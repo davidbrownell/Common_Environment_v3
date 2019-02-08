@@ -149,7 +149,6 @@ class LinuxShellImpl(Shell):
                 {error}
                 return {return_code}
                 """).format( success=textwrap.dedent(
-                                        # <Wrong hanging indentation> pylint: disable = C0330
                                         """\
                                         if [[ $? -eq 0 ]]
                                         then
@@ -157,7 +156,6 @@ class LinuxShellImpl(Shell):
                                         fi
                                         """) if command.PauseOnSuccess else '',
                              error=textwrap.dedent(
-                                        # <Wrong hanging indentation> pylint: disable = C0330
                                         """\
                                         if [[ $? -ne 0]] 
                                         then

@@ -389,7 +389,6 @@ class CompilerImpl(Interface):
 
                 verbose_stream = StreamDecorator( dm.stream,
                                                   prefix=StringHelpers.LeftJustify( textwrap.dedent(
-                                                                                        # <Wrong hanging indentation> pylint: disable = C0330
                                                                                         """\
 
                                                                                         ========================================
@@ -540,7 +539,6 @@ class CompilerImpl(Interface):
             status_suffix = '"{}"...'.format(input_items[0])
         else:
             status_suffix = textwrap.dedent(
-                                # <Wrong hanging indentation> pylint: disable = C0330
                                 """\
 
                                 {}

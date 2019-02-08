@@ -58,7 +58,6 @@ class TestTypeMetadata(object):
 
 # ----------------------------------------------------------------------
 # <Line too long> pylint: disable = C0301
-# <Wrong hanging indentation> pylint: disable = C0330
 
 TEST_TYPES                                  = [                   # Name                        Code Coverage   Execute in Parallel     Deployment                                          Description                 
                                                 TestTypeMetadata( "UnitTests",                  True,           True,                   None,                                               "Tests that exercise a single function or method" ),

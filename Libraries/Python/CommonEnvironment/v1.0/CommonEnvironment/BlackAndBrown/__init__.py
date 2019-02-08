@@ -35,8 +35,6 @@ _script_fullpath                            = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name                   = os.path.split(_script_fullpath)
 #  ----------------------------------------------------------------------
 
-# <Wrong Hanging Indentation> pylint: disable = C0330
-
 # ----------------------------------------------------------------------
 class Executor(object):
     """\
