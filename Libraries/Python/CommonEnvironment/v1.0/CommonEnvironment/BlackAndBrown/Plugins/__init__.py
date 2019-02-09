@@ -60,6 +60,13 @@ class Plugin(Interface.Interface):
         raise Exception("Abstract method")
 
     # ----------------------------------------------------------------------
+    @staticmethod
+    @Interface.extensionmethod
+    def PostprocessLines(lines):
+        """Postprocesses the provided lines"""
+        return lines
+
+    # ----------------------------------------------------------------------
     # |  Protected Methods
     @classmethod
     def EnumerateLines(cls, lines):
@@ -94,6 +101,29 @@ class Plugin(Interface.Interface):
     @classmethod
     def IgnoreLine(cls, line):
         return line.comments and line.comments[0][1].value in ["# yapf: disable", "# fmt: off"]
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    def FirstLeafValue(line):
+        if not line.leaves:
+            return None
+
+        return line.leaves[0].value
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    def LastLeafValue(line):
+        """Return the last, non-whitespace, leaf on the line"""
+
+        if not line.leaves:
+            return None
+
+        index = -1
+
+        while line.leaves[index].value == "" and -index < len(line.leaves):
+            index -= 1
+
+        return line.leaves[index].value
 
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------

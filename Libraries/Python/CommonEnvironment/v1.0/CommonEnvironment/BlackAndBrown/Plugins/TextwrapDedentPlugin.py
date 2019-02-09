@@ -17,6 +17,9 @@
 
 import os
 
+import black
+from blib2to3.pygram import python_symbols, token as python_tokens
+
 import CommonEnvironment
 from CommonEnvironment import Interface
 
@@ -35,7 +38,7 @@ class Plugin(PluginBase):
     # ----------------------------------------------------------------------
     # |  Properties
     Name                                    = Interface.DerivedProperty("TextwrapDedent")
-    Priority                                = Interface.DerivedProperty(PluginBase.STANDARD_PRIORITY * 10)
+    Priority                                = Interface.DerivedProperty(PluginBase.STANDARD_PRIORITY)
 
     ORIGINAL_TEXT_ATTRIBUTE_NAME            = "_original_value"
 
@@ -92,10 +95,17 @@ class Plugin(PluginBase):
         return lines
 
     # ----------------------------------------------------------------------
+    @staticmethod
+    @Interface.override
+    def Decorate(lines):
+        # Decoration activities are handled in PostprocessLines
+        return lines
+
+    # ----------------------------------------------------------------------
     @classmethod
     @Interface.override
-    def Decorate(cls, lines):
-        for line in lines:
+    def PostprocessLines(cls, lines):
+        for line_index, line in enumerate(lines):
             if not line.leaves or not hasattr(line.leaves[0], cls.ORIGINAL_TEXT_ATTRIBUTE_NAME):
                 continue
 
@@ -135,5 +145,44 @@ class Plugin(PluginBase):
                 )
 
             line.leaves[0].value = "\n".join(string_lines)
+
+            # Add a trailing comma (if necessary)
+            textwrap_dedent_node = line.leaves[0].parent.parent
+
+            assert textwrap_dedent_node.children
+            if textwrap_dedent_node.children[0].value != "textwrap":
+                textwrap_dedent_node = textwrap_dedent_node.parent
+
+            assert textwrap_dedent_node.children
+            assert textwrap_dedent_node.children[0].value == "textwrap", textwrap_dedent_node.children[0]
+
+            if textwrap_dedent_node.parent.type in [python_symbols.arglist, python_symbols.trailer]:
+                # Get the last leaf associated with the arglist
+                last_leaf = textwrap_dedent_node.children[-1].children[-1]
+                assert last_leaf.value == ")", last_leaf
+
+                last_leaf_id = id(last_leaf)
+
+                # Find this leaf in the lines
+                line_offset = 1
+                found = False
+
+                while line_index + line_offset < len(lines):
+                    this_line = lines[line_index + line_offset]
+                    line_offset += 1
+
+                    for leaf_index, leaf in enumerate(this_line.leaves):
+                        if id(leaf) == last_leaf_id:
+                            found = True
+
+                            if leaf_index + 1 == len(this_line.leaves):
+                                this_line.leaves.append(black.Leaf(python_tokens.COMMA, ","))
+
+                            break
+
+                    if found:
+                        break
+
+                assert found
 
         return lines

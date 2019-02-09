@@ -64,7 +64,6 @@ class RegularExpressionVisitor(Visitor):
         float_regex_string = cls.OnFloat(FloatTypeInfo(min=0))[0]
 
         return [ textwrap.dedent(
-                    # <Wrong hanging indentation> pylint: disable = C0330
                    r"""(?#
                     Date                        ){date}(?#
                     Sep                         )[ T](?#
@@ -108,7 +107,6 @@ class RegularExpressionVisitor(Visitor):
     def OnDate(type_info):
         sep = r"[-/\.]"
 
-        # <Wrong hanging indentation> pylint: disable = C0330
         return [ expr % { "sep" : sep,
                           "suffix" : index,
                         }
@@ -138,7 +136,6 @@ class RegularExpressionVisitor(Visitor):
     @override
     def OnDuration(type_info):
         return [ textwrap.dedent(
-                    # <Wrong hanging indentation> pylint: disable = C0330
                    r"""(?#
                     Days [optional]         )(?:(?P<days>\d+)[\.:])?(?#
                     Hours                   )(?P<hours>2[0-3]|[0-1][0-9]|[0-9]):(?#
@@ -248,7 +245,6 @@ class RegularExpressionVisitor(Visitor):
     @override
     def OnTime(type_info):
         return [ textwrap.dedent(
-                    # <Wrong hanging indentation> pylint: disable = C0330
                    r"""(?# 
                     Hour                        )(?P<hour>[0-1][0-9]|2[0-3]):(?#
                     Minute                      )(?P<minute>[0-5][0-9]):(?#

@@ -887,9 +887,6 @@ else:
                                                       for k, v in six.iteritems(kwargs)
                                                     ]),
                                    ))
-
-
-
                     """,
                 ),
                 textwrap.dedent(
@@ -1243,7 +1240,7 @@ else:
                                 \"\"\",
                             ).format(
                                 a_______________________________=b,
-                            )
+                            ),
                         )
                     )
 
@@ -1257,7 +1254,7 @@ else:
                             Line 3
                                 Line 4
                                     \"\"\",
-                        )
+                        ),
                     )
 
                     Func4(
@@ -1269,7 +1266,142 @@ else:
                             Line 3
                                 Line 4
                                     \"\"\"
-                        )
+                        ),
+                    )
+                    """,
+                ),
+            )
+
+    # ----------------------------------------------------------------------
+    class CompleteSuite(TestBase):
+        # ----------------------------------------------------------------------
+        def _Format(self, original, expected):
+            executor = Executor(sys.stdout)
+
+            result = executor.Format(original)[0]
+
+            self.assertEqual(result, expected)
+
+        # ----------------------------------------------------------------------
+        def testAll(self):
+            self._Format(
+                textwrap.dedent(
+                    """\
+                    # This should not split between the 'strip' parens
+                    Func(
+                        compound_statement=dest_writer.CreateCompoundElement(temporary, "attrib                       ").strip(),
+                    )
+
+
+                    # Trailing commas
+                    indented_stream.write(
+                        textwrap.dedent(
+                            \"\"\"\\
+                            # ----------------------------------------------------------------------
+                            # ----------------------------------------------------------------------
+                            \"\"\",
+                        ),
+                    )
+
+
+                    indented_stream.write(
+                        textwrap.dedent(
+                            \"\"\"\\
+                            # ----------------------------------------------------------------------
+                            # ----------------------------------------------------------------------
+                            {foo}
+                            \"\"\",
+                        ).format(
+                            foo="bar",
+                        ),
+                    )
+
+
+                    indented_stream.write(
+                        textwrap.dedent(
+                            \"\"\"\\
+                            # ----------------------------------------------------------------------
+                            # ----------------------------------------------------------------------
+                            \"\"\",
+                        ).format(),
+                    )
+
+
+                    value = textwrap.dedent(
+                        \"\"\"\\
+                        one
+                        two
+                        \"\"\"
+                    )
+
+
+                    value = textwrap.dedent(
+                        \"\"\"\\
+                        one
+                        {value}
+                        \"\"\"
+                    ).format(
+                        value="two",
+                    )
+                    """,
+                ),
+                textwrap.dedent(
+                    """\
+                    # This should not split between the 'strip' parens
+                    Func(
+                        compound_statement=dest_writer.CreateCompoundElement(temporary, "attrib                       ").strip(),
+                    )
+
+
+                    # Trailing commas
+                    indented_stream.write(
+                        textwrap.dedent(
+                            \"\"\"\\
+                            # ----------------------------------------------------------------------
+                            # ----------------------------------------------------------------------
+                            \"\"\",
+                        ),
+                    )
+
+
+                    indented_stream.write(
+                        textwrap.dedent(
+                            \"\"\"\\
+                            # ----------------------------------------------------------------------
+                            # ----------------------------------------------------------------------
+                            {foo}
+                            \"\"\",
+                        ).format(
+                            foo="bar",
+                        ),
+                    )
+
+
+                    indented_stream.write(
+                        textwrap.dedent(
+                            \"\"\"\\
+                            # ----------------------------------------------------------------------
+                            # ----------------------------------------------------------------------
+                            \"\"\",
+                        ).format(),
+                    )
+
+
+                    value                                       = textwrap.dedent(
+                        \"\"\"\\
+                        one
+                        two
+                        \"\"\",
+                    )
+
+
+                    value                                       = textwrap.dedent(
+                        \"\"\"\\
+                        one
+                        {value}
+                        \"\"\",
+                    ).format(
+                        value="two",
                     )
                     """,
                 ),
