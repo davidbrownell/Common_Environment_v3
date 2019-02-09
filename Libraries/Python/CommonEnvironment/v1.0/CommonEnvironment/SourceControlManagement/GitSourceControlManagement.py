@@ -217,7 +217,6 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
     @override
     def Clean(cls, repo_root, no_prompt=False):
         if not no_prompt and not cls.AreYouSurePrompt(textwrap.dedent(
-            # <Wrong hanging indentation> pylint: disable = C0330
             """\
             This operation will revert any working changes.
 
@@ -637,7 +636,6 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
                no_backup=False,
              ):
         if not no_prompt and not cls.AreYouSurePrompt(textwrap.dedent(
-            # <Wrong hanging indentation> pylint: disable = C0330
             """\
             This operation will revert your local repository to match the state of the remote repository.
 

@@ -442,7 +442,6 @@ class Executor(object):
             raise Exception("No entry points were provided or found")
 
         self._keyword_regex = re.compile(textwrap.dedent(
-                                            # <Wrong hanging indentation> pylint: disable = C0330
                                            r"""^(?#
                                             Prefix:             )\s*{prefix}(?#
                                             Tag:                )(?P<tag>\S+?)(?#
@@ -455,7 +454,6 @@ class Executor(object):
                                                          ))
 
         self._dict_regex = re.compile(textwrap.dedent(
-                                            # <Wrong hanging indentation> pylint: disable = C0330
                                            r"""^(?#
                                             Tag:                )\s*(?P<tag>.+?)(?#
                                             Sep:                )\s*(?<!\\){separator}\s*(?#
