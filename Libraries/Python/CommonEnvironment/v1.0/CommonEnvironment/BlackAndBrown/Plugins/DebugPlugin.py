@@ -53,6 +53,12 @@ class Plugin(PluginBase):
         return cls._Display("Post-Black", lines)
 
     # ----------------------------------------------------------------------
+    @classmethod
+    @Interface.override
+    def PostprocessLines(cls, lines):
+        return cls._Display("Post-Decoration", lines)
+
+    # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
     @staticmethod
@@ -70,7 +76,7 @@ class Plugin(PluginBase):
                 # |  {}
                 # |
                 """,
-            ).format(header)
+            ).format(header),
         )
 
         for line_index, line in enumerate(lines):
@@ -78,9 +84,9 @@ class Plugin(PluginBase):
                 textwrap.dedent(
                     """\
                     # ----------------------------------------------------------------------
-                    {0:>3}) {1}
+                    Line {0:>3}) {1}
                     """,
-                ).format(line_index + 1, line)
+                ).format(line_index + 1, line),
             )
 
             for leaf_index, leaf in enumerate(line.leaves):
@@ -92,9 +98,9 @@ class Plugin(PluginBase):
                 sys.stdout.write(
                     textwrap.dedent(
                         """\
-                        {0:>3}) {1:25}  {2:>2}  {3}
+                        Leaf {0:>3}) {1:25}  {2:>2}  {3}
                         """,
-                    ).format(leaf_index, leaf.value, len(leaf.prefix), symbol)
+                    ).format(leaf_index, leaf.value, len(leaf.prefix), symbol),
                 )
 
             sys.stdout.write("\n")

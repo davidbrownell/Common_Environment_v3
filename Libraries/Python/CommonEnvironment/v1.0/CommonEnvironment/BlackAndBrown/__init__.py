@@ -226,6 +226,9 @@ class Executor(object):
 
                 lines = plugin.Decorate(lines, *args, **kwargs)
 
+            for plugin in plugins:
+                lines = plugin.PostprocessLines(lines)
+
             return lines
 
         # ----------------------------------------------------------------------
