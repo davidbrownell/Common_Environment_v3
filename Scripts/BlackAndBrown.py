@@ -16,6 +16,7 @@
 """Runs the black formatter with modifications ("AndBrown")"""
 
 import os
+import re
 import sys
 import textwrap
 
@@ -75,6 +76,7 @@ def Format(
     include_plugin=None,
     exclude_plugin=None,
     debug=False,
+    exclude_generated_dirs=False,
     output_stream=sys.stdout,
 ):
     """Formats the provided input using BlackAndBrown"""
@@ -105,16 +107,7 @@ def Format(
         with dm.stream.DoneManager(
             done_suffix=lambda: "{} found".format(inflect.no("input file", len(input_filenames))),
         ):
-            for input in inputs:
-                if os.path.isfile(input):
-                    input_filenames.append(input)
-                elif os.path.isdir(input):
-                    input_filenames += FileSystem.WalkFiles(
-                        input,
-                        include_file_extensions=[".py"],
-                    )
-                else:
-                    assert False, input
+            input_filenames += _InputToFilenames(inputs, exclude_generated_dirs)
 
         executor = BlackAndBrownMod.Executor(dm.stream, *plugin_dirs, **plugin_args)
 
@@ -163,6 +156,7 @@ def HasChanges(
     plugin_arg=None,
     include_plugin=None,
     exclude_plugin=None,
+    exclude_generated_dirs=False,
     output_stream=sys.stdout,
 ):
     """Returns 1 if one or more of the inputs would have changes after applying formatting"""
@@ -193,16 +187,7 @@ def HasChanges(
         with dm.stream.DoneManager(
             done_suffix=lambda: "{} found".format(inflect.no("input file", len(input_filenames))),
         ):
-            for input in inputs:
-                if os.path.isfile(input):
-                    input_filenames.append(input)
-                elif os.path.isdir(input):
-                    input_filenames += FileSystem.WalkFiles(
-                        input,
-                        include_file_extensions=[".py"],
-                    )
-                else:
-                    assert False, input
+            input_filenames += _InputToFilenames(inputs, exclude_generated_dirs)
 
         executor = BlackAndBrownMod.Executor(dm.stream, *plugin_dirs, **plugin_args)
 
@@ -258,6 +243,32 @@ def HasChanges(
         )
 
         return dm.result
+
+
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+def _InputToFilenames(inputs, exclude_generated_dirs):
+    traverse_exclude_dir_names = []
+
+    if exclude_generated_dirs:
+        traverse_exclude_dir_names.append(re.compile("generated.*", re.IGNORECASE))
+
+    input_filenames = []
+
+    for input in inputs:
+        if os.path.isfile(input):
+            input_filenames.append(input)
+        elif os.path.isdir(input):
+            input_filenames += FileSystem.WalkFiles(
+                input,
+                include_file_extensions=[".py"],
+                traverse_exclude_dir_names=traverse_exclude_dir_names,
+            )
+        else:
+            assert False, input
+
+    return input_filenames
 
 
 # ----------------------------------------------------------------------
