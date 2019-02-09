@@ -88,7 +88,7 @@ class Executor(object):
                             "WARNING: The module at '{}' does not contain a supported class ({}).\n".format(
                                 filename,
                                 ", ".join(["'{}'".format(pcn) for pcn in potential_class_names]),
-                            )
+                            ),
                         )
                         continue
 
