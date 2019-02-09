@@ -483,7 +483,6 @@ class Clause(_TokenParser):
 
             else:
                 if leaf.value == "=":
-                    assert is_default_arg is False
                     is_default_arg = True
 
                 elif leaf.value == "**":

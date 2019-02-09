@@ -101,7 +101,7 @@ class Plugin(HorizontalAlignmentPluginImpl):
                             if flags & cls.InitAnyLevel:
                                 return leaf
 
-                            if flags & cls.InitLevel and line.leaves[0].value == "self" and line.leaves[1].value == ".":
+                            if flags & cls.InitLevel and cls.FirstLeafValue(line) == "self" and line.leaves[1].value == ".":
                                 return leaf
 
                             return None
