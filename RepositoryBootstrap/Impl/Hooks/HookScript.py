@@ -35,7 +35,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 
 sys.path.insert(0, os.path.join(_script_dir, "GeneratedCode"))
 with CallOnExit(lambda: sys.path.pop(0)):
-    import HooksImplParser                              # <Unable to import> pylint: disable = E0401
+    import HookScript_PythonJsonSerialization as Serialization
 
 sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
 with CallOnExit(lambda: sys.path.pop(0)):
@@ -63,7 +63,7 @@ def Commit( display_sentinel,
                   first,
                   output_stream,
                   Constants.HOOK_ENVIRONMENT_COMMIT_METHOD_NAME,
-                  HooksImplParser.Commit_FromJson,
+                  Serialization.Deserialize_Commit,
                 )
 
 # ----------------------------------------------------------------------
@@ -86,7 +86,7 @@ def Push( display_sentinel,
                   first,
                   output_stream,
                   Constants.HOOK_ENVIRONMENT_PUSH_METHOD_NAME,
-                  HooksImplParser.Push_FromJson,
+                  Serialization.Deserialize_Push,
                 )
 
 # ----------------------------------------------------------------------
@@ -109,7 +109,7 @@ def Pull( display_sentinel,
                   first,
                   output_stream,
                   Constants.HOOK_ENVIRONMENT_PULL_METHOD_NAME,
-                  HooksImplParser.Pushed_FromJson,
+                  Serialization.Deserialize_Pushed,
                 )
 
 # ----------------------------------------------------------------------
@@ -129,7 +129,7 @@ def _Impl( display_sentinel,
 
     with open(json_filename) as f:
         try:
-            data = parser(f.read(), is_root=True)
+            data = parser(f.read(), is_root=False)
         except Exception as ex:
             output_stream.write("ERROR: {} ({})\n".format(str(ex), ex.stack))
             return -1

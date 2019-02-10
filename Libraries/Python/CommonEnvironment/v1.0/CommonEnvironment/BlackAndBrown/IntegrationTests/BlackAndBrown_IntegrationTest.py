@@ -1240,7 +1240,7 @@ else:
                                 \"\"\",
                             ).format(
                                 a_______________________________=b,
-                            ),
+                            )
                         )
                     )
 
@@ -1254,7 +1254,7 @@ else:
                             Line 3
                                 Line 4
                                     \"\"\",
-                        ),
+                        )
                     )
 
                     Func4(
@@ -1266,8 +1266,178 @@ else:
                             Line 3
                                 Line 4
                                     \"\"\"
+                        )
+                    )
+                    """,
+                ),
+            )
+
+    # ----------------------------------------------------------------------
+    class CommaAfterArgsSuite(TestBase):
+
+        # ----------------------------------------------------------------------
+        def _Format(self, original, expected):
+            executor = Executor(sys.stdout)
+
+            result = executor.Format(
+                original,
+                include_plugin_names=["CommaAfterArgs"],
+            )[0]
+
+            self.assertEqual(result, expected)
+
+        # ----------------------------------------------------------------------
+        def testAll(self):
+            self._Format(
+                textwrap.dedent(
+                    """\
+                    Func0(
+                    )
+
+                    Func1(
+                        one
+                    )
+
+                    Func2(
+                        one,
+                        two,
+                    )
+
+                    FuncTextwrap(
+                        textwrap.dedent(
+                            \"\"\"\\
+                            Line 1
+                            \"\"\"
+                        )
+                    )
+
+                    FuncTextwrapWithFormat(
+                        textwrap.dedent(
+                            \"\"\"\\
+                            Line {0}
+                            Line {1}
+                            \"\"\",
+                        ).format(
+                            "1",
+                            "2",
+                        )
+                    )
+
+                    Nested0(
+                        Nested1(
+                            textwrap.dedent(
+                                \"\"\"\\
+                                Line 1
+                                \"\"\",
+                            )
+                        )
+                    )
+
+                    NestedA(
+                        one,
+                        NestedB(
+                            textwrap.dedent(
+                                \"\"\"\\
+                                Line 1
+                                \"\"\",
+                            )
+                        ),
+                        two
+                    )
+
+                    KeywordArgs(
+                        textwrap.dedent(
+                            \"\"\"\\
+                            Line 1
+                            \"\"\",
+                        ),
+                        **kwargs
+                    )
+
+                    if any(
+                        child
+                        for child in self.Children
+                        if child.ShouldBeSplit(
+                            textwrap.dedent(
+                                \"\"\"\\
+                                Line A
+                                \"\"\",
+                            ),
+                            **arg2
+                        )
+                    ):
+                        return True
+                    """,
+                ),
+                textwrap.dedent(
+                    """\
+                    Func0()
+
+                    Func1(one)
+
+                    Func2(one, two)
+
+                    FuncTextwrap(
+                        textwrap.dedent(
+                            \"\"\"\\
+                            Line 1
+                            \"\"\",
                         ),
                     )
+
+                    FuncTextwrapWithFormat(
+                        textwrap.dedent(
+                            \"\"\"\\
+                            Line {0}
+                            Line {1}
+                            \"\"\",
+                        ).format("1", "2"),
+                    )
+
+                    Nested0(
+                        Nested1(
+                            textwrap.dedent(
+                                \"\"\"\\
+                                Line 1
+                                \"\"\",
+                            ),
+                        ),
+                    )
+
+                    NestedA(
+                        one,
+                        NestedB(
+                            textwrap.dedent(
+                                \"\"\"\\
+                                Line 1
+                                \"\"\",
+                            ),
+                        ),
+                        two,
+                    )
+
+                    KeywordArgs(
+                        textwrap.dedent(
+                            \"\"\"\\
+                            Line 1
+                            \"\"\",
+                        ),
+                        **kwargs
+                    )
+
+                    if any(
+                        child
+                        for child in self.Children
+                        if child.ShouldBeSplit(
+                            textwrap.dedent(
+                                \"\"\"\\
+                                Line A
+                                \"\"\",
+                            ),
+                            **arg2
+                        )
+                    ):
+                        return True
                     """,
                 ),
             )
