@@ -1,0 +1,31 @@
+# To implement any of these, define the corresponding method in SetupEnvironment_custom.py.
+# The method will be called with a parameter named data.
+#
+# For example:
+#   def Commit(data):
+#       print(data.branch)
+#
+
+(ChangeInfo):
+    <id string>
+    <author string>
+    <commit_date datetime name="date">
+    <description string min_length="0">
+    <branch string>
+    
+<Commit ChangeInfo>:
+    <modified filename *>
+    <added filename *>
+    <removed filename ensure_exists="False" *>
+    
+<Push>:
+    <url uri ?>
+    
+<Pushed>:
+    <change ChangeInfo +>:
+        # Note that the changes will not yet be applied on the repository, so we can't
+        # be sure that the files will exist. This limits the amount of useful processing
+        # that we can do during this event.
+        <modified filename ensure_exists="False" *>
+        <added filename ensure_exists="False" *>
+        <removed filename ensure_exists="False" *>

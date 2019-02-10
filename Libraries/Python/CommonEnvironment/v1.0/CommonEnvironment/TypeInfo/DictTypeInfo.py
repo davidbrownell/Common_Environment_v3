@@ -95,7 +95,7 @@ class DictTypeInfo(TypeInfo):
 
         exclude = exclude or set()
 
-        attributes = { a for a in self._GetAttributes(item) if not a.startswith('__') }
+        attributes = { a for a in self._GetAttributes(item) if not a.startswith('_') }
 
         for attribute_name, type_info in six.iteritems(self.Items):
             if attribute_name not in attributes:
