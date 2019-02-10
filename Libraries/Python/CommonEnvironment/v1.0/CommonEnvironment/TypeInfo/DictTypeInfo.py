@@ -83,13 +83,7 @@ class DictTypeInfo(TypeInfo):
                                   recurse=True,
                                   require_exact_match=None,
                                   exclude=None,                             # set of names to exclude from the search
-                                  exclude_names=None, # TODO: Back compat with v2; remove once SimpleSchemaCodeGenerator has been updated
                                 ):
-        # TODO: Back compat
-        if exclude is None and exclude_names is not None:
-            exclude = exclude_names
-        # TODO: End back compat
-
         if require_exact_match is None:
             require_exact_match = self.RequireExactMatchDefault if self.RequireExactMatchDefault is not None else True
 

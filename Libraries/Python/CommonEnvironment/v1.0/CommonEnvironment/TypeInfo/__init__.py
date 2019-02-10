@@ -353,35 +353,6 @@ class TypeInfo(Interface):
             raise ValidationException(result)
 
     # ----------------------------------------------------------------------
-    # TODO: This is here for back-compat with v2. Remove once SimpleSchemaCodeGenerator
-    #       has been updated.
-    def ValidateArityCount(self, count):
-        result = self.ValidateArityCountNoThrow(count)
-        if result is not None:
-            raise ValidationException(result)
-
-    def ValidateArityCountNoThrow(self, count):
-        if not self.Arity.IsCollection:
-            if (count == 0 and not self.Arity.IsOptional) or count > 1:
-                return "1 item was expected"
-
-            return None
-
-        if self.Arity.Min != None and count < self.Arity.Min:
-            return "At least {} {} expected".format( inflect.no("item", self.Arity.Min),
-                                                     inflect.plural_verb("was", self.Arity.Min),
-                                                   )
-
-        if self.Arity.Max != None and count > self.Arity.Max:
-            return "At most {} {} expected".format( inflect.no("item", self.Arity.Max),
-                                                    inflect.plural_verb("was", self.Arity.Max),
-                                                  )
-
-        return None
-
-    # TODO: End
-
-    # ----------------------------------------------------------------------
     def ValidateNoThrow(self, item_or_items, **custom_args):
         """Returns an error string if the input is not valid."""
 
