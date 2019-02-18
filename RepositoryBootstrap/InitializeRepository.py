@@ -76,10 +76,11 @@ def EntryPoint( output_stream=sys.stdout,
             """\
 
             **********************************************************************
-            The following information will be used to copy files to
-            '{}'.
+            Answers to the following questions will be used to copy template files
+            to '{}'.
 
-            The contents of the files themselves will not be modified.
+            The contents of the generated template files will not be modified by
+            this process.
             **********************************************************************
 
             """).format(repo_dir))
