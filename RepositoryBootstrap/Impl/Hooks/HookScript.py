@@ -129,7 +129,11 @@ def _Impl( display_sentinel,
 
     with open(json_filename) as f:
         try:
-            data = parser(f.read(), is_root=False)
+            data = parser(
+                f.read(),
+                is_root=False,
+                always_include_optional=True,
+            )
         except Exception as ex:
             output_stream.write("ERROR: {} ({})\n".format(str(ex), ex.stack))
             return -1
