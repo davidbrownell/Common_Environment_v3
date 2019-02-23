@@ -399,7 +399,7 @@ def Move( no_move=False,
                         dest_is_os_specific = new_content.HasOSSpecificLibraryExtensions(library_info.Fullpath) or prev_dest_is_os_specific
 
                         if dest_is_os_specific:
-                            if not prev_dest_is_os_specific:
+                            if os.path.isdir(dest_dir) and not prev_dest_is_os_specific:
                                 raise Exception(textwrap.dedent(
                                                     """\
                                                     The existing directory '{}' is not specific to an operating system and python version, but the new content is. 
