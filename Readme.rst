@@ -21,6 +21,7 @@ Contents
 #. Definitions_
 #. Functionality_
 #. `Docker Images`_
+#. `Pip Install`_
 #. Dependencies_
 #. `Creating Your Own Repository`_
 #. Support_
@@ -79,9 +80,20 @@ This software has been verified on the following platforms.
 ========================  ======================  =========================================
 Platform                  Scripting Environment   Version
 ========================  ======================  =========================================
-Windows                   Cmd.exe                 Windows 10 April 2018 Update
-Windows                   PowerShell              Windows 10 April 2018 Update
-Linux                     Bash                    Ubuntu 18.04, 16.04
+Windows                   Cmd.exe                 Windows 10:
+
+                                                  - October 2018 Update
+                                                  - April 2018 Update
+
+Windows                   PowerShell              Windows 10:
+
+                                                  - October 2018 Update
+                                                  - April 2018 Update
+
+Linux                     Bash                    Ubuntu:
+
+                                                  - 18.04
+                                                  - 16.04
 ========================  ======================  =========================================
   
 Definitions
@@ -199,10 +211,20 @@ Docker Images
 =============
 Docker images of Common_Environment are generated periodically.
 
-==========================  ==========================================
-Coming Soon                 An environment that is setup_ but not activated_ (useful as a base image).
-Coming Soon                 An environment that is activated_.
-==========================  ==========================================
+================================================  ==========================================
+dbrownell/common_environment:python36             An environment that is activated_ with python36.
+dbrownell/common_environment:python27             An environment that is activated_ with python27.
+dbrownell/common_environment:base                 An environment that is setup_ but not activated_ (useful as a base image for other Common_Environment-based images).
+================================================  ==========================================
+
+Pip Install
+===========
+Common_Environment's implementation includes foundational `python tools and functionality <Libraries/Python/CommonEnvironment/v1.0/CommonEnvironment>`_ that is useful outside of 
+the repository itself.
+
+A wheel file with these tools are generated periodically and available via `pip <https://pypi.org/project/pip/>`_:
+
+  ``pip install Common-Environment-v3``
 
 Dependencies
 ============
@@ -210,9 +232,9 @@ As this repository serves as the foundation for all other repositories, it has n
 
 Related Repositories
 --------------------
-==========================  ==========================================
-Coming Soon                 TODO
-==========================  ==========================================
+=======================================================================================  ==========================================
+`Common_EnvironmentEx <https://github.com/davidbrownell/Common_EnvironmentEx>`_          Enhances Common_Environment with libraries, scripts, and tools common to different development activities. 
+=======================================================================================  ==========================================
 
 Creating Your Own Repository
 ============================
@@ -230,4 +252,4 @@ From an activated_ environment_, run:
   
 Support
 =======
-For question or issues, please visit https://github.com/davidbrownell/v3-Common_Environment/issues.
+For question or issues, please visit https://github.com/davidbrownell/Common_Environment_v3/issues.

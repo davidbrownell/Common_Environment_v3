@@ -15,8 +15,8 @@
 from setuptools import setup, find_packages
 
 # Do the setup
-setup( name="CommonEnvironment",
-       version="1.0.3",
+setup( name="Common-Environment-v3",
+       version="1.0.0",
        packages=find_packages(),
        install_requires=[ "asciitree >= 0.3.3", 
                           "colorama >= 0.3.9", 
