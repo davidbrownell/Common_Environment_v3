@@ -23,6 +23,7 @@ Contents
 #. `Docker Images`_
 #. `Pip Install`_
 #. Dependencies_
+#. `Related Repositories`_
 #. `Creating Your Own Repository`_
 #. Support_
 
@@ -231,24 +232,23 @@ Dependencies
 As this repository serves as the foundation for all other repositories, it has no dependencies.
 
 Related Repositories
---------------------
+====================
+
 =======================================================================================  ==========================================
 `Common_EnvironmentEx <https://github.com/davidbrownell/Common_EnvironmentEx>`_          Enhances Common_Environment with libraries, scripts, and tools common to different development activities. 
 =======================================================================================  ==========================================
 
 Creating Your Own Repository
 ============================
-`CreateRepository.py <RepositoryBootstrap/CreateRepository.py>`_ is an interactive script used to create a new repository_ based on the Common_Environment framework.
+`InitializeRepository.py <RepositoryBootstrap/InitializeRepository.py>`_ is an interactive script used to create a new repository_ based on the Common_Environment framework.
 
 From an activated_ environment_, run:
 
   =========================  =======================================
-  Linux                      ``python $DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL/RepositoryBootstrap/CreateRepository.py <Destination Repository Dir> <Repository Name>``
-  Windows                    ``python %DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\RepositoryBootstrap\CreateRepository.py <Destination Repository Dir> <Repository Name>``
-  Windows (PowerShell)       ``python $env:DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL\RepositoryBootstrap\CreateRepository.py <Destination Repository Dir> <Repository Name>``
+  Linux                      ``python $DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL/RepositoryBootstrap/InitializeRepository.py``
+  Windows                    ``python %DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\RepositoryBootstrap\InitializeRepository.py``
+  Windows (PowerShell)       ``python $env:DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL\RepositoryBootstrap\InitializeRepository.py``
   =========================  =======================================
-  
-  The script will prompt you for information and then generate the necessary files in ``<Destination Repository Dir>``.
   
 Support
 =======
