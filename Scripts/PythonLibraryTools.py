@@ -270,7 +270,12 @@ def Move( no_move=False,
                     if version is None:
                         metadata_filename = os.path.join(library_path, "METADATA")
                         if os.path.isfile(metadata_filename):
-                            for line in open(metadata_filename, encoding="utf8").readlines():
+                            try:
+                                lines = open(metadata_filename, encoding="utf8").readlines()
+                            except TypeError:
+                                lines = open(metadata_filename).readlines()
+
+                            for line in lines:
                                 if line.startswith("Version:"):
                                     version = line[len("Version:"):].strip()
                                     break
