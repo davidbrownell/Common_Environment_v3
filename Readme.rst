@@ -224,7 +224,7 @@ the repository itself.
 
 A wheel file with these tools are generated periodically and available via `pip <https://pypi.org/project/pip/>`_:
 
-  ``pip install Common-Environment-v3``
+  ``pip install Common-Environment``
 
 Dependencies
 ============
