@@ -63,7 +63,8 @@ class RegularExpressionVisitorSuite(unittest.TestCase):
         Test(lambda: RegularExpressionVisitor.OnDate(None), [ "18-04-26", "18/04/26", "18.04.26", ], regex_index=2)
         Test(lambda: RegularExpressionVisitor.OnDate(None), [ "04-26-18", "04/26/18", "04.26.18", ], regex_index=3)
         Test(lambda: RegularExpressionVisitor.OnDirectory(None), "anything")
-        Test(lambda: RegularExpressionVisitor.OnDuration(None), [ "1.0:00:00.0", "1:0:00:00.0", "1.00:00:00", "1:00:00.0", "23:22:21", "23:22:21.20", ])
+        Test(lambda: RegularExpressionVisitor.OnDuration(None), [ "1.0:00:00.0", "1:0:00:00.0", "1.00:00:00", "1:00:00.0", "23:22:21", "23:22:21.20", ], regex_index=0)
+        Test(lambda: RegularExpressionVisitor.OnDuration(None), [ "P1Y", "P1MT2H", "PT1M", ], regex_index=1)
         Test(lambda: RegularExpressionVisitor.OnEnum(EnumTypeInfo([ "one", "two", ])), [ "one", "two", ])
         Test(lambda: RegularExpressionVisitor.OnFilename(None), "anything")
         Test(lambda: RegularExpressionVisitor.OnFloat(FloatTypeInfo()), [ "0.0", "10.2", "-3.14", ])
@@ -127,11 +128,18 @@ class SerializationSuite(unittest.TestCase):
         self.assertEqual(StringSerialization.SerializeItem(DateTimeTypeInfo(), datetime.datetime(year=2018, month=4, day=28, hour=14, minute=46, second=12, microsecond=3939)), "2018-04-28 14:46:12.003939")
         self.assertEqual(StringSerialization.SerializeItem(DateTimeTypeInfo(), datetime.datetime(year=2018, month=4, day=28, hour=14, minute=46, second=12, microsecond=3939), microseconds=False), "2018-04-28 14:46:12")
 
+        self.assertEqual(StringSerialization.SerializeItem(DateTimeTypeInfo(), datetime.datetime(year=2018, month=4, day=28, hour=14, minute=46, second=12), regex_index=1), "@1524951972.0 00:00")
+        self.assertEqual(StringSerialization.SerializeItem(DateTimeTypeInfo(), datetime.datetime(year=2018, month=4, day=28, hour=14, minute=46, second=12), regex_index=2), "1524951972.0")
+
         self.assertRaises(ValidationException, lambda: StringSerialization.SerializeItem(DateTimeTypeInfo(), "this is not a datetime"))
 
     # ----------------------------------------------------------------------
     def test_Date(self):
         self.assertEqual(StringSerialization.SerializeItem(DateTypeInfo(), datetime.date(year=2018, month=4, day=28)), "2018-04-28")
+        self.assertEqual(StringSerialization.SerializeItem(DateTypeInfo(), datetime.date(year=2018, month=4, day=28), regex_index=1), "04-28-2018")
+        self.assertEqual(StringSerialization.SerializeItem(DateTypeInfo(), datetime.date(year=2018, month=4, day=28), regex_index=2), "18-04-28")
+        self.assertEqual(StringSerialization.SerializeItem(DateTypeInfo(), datetime.date(year=2018, month=4, day=28), regex_index=3), "04-28-18")
+
         self.assertRaises(ValidationException, lambda: StringSerialization.SerializeItem(DateTypeInfo(), "this is not a valid date"))
 
     # ----------------------------------------------------------------------
@@ -143,6 +151,7 @@ class SerializationSuite(unittest.TestCase):
     def test_Duration(self):
         self.assertEqual(StringSerialization.SerializeItem(DurationTypeInfo(), datetime.timedelta(hours=2)), "2:00:00")
         self.assertEqual(StringSerialization.SerializeItem(DurationTypeInfo(), datetime.timedelta(days=1, hours=2)), "1.02:00:00")
+        self.assertEqual(StringSerialization.SerializeItem(DurationTypeInfo(), datetime.timedelta(days=1, hours=2), regex_index=1), "P1DT2H0M0S")
         self.assertEqual(StringSerialization.SerializeItem(DurationTypeInfo(), datetime.timedelta(days=1, hours=2), sep=':'), "1:02:00:00")
         self.assertEqual(StringSerialization.SerializeItem(DurationTypeInfo(), datetime.timedelta(days=1, hours=2, microseconds=3456)), "1.02:00:00.003456")
 
@@ -171,7 +180,11 @@ class SerializationSuite(unittest.TestCase):
 
     # ----------------------------------------------------------------------
     def test_Guid(self):
-        self.assertEqual(StringSerialization.SerializeItem(GuidTypeInfo(), uuid.UUID("363D3427-1871-40C5-83DF-3C9D5CE7B60D")), "363D3427-1871-40C5-83DF-3C9D5CE7B60D".lower())
+        self.assertEqual(StringSerialization.SerializeItem(GuidTypeInfo(), uuid.UUID("363D3427-1871-40C5-83DF-3C9D5CE7B60D")), "{363D3427-1871-40C5-83DF-3C9D5CE7B60D}".lower())
+        self.assertEqual(StringSerialization.SerializeItem(GuidTypeInfo(), uuid.UUID("363D3427-1871-40C5-83DF-3C9D5CE7B60D"), regex_index=1), "363D3427-1871-40C5-83DF-3C9D5CE7B60D".lower())
+        self.assertEqual(StringSerialization.SerializeItem(GuidTypeInfo(), uuid.UUID("363D3427-1871-40C5-83DF-3C9D5CE7B60D"), regex_index=2), "{363D3427187140C583DF3C9D5CE7B60D}".lower())
+        self.assertEqual(StringSerialization.SerializeItem(GuidTypeInfo(), uuid.UUID("363D3427-1871-40C5-83DF-3C9D5CE7B60D"), regex_index=3), "363D3427187140C583DF3C9D5CE7B60D".lower())
+
         self.assertRaises(ValidationException, lambda: StringSerialization.SerializeItem(GuidTypeInfo(), "this is not a valid guid"))
 
     # ----------------------------------------------------------------------
@@ -228,6 +241,7 @@ class DeserializationSuite(unittest.TestCase):
         self.assertEqual(StringSerialization.DeserializeItem(DateTimeTypeInfo(), "@1528171793 -0700"), datetime.datetime(2018, 6, 5, 11, 9, 53))
         self.assertEqual(StringSerialization.DeserializeItem(DateTimeTypeInfo(), "@1528171793 +0700"), datetime.datetime(2018, 6, 4, 21, 9, 53))
         self.assertEqual(StringSerialization.DeserializeItem(DateTimeTypeInfo(), "@1528171793 0700"), datetime.datetime(2018, 6, 4, 21, 9, 53))
+        self.assertEqual(StringSerialization.DeserializeItem(DateTimeTypeInfo(), "1528171793.0"), datetime.datetime(2018, 6, 5, 4, 9, 53))
         
         self.assertRaises(ValidationException, lambda: StringSerialization.DeserializeItem(DateTimeTypeInfo(), "not a valid datetime"))
 
@@ -260,7 +274,8 @@ class DeserializationSuite(unittest.TestCase):
         self.assertEqual(StringSerialization.DeserializeItem(DurationTypeInfo(), "1.02:03:04.5"), datetime.timedelta(days=1, hours=2, minutes=3, seconds=4, microseconds=5))
         self.assertEqual(StringSerialization.DeserializeItem(DurationTypeInfo(), "1:02:03:04.5"), datetime.timedelta(days=1, hours=2, minutes=3, seconds=4, microseconds=5))
         self.assertEqual(StringSerialization.DeserializeItem(DurationTypeInfo(), "02:03:04.5"), datetime.timedelta(hours=2, minutes=3, seconds=4, microseconds=5))
-
+        self.assertEqual(StringSerialization.DeserializeItem(DurationTypeInfo(), "P2DT3M21S"), datetime.timedelta(days=2, minutes=3, seconds=21))
+        
         self.assertRaises(ValidationException, lambda: StringSerialization.DeserializeItem(DurationTypeInfo(), "not a valid duration"))
 
     # ----------------------------------------------------------------------

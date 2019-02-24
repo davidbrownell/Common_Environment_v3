@@ -19,6 +19,7 @@ import math
 import os
 import re
 import textwrap
+import time
 import uuid
 
 import six
@@ -142,6 +143,19 @@ class RegularExpressionVisitor(Visitor):
                     Minutes                 )(?P<minutes>[0-5][0-9]):(?#
                     Seconds                 )(?P<seconds>[0-5][0-9])(?#
                     Microseconds [optional] )(?:\.(?P<microseconds>\d+))?(?#
+                    )"""),
+                 textwrap.dedent(
+                    # XSD-format
+                    r"""(?#
+                                            )P(?#
+                        Years [optional]    )(?:(?P<years>\d+)Y)?(?#
+                        Months [optional]   )(?:(?P<months>\d+)M)?(?#
+                        Days [optional]     )(?:(?P<days>\d+)D)?(?#
+                        Time <begin>        )(?:T(?#
+                        Hours [optional]    )(?:(?P<hours>2[0-3]|[0-1][0-9]|[0-9])H)?(?#
+                        Minutes [optional]  )(?:(?P<minutes>[0-5][0-9]|[0-9])M)?(?#
+                        Seconds [optional]  )(?:(?P<seconds>(?:[0-5][0-9]|[0-9])(?:\.\d+)?)S)?(?#
+                        Time <end>          ))?(?#
                     )"""),
                ]
 
@@ -277,7 +291,12 @@ class StringSerialization(Serialization):
         #   DateTimeTypeInfo        sep             string      ' '                 String that separates dates and times (' ' or 'T')
         #   DateTypeTypeInfo        microseconds    bool        True                Disables the display of microseconds during serialization if the value is False
         #   DurationTypeInfo        sep             string      '.'                 String that separates days and hours ('.' or ':')
-
+        #   <multiple types>        regex_index     int         0                   Specifies which index to use when serializing the items
+        #       - DateTimeTypeInfo
+        #       - DateTypeInfo
+        #       - DurationTypeInfo
+        #       - GuidTypeInfo
+        
         if type_info.Arity.IsOptional and item is None:
             return "None"
 
@@ -339,16 +358,61 @@ class _SerializationVisitor(Visitor):
     @staticmethod
     @override
     def OnDateTime(type_info, item, custom_kwargs):
+        regex_index = custom_kwargs.get("regex_index", 0)
+
         if not custom_kwargs.get("microseconds", True):
             item = item.replace(microsecond=0)
 
-        return item.isoformat(sep=custom_kwargs.get("sep", ' '))
+        if regex_index == 0:
+            return item.isoformat(sep=custom_kwargs.get("sep", ' '))
+        
+        elif regex_index == 1:
+            # Enhanced Unix timestamp
+            return "@{} 00:00".format(time.mktime(item.timetuple()))
+        
+        elif regex_index == 2:
+            # Unix timestamp
+            return str(time.mktime(item.timetuple()))
+
+        else:
+            assert False, regex_index
 
     # ----------------------------------------------------------------------
     @staticmethod
     @override
     def OnDate(type_info, item, custom_kwargs):
-        return item.isoformat()
+        regex_index = custom_kwargs.get("regex_index", 0)
+
+        if regex_index == 0:
+            # YYYY-MM-DD
+            return item.isoformat()
+
+        elif regex_index == 1:
+            # MM-DD-YYYY
+            return "{month:02}-{day:02}-{year}".format(
+                month=item.month,
+                day=item.day,
+                year=item.year,
+            )
+
+        elif regex_index == 2:
+            # YY-MM-DD
+            return "{year:02}-{month:02}-{day:02}".format(
+                year=item.year % 100,
+                month=item.month,
+                day=item.day,
+            )
+
+        elif regex_index == 3:
+            # MM-DD-YY
+            return "{month:02}-{day:02}-{year:02}".format(
+                month=item.month,
+                day=item.day,
+                year=item.year % 100,
+            )
+
+        else:
+            assert False, regex_index
 
     # ----------------------------------------------------------------------
     @classmethod
@@ -370,32 +434,51 @@ class _SerializationVisitor(Visitor):
         hours = int(hours)
         minutes = int(minutes)
 
-        if days:
-            prefix = "{days}{sep}{hours:02}".format( days=days,
-                                                     sep=custom_kwargs.get("sep", '.'),
-                                                     hours=hours,
-                                                   )
+        regex_index = custom_kwargs.get("regex_index", 0)
+
+        if regex_index == 0:
+            # D.HH:MM:SS
+            if days:
+                prefix = "{days}{sep}{hours:02}".format( days=days,
+                                                         sep=custom_kwargs.get("sep", '.'),
+                                                         hours=hours,
+                                                       )
+            else:
+                prefix = str(hours)
+
+            # {seconds:02.6f} doesn't work as a formatting string on some versions of python,
+            # so we need to do it ourselves.
+            prefix = "{prefix}:{minutes:02}:".format(**locals())
+
+            second_parts = str(seconds).split('.')
+            assert len(second_parts) == 2, second_parts
+
+            assert len(second_parts[0]) <= 2, second_parts[0]
+            second_parts[0] = second_parts[0].rjust(2, '0')
+
+            if second_parts[1] == "0":
+                return "{}{}".format(prefix, second_parts[0])
+
+            second_parts[1] = second_parts[1].ljust(6, '0')
+            if len(second_parts[1]) > 6:
+                second_parts[1] = second_parts[1][:6]
+
+            return "{}{}.{}".format(prefix, second_parts[0], second_parts[1])
+
+        elif regex_index == 1:
+            # XSD-Format: P1DT4H5M6S
+            if seconds == int(seconds):
+                seconds = int(seconds)
+
+            return "P{days}DT{hours}H{minutes}M{seconds}S".format(
+                days=days,
+                hours=hours,
+                minutes=minutes,
+                seconds=seconds,
+            )
+
         else:
-            prefix = str(hours)
-
-        # {seconds:02.6f} doesn't work as a formatting string on some versions of python,
-        # so we need to do it ourselves.
-        prefix = "{prefix}:{minutes:02}:".format(**locals())
-
-        second_parts = str(seconds).split('.')
-        assert len(second_parts) == 2, second_parts
-
-        assert len(second_parts[0]) <= 2, second_parts[0]
-        second_parts[0] = second_parts[0].rjust(2, '0')
-
-        if second_parts[1] == "0":
-            return "{}{}".format(prefix, second_parts[0])
-
-        second_parts[1] = second_parts[1].ljust(6, '0')
-        if len(second_parts[1]) > 6:
-            second_parts[1] = second_parts[1][:6]
-
-        return "{}{}.{}".format(prefix, second_parts[0], second_parts[1])
+            assert False, regex_index
 
     # ----------------------------------------------------------------------
     @staticmethod
@@ -419,7 +502,28 @@ class _SerializationVisitor(Visitor):
     @staticmethod
     @override
     def OnGuid(type_info, item, custom_kwargs):
-        return str(item)
+        regex_index = custom_kwargs.get("regex_index", 0)
+
+        item = str(item)
+
+        if regex_index == 0:
+            # {XXXXXXXX-XXXX...}
+            return "{{{}}}".format(item)
+           
+        elif regex_index == 1:
+            # XXXXXXXX-XXXX...
+            return item
+
+        elif regex_index == 2:
+            # {XXXXXXXXXXXX....}
+            return "{{{}}}".format(item.replace("-", ""))
+
+        elif regex_index == 3:
+            # XXXXXXXXXXXX....
+            return item.replace("-", "")
+
+        else:
+            assert False, regex_index
 
     # ----------------------------------------------------------------------
     @staticmethod
@@ -529,50 +633,74 @@ class _DeserializationVisitor(Visitor):
     @staticmethod
     @override
     def OnDuration(type_info, item, custom_kwargs, regex_match, regex_index):
-        parts = item.split(':')
+        if regex_index == 0:
+            # Standard
+            parts = item.split(':')
 
-        if len(parts) == 4:
-            # days:hours:minutes:seconds
-            days = int(parts[0])
-            hours = int(parts[1])
-            minutes = int(parts[2])
-            seconds_string = parts[3]
+            if len(parts) == 4:
+                # days:hours:minutes:seconds
+                days = int(parts[0])
+                hours = int(parts[1])
+                minutes = int(parts[2])
+                seconds_string = parts[3]
 
-        elif len(parts) == 3:
-            # days.hours:minutes:seconds
-            #   or
-            # hours:minutes:seconds
-            
-            days_and_hours = parts[0].split('.')
-            if len(days_and_hours) == 2:
-                days = int(days_and_hours[0])
-                hours = int(days_and_hours[1])
+            elif len(parts) == 3:
+                # days.hours:minutes:seconds
+                #   or
+                # hours:minutes:seconds
+
+                days_and_hours = parts[0].split('.')
+                if len(days_and_hours) == 2:
+                    days = int(days_and_hours[0])
+                    hours = int(days_and_hours[1])
+                else:
+                    days = 0
+                    hours = int(days_and_hours[0])
+
+                minutes = int(parts[1])
+                seconds_string = parts[2]
+
             else:
-                days = 0
-                hours = int(days_and_hours[0])
+                assert False, parts
 
-            minutes = int(parts[1])
-            seconds_string = parts[2]
+            second_parts = seconds_string.split('.')
+            if len(second_parts) == 2:
+                # seconds.microseconds
+                seconds = int(second_parts[0])
+                microseconds = int(second_parts[1])
+            else:
+                # seconds
+                seconds = int(second_parts[0])
+                microseconds = 0
+
+            return datetime.timedelta( days=days,
+                                       hours=hours,
+                                       minutes=minutes,
+                                       seconds=seconds,
+                                       microseconds=microseconds,
+                                     )
+
+        elif regex_index == 1:
+            years = int(regex_match.group("years") or 0)
+            months = int(regex_match.group("months") or 0)
+            days = int(regex_match.group("days") or 0)
+            hours = int(regex_match.group("hours") or 0)
+            minutes = int(regex_match.group("minutes") or 0)
+            seconds = float(regex_match.group("seconds") or 0.0)
+
+            if years:
+                days += years * 365
+            if months:
+                days += months * 30
+
+            return datetime.timedelta( days=days,
+                                       hours=hours,
+                                       minutes=minutes,
+                                       seconds=seconds,
+                                     )
 
         else:
-            assert False, parts
-        
-        second_parts = seconds_string.split('.')
-        if len(second_parts) == 2:
-            # seconds.microseconds
-            seconds = int(second_parts[0])
-            microseconds = int(second_parts[1])
-        else:
-            # seconds
-            seconds = int(second_parts[0])
-            microseconds = 0
-
-        return datetime.timedelta( days=days,
-                                   hours=hours,
-                                   minutes=minutes,
-                                   seconds=seconds,
-                                   microseconds=microseconds,
-                                 )
+            assert False, regex_index
 
     # ----------------------------------------------------------------------
     @staticmethod
