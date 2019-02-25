@@ -528,8 +528,12 @@ def CreateRepositoryBuildFunc( repository_name,
                                                 tags.append(now_tag)
 
                                             if len(repository_activation_configurations) > 1:
-                                                tags = [ "{}_{}".format(configuration, tag) for tag in tags ]
-                                                tags.insert(0, configuration)
+                                                configuration_tag = configuration
+                                            else:
+                                                configuration_tag = configuration or "standard"
+
+                                            tags = [ "{}_{}".format(configuration_tag, tag) for tag in tags ]
+                                            tags.insert(0, configuration_tag)
 
                                             for tag in tags:
                                                 assert tag not in image_hashes, tag
