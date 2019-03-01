@@ -100,7 +100,7 @@ def Activate( output_filename_or_stdout,
             is_activated = bool(os.getenv(Constants.DE_REPO_ACTIVATED_FLAG))
 
             activation_data = ActivationData.Load( repository_root,
-                                                   configuration,
+                                                   nonlocals.configuration,
                                                    fast,
                                                    force=force or not is_activated,
                                                  )
