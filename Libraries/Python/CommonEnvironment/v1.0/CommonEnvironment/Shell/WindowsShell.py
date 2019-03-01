@@ -77,6 +77,7 @@ class WindowsShell(Shell):
                                                                                                     ( ']', '^]' ),
                                                                                                     ( '"', '\"' ),
                                                                                                   ]),
+                                                                                       escape_char='__None__',
                                                                                     )))
             return ' && '.join(output)
 
