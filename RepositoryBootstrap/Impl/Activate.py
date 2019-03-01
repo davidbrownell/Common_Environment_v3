@@ -410,17 +410,28 @@ def _ActivateTools(output_stream, configuration, repositories, version_specs, ge
 
 # ----------------------------------------------------------------------
 def _ActivateCustom(**kwargs):
-    repositories = kwargs["repositories"]
+    original_configuration = kwargs["configuration"]
 
-    actions = []
+    # ----------------------------------------------------------------------
+    def RestoreConfiguration():
+        kwargs["configuration"] = original_configuration
 
-    for repository in repositories:
-        result = ActivationActivity.CallCustomMethod( os.path.join(repository.Root, Constants.ACTIVATE_ENVIRONMENT_CUSTOMIZATION_FILENAME),
-                                                      Constants.ACTIVATE_ENVIRONMENT_ACTIONS_METHOD_NAME,
-                                                      kwargs,
-                                                    )
-        if result is not None:
-            actions += result
+    # ----------------------------------------------------------------------
+
+    with CommonEnvironmentImports.CallOnExit(RestoreConfiguration):
+        repositories = kwargs["repositories"]
+
+        actions = []
+
+        for repository in repositories:
+            kwargs["configuration"] = repository.Configuration
+
+            result = ActivationActivity.CallCustomMethod( os.path.join(repository.Root, Constants.ACTIVATE_ENVIRONMENT_CUSTOMIZATION_FILENAME),
+                                                          Constants.ACTIVATE_ENVIRONMENT_ACTIONS_METHOD_NAME,
+                                                          kwargs,
+                                                        )
+            if result is not None:
+                actions += result
 
     return actions
 
