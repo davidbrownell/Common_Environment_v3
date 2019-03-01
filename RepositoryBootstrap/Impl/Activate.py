@@ -77,7 +77,10 @@ def Activate( output_filename_or_stdout,
             ):
     """Activates a repository for development activities."""
 
-    configuration = configuration if configuration.lower() != "none" else None
+    nonlocals = CommonEnvironmentImports.CommonEnvironment.Nonlocals(
+        configuration=configuration if configuration.lower() != "none" else None,
+    )
+
     version_specs = version_spec or {}; del version_spec
     mixins = mixin or []; del mixin
 
@@ -160,6 +163,7 @@ def Activate( output_filename_or_stdout,
                 raise Exception("'force' cannot be used with mixin repositories")
 
             LoadMixinLibrary(repository_root)
+            nonlocals.configuration = activation_data.Configuration
 
         for mixin in mixins:
             LoadMixinLibrary(mixin)
@@ -183,7 +187,7 @@ def Activate( output_filename_or_stdout,
                       ] + methods
 
         args = OrderedDict([ ( "output_stream", output_stream ),
-                             ( "configuration", configuration ),
+                             ( "configuration", nonlocals.configuration ),
                              ( "activation_data", activation_data ),
                              ( "version_specs", activation_data.VersionSpecs ),
                              ( "generated_dir", generated_dir ),
@@ -422,10 +426,6 @@ def _ActivateCustom(**kwargs):
 
 # ----------------------------------------------------------------------
 def _ActivatePrompt(repositories, configuration, is_mixin_repo, fast):
-    if is_mixin_repo and os.getenv(Constants.DE_REPO_CONFIGURATION_NAME):
-        assert configuration is None, configuration
-        configuration = os.getenv(Constants.DE_REPO_CONFIGURATION_NAME)
-
     mixin_names = []
 
     index = -1
