@@ -19,8 +19,8 @@ set -x                                      # statements
 # Builds python code using docker.
 #
 #   Docker command:
-#       [Linux]     docker run -it --rm -v `pwd`/..:/local centos:6.8 bash /local/Python/build_linux.sh <2.7.14|3.6.5>
-#       [Windows]   docker run -it --rm -v %cd%\..:/local  centos:6.8 bash /local/Python/build_linux.sh <2.7.14|3.6.5>
+#       [Linux Host]     docker run -it --rm -v `pwd`/..:/local centos:6.8 bash /local/Python/build_linux.sh <2.7.14|3.6.5>
+#       [Windows Host]   docker run -it --rm -v %cd%\..:/local  centos:6.8 bash /local/Python/build_linux.sh <2.7.14|3.6.5>
 
 if [[ "$1" == "2.7.14" ]]
 then
