@@ -102,12 +102,11 @@ class Uri(object):
 
         result = six.moves.urllib.parse.urlunparse(( self.Scheme,
                                                      ''.join(host),
-                                                     self.Path or '',
+                                                     six.moves.urllib.parse.quote(self.Path) if self.Path else '',
                                                      '',
                                                      query,
                                                      '',
                                                    ))
-
         # urlunparse doesn't handle 'file:///'
         if result.startswith("file://"):
             result = "file:///{}".format(result[len("file://"):])
