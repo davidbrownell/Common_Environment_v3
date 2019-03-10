@@ -114,6 +114,7 @@ class CompilerImpl(Interface):
 
     # ----------------------------------------------------------------------
     @classmethod
+    @extensionmethod
     def IsSupported(cls, filename):
         """Returns True if the filename provided is valid and has valid content."""
         return cls.InputTypeInfo.IsValid(filename) and cls.IsSupportedContent(filename)
