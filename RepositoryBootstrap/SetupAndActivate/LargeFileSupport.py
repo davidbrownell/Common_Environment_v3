@@ -56,6 +56,8 @@ def Deconstruct(
             basename = os.path.splitext(basename)[0]
 
             output = os.path.join(dirname, "_{}".format(basename))
+            if not filename.endswith(".7z"):
+                output += ".7z"
 
             command_line = '7za a -t7z "{output}" -v{size}b "{input}"'.format(
                 output=output,
@@ -67,7 +69,10 @@ def Deconstruct(
             if this_dm.result != 0:
                 return this_dm.result
 
-            output += ".7z.001"
+            if not output.endswith(".7z"):
+                output += ".7z"
+
+            output += ".001"
             assert os.path.isfile(output), output
 
             scm_root = GetAnySCM(dirname).GetRoot(dirname)
@@ -80,7 +85,7 @@ def Deconstruct(
                 `Setup_custom.py` file:
 
                     actions += [
-                        CustomShell.Commands.Execute(
+                        CurrentShell.Commands.Execute(
                             'python "{{script}}" Reconstruct "{{filename}}"'.format(
                                 script=os.path.join(
                                     os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"),
@@ -90,7 +95,8 @@ def Deconstruct(
                                 ),
                                 filename=os.path.join(_script_dir, {relative_parts}),
                             ),
-                        CustomShell.Commands.ExitOnError(),
+                        ),
+                        CurrentShell.Commands.ExitOnError(),
                     ]
 
                 """,
@@ -119,6 +125,7 @@ def Reconstruct(
     output_stream = StreamDecorator(output_stream)
 
     output_stream.write("Reconstructing '{}'...".format(filename))
+    output_stream._flush_after_write
     with output_stream.DoneManager(
         suffix="\n",
     ) as dm:
