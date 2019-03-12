@@ -130,10 +130,11 @@ def Install( name,
                 filename = CurrentShell.CreateTempFilename(".zip")
                 FilenameCleanup = lambda: FileSystem.RemoveFile(filename)
 
-                download_dm.result = six.moves.urllib.request.urlretrieve( uri, 
-                                                                           filename, 
-                                                                           reporthook=Callback,
-                                                                         )
+                six.moves.urllib.request.urlretrieve( uri, 
+                                                      filename, 
+                                                      reporthook=Callback,
+                                                    )
+
                 if nonlocals.progress_bar is not None:
                     nonlocals.progress_bar.close()
 
