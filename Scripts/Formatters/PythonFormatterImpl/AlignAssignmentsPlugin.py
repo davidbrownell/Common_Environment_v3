@@ -48,6 +48,9 @@ class Plugin(HorizontalAlignmentPluginImpl):
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
+    _AlignToLinesWithoutAlignmentLeaf       = Interface.DerivedProperty(False)
+
+    # ----------------------------------------------------------------------
     @classmethod
     @Interface.override
     def _GetAlignmentLeaf(

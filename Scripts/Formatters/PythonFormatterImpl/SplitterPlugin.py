@@ -137,7 +137,7 @@ class Plugin(PluginBase):
             while leaf_index < len(line.leaves):
                 clauses.append(Clause(line, leaf_index))
 
-                if leaf_index < len(line.leaves) and line.leaves[leaf_index].value == ",":
+                if clauses[-1].EndingIndex < len(line.leaves) and line.leaves[clauses[-1].EndingIndex].value == ",":
                     clauses[-1].EndingIndex += 1
 
                 leaf_index = clauses[-1].EndingIndex
@@ -157,16 +157,18 @@ class Plugin(PluginBase):
                 continue
 
             # If here, we are going to split
-            new_lines = [black.Line(line.depth, [])]
+            new_lines = []
             col_offset = line.depth * 4
 
             for clause in clauses:
+                new_lines.append(black.Line(line.depth, []))
+
                 col_offset = clause.GenerateLines(
                     max_func_line_length,
                     line,
                     new_lines,
                     col_offset,
-                    should_trim_prefix=False,
+                    should_trim_prefix=True,
                     **should_be_split_kwargs
                 )
 

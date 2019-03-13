@@ -64,7 +64,7 @@ FORMATTERS                                  = [_LoadFormatterFromModule(mod) for
 # |  Command Line Functionality
 # |
 # ----------------------------------------------------------------------
-_formatter_type_info                                                                                                  = CommandLine.EnumTypeInfo(
+_formatter_type_info                        = CommandLine.EnumTypeInfo(
     [formatter.Name for formatter in FORMATTERS] + [str(index) for index in six.moves.range(1, len(FORMATTERS) + 1)],
 )
 
@@ -548,7 +548,7 @@ def _Impl(activity_desc, activity_func, output_stream, formatter, input_dir, sin
 
     with output_stream.SingleLineDoneManager(activity_desc) as this_dm:
         this_dm.result = TaskPool.Execute(
-            [TaskPool.Task(filename, Invoke) for filename in input_filenames], this_dm.stream, progress_bar=True, num_concurrent_tasks=1 if single_threaded else None
+            [TaskPool.Task(filename, Invoke) for filename in input_filenames], this_dm.stream, progress_bar=True, num_concurrent_tasks=1 if single_threaded else None,
         )
 
     return this_dm.result

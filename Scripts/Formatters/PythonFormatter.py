@@ -52,11 +52,11 @@ class Formatter(FormatterImpl):
 
     # ----------------------------------------------------------------------
     # |  Properties
-    Name                                                                                     = Interface.DerivedProperty("Python")
-    Description                                                                              = Interface.DerivedProperty(
+    Name                                    = Interface.DerivedProperty("Python")
+    Description                             = Interface.DerivedProperty(
         "Formats Python code using Black (https://github.com/ambv/black) plus enhancements",
     )
-    InputTypeInfo                                                                            = Interface.DerivedProperty(
+    InputTypeInfo                           = Interface.DerivedProperty(
         FilenameTypeInfo(
             validation_expression=r".+\.py",
         ),
