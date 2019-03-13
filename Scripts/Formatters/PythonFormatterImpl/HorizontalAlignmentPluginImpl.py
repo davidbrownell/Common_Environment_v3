@@ -54,13 +54,7 @@ class HorizontalAlignmentPluginImpl(PluginBase):
                     continue
 
                 alignment_leaf = cls._GetAlignmentLeaf(line, not alignment_leaves, *args, **kwargs)
-                if (
-                    alignment_leaf is None
-                    and not (
-                        cls._AlignToLinesWithoutAlignmentLeaf
-                        and alignment_leaves
-                    )
-                ):
+                if alignment_leaf is None and not (cls._AlignToLinesWithoutAlignmentLeaf and alignment_leaves):
                     continue
 
                 # Get the contents before the leaf
@@ -110,7 +104,7 @@ class HorizontalAlignmentPluginImpl(PluginBase):
         calculate the overall alignment length.
         """
         raise Exception("Abstract property")
-    
+
     # ----------------------------------------------------------------------
     # |  Private Methods
     @staticmethod

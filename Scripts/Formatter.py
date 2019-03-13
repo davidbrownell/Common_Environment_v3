@@ -453,7 +453,7 @@ def _FormatTreeImpl(
         return result
 
     if not changed_files:
-        output_stream.write("\nNo files would be changed.\n")
+        output_stream.write("\nNo files were changed.\n")
     else:
         output_stream.write(
             textwrap.dedent(
@@ -548,7 +548,10 @@ def _Impl(activity_desc, activity_func, output_stream, formatter, input_dir, sin
 
     with output_stream.SingleLineDoneManager(activity_desc) as this_dm:
         this_dm.result = TaskPool.Execute(
-            [TaskPool.Task(filename, Invoke) for filename in input_filenames], this_dm.stream, progress_bar=True, num_concurrent_tasks=1 if single_threaded else None,
+            [TaskPool.Task(filename, Invoke) for filename in input_filenames],
+            this_dm.stream,
+            progress_bar=True,
+            num_concurrent_tasks=1 if single_threaded else None,
         )
 
     return this_dm.result
