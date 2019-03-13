@@ -730,7 +730,7 @@ class Executor(object):
                                ))
 
         if self.ScriptDescriptionSuffix:
-            error_stream.write("\n{}\n".format(self.ScriptDescriptionSuffix.strip()))
+            error_stream.write("\n{}\n".format(self.ScriptDescriptionSuffix.rstrip()))
 
         if not verbose:
             error_stream.write(textwrap.dedent(

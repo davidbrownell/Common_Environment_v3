@@ -20,7 +20,7 @@ import os
 import CommonEnvironment
 from CommonEnvironment import Interface
 
-from CommonEnvironment.BlackAndBrown.Plugins.Impl.HorizontalAlignmentPluginImpl import HorizontalAlignmentPluginImpl
+from HorizontalAlignmentPluginImpl import HorizontalAlignmentPluginImpl
 
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()
@@ -47,6 +47,9 @@ class Plugin(HorizontalAlignmentPluginImpl):
 
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    _AlignToLinesWithoutAlignmentLeaf       = Interface.DerivedProperty(False)
+
     # ----------------------------------------------------------------------
     @classmethod
     @Interface.override

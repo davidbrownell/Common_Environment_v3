@@ -20,12 +20,13 @@ import os
 import CommonEnvironment
 from CommonEnvironment import Interface
 
-from CommonEnvironment.BlackAndBrown.Plugins import Plugin as PluginBase
-
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name                   = os.path.split(_script_fullpath)
 #  ----------------------------------------------------------------------
+
+# This line works because it has already been imported by PythonFormatter.py
+from PythonFormatterImpl import Plugin as PluginBase
 
 # ----------------------------------------------------------------------
 class HorizontalAlignmentPluginImpl(PluginBase):
@@ -53,7 +54,7 @@ class HorizontalAlignmentPluginImpl(PluginBase):
                     continue
 
                 alignment_leaf = cls._GetAlignmentLeaf(line, not alignment_leaves, *args, **kwargs)
-                if alignment_leaf is None and not alignment_leaves:
+                if alignment_leaf is None and not (cls._AlignToLinesWithoutAlignmentLeaf and alignment_leaves):
                     continue
 
                 # Get the contents before the leaf
@@ -93,6 +94,16 @@ class HorizontalAlignmentPluginImpl(PluginBase):
                 leaf.prefix = " " * (alignment_column - line_length - 1)
 
         return lines
+
+    # ----------------------------------------------------------------------
+    # |  Private Properties
+    @Interface.abstractproperty
+    def _AlignToLinesWithoutAlignmentLeaf(self):
+        """\
+        If True, the length of lines without alignment leaves are used to
+        calculate the overall alignment length.
+        """
+        raise Exception("Abstract property")
 
     # ----------------------------------------------------------------------
     # |  Private Methods
