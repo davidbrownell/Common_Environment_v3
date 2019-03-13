@@ -22,6 +22,7 @@ from collections import OrderedDict
 import six
 
 import CommonEnvironment
+
 # ----------------------------------------------------------------------
 _script_fullpath = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name = os.path.split(_script_fullpath)
@@ -71,12 +72,14 @@ def GetCustomActions( output_stream,
         os.environ["DEVELOPMENT_ENVIRONMENT_TEST_PARSERS"] = ''
         os.environ["DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_VALIDATORS"] = ''
         os.environ["DEVELOPMENT_ENVIRONMENT_TESTER_CONFIGURATIONS"] = ''
+        os.environ["DEVELOPMENT_ENVIRONMENT_FORMATTERS"] = ""
 
         actions += [ Commands.Set("DEVELOPMENT_ENVIRONMENT_COMPILERS", None),
                      Commands.Set("DEVELOPMENT_ENVIRONMENT_TEST_EXECUTORS", None),
                      Commands.Set("DEVELOPMENT_ENVIRONMENT_TEST_PARSERS", None),
                      Commands.Set("DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_VALIDATORS", None),
                      Commands.Set("DEVELOPMENT_ENVIRONMENT_TESTER_CONFIGURATIONS", None),
+                     Commands.Set("DEVELOPMENT_ENVIRONMENT_FORMATTERS", None),
                    ]
 
         actions += DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_COMPILERS",
@@ -97,6 +100,11 @@ def GetCustomActions( output_stream,
         actions += DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_VALIDATORS",
                                                                            os.path.join(_script_dir, "Scripts", "CodeCoverageValidators"),
                                                                            lambda fullpath, name, ext: ext == ".py" and name.endswith("CodeCoverageValidator"),
+                                                                         )
+
+        actions += DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_FORMATTERS",
+                                                                           os.path.join(_script_dir, "Scripts", "Formatters"),
+                                                                           lambda fullpath, name, ext: ext == ".py" and name.endswith("Formatter"),
                                                                          )
 
     actions.append(Commands.Augment( "DEVELOPMENT_ENVIRONMENT_TESTER_CONFIGURATIONS",
@@ -147,4 +155,3 @@ def GetCustomScriptExtractors():
                          ( ".ps1", PowershellScriptWrapper ),
                          ( CurrentShell.ScriptExtension, EnvironmentScriptWrapper ),
                        ])
-

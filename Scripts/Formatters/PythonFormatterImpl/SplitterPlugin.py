@@ -27,12 +27,13 @@ import six
 import CommonEnvironment
 from CommonEnvironment import Interface
 
-from CommonEnvironment.BlackAndBrown.Plugins import Plugin as PluginBase
-
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name                   = os.path.split(_script_fullpath)
 #  ----------------------------------------------------------------------
+
+# This line works because it has already been imported by PythonFormatter.py
+from PythonFormatterImpl import Plugin as PluginBase
 
 # ----------------------------------------------------------------------
 @Interface.staticderived
@@ -136,7 +137,7 @@ class Plugin(PluginBase):
             while leaf_index < len(line.leaves):
                 clauses.append(Clause(line, leaf_index))
 
-                if leaf_index < len(line.leaves) and line.leaves[leaf_index].value == ",":
+                if clauses[-1].EndingIndex < len(line.leaves) and line.leaves[clauses[-1].EndingIndex].value == ",":
                     clauses[-1].EndingIndex += 1
 
                 leaf_index = clauses[-1].EndingIndex
@@ -156,18 +157,42 @@ class Plugin(PluginBase):
                 continue
 
             # If here, we are going to split
-            new_lines = [black.Line(line.depth, [])]
+
+            # This is a hack to work around an apparent bug in Black -
+            # it doesn't seem to properly group arguments when invoking
+            # a method that contains a long number of parameters.
+            are_func_args = (
+                line.leaves[0].parent
+                and line.leaves[0].parent.type == python_symbols.atom
+                and line.leaves[0].parent.parent
+                and line.leaves[0].parent.parent.type == python_symbols.arglist
+            )
+
+            if are_func_args:
+                new_lines = []
+                should_trim_prefix = True
+            else:
+                new_lines = [black.Line(line.depth, [])]
+                should_trim_prefix = False
+
             col_offset = line.depth * 4
 
             for clause in clauses:
+                if are_func_args:
+                    new_lines.append(black.Line(line.depth, []))
+                    col_offset = line.depth * 4
+                    
                 col_offset = clause.GenerateLines(
                     max_func_line_length,
                     line,
                     new_lines,
                     col_offset,
-                    should_trim_prefix=False,
+                    should_trim_prefix=should_trim_prefix,
                     **should_be_split_kwargs
                 )
+
+            if are_func_args and not clauses[-1].IsKwargs and new_lines[-1].leaves[-1].type != python_tokens.COMMA:
+                new_lines[-1].leaves.append(black.Leaf(python_tokens.COMMA, ","))
 
             modifications[line_index] = new_lines
 
@@ -482,7 +507,7 @@ class Clause(_TokenParser):
                 leaf_index = len(line.leaves)
 
             else:
-                if leaf.value == "=":
+                if leaf.value == "=" and leaf.parent.type in [python_symbols.argument, python_symbols.typedargslist]:
                     is_default_arg = True
 
                 elif leaf.value == "**":

@@ -96,8 +96,6 @@ class Plugin(Interface.Interface):
             yield starting_line_index, lines[starting_line_index:line_index]
 
     # ----------------------------------------------------------------------
-    _IgnoreLine_comment_regex               = re.compile("^\s*#\s*(?P<prefix>.+?)\s*:\s*(?P<suffix>.+)\s*$")
-
     @classmethod
     def IgnoreLine(cls, line):
         return line.comments and line.comments[0][1].value in ["# yapf: disable", "# fmt: off"]

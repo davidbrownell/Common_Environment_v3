@@ -23,12 +23,13 @@ from blib2to3.pygram import python_symbols, token as python_tokens
 import CommonEnvironment
 from CommonEnvironment import Interface
 
-from CommonEnvironment.BlackAndBrown.Plugins import Plugin as PluginBase
-
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name                   = os.path.split(_script_fullpath)
 #  ----------------------------------------------------------------------
+
+# This line works because it has already been imported by PythonFormatter.py
+from PythonFormatterImpl import Plugin as PluginBase
 
 # ----------------------------------------------------------------------
 @Interface.staticderived
