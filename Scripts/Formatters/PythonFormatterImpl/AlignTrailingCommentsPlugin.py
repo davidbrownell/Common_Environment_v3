@@ -20,8 +20,8 @@ import os
 import CommonEnvironment
 from CommonEnvironment import Interface
 
-from CommonEnvironment.BlackAndBrown.Plugins.AlignAssignmentsPlugin import Plugin as AlignAssignmentsPlugin
-from CommonEnvironment.BlackAndBrown.Plugins.Impl.HorizontalAlignmentPluginImpl import HorizontalAlignmentPluginImpl
+from AlignAssignmentsPlugin import Plugin as AlignAssignmentsPlugin
+from HorizontalAlignmentPluginImpl import HorizontalAlignmentPluginImpl
 
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()
@@ -36,6 +36,9 @@ class Plugin(HorizontalAlignmentPluginImpl):
 
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    _AlignToLinesWithoutAlignmentLeaf       = Interface.DerivedProperty(True)
+
     # ----------------------------------------------------------------------
     @staticmethod
     @Interface.override
