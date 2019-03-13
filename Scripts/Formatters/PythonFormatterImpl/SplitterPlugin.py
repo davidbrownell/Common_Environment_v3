@@ -180,7 +180,8 @@ class Plugin(PluginBase):
             for clause in clauses:
                 if are_func_args:
                     new_lines.append(black.Line(line.depth, []))
-
+                    col_offset = line.depth * 4
+                    
                 col_offset = clause.GenerateLines(
                     max_func_line_length,
                     line,

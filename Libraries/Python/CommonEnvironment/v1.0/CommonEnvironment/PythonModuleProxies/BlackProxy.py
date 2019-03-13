@@ -108,6 +108,9 @@ def Convert(
         ),
     )
 
+    if is_check:
+        return 1 if result == 1 else -1
+
     if result != 0:
         if not is_diff:
             output_stream.write(formatted_content)
@@ -128,21 +131,23 @@ def Convert(
             """,
         ).format(formatted_content, original_content)
 
-    if is_diff:
-        # ----------------------------------------------------------------------
-        def StringToArray(content):
-            return ["{}\n".format(line) for line in content.split("\n")]
+    if formatted_content:
+        if is_diff:
+            # ----------------------------------------------------------------------
+            def StringToArray(content):
+                return ["{}\n".format(line) for line in content.split("\n")]
 
-        # ----------------------------------------------------------------------
+            # ----------------------------------------------------------------------
 
-        diff = difflib.unified_diff(
-            StringToArray(original_content),
-            StringToArray(formatted_content),
-        )
+            diff = difflib.unified_diff(
+                StringToArray(original_content),
+                StringToArray(formatted_content),
+            )
 
-        formatted_content = "".join(diff)
+            formatted_content = "".join(diff)
 
-    output_stream.write(formatted_content)
+        output_stream.write(formatted_content)
+
     return 0
 
 
