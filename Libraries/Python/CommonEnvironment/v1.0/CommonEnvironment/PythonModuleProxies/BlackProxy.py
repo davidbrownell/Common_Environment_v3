@@ -13,7 +13,30 @@
 # |  http://www.boost.org/LICENSE_1_0.txt.
 # |
 # ----------------------------------------------------------------------
-"""Updates python source code with Black and applies additional formatting (Brown)"""
+"""\
+Updates python source code with the PythonFormatter while presenting an 
+interface similar to the Black formatter.
+
+This proxy is useful for tools that are configured to invoke Black (see 
+the list below) by presenting a consistent interface. This python script
+resides here (rather than in <root>/Scripts) because those tools often
+expect to invoke Black as a python module rather than as a script.
+
+The following are instructions to configure different editors to use
+this proxy:
+
+VSCODE
+------
+Update settings.json with the following information
+
+{
+    "python.formatting.provider": "black",
+    "python.formatting.blackPath": "CommonEnvironment.PythonModuleProxies.BlackProxy",
+    "editor.formatOnSaveTimeout": 10000
+}
+
+
+"""
 
 import difflib
 import os
@@ -23,9 +46,9 @@ import traceback
 
 import CommonEnvironment
 from CommonEnvironment import CommandLine
+from CommonEnvironment import Process
+from CommonEnvironment.Shell.All import CurrentShell
 from CommonEnvironment import StringHelpers
-
-from CommonEnvironment.BlackAndBrown import Executor
 
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()
@@ -71,22 +94,24 @@ def Convert(
     if input_filename is None:
         raise Exception("Please provide a filename on the command line")
 
-    executor = Executor(output_stream)
-
-    if is_check:
-        return 1 if executor.HasChanges(input_filename) else -1
-
     original_content = open(input_filename).read()
 
-    try:
-        formatted_content, has_changes = executor.Format(input_filename)
-    except:
-        if not is_diff:
-            raise
+    if is_check:
+        command_line_template = '"{script}" HasChangesFile "{filename}"'
+    else:
+        command_line_template = '"{script}" FormatFile "{filename}" /quiet'
 
-        # This is a bit strange, but if the caller is expecting a diff we
-        # need to display this exception as a diff.
-        exception_content = traceback.format_exc()
+    result, formatted_content = Process.Execute(
+        command_line_template.format(
+            script=CurrentShell.CreateScriptName("Formatter"),
+            filename=input_filename,
+        ),
+    )
+
+    if result != 0:
+        if not is_diff:
+            output_stream.write(formatted_content)
+            return -1
 
         formatted_content = textwrap.dedent(
             """\
@@ -94,18 +119,14 @@ def Convert(
             ********************************************************************************
             ********************************************************************************
 
-                Exception generated in BlackProxy
-
-                    {}
+            {}
 
             ********************************************************************************
             ********************************************************************************
             ********************************************************************************
             {}
             """,
-        ).format(StringHelpers.LeftJustify(exception_content, 8), original_content)
-
-        has_changes = True
+        ).format(formatted_content, original_content)
 
     if is_diff:
         # ----------------------------------------------------------------------
@@ -120,10 +141,8 @@ def Convert(
         )
 
         formatted_content = "".join(diff)
-    elif not has_changes:
-        return 0
 
-    sys.stdout.write(formatted_content)
+    output_stream.write(formatted_content)
     return 0
 
 

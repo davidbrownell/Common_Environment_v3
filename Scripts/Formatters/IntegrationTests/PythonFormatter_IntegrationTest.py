@@ -1,6 +1,6 @@
 # ----------------------------------------------------------------------
 # |
-# |  BlackAndBrown_IntegrationTest.py
+# |  PythonFormatter_IntegrationTest.py
 # |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-12-18 09:45:52
@@ -13,7 +13,7 @@
 # |  http://www.boost.org/LICENSE_1_0.txt.
 # |
 # ----------------------------------------------------------------------
-"""Unit tests for BlackAndBrown"""
+"""Unit tests for PythonFormatter"""
 
 import os
 import sys
@@ -21,13 +21,21 @@ import textwrap
 import unittest
 
 import CommonEnvironment
-from CommonEnvironment.BlackAndBrown import *
-from CommonEnvironment.BlackAndBrown.Plugins.AlignAssignmentsPlugin import Plugin as AlignAssignmentsPlugin
+from CommonEnvironment.CallOnExit import CallOnExit
 
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name                   = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
+
+sys.path.insert(0, os.path.join(_script_dir, ".."))
+with CallOnExit(lambda: sys.path.pop(0)):
+    from PythonFormatter import Formatter
+    from PythonFormatterImpl import Plugin as PluginBase
+
+sys.path.insert(0, os.path.join(_script_dir, "..", "PythonFormatterImpl"))
+with CallOnExit(lambda: sys.path.pop(0)):
+    from AlignAssignmentsPlugin import Plugin as AlignAssignmentsPlugin
 
 # ----------------------------------------------------------------------
 if sys.version[0] == "2":
@@ -49,12 +57,11 @@ else:
 
         # ----------------------------------------------------------------------
         def _Format(self, original, expected, *plugin_names, **plugin_args):
-            executor = Executor(sys.stdout, **plugin_args)
-
-            result = executor.Format(
+            result = Formatter.Format(
                 original,
                 black_line_length=200,
                 include_plugin_names=plugin_names,
+                **plugin_args
             )[0]
 
             self.assertEqual(result, expected)
@@ -1277,9 +1284,7 @@ else:
 
         # ----------------------------------------------------------------------
         def _Format(self, original, expected):
-            executor = Executor(sys.stdout)
-
-            result = executor.Format(
+            result = Formatter.Format(
                 original,
                 include_plugin_names=["CommaAfterArgs"],
             )[0]
@@ -1446,9 +1451,7 @@ else:
     class CompleteSuite(TestBase):
         # ----------------------------------------------------------------------
         def _Format(self, original, expected):
-            executor = Executor(sys.stdout)
-
-            result = executor.Format(original)[0]
+            result = Formatter.Format(original)[0]
 
             self.assertEqual(result, expected)
 

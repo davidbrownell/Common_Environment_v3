@@ -345,6 +345,11 @@ def Execute( tasks,
                 with pb_lock:
                     # Move down one line to compensate for the progress bar
                     output_stream.write("\033[1B") 
+                    
+                    # Enesure that something is written (if nothing is written,
+                    # the call to move up a line that is invoked after WriteStatuses
+                    # is complete will not work as expected.
+                    output_stream.write(" \r")
 
                     WriteStatuses(statuses)
 

@@ -1,19 +1,19 @@
 # ----------------------------------------------------------------------
 # |
-# |  __init__.py
+# |  PythonFormatter.py
 # |
 # |  David Brownell <db@DavidBrownell.com>
-# |      2018-12-15 10:11:48
+# |      2019-03-11 09:45:46
 # |
 # ----------------------------------------------------------------------
 # |
-# |  Copyright David Brownell 2018
+# |  Copyright David Brownell 2019
 # |  Distributed under the Boost Software License, Version 1.0. See
 # |  accompanying file LICENSE_1_0.txt or copy at
 # |  http://www.boost.org/LICENSE_1_0.txt.
 # |
 # ----------------------------------------------------------------------
-"""Applies Black (https://github.com/ambv/black) followed by customizations by David BROWNell"""
+"""Contains the Formatter object"""
 
 import importlib
 import itertools
@@ -28,32 +28,54 @@ import toml
 import CommonEnvironment
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import FileSystem
-from CommonEnvironment.TypeInfo.FundamentalTypes.All import *
+from CommonEnvironment.FormatterImpl import FormatterImpl
+from CommonEnvironment import Interface
+from CommonEnvironment.TypeInfo.FundamentalTypes.FilenameTypeInfo import FilenameTypeInfo
 
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name                   = os.path.split(_script_fullpath)
 #  ----------------------------------------------------------------------
 
+# Perform this import so Pluigns have access to PluginBase without resorting to wonky
+# relative imports.
+from PythonFormatterImpl import Plugin as PluginBase
+
 # ----------------------------------------------------------------------
-class Executor(object):
-    """\
-    Object that is capable of formatting source based on Black and
-    one or more plugins.
-    """
+@Interface.staticderived
+class Formatter(FormatterImpl):
 
     TOML_FILENAME                           = "pyproject.toml"
-    TOML_BLACK_AND_BROWN_SECTION_NAME       = "tool.blackandbrown"
+    TOML_SECTION_NAME                       = "tool.pythonformatter"
 
     DEFAULT_BLACK_LINE_LENGTH               = 180
 
     # ----------------------------------------------------------------------
-    def __init__(self, output_stream, *plugin_input_dirs, **plugin_args):
+    # |  Properties
+    Name                                                                                     = Interface.DerivedProperty("Python")
+    Description                                                                              = Interface.DerivedProperty(
+        "Formats Python code using Black (https://github.com/ambv/black) plus enhancements",
+    )
+    InputTypeInfo                                                                            = Interface.DerivedProperty(
+        FilenameTypeInfo(
+            validation_expression=r".+\.py",
+        ),
+    )
+
+    # ----------------------------------------------------------------------
+    # |  Methods
+    _is_initialized                         = False
+
+    @classmethod
+    def __clsinit__(cls, *plugin_input_dirs):
+        if cls._is_initialized:
+            return
+
         plugins = []
         debug_plugin = None
 
         for plugin_input_dir in itertools.chain(
-            [os.path.join(_script_dir, "Plugins")],
+            [os.path.join(_script_dir, "PythonFormatterImpl")],
             plugin_input_dirs,
         ):
             if not os.path.isdir(plugin_input_dir):
@@ -70,10 +92,9 @@ class Executor(object):
 
                     mod = importlib.import_module(plugin_name)
                     if mod is None:
-                        output_stream.write(
+                        raise Exception(
                             "WARNING: Unable to import the module at '{}'.\n".format(filename),
                         )
-                        continue
 
                     potential_class = None
                     potential_class_names = [plugin_name, "Plugin"]
@@ -84,13 +105,12 @@ class Executor(object):
                             break
 
                     if potential_class is None:
-                        output_stream.write(
+                        raise Exception(
                             "WARNING: The module at '{}' does not contain a supported class ({}).\n".format(
                                 filename,
                                 ", ".join(["'{}'".format(pcn) for pcn in potential_class_names]),
                             ),
                         )
-                        continue
 
                     plugins.append(potential_class)
 
@@ -101,35 +121,33 @@ class Executor(object):
             key=lambda plugin: (plugin.Priority, plugin.Name),
         )
 
-        self._plugins                       = plugins
-        self._plugin_args                   = plugin_args
-        self._debug_plugin                  = debug_plugin
+        cls._plugins = plugins
+        cls._debug_plugin = debug_plugin
+
+        cls._is_initialized = True
 
     # ----------------------------------------------------------------------
-    @property
-    def Plugins(self):
-        return iter(self._plugins)
-
-    # ----------------------------------------------------------------------
+    @classmethod
+    @Interface.override
     def Format(
-        self,
-        input_filename_or_content,
+        cls,
+        filename_or_content,
         black_line_length=None,
         include_plugin_names=None,
         exclude_plugin_names=None,
         debug=False,
+        *plugin_input_dirs,
+        **plugin_args
     ):
-        """Formats the input file or content and returns the results"""
+        cls.__clsinit__(*plugin_input_dirs)
 
-        plugin_args = self._plugin_args
-
-        if os.path.isfile(input_filename_or_content):
+        if len(filename_or_content) < 2000 and os.path.isfile(filename_or_content):
             # Search all ancestor directories for toml files
             toml_filenames = []
 
-            directory = os.path.dirname(input_filename_or_content)
+            directory = os.path.dirname(filename_or_content)
             while True:
-                potential_filename = os.path.join(directory, self.TOML_FILENAME)
+                potential_filename = os.path.join(directory, cls.TOML_FILENAME)
                 if os.path.isfile(potential_filename):
                     toml_filenames.append(potential_filename)
 
@@ -140,7 +158,7 @@ class Executor(object):
                 directory = parent_directory
 
             if toml_filenames:
-                plugin_args = defaultdict(dict)
+                these_plugin_args = defaultdict(dict)
 
                 toml_filenames.reverse()
 
@@ -164,43 +182,45 @@ class Executor(object):
                         if "line-length" in black_data:
                             black_line_length = black_data["line-length"]
 
-                        black_and_brown_data = GetTomlSection(
-                            data,
-                            self.TOML_BLACK_AND_BROWN_SECTION_NAME,
-                        )
-                        for plugin_name, plugin_values in six.iteritems(black_and_brown_data):
+                        python_formatter_data = GetTomlSection(data, cls.TOML_SECTION_NAME)
+
+                        for plugin_name, plugin_values in six.iteritems(python_formatter_data):
                             for k, v in six.iteritems(plugin_values):
-                                plugin_args[plugin_name][k] = v
+                                these_plugin_args[plugin_name][k] = v
 
                     except Exception as ex:
                         raise Exception(
                             "The toml file at '{}' is not valid ({})".format(toml_filename, str(ex)),
                         )
 
-                # Apply the provided args
-                for plugin_name, plugin_values in six.iteritems(self._plugin_args):
+                # Apply the provided args. Use these_plugin_args to take advantage of
+                # the defaultdict.
+                for plugin_name, plugin_values in six.iteritems(plugin_args):
                     for k, v in six.iteritems(plugin_values):
-                        plugin_args[plugin_name][k] = v
+                        these_plugin_args[plugin_name][k] = v
+
+                plugin_args = these_plugin_args
 
             # Read the content
-            input_filename_or_content = open(input_filename_or_content).read()
+            with open(filename_or_content) as f:
+                filename_or_content = f.read()
 
-        input_content = input_filename_or_content
-        del input_filename_or_content
+        input_content = filename_or_content
+        del filename_or_content
 
         include_plugin_names = set(include_plugin_names or [])
         exclude_plugin_names = set(exclude_plugin_names or [])
 
         if debug:
             if include_plugin_names:
-                include_plugin_names.add(self._debug_plugin.Name)
+                include_plugin_names.add(cls._debug_plugin.Name)
         else:
-            exclude_plugin_names.add(self._debug_plugin.Name)
+            exclude_plugin_names.add(cls._debug_plugin.Name)
 
         if black_line_length is None:
-            black_line_length = self.DEFAULT_BLACK_LINE_LENGTH
+            black_line_length = cls.DEFAULT_BLACK_LINE_LENGTH
 
-        plugins = [plugin for plugin in self.Plugins if plugin.Name not in exclude_plugin_names and (not include_plugin_names or plugin.Name in include_plugin_names)]
+        plugins = [plugin for plugin in cls._plugins if plugin.Name not in exclude_plugin_names and (not include_plugin_names or plugin.Name in include_plugin_names)]
 
         # ----------------------------------------------------------------------
         def Preprocess(lines):
@@ -244,20 +264,3 @@ class Executor(object):
         )
 
         return formatted_content, formatted_content != input_content
-
-    # ----------------------------------------------------------------------
-    def HasChanges(
-        self,
-        input_filename_or_content,
-        black_line_length=None,
-        include_plugin_names=None,
-        exclude_plugin_names=None,
-    ):
-        """Returns True if the provided content will change with formatting and False if it will not"""
-
-        return self.Format(
-            input_filename_or_content,
-            black_line_length=black_line_length,
-            include_plugin_names=include_plugin_names,
-            exclude_plugin_names=exclude_plugin_names,
-        )[1]

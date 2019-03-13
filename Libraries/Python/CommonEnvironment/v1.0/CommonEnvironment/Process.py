@@ -36,6 +36,7 @@ def Execute( command_line,
              convert_newlines=CONVERT_NEWLINES_DEFAULT, # Converts '\r\n' into '\n'
              line_delimited_output=False,               # Buffer calls to the provided functor by lines
              environment=None,                          # Environment vars to make available to the process
+             stdin=None,
            ):
     """
     Invokes the given command line.
@@ -137,10 +138,16 @@ def Execute( command_line,
                                shell=True,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.STDOUT,
+                               stdin=subprocess.PIPE,
                                env=environment,
                              )
     
     with CallOnExit(Flush):
+        if stdin is not None:
+            result.stdin.write(stdin.encode("utf-8"))
+            result.stdin.flush()
+            result.stdin.close()
+
         try:
             ConsumeOutput(result.stdout, output)
             result = result.wait() or 0
