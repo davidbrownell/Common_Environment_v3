@@ -1,9 +1,9 @@
 # ----------------------------------------------------------------------
 # |
-# |  GroupEmptyParensPlugin.py
+# |  Plugin.py
 # |
 # |  David Brownell <db@DavidBrownell.com>
-# |      2019-02-08 11:40:52
+# |      2019-03-13 11:32:39
 # |
 # ----------------------------------------------------------------------
 # |
@@ -25,45 +25,44 @@ _script_fullpath                            = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name                   = os.path.split(_script_fullpath)
 #  ----------------------------------------------------------------------
 
-# This is available because it is imported in CppFormatter.py
-from PythonFormatterImpl import PluginBase
-
 # ----------------------------------------------------------------------
-@Interface.staticderived
-class Plugin(PluginBase):
-    """Ensures that empty parens are not split across multiple lines"""
+class Plugin(Interface.Interface):
+    # ----------------------------------------------------------------------
+    # |  Types
+    STANDARD_PRIORITY = 10000
 
     # ----------------------------------------------------------------------
     # |  Properties
-    Name                                    = Interface.DerivedProperty("GroupEmptyParens")
-    Priority                                = Interface.DerivedProperty(PluginBase.STANDARD_PRIORITY)
-
+    # ----------------------------------------------------------------------
+    @Interface.abstractproperty
+    def Name(self):
+        """Name of the plugin"""
+        raise Exception("Abstract property")
+    
+    # ----------------------------------------------------------------------
+    @Interface.abstractproperty
+    def Priority(self):
+        """Integer priority value; plugins with lower priorities are executed first"""
+        raise Exception("Abstract property")
+    
     # ----------------------------------------------------------------------
     # |  Methods
     @staticmethod
-    @Interface.override
-    def Decorate(lines):
-        # Decoration activities are handled in PostprocessLines
+    @Interface.extensionmethod
+    def PreprocessLines(lines):
+        """Preprocesses the provided lines"""
         return lines
 
     # ----------------------------------------------------------------------
-    @classmethod
-    @Interface.override
-    def PostprocessLines(cls, lines):
-        new_lines = []
+    @staticmethod
+    @Interface.abstractmethod
+    def Decorate(lines, *args, **kwargs):
+        """Returns a list of decorated lines"""
+        raise Exception("Abstract method")
 
-        for index, line in enumerate(lines):
-            if (
-                index != 0
-                and cls.FirstLeafValue(line) == ")"
-                and cls.LastLeafValue(new_lines[-1]) == "("
-                and (len(line.leaves) == 1 or (len(line.leaves) == 2 and line.leaves[1].value == ","))
-            ):
-                # Merge the contents of this line with the previous
-                # line.
-                new_lines[-1].leaves += line.leaves
-                continue
-
-            new_lines.append(line)
-
-        return new_lines
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @Interface.extensionmethod
+    def PostprocessLines(lines):
+        """Postprocesses the provided lines"""
+        return lines

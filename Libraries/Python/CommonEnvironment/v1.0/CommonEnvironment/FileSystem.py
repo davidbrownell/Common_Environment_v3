@@ -49,6 +49,25 @@ CODE_EXCLUDE_FILE_EXTENSIONS                = [ # Python
 # |  Public Methods
 # |  
 # ----------------------------------------------------------------------
+def IsFilename(
+    value,
+    match_any=False,
+):
+    """\
+    Returns True if the provided string is a filename. This is useful for
+    functions that take a string or filename as input, where checking if a
+    string is a filename can produce errors if the string is too long.
+    """
+
+    if len(value) >= 2000:
+        return False
+
+    if match_any:
+        return os.path.exists(value)
+
+    return os.path.isfile(value)
+
+# ----------------------------------------------------------------------
 def GetCommonPath(*items):
     """Returns a path that is common to all of the provided items."""
 
