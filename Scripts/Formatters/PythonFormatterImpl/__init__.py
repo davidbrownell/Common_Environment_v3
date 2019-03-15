@@ -19,6 +19,7 @@ import os
 import re
 
 import CommonEnvironment
+from CommonEnvironment.FormatterImpl.Plugin import Plugin as FormatterPluginBase
 from CommonEnvironment import Interface
 
 # ----------------------------------------------------------------------
@@ -27,45 +28,7 @@ _script_dir, _script_name                   = os.path.split(_script_fullpath)
 #  ----------------------------------------------------------------------
 
 # ----------------------------------------------------------------------
-class Plugin(Interface.Interface):
-    # ----------------------------------------------------------------------
-    # |  Types
-    STANDARD_PRIORITY                       = 10000
-
-    # ----------------------------------------------------------------------
-    # |  Properties
-    @Interface.abstractproperty
-    def Name(self):
-        """Name of the plugin"""
-        raise Exception("Abstract property")
-
-    @Interface.abstractproperty
-    def Priority(self):
-        """Integer priority value; plugins with lower priorities are executed first"""
-        raise Exception("Abstract property")
-
-    # ----------------------------------------------------------------------
-    # |  Methods
-    @staticmethod
-    @Interface.extensionmethod
-    def PreprocessLines(lines):
-        """Preprocesses the provided lines"""
-        return lines
-
-    # ----------------------------------------------------------------------
-    @staticmethod
-    @Interface.abstractmethod
-    def Decorate(lines, *args, **kwargs):
-        """Returns a list of decorated lines"""
-        raise Exception("Abstract method")
-
-    # ----------------------------------------------------------------------
-    @staticmethod
-    @Interface.extensionmethod
-    def PostprocessLines(lines):
-        """Postprocesses the provided lines"""
-        return lines
-
+class PluginBase(FormatterPluginBase):
     # ----------------------------------------------------------------------
     # |  Protected Methods
     @classmethod

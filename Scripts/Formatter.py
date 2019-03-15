@@ -66,27 +66,49 @@ FORMATTERS                                  = [_LoadFormatterFromModule(mod) for
 # ----------------------------------------------------------------------
 _formatter_type_info                        = CommandLine.EnumTypeInfo(
     [formatter.Name for formatter in FORMATTERS] + [str(index) for index in six.moves.range(1, len(FORMATTERS) + 1)],
+    arity="?",
 )
 
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint(
-    filename=CommandLine.EntryPoint.Parameter("Filename to format"),
-    overwrite=CommandLine.EntryPoint.Parameter(
-        "The formatted content is written to output unless `overwrite` is provided, in which case the file's content are updated",
+    filename_or_dir=CommandLine.EntryPoint.Parameter(
+        "Filename or directory (used to search for files) to format",
     ),
+    formatter=CommandLine.EntryPoint.Parameter("The formatter to use while formatting"),
+    overwrite=CommandLine.EntryPoint.Parameter("Overwrite the input files with changes (if any)"),
     quiet=CommandLine.EntryPoint.Parameter(
-        "Only the formatted content is written to output if provided",
+        "Only output changes (if any). This option is only valid when providing a single file",
+    ),
+    single_threaded=CommandLine.EntryPoint.Parameter(
+        "Run with a single thread. This option is only valid when providing a directory",
+    ),
+    hint_filename=CommandLine.EntryPoint.Parameter(
+        "Filename passed as a hint to an underlying formatter; the content to format should still be in 'filename_or_dir'",
+    ),
+    verbose=CommandLine.EntryPoint.Parameter("Verbose output"),
+    preserve_ansi_escape_sequences=CommandLine.EntryPoint.Parameter(
+        "Keep ansi escape sequences (used for color and cursor movement) when invoking this script from another one",
     ),
 )
 @CommandLine.Constraints(
-    filename=CommandLine.FilenameTypeInfo(),
+    filename_or_dir=CommandLine.FilenameTypeInfo(
+        match_any=True,
+    ),
+    formatter=_formatter_type_info,
+    hint_filename=CommandLine.FilenameTypeInfo(
+        arity="?",
+    ),
     output_stream=None,
 )
-def FormatFile(
-    filename,
+def Format(
+    filename_or_dir,
+    formatter=None,
     overwrite=False,
     quiet=False,
+    single_threaded=False,
+    hint_filename=None,
     output_stream=sys.stdout,
+    verbose=False,
     preserve_ansi_escape_sequences=False,
 ):
     """Formats the given input"""
@@ -97,268 +119,278 @@ def FormatFile(
         None if quiet else output_stream,
         preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
     ) as output_stream:
-        with output_stream.DoneManager(
-            line_prefix="",
-            prefix="\nResults: ",
-            suffix="\n",
-        ) as dm:
-            formatter = _GetFormatterByFilename(filename)
-            if formatter is None:
-                dm.stream.write("\nERROR: '{}' is not a supported file type.\n".format(filename))
-                dm.result = -1
-
-                return dm.result
-
-            dm.stream.write("Formatting '{}'...".format(filename))
-
-            nonlocals = CommonEnvironment.Nonlocals(
-                has_changes=False,
-            )
-
-            with dm.stream.DoneManager(
-                done_suffix=lambda: None if nonlocals.has_changes else "No changes detected",
-            ) as this_dm:
-                output, nonlocals.has_changes = formatter.Format(filename)
-
-                if nonlocals.has_changes:
-                    if overwrite:
-                        with open(filename, "w") as f:
-                            f.write(output)
-                    else:
-                        (original_output_stream if quiet else this_dm.stream).write(output)
-
-            return dm.result
-
-
-# ----------------------------------------------------------------------
-@CommandLine.EntryPoint(
-    formatter=CommandLine.EntryPoint.Parameter("Formatter name or index to use"),
-    input_dir=CommandLine.EntryPoint.Parameter("Search this directory for files to format"),
-)
-@CommandLine.Constraints(
-    formatter=_formatter_type_info,
-    input_dir=CommandLine.DirectoryTypeInfo(),
-    output_stream=None,
-)
-def FormatTree(
-    formatter,
-    input_dir,
-    single_threaded=False,
-    output_stream=sys.stdout,
-    preserve_ansi_escape_sequences=False,
-):
-    """Formats files in the given directory"""
-
-    with StreamDecorator.GenerateAnsiSequenceStream(
-        output_stream,
-        preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
-    ) as output_stream:
-        with output_stream.DoneManager(
-            line_prefix="",
-            prefix="\nResults: ",
-            suffix="\n",
-        ) as dm:
-            formatter = _GetFormatterByName(formatter)
-            assert formatter
-
-            dm.result = _FormatTreeImpl(
-                dm.stream,
-                formatter,
-                input_dir,
-                single_threaded=single_threaded,
-            )
-
-            return dm.result
-
-
-@CommandLine.EntryPoint(
-    input_dir=CommandLine.EntryPoint.Parameter("Search this directory for files to format"),
-)
-@CommandLine.Constraints(
-    input_dir=CommandLine.DirectoryTypeInfo(),
-    output_stream=None,
-)
-def FormatAll(
-    input_dir,
-    single_threaded=False,
-    output_stream=sys.stdout,
-    preserve_ansi_escape_sequences=False,
-):
-    """Formats files in the given input"""
-
-    with StreamDecorator.GenerateAnsiSequenceStream(
-        output_stream,
-        preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
-    ) as output_stream:
-        with output_stream.DoneManager(
-            line_prefix="",
-            prefix="\nResults: ",
-            suffix="\n",
-        ) as dm:
-            for index, formatter in enumerate(FORMATTERS):
-                header = "Processing with '{}' ({} of {})...".format(
-                    formatter.Name,
-                    index + 1,
-                    len(FORMATTERS),
+        # Ensure correct argument usage
+        if os.path.isfile(filename_or_dir):
+            if formatter is not None:
+                raise CommandLine.UsageException(
+                    "The command line option 'formatter' can only be specified when providing an input directory",
                 )
 
+            if single_threaded:
+                raise CommandLine.UsageException(
+                    "The command line option 'single_threaded' can only be specified when providing an input directory",
+                )
+
+        elif os.path.isdir(filename_or_dir):
+            if quiet:
+                raise CommandLine.UsageException(
+                    "The command line option 'quiet' can only be specified when providing an input filename",
+                )
+
+            if hint_filename is not None:
+                raise CommandLine.UsageException(
+                    "The command line option 'hint_filename' can only be specified when providing an input filename",
+                )
+
+            # Ensure that we output changes
+            if not overwrite:
+                verbose = True
+
+        with output_stream.DoneManager(
+            line_prefix="",
+            prefix="\nResults: ",
+            suffix="\n",
+        ) as dm:
+            if os.path.isfile(filename_or_dir):
+                formatter = _GetFormatterByFilename(filename_or_dir)
+                if formatter is None:
+                    dm.stream.write(
+                        "\nERROR: '{}' is not a supported file type.\n".format(filename_or_dir),
+                    )
+                    dm.result = -1
+
+                    return dm.result
+
+                nonlocals = CommonEnvironment.Nonlocals(
+                    has_changes=False,
+                )
+
+                dm.stream.write("Formatting '{}'...".format(filename_or_dir))
+                with dm.stream.DoneManager(
+                    done_suffix=lambda: None if nonlocals.has_changes else "No changes detected",
+                ) as this_dm:
+                    output, nonlocals.has_changes = formatter.Format(
+                        filename_or_dir,
+                        hint_filename=hint_filename,
+                    )
+
+                    if nonlocals.has_changes:
+                        if overwrite:
+                            with open(filename, "w") as f:
+                                f.write(output)
+                        else:
+                            (original_output_stream if quiet else this_dm.stream).write(output)
+
+                    return this_dm.result
+
+            # Process the dir
+            assert os.path.isdir(filename_or_dir), filename_or_dir
+
+            if formatter is not None:
+                formatters = [_GetFormatterByName(formatter)]
+            else:
+                formatters = FORMATTERS
+
+            dm.stream.write("\n")
+
+            changed_files = []
+            changed_files_lock = threading.Lock()
+
+            for formatter_index, formatter in enumerate(formatters):
                 dm.stream.write(
-                    "{sep}\n{header}\n{sep}\n".format(
-                        header=header,
-                        sep="-" * len(header),
+                    "Processing with '{}' ({} of {})...".format(
+                        formatter.Name,
+                        formatter_index + 1,
+                        len(formatters),
                     ),
                 )
                 with dm.stream.DoneManager(
-                    line_prefix="",
-                    prefix="\nResults: ",
                     suffix="\n",
                 ) as this_dm:
-                    this_dm.result = _FormatTreeImpl(
+                    # ----------------------------------------------------------------------
+                    def Invoke(input_filename, output_stream):
+                        content, has_changes = formatter.Format(input_filename)
+                        if not has_changes:
+                            return
+
+                        if overwrite:
+                            with open(input_filename, "w") as f:
+                                f.write(content)
+                        else:
+                            output_stream.write(content)
+
+                        with changed_files_lock:
+                            changed_files.append(input_filename)
+
+                    # ----------------------------------------------------------------------
+
+                    this_dm.result = _Impl(
+                        "Formatting files...",
+                        Invoke,
                         this_dm.stream,
+                        verbose,
                         formatter,
-                        input_dir,
-                        single_threaded=single_threaded,
+                        filename_or_dir,
+                        single_threaded,
                     )
 
-            return dm.result
+            if not changed_files:
+                dm.stream.write("\nNo files were changed.\n")
+            else:
+                dm.stream.write(
+                    textwrap.dedent(
+                        """\
+
+                        {count} {prefix}written:
+
+                        {names}
+
+                        """,
+                    ).format(
+                        count=inflect.no("file", len(changed_files)),
+                        prefix="" if overwrite else "would be ",
+                        names="\n".join(
+                            ["    - {}".format(filename) for filename in sorted(changed_files)],
+                        ),
+                    ),
+                )
+
+    return dm.result
 
 
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint(
-    filename=CommandLine.EntryPoint.Parameter("Filename to change for formatting changes"),
+    filename_or_dir=CommandLine.EntryPoint.Parameter(
+        "Filename or directory (used to search for files) to query for changes",
+    ),
+    formatter=CommandLine.EntryPoint.Parameter("The formatter to use while querying for changes"),
+    single_threaded=CommandLine.EntryPoint.Parameter(
+        "Run with a single thread. This option is only valid when providing a directory",
+    ),
+    verbose=CommandLine.EntryPoint.Parameter("Verbose output"),
+    preserve_ansi_escape_sequences=CommandLine.EntryPoint.Parameter(
+        "Keep ansi escape sequences (used for color and cursor movement) when invoking this script from another one",
+    ),
 )
 @CommandLine.Constraints(
-    filename=CommandLine.FilenameTypeInfo(),
+    filename_or_dir=CommandLine.FilenameTypeInfo(
+        match_any=True,
+    ),
+    formatter=_formatter_type_info,
     output_stream=None,
 )
-def HasChangesFile(
-    filename,
+def HasChanges(
+    filename_or_dir,
+    formatter=None,
+    single_threaded=False,
     output_stream=sys.stdout,
+    verbose=False,
     preserve_ansi_escape_sequences=False,
 ):
-    """Returns 1 if the given filename would change after formatting"""
+    """Determines if changes would be made to the provided input"""
 
     with StreamDecorator.GenerateAnsiSequenceStream(
         output_stream,
         preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
     ) as output_stream:
+        # Ensure correct argument usage
+        if os.path.isfile(filename_or_dir):
+            if formatter is not None:
+                raise CommandLine.UsageException(
+                    "The command line option 'formatter' can only be specified when providing an input directory",
+                )
+
+            if single_threaded:
+                raise CommandLine.UsageException(
+                    "The command line option 'single_threaded' can only be specified when providing an input directory",
+                )
+
         with output_stream.DoneManager(
             line_prefix="",
             prefix="\nResults: ",
             suffix="\n",
         ) as dm:
-            formatter = _GetFormatterByFilename(filename)
-            if formatter is None:
-                dm.stream.write("\nERROR: '{}' is not a supported file type.\n".format(filename))
-                dm.result = -1
+            if os.path.isfile(filename_or_dir):
+                formatter = _GetFormatterByFilename(filename_or_dir)
+                if formatter is None:
+                    dm.stream.write(
+                        "\nERROR: '{}' is not a supported file type.\n".format(filename_or_dir),
+                    )
+                    dm.result = -1
+
+                    return dm.result
+
+                dm.stream.write("Detecting changes in '{}'...".format(filename_or_dir))
+                with dm.stream.DoneManager() as this_dm:
+                    if formatter.HasChanges(filename_or_dir):
+                        this_dm.stream.write("***** Has Changes *****\n")
+                        this_dm.result = 1
 
                 return dm.result
 
-            dm.stream.write("Detecting changes in '{}'...".format(filename))
-            with dm.stream.DoneManager() as this_dm:
-                if formatter.HasChanges(filename):
-                    this_dm.stream.write("***** Has Changes *****\n")
-                    this_dm.result = 1
+            # Process the dir
+            assert os.path.isdir(filename_or_dir), filename_or_dir
 
-            return dm.result
+            if formatter is not None:
+                formatters = [_GetFormatterByName(formatter)]
+            else:
+                formatters = FORMATTERS
 
+            dm.stream.write("\n")
 
-# ----------------------------------------------------------------------
-@CommandLine.EntryPoint(
-    formatter=CommandLine.EntryPoint.Parameter("Formatter name or index to use"),
-    input_dir=CommandLine.EntryPoint.Parameter(
-        "Search this directory for files to check for formatting changes",
-    ),
-)
-@CommandLine.Constraints(
-    formatter=_formatter_type_info,
-    input_dir=CommandLine.DirectoryTypeInfo(),
-    output_stream=None,
-)
-def HasChangesTree(
-    formatter,
-    input_dir,
-    single_threaded=False,
-    output_stream=sys.stdout,
-    preserve_ansi_escape_sequences=False,
-):
-    """Returns 1 if files in the given directory would change after formatting"""
+            changed_files = []
+            changed_files_lock = threading.Lock()
 
-    if True:
-        output_stream = StreamDecorator(output_stream)
-    with StreamDecorator.GenerateAnsiSequenceStream(
-        output_stream,
-        preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
-    ) as output_stream:
-        with output_stream.DoneManager(
-            line_prefix="",
-            prefix="\nResults: ",
-            suffix="\n",
-        ) as dm:
-            formatter = _GetFormatterByName(formatter)
-            assert formatter
-
-            dm.result = _HasChangesTreeImpl(
-                dm.stream,
-                formatter,
-                input_dir,
-                single_threaded=single_threaded,
-            )
-
-            return dm.result
-
-
-# ----------------------------------------------------------------------
-@CommandLine.EntryPoint(
-    input_dir=CommandLine.EntryPoint.Parameter(
-        "Search this directory for files to check for formatting changes",
-    ),
-)
-@CommandLine.Constraints(
-    input_dir=CommandLine.DirectoryTypeInfo(),
-    output_stream=None,
-)
-def HasChangesAll(
-    input_dir,
-    single_threaded=False,
-    output_stream=sys.stdout,
-    preserve_ansi_escape_sequences=False,
-):
-    """Returns 1 if files in the given input would change after formatting"""
-
-    with StreamDecorator.GenerateAnsiSequenceStream(
-        output_stream,
-        preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
-    ) as output_stream:
-        with output_stream.DoneManager(
-            line_prefix="",
-            prefix="\nResults: ",
-            suffix="\n",
-        ) as dm:
-            for index, formatter in enumerate(FORMATTERS):
-                header = "Processing with '{}' ({} of {})...".format(
-                    formatter.Name,
-                    index + 1,
-                    len(FORMATTERS),
-                )
-
+            for formatter_index, formatter in enumerate(formatters):
                 dm.stream.write(
-                    "{sep}\n{header}\n{sep}\n".format(
-                        header=header,
-                        sep="-" * len(header),
+                    "Processing with '{}' ({} of {})...".format(
+                        formatter.Name,
+                        formatter_index + 1,
+                        len(formatters),
                     ),
                 )
                 with dm.stream.DoneManager(
-                    line_prefix="",
-                    prefix="\nResults: ",
                     suffix="\n",
                 ) as this_dm:
-                    this_dm.result = _HasChangesTreeImpl(
+                    # ----------------------------------------------------------------------
+                    def Invoke(input_filename, output_stream):
+                        if formatter.HasChanges(input_filename):
+                            with changed_files_lock:
+                                changed_files.append(input_filename)
+
+                    # ----------------------------------------------------------------------
+
+                    this_dm.result = _Impl(
+                        "Detecting changes...",
+                        Invoke,
                         this_dm.stream,
+                        verbose,
                         formatter,
-                        input_dir,
-                        single_threaded=single_threaded,
+                        filename_or_dir,
+                        single_threaded,
                     )
+
+            if not changed_files:
+                dm.stream.write("\nNo files would be changed.\n")
+            else:
+                dm.stream.write(
+                    textwrap.dedent(
+                        """\
+
+                        There would be {count}:
+
+                        {names}
+
+                        """,
+                    ).format(
+                        count=inflect.no("change", len(changed_files)),
+                        names="\n".join(
+                            ["    - {}".format(filename) for filename in sorted(changed_files)],
+                        ),
+                    ),
+                )
+
+            dm.result = 1 if changed_files else 0
 
             return dm.result
 
@@ -417,115 +449,15 @@ def _GetFormatterByFilename(filename):
 
 
 # ----------------------------------------------------------------------
-def _FormatTreeImpl(
+def _Impl(
+    activity_desc,
+    activity_func,
     output_stream,
+    verbose,
     formatter,
     input_dir,
-    single_threaded=False,
+    single_threaded,
 ):
-    changed_files = []
-    changed_files_lock = threading.Lock()
-
-    # ----------------------------------------------------------------------
-    def Invoke(input_filename, output_stream):
-        content, has_changes = formatter.Format(input_filename)
-        if not has_changes:
-            return
-
-        with open(input_filename, "w") as f:
-            f.write(content)
-
-        with changed_files_lock:
-            changed_files.append(input_filename)
-
-    # ----------------------------------------------------------------------
-
-    result = _Impl(
-        "Formatting files...",
-        Invoke,
-        output_stream,
-        formatter,
-        input_dir,
-        single_threaded,
-    )
-
-    if result != 0:
-        return result
-
-    if not changed_files:
-        output_stream.write("\nNo files were changed.\n")
-    else:
-        output_stream.write(
-            textwrap.dedent(
-                """\
-
-                {count} written:
-
-                {names}
-
-                """,
-            ).format(
-                count=inflect.no("file", len(changed_files)),
-                names="\n".join(["    - {}".format(filename) for filename in sorted(changed_files)]),
-            ),
-        )
-
-    return 0
-
-
-# ----------------------------------------------------------------------
-def _HasChangesTreeImpl(
-    output_stream,
-    formatter,
-    input_dir,
-    single_threaded=False,
-):
-    changed_files = []
-    changed_files_lock = threading.Lock()
-
-    # ----------------------------------------------------------------------
-    def Invoke(input_filename, output_stream):
-        if formatter.HasChanges(input_filename):
-            with changed_files_lock:
-                changed_files.append(input_filename)
-
-    # ----------------------------------------------------------------------
-
-    result = _Impl(
-        "Detecting changes...",
-        Invoke,
-        output_stream,
-        formatter,
-        input_dir,
-        single_threaded,
-    )
-
-    if result != 0:
-        return result
-
-    if not changed_files:
-        output_stream.write("\nNo files would be changed.\n")
-    else:
-        output_stream.write(
-            textwrap.dedent(
-                """\
-
-                These {count} would be changed:
-
-                {names}
-
-                """,
-            ).format(
-                count=inflect.no("file", len(changed_files)),
-                names="\n".join(["    - {}".format(filename) for filename in sorted(changed_files)]),
-            ),
-        )
-
-    return 1 if changed_files else 0
-
-
-# ----------------------------------------------------------------------
-def _Impl(activity_desc, activity_func, output_stream, formatter, input_dir, single_threaded):
     # activity_func: def Func(input_filename, output_stream) -> result code
 
     output_stream.write("\nSearching for files in '{}'...".format(input_dir))
@@ -552,6 +484,7 @@ def _Impl(activity_desc, activity_func, output_stream, formatter, input_dir, sin
             this_dm.stream,
             progress_bar=True,
             num_concurrent_tasks=1 if single_threaded else None,
+            verbose=verbose,
         )
 
     return this_dm.result

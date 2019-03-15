@@ -28,8 +28,8 @@ _script_fullpath                            = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name                   = os.path.split(_script_fullpath)
 #  ----------------------------------------------------------------------
 
-# This line works because it has already been imported by PythonFormatter.py
-from PythonFormatterImpl import Plugin as PluginBase
+# This is available because it is imported in PythonFormatter.py
+from PythonFormatterImpl import PluginBase
 
 # ----------------------------------------------------------------------
 @Interface.staticderived

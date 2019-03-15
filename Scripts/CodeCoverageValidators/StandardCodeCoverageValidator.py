@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  StandardCodeCoverageValidator.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-05-22 22:31:15
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-19.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Contains the CodeCoverageValidator object"""
 
@@ -21,8 +21,8 @@ from CommonEnvironment.Interface import override, DerivedProperty
 from CommonEnvironment.CodeCoverageValidatorImpl import CodeCoverageValidatorImpl
 
 # ----------------------------------------------------------------------
-_script_fullpath = CommonEnvironment.ThisFullpath()
-_script_dir, _script_name = os.path.split(_script_fullpath)
+_script_fullpath                            = CommonEnvironment.ThisFullpath()
+_script_dir, _script_name                   = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 # ----------------------------------------------------------------------
@@ -37,9 +37,10 @@ class CodeCoverageValidator(CodeCoverageValidatorImpl):
 
     # ----------------------------------------------------------------------
     # |  Public Methods
-    def __init__( self,
-                  min_code_coverage_percentage=DEFAULT_MIN_CODE_COVERAGE_PERCENTAGE,
-                ):
+    def __init__(
+        self,
+        min_code_coverage_percentage=DEFAULT_MIN_CODE_COVERAGE_PERCENTAGE,
+    ):
         super(CodeCoverageValidator, self).__init__()
 
         self._min_code_coverage_percentage  = min_code_coverage_percentage
@@ -48,6 +49,4 @@ class CodeCoverageValidator(CodeCoverageValidatorImpl):
     # ----------------------------------------------------------------------
     @override
     def Validate(self, filename, measured_code_coverage_percentage):
-        return ( 0 if measured_code_coverage_percentage >= self._min_code_coverage_percentage else -1,
-                 self._min_code_coverage_percentage,
-               )
+        return (0 if measured_code_coverage_percentage >= self._min_code_coverage_percentage else -1, self._min_code_coverage_percentage)
