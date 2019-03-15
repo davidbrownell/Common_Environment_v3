@@ -28,7 +28,7 @@ _script_fullpath                            = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name                   = os.path.split(_script_fullpath)
 #  ----------------------------------------------------------------------
 
-# This is available because it is imported in CppFormatter.py
+# This is available because it is imported in PythonFormatter.py
 from PythonFormatterImpl import PluginBase
 
 # ----------------------------------------------------------------------

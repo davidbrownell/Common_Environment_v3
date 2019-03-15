@@ -15,10 +15,7 @@
 # ----------------------------------------------------------------------
 """Contains the Formatter object"""
 
-import importlib
-import itertools
 import os
-import sys
 
 from collections import defaultdict
 
@@ -26,7 +23,6 @@ import six
 import toml
 
 import CommonEnvironment
-from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import FileSystem
 from CommonEnvironment.FormatterImpl import FormatterImpl
 from CommonEnvironment import Interface
@@ -73,7 +69,7 @@ class Formatter(FormatterImpl):
 
         plugins = cls._GetPlugins(
             os.path.join(_script_dir, "PythonFormatterImpl"),
-            *plugin_input_dirs,
+            *plugin_input_dirs
         )
 
         debug_plugin = None
