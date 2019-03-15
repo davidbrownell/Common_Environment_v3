@@ -27,7 +27,7 @@ this proxy:
 
 VSCODE
 ------
-Update settings.json with the following information
+Update `settings.json` with the following information
 
 {
     "python.formatting.provider": "black",
@@ -97,9 +97,9 @@ def Convert(
     original_content = open(input_filename).read()
 
     if is_check:
-        command_line_template = '"{script}" HasChangesFile "{filename}"'
+        command_line_template = '"{script}" HasChanges "{filename}"'
     else:
-        command_line_template = '"{script}" FormatFile "{filename}" /quiet'
+        command_line_template = '"{script}" Format "{filename}" /quiet'
 
     result, formatted_content = Process.Execute(
         command_line_template.format(
