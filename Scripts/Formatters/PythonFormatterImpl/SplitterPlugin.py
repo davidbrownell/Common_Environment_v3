@@ -32,8 +32,8 @@ _script_fullpath                            = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name                   = os.path.split(_script_fullpath)
 #  ----------------------------------------------------------------------
 
-# This line works because it has already been imported by PythonFormatter.py
-from PythonFormatterImpl import Plugin as PluginBase
+# This is available because it is imported in PythonFormatter.py
+from PythonFormatterImpl import PluginBase
 
 # ----------------------------------------------------------------------
 @Interface.staticderived
@@ -181,7 +181,7 @@ class Plugin(PluginBase):
                 if are_func_args:
                     new_lines.append(black.Line(line.depth, []))
                     col_offset = line.depth * 4
-                    
+
                 col_offset = clause.GenerateLines(
                     max_func_line_length,
                     line,

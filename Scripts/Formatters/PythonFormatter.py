@@ -15,10 +15,7 @@
 # ----------------------------------------------------------------------
 """Contains the Formatter object"""
 
-import importlib
-import itertools
 import os
-import sys
 
 from collections import defaultdict
 
@@ -26,7 +23,6 @@ import six
 import toml
 
 import CommonEnvironment
-from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import FileSystem
 from CommonEnvironment.FormatterImpl import FormatterImpl
 from CommonEnvironment import Interface
@@ -37,9 +33,9 @@ _script_fullpath                            = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name                   = os.path.split(_script_fullpath)
 #  ----------------------------------------------------------------------
 
-# Perform this import so Pluigns have access to PluginBase without resorting to wonky
-# relative imports.
-from PythonFormatterImpl import Plugin as PluginBase
+# Import this module here so that it is available to plugins, thereby preventing
+# them from having to do a wonky import of an __init__.py file.
+from PythonFormatterImpl import PluginBase
 
 # ----------------------------------------------------------------------
 @Interface.staticderived
@@ -71,55 +67,16 @@ class Formatter(FormatterImpl):
         if cls._is_initialized:
             return
 
-        plugins = []
-        debug_plugin = None
-
-        for plugin_input_dir in itertools.chain(
-            [os.path.join(_script_dir, "PythonFormatterImpl")],
-            plugin_input_dirs,
-        ):
-            if not os.path.isdir(plugin_input_dir):
-                raise Exception("'{}' is not a valid directory".format(plugin_input_dir))
-
-            sys.path.insert(0, plugin_input_dir)
-            with CallOnExit(lambda: sys.path.pop(0)):
-                for filename in FileSystem.WalkFiles(
-                    plugin_input_dir,
-                    include_file_extensions=[".py"],
-                    include_file_base_names=[lambda basename: basename.endswith("Plugin")],
-                ):
-                    plugin_name = os.path.splitext(os.path.basename(filename))[0]
-
-                    mod = importlib.import_module(plugin_name)
-                    if mod is None:
-                        raise Exception(
-                            "WARNING: Unable to import the module at '{}'.\n".format(filename),
-                        )
-
-                    potential_class = None
-                    potential_class_names = [plugin_name, "Plugin"]
-
-                    for potential_class_name in potential_class_names:
-                        potential_class = getattr(mod, potential_class_name, None)
-                        if potential_class is not None:
-                            break
-
-                    if potential_class is None:
-                        raise Exception(
-                            "WARNING: The module at '{}' does not contain a supported class ({}).\n".format(
-                                filename,
-                                ", ".join(["'{}'".format(pcn) for pcn in potential_class_names]),
-                            ),
-                        )
-
-                    plugins.append(potential_class)
-
-                    if debug_plugin is None and potential_class.Name == "Debug":
-                        debug_plugin = potential_class
-
-        plugins.sort(
-            key=lambda plugin: (plugin.Priority, plugin.Name),
+        plugins = cls._GetPlugins(
+            os.path.join(_script_dir, "PythonFormatterImpl"),
+            *plugin_input_dirs
         )
+
+        debug_plugin = None
+        for potential_plugin in plugins:
+            if potential_plugin.Name == "Debug":
+                debug_plugin = potential_plugin
+                break
 
         cls._plugins = plugins
         cls._debug_plugin = debug_plugin
@@ -141,7 +98,7 @@ class Formatter(FormatterImpl):
     ):
         cls.__clsinit__(*plugin_input_dirs)
 
-        if len(filename_or_content) < 2000 and os.path.isfile(filename_or_content):
+        if FileSystem.IsFilename(filename_or_content):
             # Search all ancestor directories for toml files
             toml_filenames = []
 
