@@ -117,6 +117,9 @@ _formatter_type_info                        = CommandLine.EnumTypeInfo(
     single_threaded=CommandLine.EntryPoint.Parameter(
         "Run with a single thread. This option is only valid when providing a directory",
     ),
+    skip_generated_dirs=CommandLine.EntryPoint.Parameter(
+        "Do not include files from directories that include 'generated'",
+    ),
     hint_filename=CommandLine.EntryPoint.Parameter(
         "Filename passed as a hint to an underlying formatter; the content to format should still be in 'filename_or_dir'",
     ),
@@ -141,6 +144,7 @@ def Format(
     overwrite=False,
     quiet=False,
     single_threaded=False,
+    skip_generated_dirs=False,
     hint_filename=None,
     output_stream=sys.stdout,
     verbose=False,
@@ -164,6 +168,11 @@ def Format(
             if single_threaded:
                 raise CommandLine.UsageException(
                     "The command line option 'single_threaded' can only be specified when providing an input directory",
+                )
+
+            if skip_generated_dirs:
+                raise CommandLine.UsageException(
+                    "The command line option 'skip_generated_dirs' can only be specified when providing an input directory",
                 )
 
         elif os.path.isdir(filename_or_dir):
@@ -267,6 +276,7 @@ def Format(
                         formatter,
                         filename_or_dir,
                         single_threaded,
+                        skip_generated_dirs,
                     )
 
             if not changed_files:
@@ -302,6 +312,9 @@ def Format(
     single_threaded=CommandLine.EntryPoint.Parameter(
         "Run with a single thread. This option is only valid when providing a directory",
     ),
+    skip_generated_dirs=CommandLine.EntryPoint.Parameter(
+        "Do not include files from directories that include 'generated'",
+    ),
     verbose=CommandLine.EntryPoint.Parameter("Verbose output"),
     preserve_ansi_escape_sequences=CommandLine.EntryPoint.Parameter(
         "Keep ansi escape sequences (used for color and cursor movement) when invoking this script from another one",
@@ -318,6 +331,7 @@ def HasChanges(
     filename_or_dir,
     formatter=None,
     single_threaded=False,
+    skip_generated_dirs=False,
     output_stream=sys.stdout,
     verbose=False,
     preserve_ansi_escape_sequences=False,
@@ -338,6 +352,11 @@ def HasChanges(
             if single_threaded:
                 raise CommandLine.UsageException(
                     "The command line option 'single_threaded' can only be specified when providing an input directory",
+                )
+
+            if skip_generated_dirs:
+                raise CommandLine.UsageException(
+                    "The command line option 'skip_generated_dirs' can only be specified when providing an input directory",
                 )
 
         with output_stream.DoneManager(
@@ -403,6 +422,7 @@ def HasChanges(
                         formatter,
                         filename_or_dir,
                         single_threaded,
+                        skip_generated_dirs,
                     )
 
             if not changed_files:
@@ -492,6 +512,7 @@ def _Impl(
     formatter,
     input_dir,
     single_threaded,
+    skip_generated_dirs,
 ):
     # activity_func: def Func(input_filename, output_stream) -> result code
 
@@ -502,7 +523,14 @@ def _Impl(
     with output_stream.DoneManager(
         done_suffix=lambda: "{} found".format(inflect.no("file", len(input_filenames))),
     ):
-        input_filenames += [filename for filename in FileSystem.WalkFiles(input_dir) if formatter.InputTypeInfo.ValidateItemNoThrow(filename) is None]
+        input_filenames += [
+            filename
+            for filename in FileSystem.WalkFiles(
+                input_dir,
+                traverse_exclude_dir_names=[lambda name: "generated" in name.lower()] if skip_generated_dirs else [],
+            )
+            if formatter.InputTypeInfo.ValidateItemNoThrow(filename) is None
+        ]
 
     if not input_filenames:
         return 0
