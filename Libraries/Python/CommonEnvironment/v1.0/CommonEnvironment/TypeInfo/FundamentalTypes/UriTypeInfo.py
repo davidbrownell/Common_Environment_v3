@@ -59,8 +59,11 @@ class Uri(object):
                   credentials=None,         # (username, password)
                   port=None,
                 ):
-        if not scheme:                      raise Exception("'scheme' must be valid")
-        if not host and not path:           raise Exception("'host' must be valid")
+        if not scheme:                      
+            raise Exception("'scheme' must be valid")
+
+        if not host and (not path or path == "/"):
+            raise Exception("'host' must be valid")
 
         self.Scheme                         = scheme
         self.Host                           = host
