@@ -35,7 +35,7 @@ _script_dir, _script_name                   = os.path.split(_script_fullpath)
 
 # Import this module here so that it is available to plugins, thereby preventing
 # them from having to do a wonky import of an __init__.py file.
-from PythonFormatterImpl import PluginBase
+from PythonFormatterImpl import PluginBase  # <unused import> pylint: disable = W0611
 
 # ----------------------------------------------------------------------
 @Interface.staticderived
@@ -69,7 +69,7 @@ class Formatter(FormatterImpl):
 
         plugins = cls._GetPlugins(
             os.path.join(_script_dir, "PythonFormatterImpl"),
-            *plugin_input_dirs,
+            *plugin_input_dirs
         )
 
         debug_plugin = None
@@ -212,7 +212,7 @@ class Formatter(FormatterImpl):
         # ----------------------------------------------------------------------
 
         # Importing here as black isn't supported by python2
-        from black import format_str as Blackify
+        from black import format_str as Blackify        # <unable to import> pylint: disable = E0401
 
         formatted_content = Blackify(
             input_content,
