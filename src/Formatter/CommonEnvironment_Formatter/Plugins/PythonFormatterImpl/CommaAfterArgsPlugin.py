@@ -23,13 +23,12 @@ from blib2to3.pygram import python_symbols, token as python_tokens
 import CommonEnvironment
 from CommonEnvironment import Interface
 
+from PluginBase import PluginBase
+
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name                   = os.path.split(_script_fullpath)
 #  ----------------------------------------------------------------------
-
-# This is available because it is imported in PythonFormatter.py
-from PythonFormatterImpl import PluginBase
 
 # ----------------------------------------------------------------------
 @Interface.staticderived
@@ -104,8 +103,8 @@ class Plugin(PluginBase):
                 if last_leaf.value == ",":
                     continue
 
-                # Don't add a trailing comma for double-star args
-                if last_leaf.prev_sibling and isinstance(last_leaf.prev_sibling, black.Leaf) and last_leaf.prev_sibling.value == "**":
+                # Don't add a trailing comma for single- or double-star args
+                if last_leaf.prev_sibling and isinstance(last_leaf.prev_sibling, black.Leaf) and last_leaf.prev_sibling.value in ["*", "**"]:
                     continue
 
                 # Don't add a trailing comma for comprehensions

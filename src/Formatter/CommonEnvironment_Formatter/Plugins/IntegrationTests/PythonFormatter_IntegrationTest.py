@@ -1358,6 +1358,15 @@ else:
                         **kwargs
                     )
 
+                    VarArgs(
+                        textwrap.dedent(
+                            \"\"\"
+                            Line 1
+                            \"\"\",
+                        ),
+                        *args
+                    )
+
                     if any(
                         child
                         for child in self.Children
@@ -1427,6 +1436,15 @@ else:
                             \"\"\",
                         ),
                         **kwargs
+                    )
+
+                    VarArgs(
+                        textwrap.dedent(
+                            \"\"\"
+                            Line 1
+                            \"\"\",
+                        ),
+                        *args
                     )
 
                     if any(

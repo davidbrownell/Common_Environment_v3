@@ -33,10 +33,6 @@ _script_fullpath                            = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name                   = os.path.split(_script_fullpath)
 #  ----------------------------------------------------------------------
 
-# Import this module here so that it is available to plugins, thereby preventing
-# them from having to do a wonky import of an __init__.py file.
-from PythonFormatterImpl import PluginBase  # <unused import> pylint: disable = W0611
-
 # ----------------------------------------------------------------------
 @Interface.staticderived
 class Formatter(FormatterImpl):
