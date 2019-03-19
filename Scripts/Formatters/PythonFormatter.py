@@ -93,6 +93,7 @@ class Formatter(FormatterImpl):
         include_plugin_names=None,
         exclude_plugin_names=None,
         debug=False,
+        hint_filename=None,
         *plugin_input_dirs,
         **plugin_args
     ):
