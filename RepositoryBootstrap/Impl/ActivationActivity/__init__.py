@@ -243,7 +243,6 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
                 potential_names.add(this_shell.Name)
                 potential_names.add(this_shell.CategoryName)
 
-        
             cls._GetCustomizedFullpath_PotentialOSNames = potential_names
 
         # ----------------------------------------------------------------------
