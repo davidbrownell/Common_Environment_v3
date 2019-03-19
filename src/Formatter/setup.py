@@ -17,7 +17,7 @@ from setuptools import setup, find_packages
 # Do the setup
 setup(
     name="CommonEnvironment-Formatter",
-    version="0.5.a2",
+    version="0.5.0-a2",
     packages=find_packages(),
     install_requires=["CommonEnvironment >= 1.0.5", "black >= 18.9.b0"],
     author="David Brownell",
