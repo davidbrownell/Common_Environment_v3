@@ -69,7 +69,7 @@ class Formatter(FormatterImpl):
 
         plugins = cls._GetPlugins(
             os.path.join(_script_dir, "PythonFormatterImpl"),
-            *plugin_input_dirs
+            *plugin_input_dirs,
         )
 
         debug_plugin = None

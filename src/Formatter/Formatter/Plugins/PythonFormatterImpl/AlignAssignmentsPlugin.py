@@ -63,6 +63,8 @@ class Plugin(HorizontalAlignmentPluginImpl):
         import black
         from blib2to3.pygram import python_symbols
 
+        # <Instance of 'Symbols' has no 'parameters' member> pylint: disable = E1101
+
         if flags is None:
             flags = cls.ModuleLevel | cls.ClassLevel | cls.InitLevel
 

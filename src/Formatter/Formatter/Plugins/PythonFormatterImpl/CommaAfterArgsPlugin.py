@@ -66,7 +66,7 @@ class Plugin(PluginBase):
                 for leaf in line.leaves:
                     leaf_map[id(leaf)] = line_index
 
-                    if leaf.value == ")" and leaf.parent and leaf.parent.type == python_symbols.trailer:
+                    if leaf.value == ")" and leaf.parent and leaf.parent.type == python_symbols.trailer: # <Instance of 'Symbols' has no 'trailer' member> pylint: disable = E1101
                         closing_trailers.append(leaf)
 
             for closing_trailer in closing_trailers:
@@ -91,7 +91,7 @@ class Plugin(PluginBase):
                 last_leaf = closing_trailer.parent.children[-2]
                 while not isinstance(last_leaf, black.Leaf):
                     if (
-                        last_leaf.type == python_symbols.arglist
+                        last_leaf.type == python_symbols.arglist            # <Instance of 'Symbols' has no 'arglist' member> pylint: disable = E1101
                         and len(last_leaf.children) == 2
                         and isinstance(last_leaf.children[1], black.Leaf)
                         and last_leaf.children[1].value == ","
@@ -114,7 +114,8 @@ class Plugin(PluginBase):
                     and last_leaf.parent.parent
                     and last_leaf.parent.parent.parent
                     and last_leaf.parent.parent.parent.parent
-                    and last_leaf.parent.parent.parent.parent.type in [python_symbols.old_comp_for, python_symbols.comp_for]
+                    and last_leaf.parent.parent.parent.parent.type
+                    in [python_symbols.old_comp_for, python_symbols.comp_for] # <Instance of 'Symbols' has no '___' member> pylint: disable = E1101
                 ):
                     continue
 

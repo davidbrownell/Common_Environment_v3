@@ -31,7 +31,8 @@ fundamental_repo = os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL")
 assert os.path.isdir(fundamental_repo), fundamental_repo
 
 sys.path.insert(0, fundamental_repo)
-from RepositoryBootstrap.SetupAndActivate.Configuration import *
+from RepositoryBootstrap.SetupAndActivate import CurrentShell               # <Unused import> pylint: disable = W0614
+from RepositoryBootstrap.SetupAndActivate.Configuration import *            # <Unused import> pylint: disable = W0614
 del sys.path[0]
 
 # ----------------------------------------------------------------------
@@ -68,4 +69,9 @@ def GetCustomActions(debug, verbose, explicit_configurations):
     cases, this is Bash on Linux systems and Batch or Powershell on Windows systems.
     """
 
-    return
+    return [
+        CurrentShell.Commands.SymbolicLink(
+            os.path.join(fundamental_repo, "Scripts", "Formatter.py"),
+            os.path.join(fundamental_repo, "src", "Formatter", "Formatter", "Formatter.py"),
+        )
+    ]

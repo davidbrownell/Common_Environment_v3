@@ -103,7 +103,7 @@ def GetCustomActions( output_stream,
                                                                          )
 
         actions += DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_FORMATTERS",
-                                                                           os.path.join(_script_dir, "Scripts", "Formatters"),
+                                                                           os.path.join(_script_dir, "src", "Formatter", "Formatter", "Plugins"),
                                                                            lambda fullpath, name, ext: ext == ".py" and name.endswith("Formatter"),
                                                                          )
 

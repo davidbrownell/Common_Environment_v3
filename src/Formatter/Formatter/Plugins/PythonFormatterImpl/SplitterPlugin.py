@@ -163,9 +163,9 @@ class Plugin(PluginBase):
             # a method that contains a long number of parameters.
             are_func_args = (
                 line.leaves[0].parent
-                and line.leaves[0].parent.type == python_symbols.atom
+                and line.leaves[0].parent.type == python_symbols.atom           # <Instance of 'Symbols' has no 'atom' member> pylint: disable = E1101
                 and line.leaves[0].parent.parent
-                and line.leaves[0].parent.parent.type == python_symbols.arglist
+                and line.leaves[0].parent.parent.type == python_symbols.arglist # <Instance of 'Symbols' has no 'arglist' member> pylint: disable = E1101
             )
 
             if are_func_args:
@@ -211,6 +211,8 @@ class Plugin(PluginBase):
     # ----------------------------------------------------------------------
     @staticmethod
     def IsFunc(line, leaf_index):
+        # <Instance of 'Symbols' has no 'trailer' member> pylint: disable = E1101
+
         # Function invocation
         if line.leaves[leaf_index].parent is not None and line.leaves[leaf_index].parent.type == python_symbols.trailer:
             return True
@@ -446,6 +448,7 @@ class _OpenCloseTokenImpl(_TokenParser):
             for index in range(start, end):
                 leaf = line.leaves[index]
 
+                # <Instance of 'Symbols' has no '___' member> pylint: disable = E1101
                 if leaf.parent and leaf.parent.type in [python_symbols.old_comp_for, python_symbols.comp_for]:
                     return True
 
@@ -481,6 +484,8 @@ class Clause(_TokenParser):
         is_kwargs = False
 
         while leaf_index < len(line.leaves) and not is_terminated_func(line, leaf_index):
+            # <Instance of 'Symbols' has no 'exprlist' member> pylint: disable = E1101
+
             leaf = line.leaves[leaf_index]
 
             # Treat commas as delimiters unless the commas are part of an expression list
@@ -724,7 +729,7 @@ class Parens(_OpenCloseTokenImpl):
                 return self.__class__.Type.Tuple
 
             first_leaf = line.leaves[self.OpenIndex + 1]
-            if first_leaf.parent and first_leaf.parent.type == python_symbols.testlist_gexp:
+            if first_leaf.parent and first_leaf.parent.type == python_symbols.testlist_gexp: # <Instance of 'Symbols' has no 'testlist_gexp' member> pylint: disable = E1101
                 return self.__class__.Type.Tuple
 
             return None
@@ -865,9 +870,9 @@ class Brackets(_OpenCloseTokenImpl):
 
             if (
                 line.leaves[self.OpenIndex].parent is None
-                or line.leaves[self.OpenIndex].parent.type != python_symbols.atom
+                or line.leaves[self.OpenIndex].parent.type != python_symbols.atom  # <Instance of 'Symbols' has no 'atom' member> pylint: disable = E1101
                 or line.leaves[self.CloseIndex].parent is None
-                or line.leaves[self.CloseIndex].parent.type != python_symbols.atom
+                or line.leaves[self.CloseIndex].parent.type != python_symbols.atom # <Instance of 'Symbols' has no 'atom' member> pylint: disable = E1101
             ):
                 return self.__class__.Type.Index
 
