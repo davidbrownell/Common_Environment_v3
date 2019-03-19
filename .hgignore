@@ -18,10 +18,10 @@ coverage.xml
 
 .vscode/*
 
-Libraries/Python/CommonEnvironment/v1.0/Common_Environment.egg-info/*
+Libraries/Python/CommonEnvironment/v1.0/CommonEnvironment.egg-info/*
 Libraries/Python/CommonEnvironment/v1.0/dist/*
 
-src/Formatter/Common_Environment_Formatter.egg-info/*
+src/Formatter/CommonEnvironment_Formatter.egg-info/*
 src/Formatter/dist/*
 
 RepositoryBootstrap/Impl/Hooks/GeneratedCode/Compiler.ConditionalInvocationQueryMixin.data

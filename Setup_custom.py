@@ -72,6 +72,6 @@ def GetCustomActions(debug, verbose, explicit_configurations):
     return [
         CurrentShell.Commands.SymbolicLink(
             os.path.join(fundamental_repo, "Scripts", "Formatter.py"),
-            os.path.join(fundamental_repo, "src", "Formatter", "Formatter", "Formatter.py"),
+            os.path.join(fundamental_repo, "src", "Formatter", "CommonEnvironment_Formatter", "__main__.py"),
         )
     ]
