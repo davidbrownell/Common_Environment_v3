@@ -17,9 +17,10 @@ from setuptools import setup, find_packages
 # Do the setup
 setup(
     name="CommonEnvironment-Formatter",
-    version="0.5.0-a2",
+    version="0.5.0-a11",
     packages=find_packages(),
     install_requires=["CommonEnvironment >= 1.0.5", "black >= 18.9.b0"],
+    scripts=["bin/Formatter", "bin/Formatter.cmd"],
     author="David Brownell",
     author_email="pypi@DavidBrownell.com",
     description="Formats Python code using Black (https://github.com/ambv/black) plus enhancements.",

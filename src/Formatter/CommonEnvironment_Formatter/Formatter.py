@@ -1,6 +1,6 @@
 # ----------------------------------------------------------------------
 # |
-# |  __main__.py
+# |  Formatter.py
 # |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2019-03-11 08:27:51
@@ -69,7 +69,7 @@ else:
 
                 basename, ext = os.path.splitext(item)
 
-                if ext != ".py":
+                if not basename.endswith("Formatter") or ext != ".py":
                     continue
 
                 yield importlib.import_module(basename)
@@ -554,10 +554,16 @@ def _Impl(
 
 
 # ----------------------------------------------------------------------
+# Entry point necessary for package installations
+def main():
+    return CommandLine.Main()
+
+
+# ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 if __name__ == "__main__":
     try:
-        sys.exit(CommandLine.Main())
+        sys.exit(main())
     except KeyboardInterrupt:
         pass

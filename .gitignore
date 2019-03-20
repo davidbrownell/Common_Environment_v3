@@ -23,3 +23,5 @@ src/Formatter/CommonEnvironment_Formatter.egg-info/*
 src/Formatter/dist/*
 
 RepositoryBootstrap/Impl/Hooks/GeneratedCode/Compiler.ConditionalInvocationQueryMixin.data
+
+Scripts/Formatter.py
