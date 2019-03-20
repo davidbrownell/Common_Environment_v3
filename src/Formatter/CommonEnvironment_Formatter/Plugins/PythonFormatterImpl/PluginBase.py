@@ -1,22 +1,21 @@
 # ----------------------------------------------------------------------
 # |
-# |  __init__.py
+# |  PluginBase.py
 # |
-# |  David Brownell <david.brownell@microsoft.com>
-# |      2018-12-16 20:56:21
+# |  David Brownell <db@DavidBrownell.com>
+# |      2019-03-19 15:59:06
 # |
 # ----------------------------------------------------------------------
 # |
-# |  Copyright David Brownell 2018
+# |  Copyright David Brownell 2019
 # |  Distributed under the Boost Software License, Version 1.0. See
 # |  accompanying file LICENSE_1_0.txt or copy at
 # |  http://www.boost.org/LICENSE_1_0.txt.
 # |
 # ----------------------------------------------------------------------
-"""Contains the Plugin object"""
+"""Contains the PluginBase object"""
 
 import os
-import re
 
 import CommonEnvironment
 from CommonEnvironment.FormatterImpl.Plugin import Plugin as FormatterPluginBase

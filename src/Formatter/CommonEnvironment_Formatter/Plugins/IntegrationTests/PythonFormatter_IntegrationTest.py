@@ -31,7 +31,7 @@ _script_dir, _script_name                   = os.path.split(_script_fullpath)
 sys.path.insert(0, os.path.join(_script_dir, ".."))
 with CallOnExit(lambda: sys.path.pop(0)):
     from PythonFormatter import Formatter
-    
+
 sys.path.insert(0, os.path.join(_script_dir, "..", "PythonFormatterImpl"))
 with CallOnExit(lambda: sys.path.pop(0)):
     from AlignAssignmentsPlugin import Plugin as AlignAssignmentsPlugin
@@ -1358,6 +1358,15 @@ else:
                         **kwargs
                     )
 
+                    VarArgs(
+                        textwrap.dedent(
+                            \"\"\"
+                            Line 1
+                            \"\"\",
+                        ),
+                        *args
+                    )
+
                     if any(
                         child
                         for child in self.Children
@@ -1427,6 +1436,15 @@ else:
                             \"\"\",
                         ),
                         **kwargs
+                    )
+
+                    VarArgs(
+                        textwrap.dedent(
+                            \"\"\"
+                            Line 1
+                            \"\"\",
+                        ),
+                        *args
                     )
 
                     if any(

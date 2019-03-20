@@ -27,13 +27,12 @@ import six
 import CommonEnvironment
 from CommonEnvironment import Interface
 
+from PluginBase import PluginBase
+
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name                   = os.path.split(_script_fullpath)
 #  ----------------------------------------------------------------------
-
-# This is available because it is imported in PythonFormatter.py
-from PythonFormatterImpl import PluginBase
 
 # ----------------------------------------------------------------------
 @Interface.staticderived
@@ -163,9 +162,9 @@ class Plugin(PluginBase):
             # a method that contains a long number of parameters.
             are_func_args = (
                 line.leaves[0].parent
-                and line.leaves[0].parent.type == python_symbols.atom
+                and line.leaves[0].parent.type == python_symbols.atom           # <Instance of 'Symbols' has no 'atom' member> pylint: disable = E1101
                 and line.leaves[0].parent.parent
-                and line.leaves[0].parent.parent.type == python_symbols.arglist
+                and line.leaves[0].parent.parent.type == python_symbols.arglist # <Instance of 'Symbols' has no 'arglist' member> pylint: disable = E1101
             )
 
             if are_func_args:
@@ -191,7 +190,7 @@ class Plugin(PluginBase):
                     **should_be_split_kwargs
                 )
 
-            if are_func_args and not clauses[-1].IsKwargs and new_lines[-1].leaves[-1].type != python_tokens.COMMA:
+            if are_func_args and clauses[-1].AllowTrailingComma() and new_lines[-1].leaves[-1].type != python_tokens.COMMA:
                 new_lines[-1].leaves.append(black.Leaf(python_tokens.COMMA, ","))
 
             modifications[line_index] = new_lines
@@ -211,6 +210,8 @@ class Plugin(PluginBase):
     # ----------------------------------------------------------------------
     @staticmethod
     def IsFunc(line, leaf_index):
+        # <Instance of 'Symbols' has no 'trailer' member> pylint: disable = E1101
+
         # Function invocation
         if line.leaves[leaf_index].parent is not None and line.leaves[leaf_index].parent.type == python_symbols.trailer:
             return True
@@ -446,6 +447,7 @@ class _OpenCloseTokenImpl(_TokenParser):
             for index in range(start, end):
                 leaf = line.leaves[index]
 
+                # <Instance of 'Symbols' has no '___' member> pylint: disable = E1101
                 if leaf.parent and leaf.parent.type in [python_symbols.old_comp_for, python_symbols.comp_for]:
                     return True
 
@@ -478,9 +480,11 @@ class Clause(_TokenParser):
         children = []
 
         is_default_arg = False
-        is_kwargs = False
+        allow_trailing_comma = True
 
         while leaf_index < len(line.leaves) and not is_terminated_func(line, leaf_index):
+            # <Instance of 'Symbols' has no 'exprlist' member> pylint: disable = E1101
+
             leaf = line.leaves[leaf_index]
 
             # Treat commas as delimiters unless the commas are part of an expression list
@@ -510,9 +514,17 @@ class Clause(_TokenParser):
                 if leaf.value == "=" and leaf.parent.type in [python_symbols.argument, python_symbols.typedargslist]:
                     is_default_arg = True
 
+                elif leaf.value == "*":
+                    # Do not allow a comma if this is the last arg
+                    assert allow_trailing_comma is True
+
+                    # The next leaf if the arg name and the next might be a parent
+                    if leaf_index + 2 < len(line.leaves) and line.leaves[leaf_index + 2].value == ")":
+                        allow_trailing_comma = False
+
                 elif leaf.value == "**":
-                    assert is_kwargs is False
-                    is_kwargs = True
+                    assert allow_trailing_comma is True
+                    allow_trailing_comma = False
 
                 leaf_index += 1
 
@@ -520,7 +532,7 @@ class Clause(_TokenParser):
         self.EndingIndex                    = leaf_index
         self.Children                       = children
         self.IsDefaultArg                   = is_default_arg
-        self.IsKwargs                       = is_kwargs
+        self._allow_trailing_comma          = allow_trailing_comma
 
     # ----------------------------------------------------------------------
     @Interface.override
@@ -595,7 +607,7 @@ class Clause(_TokenParser):
     # ----------------------------------------------------------------------
     @Interface.override
     def AllowTrailingComma(self):
-        return not self.IsKwargs
+        return self._allow_trailing_comma
 
 
 # ----------------------------------------------------------------------
@@ -724,7 +736,7 @@ class Parens(_OpenCloseTokenImpl):
                 return self.__class__.Type.Tuple
 
             first_leaf = line.leaves[self.OpenIndex + 1]
-            if first_leaf.parent and first_leaf.parent.type == python_symbols.testlist_gexp:
+            if first_leaf.parent and first_leaf.parent.type == python_symbols.testlist_gexp: # <Instance of 'Symbols' has no 'testlist_gexp' member> pylint: disable = E1101
                 return self.__class__.Type.Tuple
 
             return None
@@ -865,9 +877,9 @@ class Brackets(_OpenCloseTokenImpl):
 
             if (
                 line.leaves[self.OpenIndex].parent is None
-                or line.leaves[self.OpenIndex].parent.type != python_symbols.atom
+                or line.leaves[self.OpenIndex].parent.type != python_symbols.atom  # <Instance of 'Symbols' has no 'atom' member> pylint: disable = E1101
                 or line.leaves[self.CloseIndex].parent is None
-                or line.leaves[self.CloseIndex].parent.type != python_symbols.atom
+                or line.leaves[self.CloseIndex].parent.type != python_symbols.atom # <Instance of 'Symbols' has no 'atom' member> pylint: disable = E1101
             ):
                 return self.__class__.Type.Index
 
