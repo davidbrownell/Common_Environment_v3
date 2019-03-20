@@ -3,11 +3,11 @@
 # |  Build.py
 # |
 # |  David Brownell <db@DavidBrownell.com>
-# |      2018-08-15 16:09:30
+# |      2019-03-18 21:28:30
 # |
 # ----------------------------------------------------------------------
 # |
-# |  Copyright David Brownell 2018-19.
+# |  Copyright David Brownell 2019.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 # |
@@ -26,7 +26,7 @@ _script_fullpath                            = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name                   = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
-APPLICATION_NAME                            = "Python_CommonEnvironment"
+APPLICATION_NAME                            = "Python_CommonEnvironment_Formatter"
 
 # ----------------------------------------------------------------------
 Build                                       = PyPiBuildImpl.CreateBuildFunc(_script_dir)

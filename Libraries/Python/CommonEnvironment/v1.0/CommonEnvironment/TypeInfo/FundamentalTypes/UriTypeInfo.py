@@ -35,13 +35,9 @@ class Uri(object):
     def FromString(cls, value):
         """Creates a Uri object from a string."""
 
-        # urlparse doesn't handle file:/// well
-        if value.startswith("file:///"):
-            value = "file://{}".format(value[len("file:///"):])
-
         result = six.moves.urllib.parse.urlparse(value)
-
-        if not (result.scheme and result.hostname):
+        
+        if not (result.scheme and (result.hostname or result.path)):
             raise Exception("'{}' is not a valid uri".format(value))
 
         return cls( result.scheme,
@@ -63,8 +59,11 @@ class Uri(object):
                   credentials=None,         # (username, password)
                   port=None,
                 ):
-        if not scheme:                      raise Exception("'scheme' must be valid")
-        if not host:                        raise Exception("'host' must be valid")
+        if not scheme:                      
+            raise Exception("'scheme' must be valid")
+
+        if not host and (not path or path == "/"):
+            raise Exception("'host' must be valid")
 
         self.Scheme                         = scheme
         self.Host                           = host
