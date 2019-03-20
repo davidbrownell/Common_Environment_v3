@@ -19,4 +19,9 @@ coverage.xml
 Libraries/Python/CommonEnvironment/v1.0/CommonEnvironment.egg-info/*
 Libraries/Python/CommonEnvironment/v1.0/dist/*
 
+src/Formatter/CommonEnvironment_Formatter.egg-info/*
+src/Formatter/dist/*
+
 RepositoryBootstrap/Impl/Hooks/GeneratedCode/Compiler.ConditionalInvocationQueryMixin.data
+
+Scripts/Formatter.py

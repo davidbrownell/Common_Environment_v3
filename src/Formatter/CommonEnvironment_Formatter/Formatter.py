@@ -15,6 +15,7 @@
 # ----------------------------------------------------------------------
 """General purpose formatting executor."""
 
+import importlib
 import os
 import sys
 import textwrap
@@ -36,10 +37,44 @@ _script_fullpath                            = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name                   = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
-assert os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL")
-sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
-with CallOnExit(lambda: sys.path.pop(0)):
-    from RepositoryBootstrap.SetupAndActivate import DynamicPluginArchitecture as DPA
+if os.getenv("DEVELOPMENT_ENVIRONMENT_FORMATTERS") and os.getenv(
+    "DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL",
+):
+    # Get plugins across multiple repositories
+    sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
+    with CallOnExit(lambda: sys.path.pop(0)):
+        from RepositoryBootstrap.SetupAndActivate import DynamicPluginArchitecture as DPA
+
+    # ----------------------------------------------------------------------
+    def EnumeratePlugins():
+        for mod in DPA.EnumeratePlugins("DEVELOPMENT_ENVIRONMENT_FORMATTERS"):
+            yield mod
+
+    # ----------------------------------------------------------------------
+
+else:
+    # Get plugins relative to this file
+
+    # ----------------------------------------------------------------------
+    def EnumeratePlugins():
+        plugin_dir = os.path.join(_script_dir, "Plugins")
+        assert os.path.isdir(plugin_dir), plugin_dir
+
+        sys.path.insert(0, plugin_dir)
+        with CallOnExit(lambda: sys.path.pop(0)):
+            for item in os.listdir(plugin_dir):
+                fullpath = os.path.join(plugin_dir, item)
+                if not os.path.isfile(fullpath):
+                    continue
+
+                basename, ext = os.path.splitext(item)
+
+                if not basename.endswith("Formatter") or ext != ".py":
+                    continue
+
+                yield importlib.import_module(basename)
+
+    # ----------------------------------------------------------------------
 
 # ----------------------------------------------------------------------
 inflect                                     = inflect_mod.engine()
@@ -57,7 +92,7 @@ def _LoadFormatterFromModule(mod):
 
 
 # ----------------------------------------------------------------------
-FORMATTERS                                  = [_LoadFormatterFromModule(mod) for mod in DPA.EnumeratePlugins("DEVELOPMENT_ENVIRONMENT_FORMATTERS")]
+FORMATTERS                                  = [_LoadFormatterFromModule(mod) for mod in EnumeratePlugins()]
 
 # ----------------------------------------------------------------------
 # |
@@ -81,6 +116,9 @@ _formatter_type_info                        = CommandLine.EnumTypeInfo(
     ),
     single_threaded=CommandLine.EntryPoint.Parameter(
         "Run with a single thread. This option is only valid when providing a directory",
+    ),
+    skip_generated_dirs=CommandLine.EntryPoint.Parameter(
+        "Do not include files from directories that include 'generated'",
     ),
     hint_filename=CommandLine.EntryPoint.Parameter(
         "Filename passed as a hint to an underlying formatter; the content to format should still be in 'filename_or_dir'",
@@ -106,6 +144,7 @@ def Format(
     overwrite=False,
     quiet=False,
     single_threaded=False,
+    skip_generated_dirs=False,
     hint_filename=None,
     output_stream=sys.stdout,
     verbose=False,
@@ -129,6 +168,11 @@ def Format(
             if single_threaded:
                 raise CommandLine.UsageException(
                     "The command line option 'single_threaded' can only be specified when providing an input directory",
+                )
+
+            if skip_generated_dirs:
+                raise CommandLine.UsageException(
+                    "The command line option 'skip_generated_dirs' can only be specified when providing an input directory",
                 )
 
         elif os.path.isdir(filename_or_dir):
@@ -232,6 +276,7 @@ def Format(
                         formatter,
                         filename_or_dir,
                         single_threaded,
+                        skip_generated_dirs,
                     )
 
             if not changed_files:
@@ -267,6 +312,9 @@ def Format(
     single_threaded=CommandLine.EntryPoint.Parameter(
         "Run with a single thread. This option is only valid when providing a directory",
     ),
+    skip_generated_dirs=CommandLine.EntryPoint.Parameter(
+        "Do not include files from directories that include 'generated'",
+    ),
     verbose=CommandLine.EntryPoint.Parameter("Verbose output"),
     preserve_ansi_escape_sequences=CommandLine.EntryPoint.Parameter(
         "Keep ansi escape sequences (used for color and cursor movement) when invoking this script from another one",
@@ -283,6 +331,7 @@ def HasChanges(
     filename_or_dir,
     formatter=None,
     single_threaded=False,
+    skip_generated_dirs=False,
     output_stream=sys.stdout,
     verbose=False,
     preserve_ansi_escape_sequences=False,
@@ -303,6 +352,11 @@ def HasChanges(
             if single_threaded:
                 raise CommandLine.UsageException(
                     "The command line option 'single_threaded' can only be specified when providing an input directory",
+                )
+
+            if skip_generated_dirs:
+                raise CommandLine.UsageException(
+                    "The command line option 'skip_generated_dirs' can only be specified when providing an input directory",
                 )
 
         with output_stream.DoneManager(
@@ -368,6 +422,7 @@ def HasChanges(
                         formatter,
                         filename_or_dir,
                         single_threaded,
+                        skip_generated_dirs,
                     )
 
             if not changed_files:
@@ -457,6 +512,7 @@ def _Impl(
     formatter,
     input_dir,
     single_threaded,
+    skip_generated_dirs,
 ):
     # activity_func: def Func(input_filename, output_stream) -> result code
 
@@ -467,7 +523,14 @@ def _Impl(
     with output_stream.DoneManager(
         done_suffix=lambda: "{} found".format(inflect.no("file", len(input_filenames))),
     ):
-        input_filenames += [filename for filename in FileSystem.WalkFiles(input_dir) if formatter.InputTypeInfo.ValidateItemNoThrow(filename) is None]
+        input_filenames += [
+            filename
+            for filename in FileSystem.WalkFiles(
+                input_dir,
+                traverse_exclude_dir_names=[lambda name: "generated" in name.lower()] if skip_generated_dirs else [],
+            )
+            if formatter.InputTypeInfo.ValidateItemNoThrow(filename) is None
+        ]
 
     if not input_filenames:
         return 0
@@ -491,10 +554,16 @@ def _Impl(
 
 
 # ----------------------------------------------------------------------
+# Entry point necessary for package installations
+def main():
+    return CommandLine.Main()
+
+
+# ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 if __name__ == "__main__":
     try:
-        sys.exit(CommandLine.Main())
+        sys.exit(main())
     except KeyboardInterrupt:
         pass

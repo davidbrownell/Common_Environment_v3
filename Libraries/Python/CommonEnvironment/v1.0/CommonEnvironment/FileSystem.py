@@ -125,7 +125,13 @@ def GetCommonPath(*items):
 
 # ----------------------------------------------------------------------
 def FilenameToUri(filename):
-    return "file:{}".format(six.moves.urllib.request.pathname2url(filename))
+    result = six.moves.urllib.request.pathname2url(filename)
+
+    # Windows results begin with '///' for some reason
+    if result.startswith("///") and len(result) > 5 and result[4] == ":":
+        result = result[3:]
+
+    return "file://{}".format(result)
 
 # ----------------------------------------------------------------------
 def GetRelativePath(starting_dir, dest):
