@@ -19,7 +19,7 @@ setup(
     name="CommonEnvironment-Formatter",
     version="0.5.0-b1",
     packages=find_packages(),
-    install_requires=["CommonEnvironment >= 1.0.5", "black >= 18.9.b0"],
+    install_requires=["CommonEnvironment >= 1.0.6", "black >= 18.9.b0"],
     scripts=["bin/Formatter", "bin/Formatter.cmd"],
     author="David Brownell",
     author_email="pypi@DavidBrownell.com",
