@@ -101,13 +101,17 @@ def Convert(
     else:
         command_line_template = '"{script}" Format "{filename}" /quiet'
 
+    script_name = "Formatter"
+    if CurrentShell.CategoryName != "Linux":
+        script_name = CurrentShell.CreateScriptName(script_name)
+
     result, formatted_content = Process.Execute(
         command_line_template.format(
-            script=CurrentShell.CreateScriptName("Formatter"),
+            script=script_name,
             filename=input_filename,
         ),
     )
-
+    
     if is_check:
         return 1 if result == 1 else -1
 

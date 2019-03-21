@@ -1191,6 +1191,211 @@ else:
             )
 
     # ----------------------------------------------------------------------
+    class SplitLogicalClausesSuite(TestBase):
+        # ----------------------------------------------------------------------
+        def _Format(self, original, expected):
+            return super(SplitLogicalClausesSuite, self)._Format(
+                original,
+                expected,
+                "SplitLogicalClauses",
+            )
+
+        # ----------------------------------------------------------------------
+        def test_Generate(self):
+            self._Format(
+                textwrap.dedent(
+                    """\
+                    if one and two and three or four and five and six and (seven or (1, 2) or eight or nine or Func2(a and b)) and ten and eleven and twelve and thirteen and (fourteen and (fifteen and sixteen and Func(a and b, aaaaa, bbbbb, ccccc, ddddd, eeeee, fffff, ggggg, hhhhh, iiiii, jjjjj, kkkkk, lllll, mmmmm, nnnnn, ooooo, ppppp, qqqqq, rrrrr, sssss, ttttt, uuuuu, vvvvv, wwwww, xxxxx, yyyyy, zzzzz))) and seventeen and eightteen and nineteen: pass
+
+                    Func(one and two, three or four and five and six and (seven or (1, 2) or eight or nine or Func2(a and b)) and ten and eleven and twelve and thirteen and (fourteen and (fifteen and sixteen and Func(a and b, aaaaa, bbbbb, ccccc, ddddd, eeeee, fffff, ggggg, hhhhh, iiiii, jjjjj, kkkkk, lllll, mmmmm, nnnnn, ooooo, ppppp, qqqqq, rrrrr, sssss, ttttt, uuuuu, vvvvv, wwwww, xxxxx, yyyyy, zzzzz))) and seventeen and eightteen and nineteen)
+
+                    Func(one and two and three or four and five and six and (seven or (1, 2) or eight or nine or Func2(a and b)) and ten and eleven and twelve and thirteen and (fourteen and (fifteen and sixteen and Func(a and b, aaaaa, bbbbb, ccccc, ddddd, eeeee, fffff, ggggg, hhhhh, iiiii, jjjjj, kkkkk, lllll, mmmmm, nnnnn, ooooo, ppppp, qqqqq, rrrrr, sssss, ttttt, uuuuu, vvvvv, wwwww, xxxxx, yyyyy, zzzzz))) and seventeen and eightteen and nineteen)
+                    """,
+                ),
+                textwrap.dedent(
+                    """\
+                    if (
+                        one
+                        and two
+                        and three
+                        or four
+                        and five
+                        and six
+                        and (
+                            seven
+                            or (1, 2)
+                            or eight
+                            or nine
+                            or Func2(a and b)
+                        )
+                        and ten
+                        and eleven
+                        and twelve
+                        and thirteen
+                        and (
+                            fourteen
+                            and (
+                                fifteen
+                                and sixteen
+                                and Func(
+                                    a and b,
+                                    aaaaa,
+                                    bbbbb,
+                                    ccccc,
+                                    ddddd,
+                                    eeeee,
+                                    fffff,
+                                    ggggg,
+                                    hhhhh,
+                                    iiiii,
+                                    jjjjj,
+                                    kkkkk,
+                                    lllll,
+                                    mmmmm,
+                                    nnnnn,
+                                    ooooo,
+                                    ppppp,
+                                    qqqqq,
+                                    rrrrr,
+                                    sssss,
+                                    ttttt,
+                                    uuuuu,
+                                    vvvvv,
+                                    wwwww,
+                                    xxxxx,
+                                    yyyyy,
+                                    zzzzz,
+                                )
+                            )
+                        )
+                        and seventeen
+                        and eightteen
+                        and nineteen
+                    ):
+                        pass
+
+                    Func(
+                        one
+                        and two,
+                        three
+                        or four
+                        and five
+                        and six
+                        and (
+                            seven
+                            or (1, 2)
+                            or eight
+                            or nine
+                            or Func2(a and b)
+                        )
+                        and ten
+                        and eleven
+                        and twelve
+                        and thirteen
+                        and (
+                            fourteen
+                            and (
+                                fifteen
+                                and sixteen
+                                and Func(
+                                    a and b,
+                                    aaaaa,
+                                    bbbbb,
+                                    ccccc,
+                                    ddddd,
+                                    eeeee,
+                                    fffff,
+                                    ggggg,
+                                    hhhhh,
+                                    iiiii,
+                                    jjjjj,
+                                    kkkkk,
+                                    lllll,
+                                    mmmmm,
+                                    nnnnn,
+                                    ooooo,
+                                    ppppp,
+                                    qqqqq,
+                                    rrrrr,
+                                    sssss,
+                                    ttttt,
+                                    uuuuu,
+                                    vvvvv,
+                                    wwwww,
+                                    xxxxx,
+                                    yyyyy,
+                                    zzzzz,
+                                )
+                            )
+                        )
+                        and seventeen
+                        and eightteen
+                        and nineteen,
+                    )
+
+                    Func(
+                        one
+                        and two
+                        and three
+                        or four
+                        and five
+                        and six
+                        and (
+                            seven
+                            or (1, 2)
+                            or eight
+                            or nine
+                            or Func2(a and b)
+                        )
+                        and ten
+                        and eleven
+                        and twelve
+                        and thirteen
+                        and (
+                            fourteen
+                            and (
+                                fifteen
+                                and sixteen
+                                and Func(
+                                    a and b,
+                                    aaaaa,
+                                    bbbbb,
+                                    ccccc,
+                                    ddddd,
+                                    eeeee,
+                                    fffff,
+                                    ggggg,
+                                    hhhhh,
+                                    iiiii,
+                                    jjjjj,
+                                    kkkkk,
+                                    lllll,
+                                    mmmmm,
+                                    nnnnn,
+                                    ooooo,
+                                    ppppp,
+                                    qqqqq,
+                                    rrrrr,
+                                    sssss,
+                                    ttttt,
+                                    uuuuu,
+                                    vvvvv,
+                                    wwwww,
+                                    xxxxx,
+                                    yyyyy,
+                                    zzzzz,
+                                )
+                            )
+                        )
+                        and seventeen
+                        and eightteen
+                        and nineteen
+                    )
+                    """,
+                ),
+            )
+
+    # ----------------------------------------------------------------------
     class TextwrapDedentPlugin(TestBase):
         # ----------------------------------------------------------------------
         def _Format(self, original, expected):

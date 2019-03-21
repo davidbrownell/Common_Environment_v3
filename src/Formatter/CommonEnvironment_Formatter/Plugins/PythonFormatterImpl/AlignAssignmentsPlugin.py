@@ -43,7 +43,7 @@ class Plugin(HorizontalAlignmentPluginImpl):
     # ----------------------------------------------------------------------
     # |  Properties
     Name                                    = Interface.DerivedProperty("AlignAssignments")
-    Priority                                = Interface.DerivedProperty(HorizontalAlignmentPluginImpl.STANDARD_PRIORITY + 10)
+    Priority                                = Interface.DerivedProperty(HorizontalAlignmentPluginImpl.STANDARD_PRIORITY * 2)
 
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------

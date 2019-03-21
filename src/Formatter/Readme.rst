@@ -2,7 +2,8 @@ Formats Python code using Black (https://github.com/ambv/black) plus enhancement
 
 - Aligns assignments within a block
 - Aligns trailing comments within a block
-- Ensures that all line-delimied parameters and arguments include a trailing comma
+- Ensures that all line-delimited parameters and arguments include a trailing comma
+- Ensures that all logical clauses are line-delimited in any are
 - Reverts splits for empty parens
 - Fine-grained control over line splitting for:
     * parameters
@@ -10,4 +11,4 @@ Formats Python code using Black (https://github.com/ambv/black) plus enhancement
     * list items
     * dict items
     * tuple items
-- Fixes inconsitencies with textwrap.dedent and multiline strings
+- Fixes inconsistencies with textwrap.dedent and multiline strings
