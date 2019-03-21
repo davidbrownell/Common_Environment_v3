@@ -120,9 +120,6 @@ _formatter_type_info                        = CommandLine.EnumTypeInfo(
     skip_generated_dirs=CommandLine.EntryPoint.Parameter(
         "Do not include files from directories that include 'generated'",
     ),
-    hint_filename=CommandLine.EntryPoint.Parameter(
-        "Filename passed as a hint to an underlying formatter; the content to format should still be in 'filename_or_dir'",
-    ),
     verbose=CommandLine.EntryPoint.Parameter("Verbose output"),
     preserve_ansi_escape_sequences=CommandLine.EntryPoint.Parameter(
         "Keep ansi escape sequences (used for color and cursor movement) when invoking this script from another one",
@@ -133,7 +130,8 @@ _formatter_type_info                        = CommandLine.EnumTypeInfo(
         match_any=True,
     ),
     formatter=_formatter_type_info,
-    hint_filename=CommandLine.FilenameTypeInfo(
+    plugin_arg=CommandLine.DictTypeInfo(
+        require_exact_match=False,
         arity="?",
     ),
     output_stream=None,
@@ -145,17 +143,18 @@ def Format(
     quiet=False,
     single_threaded=False,
     skip_generated_dirs=False,
-    hint_filename=None,
+    plugin_arg=None,
     output_stream=sys.stdout,
     verbose=False,
     preserve_ansi_escape_sequences=False,
 ):
     """Formats the given input"""
 
-    original_output_stream = output_stream
+    plugin_args = plugin_arg
+    del plugin_arg
 
     with StreamDecorator.GenerateAnsiSequenceStream(
-        None if quiet else output_stream,
+        output_stream,
         preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
     ) as output_stream:
         # Ensure correct argument usage
@@ -181,11 +180,6 @@ def Format(
                     "The command line option 'quiet' can only be specified when providing an input filename",
                 )
 
-            if hint_filename is not None:
-                raise CommandLine.UsageException(
-                    "The command line option 'hint_filename' can only be specified when providing an input filename",
-                )
-
             # Ensure that we output changes
             if not overwrite:
                 verbose = True
@@ -194,6 +188,7 @@ def Format(
             line_prefix="",
             prefix="\nResults: ",
             suffix="\n",
+            display=not quiet,
         ) as dm:
             if os.path.isfile(filename_or_dir):
                 formatter = _GetFormatterByFilename(filename_or_dir)
@@ -209,13 +204,16 @@ def Format(
                     has_changes=False,
                 )
 
-                dm.stream.write("Formatting '{}'...".format(filename_or_dir))
+                if not quiet:
+                    dm.stream.write("Formatting '{}'...".format(filename_or_dir))
+
                 with dm.stream.DoneManager(
                     done_suffix=lambda: None if nonlocals.has_changes else "No changes detected",
+                    display=not quiet,
                 ) as this_dm:
                     output, nonlocals.has_changes = formatter.Format(
                         filename_or_dir,
-                        hint_filename=hint_filename,
+                        **plugin_args
                     )
 
                     if nonlocals.has_changes:
@@ -223,7 +221,7 @@ def Format(
                             with open(filename, "w") as f:
                                 f.write(output)
                         else:
-                            (original_output_stream if quiet else this_dm.stream).write(output)
+                            (output_stream if quiet else this_dm.stream).write(output)
 
                     return this_dm.result
 
@@ -253,7 +251,10 @@ def Format(
                 ) as this_dm:
                     # ----------------------------------------------------------------------
                     def Invoke(input_filename, output_stream):
-                        content, has_changes = formatter.Format(input_filename)
+                        content, has_changes = formatter.Format(
+                            input_filename,
+                            **plugin_args
+                        )
                         if not has_changes:
                             return
 

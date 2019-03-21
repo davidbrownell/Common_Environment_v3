@@ -17,7 +17,7 @@ from setuptools import setup, find_packages
 # Do the setup
 setup(
     name="CommonEnvironment-Formatter",
-    version="0.5.0-a11",
+    version="0.5.0-b1",
     packages=find_packages(),
     install_requires=["CommonEnvironment >= 1.0.5", "black >= 18.9.b0"],
     scripts=["bin/Formatter", "bin/Formatter.cmd"],
@@ -35,7 +35,7 @@ setup(
     url="https://github.com/davidbrownell/Common_Environment_v3",
     project_urls={"Bug Tracker": "https://github.com/davidbrownell/Common_Environment_v3/issues"},
     classifiers=[
-        "Development Status :: 3 - Alpha",                                  # "Development Status :: 5 - Production/Stable",
+        "Development Status :: 4 - Beta",                                   # "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: Boost Software License 1.0 (BSL-1.0)",
         "Natural Language :: English",
