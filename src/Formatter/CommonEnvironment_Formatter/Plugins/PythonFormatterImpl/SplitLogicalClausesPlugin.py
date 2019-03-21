@@ -167,19 +167,19 @@ class Plugin(PluginBase):
                         elif suppress_split_until_id is not None and id(leaf) == suppress_split_until_id:
                             suppress_split_until_id = None
 
-                        if is_subexpression_delimiter and leaf.value == ")" and leaf.opening_bracket and id(
-                            leaf.opening_bracket,
-                        ) in altered_subexpressions:
-                            altered_subexpressions.remove(id(leaf.opening_bracket))
+                        if is_subexpression_delimiter and leaf.value == ")" and leaf.opening_bracket:
+                            # Continued on next line to prevent wonky line split from the black formatter
+                            if id(leaf.opening_bracket) in altered_subexpressions:
+                                altered_subexpressions.remove(id(leaf.opening_bracket))
 
-                            assert indentation_delta
-                            indentation_delta -= 1
+                                assert indentation_delta
+                                indentation_delta -= 1
 
-                            AppendLine(
-                                line_index,
-                                indentation_delta,
-                                copy_comments=False,
-                            )
+                                AppendLine(
+                                    line_index,
+                                    indentation_delta,
+                                    copy_comments=False,
+                                )
 
                         if suppress_split_until_id is None and leaf.value in logical_values and new_lines[-1].leaves:
                             AppendLine(line_index, indentation_delta)
@@ -189,13 +189,13 @@ class Plugin(PluginBase):
 
                         new_lines[-1].leaves.append(leaf)
 
-                        if is_subexpression_delimiter and leaf.value == "(" and lines[line_index].leaves and id(
-                            leaf,
-                        ) != id(lines[line_index].leaves[-1]):
-                            indentation_delta += 1
-                            AppendLine(line_index, indentation_delta)
+                        if is_subexpression_delimiter and leaf.value == "(" and lines[line_index].leaves:
+                            # Continued on next line to prevent wonky line split from the black formatter
+                            if id(leaf) != id(lines[line_index].leaves[-1]):
+                                indentation_delta += 1
+                                AppendLine(line_index, indentation_delta)
 
-                            altered_subexpressions.add(id(leaf))
+                                altered_subexpressions.add(id(leaf))
 
                     modifications[(first_line, last_line)] = new_lines
 
