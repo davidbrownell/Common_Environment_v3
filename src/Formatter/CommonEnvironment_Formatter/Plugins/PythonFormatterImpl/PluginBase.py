@@ -17,6 +17,8 @@
 
 import os
 
+import six
+
 import CommonEnvironment
 from CommonEnvironment.FormatterImpl.Plugin import Plugin as FormatterPluginBase
 from CommonEnvironment import Interface
@@ -84,6 +86,37 @@ class PluginBase(FormatterPluginBase):
             index -= 1
 
         return line.leaves[index].value
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    def ReplaceLines(lines, modification_map):
+        """\
+        Replaces lines with lines the modification_map.
+
+        The modification_map is in the form:
+            <line>: int -> <new_lines>: list
+                or
+            (<start_line>: int, <end_line>: int) -> <new_lines>: list
+        """
+
+        for line_info in reversed(list(six.iterkeys(modification_map))):
+            new_lines = modification_map[line_info]
+            
+            if isinstance(line_info, tuple):
+                start_line, end_line = line_info
+            else:
+                start_line = line_info
+                end_line = start_line + 1
+
+                new_lines[-1].comments = lines[start_line].comments
+
+            for _ in range(end_line - start_line):
+                del lines[start_line]
+
+            for new_line in reversed(new_lines):
+                lines.insert(start_line, new_line)
+
+        return lines
 
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------

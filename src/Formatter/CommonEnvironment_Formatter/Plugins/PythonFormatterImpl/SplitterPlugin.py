@@ -195,17 +195,7 @@ class Plugin(PluginBase):
 
             modifications[line_index] = new_lines
 
-        if modifications:
-            for line_index in reversed(list(six.iterkeys(modifications))):
-                new_lines = modifications[line_index]
-                new_lines[-1].comments = lines[line_index].comments
-
-                del lines[line_index]
-
-                for new_line in reversed(new_lines):
-                    lines.insert(line_index, new_line)
-
-        return lines
+        return cls.ReplaceLines(lines, modifications)
 
     # ----------------------------------------------------------------------
     @staticmethod
