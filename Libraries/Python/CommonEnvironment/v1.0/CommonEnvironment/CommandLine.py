@@ -793,6 +793,8 @@ class Executor(object):
                     if match:
                         this_dict = this_dict.setdefault(tag, OrderedDict())
                     else:
+                        value = value.replace("\\{}".format(self.CommandLineDictTagValueSeparator), self.CommandLineDictTagValueSeparator)
+
                         if parameter.PostprocessFunc:
                             value = parameter.PostprocessFunc((tags, value))[1]
 
