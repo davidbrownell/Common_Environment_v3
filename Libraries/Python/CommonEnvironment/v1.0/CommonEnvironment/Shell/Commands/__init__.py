@@ -49,8 +49,13 @@ class Message(object):
 # ----------------------------------------------------------------------
 class Call(object):
     """A command invoked within a generated script"""
-    def __init__(self, command_line):
+    def __init__(
+        self,
+        command_line,
+        exit_on_error=True,
+    ):
         self.CommandLine                    = command_line
+        self.ExitOnError                    = exit_on_error
 
     # ----------------------------------------------------------------------
     def __repr__(self):
@@ -59,8 +64,13 @@ class Call(object):
 # ----------------------------------------------------------------------
 class Execute(object):
     """A command invoked within a generated script"""
-    def __init__(self, command_line):
+    def __init__(
+        self,
+        command_line,
+        exit_on_error=True,
+    ):
         self.CommandLine                    = command_line
+        self.ExitOnError                    = exit_on_error
 
     # ----------------------------------------------------------------------
     def __repr__(self):
