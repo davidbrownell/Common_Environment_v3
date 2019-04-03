@@ -23,7 +23,7 @@ from collections import OrderedDict
 import CommonEnvironment
 from CommonEnvironment.Interface import staticderived, clsinit, override, DerivedProperty
 from CommonEnvironment.Shell import Shell
-from CommonEnvironment.Shell.Commands import Set, Augment
+from CommonEnvironment.Shell.Commands import Set, Augment, ExitOnError
 from CommonEnvironment.Shell.Commands.Visitor import Visitor
 
 # ----------------------------------------------------------------------
@@ -82,16 +82,24 @@ class WindowsShell(Shell):
             return ' && '.join(output)
 
         # ----------------------------------------------------------------------
-        @staticmethod
+        @classmethod
         @override
-        def OnCall(command):
-            return "call {}".format(command.CommandLine)
+        def OnCall(cls, command):
+            result = "call {}".format(command.CommandLine)
+            if command.ExitOnError:
+                result += "\n{}".format(cls.Accept(ExitOnError()))
+
+            return result
 
         # ----------------------------------------------------------------------
-        @staticmethod
+        @classmethod
         @override
-        def OnExecute(command):
-            return command.CommandLine
+        def OnExecute(cls, command):
+            result = command.CommandLine
+            if command.ExitOnError:
+                result += "\n{}".format(cls.Accept(ExitOnError()))
+
+            return result
 
         # ----------------------------------------------------------------------
         @staticmethod
