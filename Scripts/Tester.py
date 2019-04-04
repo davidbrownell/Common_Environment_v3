@@ -91,7 +91,7 @@ CODE_COVERAGE_VALIDATORS                    = [ mod.CodeCoverageValidator() for 
 # Expected format is a list of items delimited by the os-specific delimiter stored in an
 # environment variable. Each item is in the form:
 #
-#       "<configuration name>-<compiler|test_parser|code_coverage>-<value>"
+#       "<configuration name>-<compiler|test_parser|coverage_executor|coverage_validator>-<value>"
 
 # ----------------------------------------------------------------------
 def _CreateConfigurations():
@@ -107,7 +107,7 @@ def _CreateConfigurations():
                         configuration_name,
                         compiler_name,
                         test_parser_name,
-                        coverage_executor_name,    
+                        coverage_executor_name,
                         coverage_validator_name,
                       ):
                 compiler = next((compiler for compiler in COMPILERS if compiler.Name == compiler_name), None)
@@ -590,16 +590,14 @@ def ExtractTestItems( input_dir,
                 verbose_stream.write("'{}' is not supported by the compiler.\n".format(fullpath))
 
     elif isinstance(compiler.InputTypeInfo, DirectoryTypeInfo):
-        search_string = ".{}.".format(test_subdir)
-
         for root, _ in FileSystem.WalkDirs( input_dir,
-                                            include_dir_names=[ lambda d: search_string in d ],
+                                            include_dir_names=[ test_subdir ],
                                             traverse_exclude_dir_names=traverse_exclude_dir_names,
                                           ):
             if os.path.exists(TEST_IGNORE_FILENAME_TEMPLATE.format(root)):
                 continue
 
-            if compiler.IsSupported(root):
+            if compiler.IsSupported(root) and compiler.IsSupportedTestItem(root):
                 test_items.append(root)
             else:
                 verbose_stream.write("'{}' is not supported by the compiler.\n".format(_script_fullpath))
@@ -722,16 +720,7 @@ def GenerateTestResults( test_items,
                     results.compiler_binary += ext
 
             results.compile_log = os.path.join(output_dir, "compile.txt")
-
-            results.compiler_context = compiler.GetContextItem( working_data.complete_result.Item,
-                                                                is_debug=configuration == "Debug",
-                                                                is_profile=bool(optional_test_executor),
-                                                                output_filename=results.compile_binary,
-                                                                force=True,
-                                                              )
-            # Context may be None if it has been disabled for this specific environment
-            if results.compiler_context is None:
-                results.compile_binary = None
+            results.compiler_context = output_dir
 
         # ----------------------------------------------------------------------
 
@@ -748,13 +737,31 @@ def GenerateTestResults( test_items,
     # ----------------------------------------------------------------------
     def BuildThreadProc(task_index, output_stream, on_status_update):
         working_data = working_data_items[task_index % len(working_data_items)]
-    
+        
         if task_index >= len(working_data_items):
             configuration_results = working_data.complete_result.release
+            is_debug = False
         else:
             configuration_results = working_data.complete_result.debug
+            is_debug = True
+
+        # Create the compiler context
+        if not no_status:
+            on_status_update("Configuring")
+
+        assert os.path.isdir(configuration_results.compiler_context), configuration_results.compiler_context
+
+        configuration_results.compiler_context = compiler.GetContextItem(
+            working_data.complete_result.Item,
+            is_debug=is_debug,
+            is_profile=bool(optional_test_executor),
+            output_filename=configuration_results.compile_binary,
+            output_dir=configuration_results.compiler_context,
+            force=True,
+        )
 
         if configuration_results.compiler_context is None:
+            configuration_results.compile_binary = None
             return None
 
         if not no_status:
@@ -822,7 +829,7 @@ def GenerateTestResults( test_items,
                                    this_dm.stream,
                                    progress_bar=True,
                                    display_errors=verbose,
-                                   num_concurrent_tasks=max_num_concurrent_tasks if isinstance(compiler.InputTypeInfo, FilenameTypeInfo) else 1,
+                                   num_concurrent_tasks=max_num_concurrent_tasks,
                                  )
 
     # ----------------------------------------------------------------------
@@ -880,6 +887,8 @@ def GenerateTestResults( test_items,
                                                    configuration_results.compiler_context,
                                                    test_command_line,
                                                  )
+
+                test_parser.RemoveTemporaryArtifacts(configuration_results.compiler_context)
 
                 if execute_result.TestResult != 0:
                     output_stream.write(execute_result.TestOutput)
@@ -1142,51 +1151,54 @@ def Test( configuration,
     
     configuration = CONFIGURATIONS[configuration]
 
-    if os.path.isdir(filename_or_dir):
-        if test_type is None:
-            raise CommandLine.UsageException("The 'test_type' command line argument must be provided when 'filename_or_dir' is a directory.")
+    if os.path.isfile(filename_or_dir) or (
+        os.path.isdir(filename_or_dir) and configuration.Compiler.IsSupported(filename_or_dir)
+    ):
+        if quiet:
+            raise CommandLine.UsageException("'quiet' is only used when executing tests via a directory")
 
-        if output_dir is None:
-            raise CommandLine.UsageException("The 'output_dir' command line argument must be provided when 'filename_or_dir' is a directory.")
+        return _ExecuteImpl( filename_or_dir,
+                             configuration.Compiler,
+                             configuration.TestParser,
+                             configuration.OptionalCoverageExecutor if code_coverage else None,
+                             configuration.OptionalCodeCoverageValidator if code_coverage else None,
+                             execute_in_parallel=execute_in_parallel,
+                             iterations=iterations,
+                             debug_on_error=debug_on_error,
+                             continue_iterations_on_error=continue_iterations_on_error,
+                             debug_only=debug_only,
+                             release_only=release_only,
+                             output_stream=output_stream,
+                             verbose=verbose,
+                             preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
+                             no_status=no_status,
+                           )
 
-        return _ExecuteTreeImpl( filename_or_dir,
-                                 output_dir,
-                                 test_type,
-                                 configuration.Compiler,
-                                 configuration.TestParser,
-                                 configuration.OptionalCoverageExecutor if code_coverage else None,
-                                 configuration.OptionalCodeCoverageValidator if code_coverage else None,
-                                 execute_in_parallel=execute_in_parallel,
-                                 iterations=iterations,
-                                 debug_on_error=debug_on_error,
-                                 continue_iterations_on_error=continue_iterations_on_error,
-                                 debug_only=debug_only,
-                                 release_only=release_only,
-                                 output_stream=output_stream,
-                                 verbose=verbose,
-                                 quiet=quiet,
-                                 preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
-                                 no_status=no_status,
-                               )
+    if test_type is None:
+        raise CommandLine.UsageException("The 'test_type' command line argument must be provided when 'filename_or_dir' is a directory.")
 
-    if quiet:
-        raise CommandLine.UsageException("'quiet' is only used when executing tests via a directory")
+    if output_dir is None:
+        raise CommandLine.UsageException("The 'output_dir' command line argument must be provided when 'filename_or_dir' is a directory.")
 
-    return _ExecuteImpl( filename_or_dir,
-                         configuration.Compiler,
-                         configuration.TestParser,
-                         configuration.OptionalCoverageExecutor if code_coverage else None,
-                         configuration.OptionalCodeCoverageValidator if code_coverage else None,
-                         iterations=iterations,
-                         debug_on_error=debug_on_error,
-                         continue_iterations_on_error=continue_iterations_on_error,
-                         debug_only=debug_only,
-                         release_only=release_only,
-                         output_stream=output_stream,
-                         verbose=verbose,
-                         preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
-                         no_status=no_status,
-                       )
+    return _ExecuteTreeImpl( filename_or_dir,
+                             output_dir,
+                             test_type,
+                             configuration.Compiler,
+                             configuration.TestParser,
+                             configuration.OptionalCoverageExecutor if code_coverage else None,
+                             configuration.OptionalCodeCoverageValidator if code_coverage else None,
+                             execute_in_parallel=execute_in_parallel,
+                             iterations=iterations,
+                             debug_on_error=debug_on_error,
+                             continue_iterations_on_error=continue_iterations_on_error,
+                             debug_only=debug_only,
+                             release_only=release_only,
+                             output_stream=output_stream,
+                             verbose=verbose,
+                             quiet=quiet,
+                             preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
+                             no_status=no_status,
+                           )
 
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint( filename=CommandLine.EntryPoint.Parameter("Filename to test."),
@@ -1560,6 +1572,7 @@ def MatchAllTests( input_dir,
                          test_parser=_test_parser_param_description,
                          test_executor=_test_executor_param_description,
                          code_coverage_validator=_code_coverage_validator_param_description,
+                         execute_in_parallel=_execute_in_parallel_param_description,
                          iterations=_iterations_param_description,
                          debug_on_error=_debug_on_error_param_description,
                          continue_iterations_on_error=_continue_iterations_on_error_param_description,
@@ -1578,6 +1591,7 @@ def MatchAllTests( input_dir,
                           test_parser=_test_parser_type_info,
                           test_executor=_test_executor_type_info,
                           code_coverage_validator=_code_coverage_validator_type_info,
+                          execute_in_parallel=CommandLine.BoolTypeInfo(arity='?'),
                           iterations=CommandLine.IntTypeInfo(min=1, arity='?'),
                           compiler_flag=CommandLine.DictTypeInfo(require_exact_match=False, arity='?'),
                           test_parser_flag=CommandLine.DictTypeInfo(require_exact_match=False, arity='?'),
@@ -1590,6 +1604,7 @@ def Execute( filename,
              test_parser,
              test_executor=None,
              code_coverage_validator=None,
+             execute_in_parallel=None,
              iterations=1,
              debug_on_error=False,
              continue_iterations_on_error=False,
@@ -1620,6 +1635,7 @@ def Execute( filename,
                          _GetFromCommandLineArg(test_parser, TEST_PARSERS, test_parser_flag),
                          _GetFromCommandLineArg(test_executor, TEST_EXECUTORS, test_executor_flag, allow_empty=True),
                          _GetFromCommandLineArg(code_coverage_validator, CODE_COVERAGE_VALIDATORS, code_coverage_validator_flag, allow_empty=True),
+                         execute_in_parallel=execute_in_parallel,
                          iterations=iterations,
                          debug_on_error=debug_on_error,
                          continue_iterations_on_error=continue_iterations_on_error,
@@ -1804,6 +1820,7 @@ def _ExecuteImpl( filename_or_dir,
                   test_parser,
                   test_executor,
                   code_coverage_validator,
+                  execute_in_parallel,
                   iterations,
                   debug_on_error,
                   continue_iterations_on_error,
@@ -1814,7 +1831,8 @@ def _ExecuteImpl( filename_or_dir,
                   preserve_ansi_escape_sequences,
                   no_status,
                 ):
-    assert compiler.IsSupported(filename_or_dir), (compiler.Name, filename_or_dir)
+    if not compiler.IsSupported(filename_or_dir):
+        raise CommandLine.UsageException("'{}' is not supported by '{}'".format(filename_or_dir, compiler.Name))
 
     if test_executor and test_executor.Name != "Standard" and code_coverage_validator is None:
         code_coverage_validator = next(ccv for ccv in CODE_COVERAGE_VALIDATORS if ccv.Name == "Standard")
@@ -1833,7 +1851,7 @@ def _ExecuteImpl( filename_or_dir,
                                                 test_parser,
                                                 test_executor,
                                                 code_coverage_validator,
-                                                execute_in_parallel=False,
+                                                execute_in_parallel=execute_in_parallel,
                                                 iterations=iterations,
                                                 debug_on_error=debug_on_error,
                                                 continue_iterations_on_error=continue_iterations_on_error,
@@ -1918,7 +1936,6 @@ def _ExecuteTreeImpl( input_dir,
 
     if test_executor and test_executor.Name != "Standard" and code_coverage_validator is None:
         code_coverage_validator = next(ccv for ccv in CODE_COVERAGE_VALIDATORS if ccv.Name == "Standard")
-        code_coverage_validator = code_coverage_validator()
 
     with StreamDecorator.GenerateAnsiSequenceStream( output_stream,
                                                      preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
