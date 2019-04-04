@@ -46,7 +46,7 @@ class Compiler(CompilerImpl):
     @staticmethod
     @extensionmethod
     def RemoveTemporaryArtifacts(context):
-        """Remove any temporary files that where generated during the compliation process."""
+        """Remove any temporary files that where generated during the compilation process."""
 
         # Nothing to remove by default
         pass
