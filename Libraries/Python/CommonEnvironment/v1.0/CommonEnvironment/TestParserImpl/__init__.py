@@ -83,3 +83,10 @@ class TestParserImpl(Interface):
             return context["inputs"][0]
 
         raise Exception("Unknown input")
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @extensionmethod
+    def RemoveTemporaryArtifacts(context):
+        """Remove any additional artifacts once compilation is complete"""
+        pass
