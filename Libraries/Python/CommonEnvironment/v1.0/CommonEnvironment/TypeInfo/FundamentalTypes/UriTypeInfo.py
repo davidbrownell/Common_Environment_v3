@@ -123,7 +123,8 @@ class Uri(object):
         filename = filename[len("file:///"):]
 
         filename = filename.replace('/', os.path.sep)
-
+        filename = filename.replace("%20", " ")
+        
         return filename
 
     # ----------------------------------------------------------------------
