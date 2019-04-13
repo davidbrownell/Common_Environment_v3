@@ -135,7 +135,7 @@ class LinuxShellImpl(Shell):
             if not command.Values:
                 return None
 
-            return "export {name}=${name}:{values}".format(
+            return "export {name}={values}:${name}".format(
                 name=command.Name,
                 values=os.pathsep.join(command.Values),
             )

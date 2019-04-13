@@ -149,7 +149,7 @@ class WindowsShell(Shell):
             if not command.Values:
                 return None
 
-            return "SET {name}=%{name}%;{values}".format(
+            return "SET {name}={values};%{name}%".format(
                 name=command.Name,
                 values=os.pathsep.join(command.Values),
             )
