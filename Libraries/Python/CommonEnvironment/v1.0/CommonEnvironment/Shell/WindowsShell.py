@@ -149,17 +149,10 @@ class WindowsShell(Shell):
             if not command.Values:
                 return None
 
-            current_values = set(WindowsShell.EnumEnvironmentVariable(command.Name))
-            
-            new_values = [ value.strip() for value in command.Values if value.strip() ]
-            new_values = [ value for value in new_values if value not in current_values ]
-
-            if not new_values:
-                return None
-
-            return "SET {name}={values};%{name}%".format( name=command.Name,
-                                                          values=os.pathsep.join(command.Values),    # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
-                                                        )
+            return "SET {name}={values};%{name}%".format(
+                name=command.Name,
+                values=os.pathsep.join(command.Values),
+            )
             
         # ----------------------------------------------------------------------
         @staticmethod

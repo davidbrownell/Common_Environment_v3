@@ -50,6 +50,7 @@ class TestExecutor(TestExecutorImpl):
     @classmethod
     @override
     def Execute( cls,
+                 on_status_update,
                  compiler,
                  context,
                  command_line,

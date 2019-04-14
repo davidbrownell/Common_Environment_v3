@@ -123,7 +123,7 @@ class Uri(object):
         filename = filename[len("file:///"):]
 
         filename = filename.replace('/', os.path.sep)
-        filename = filename.replace("%20", " ")
+        filename = six.moves.urllib.parse.unquote(filename)
         
         return filename
 
