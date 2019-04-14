@@ -117,24 +117,27 @@ class Set(object):
 class Augment(object):
     """Adds items to an environment variable within a generated script if they don't already exist"""
     def __init__(self, name, value_or_values, update_memory=False):
-        if not value_or_values:
-            raise Exception("'value_or_values' must not be None")
+        original_values = [item.strip() for item in os.getenv(name, "").split(os.pathsep) if item.strip()]
+        existing_values = set(original_values)
+
+        if not isinstance(value_or_values, list):
+            value_or_values = [value_or_values]
+
+        values = []
+
+        for value in value_or_values:
+            if value not in existing_values:
+                values.append(value)
 
         self.Name                           = name
-        self.Values                         = value_or_values if isinstance(value_or_values, list) else [ value_or_values, ]
+        self.Values                         = values
 
-        if update_memory:
-            from CommonEnvironment.Shell.All import CurrentShell
-
-            existing_values = list(CurrentShell.EnumEnvironmentVariable(self.Name))
-        
-            for value in self.Values:
-                new_values = []
-        
-                if value not in existing_values:
-                    new_values.append(value)
-        
-            os.environ[self.Name] = os.pathsep.join(itertools.chain(new_values, existing_values)) # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
+        if update_memory and self.Values:
+            os.environ[self.Name] = "{}{}{}".format(
+                os.pathsep.join(original_values),
+                os.pathsep if original_values else "",
+                os.pathsep.join(self.Values),
+            )
 
     # ----------------------------------------------------------------------
     def __repr__(self):
