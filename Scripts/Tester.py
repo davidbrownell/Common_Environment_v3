@@ -23,6 +23,7 @@ import tempfile
 import textwrap
 import threading
 import time
+import traceback
 
 from collections import OrderedDict, namedtuple
 
@@ -745,6 +746,9 @@ def GenerateTestResults( test_items,
             configuration_results = working_data.complete_result.debug
             is_debug = True
 
+        if configuration_results.compiler_context is None:
+            return 0
+
         # Create the compiler context
         if not no_status:
             on_status_update("Configuring")
@@ -795,6 +799,8 @@ def GenerateTestResults( test_items,
 
             except:
                 compile_result = internal_exception_result_code
+                compile_output = traceback.format_exc()
+
                 raise
 
             finally:
@@ -843,7 +849,7 @@ def GenerateTestResults( test_items,
                         configuration,
                         iteration,
                       ):
-        # Don't continue on error unless explicity requested
+        # Don't continue on error unless explicitly requested
         if not continue_iterations_on_error and configuration_results.has_errors:
             return
 
@@ -883,19 +889,20 @@ def GenerateTestResults( test_items,
                 else:
                     executor = next(executor for executor in TEST_EXECUTORS if executor.Name == "Standard")
 
-                execute_result = executor.Execute( compiler,
+                execute_result = executor.Execute( on_status_update,
+                                                   compiler,
                                                    configuration_results.compiler_context,
                                                    test_command_line,
                                                  )
 
                 test_parser.RemoveTemporaryArtifacts(configuration_results.compiler_context)
 
-                if execute_result.TestResult != 0:
+                if execute_result.TestResult is not None and execute_result.TestResult != 0:
                     output_stream.write(execute_result.TestOutput)
 
             except:
                 execute_result = TestExecutorImpl.ExecuteResult( internal_exception_result_code,
-                                                                 None,
+                                                                 traceback.format_exc(),
                                                                  None, # Populate below
                                                                )
                 raise
@@ -922,7 +929,10 @@ def GenerateTestResults( test_items,
             parse_start_time = time.time()
 
             try:
-                test_parse_result = test_parser.Parse(original_test_output)
+                if original_test_output is None:
+                    test_parse_result = -1
+                else:
+                    test_parse_result = test_parser.Parse(original_test_output)
                 
             except:
                 test_parse_result = internal_exception_result_code
@@ -945,9 +955,13 @@ def GenerateTestResults( test_items,
                 validate_start_time = time.time()
 
                 try:
-                    validation_result, validation_min = optional_code_coverage_validator.Validate( working_data.complete_result.Item,
-                                                                                                   execute_result.CoveragePercentage,
-                                                                                                 )
+                    if execute_result.CoveragePercentage is None:
+                        validation_result = -1
+                        validation_min = None
+                    else:
+                        validation_result, validation_min = optional_code_coverage_validator.Validate( working_data.complete_result.Item,
+                                                                                                       execute_result.CoveragePercentage,
+                                                                                                     )
                 except:
                     validation_result = internal_exception_result_code
                     validation_min = None
@@ -1055,7 +1069,6 @@ def GenerateTestResults( test_items,
 
         with output_stream.SingleLineDoneManager( "Executing...",
                                                   done_suffix=lambda: inflect.no("test failure", CountTestFailures()),
-                                                  suffix='\n',
                                                 ) as this_dm:
             TaskPool.Execute( debug_tasks + release_tasks,
                               this_dm.stream,
@@ -1989,9 +2002,9 @@ def _ExecuteTreeImpl( input_dir,
             if not complete_results:
                 return 0
 
-            if quiet:
-                dm.stream.write('\n')
-            else:
+            dm.stream.write("\n")
+
+            if not quiet:
                 for complete_result in complete_results:
                     dm.stream.write(complete_result.ToString( compiler,
                                                               test_parser,

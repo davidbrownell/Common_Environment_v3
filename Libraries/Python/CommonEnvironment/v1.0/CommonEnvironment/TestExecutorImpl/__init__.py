@@ -110,7 +110,8 @@ class TestExecutorImpl(Interface):
     # ----------------------------------------------------------------------
     @staticmethod
     @abstractmethod
-    def Execute( compiler,
+    def Execute( on_status_update,
+                 compiler,
                  context,
                  command_line,
                  includes=None,

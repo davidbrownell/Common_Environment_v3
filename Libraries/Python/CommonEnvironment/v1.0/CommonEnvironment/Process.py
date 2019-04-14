@@ -12,7 +12,7 @@
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 # |  
 # ----------------------------------------------------------------------
-"""Contains methods usefull when interacting with processes"""
+"""Contains methods useful when interacting with processes"""
 
 import os
 import subprocess
