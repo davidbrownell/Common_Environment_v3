@@ -35,7 +35,7 @@ class WindowsPowerShell(WindowsShell):
     # ----------------------------------------------------------------------
 
     # Powershell will be used in Windows environment when this environment variable is set to "1"
-    ENVIRONMENT_NAME                        = "DEVELOPMENT_ENVIRONMENT_USE_WINDOWS_POWERSHELL"
+    USE_POWERSHELL_ENVIRONMENT_NAME         = "DEVELOPMENT_ENVIRONMENT_USE_WINDOWS_POWERSHELL"
 
     @staticderived
     @override
@@ -197,7 +197,7 @@ class WindowsPowerShell(WindowsShell):
     @classmethod
     @override
     def IsActive(cls, platform_name):
-        return ("windows" in platform_name or platform_name == "nt") and os.getenv(cls.ENVIRONMENT_NAME, None) == "1"
+        return ("windows" in platform_name or platform_name == "nt") and os.getenv(cls.USE_POWERSHELL_ENVIRONMENT_NAME, None) == "1"
 
     # ----------------------------------------------------------------------
     @classmethod
@@ -207,4 +207,3 @@ class WindowsPowerShell(WindowsShell):
             return filename
 
         return 'powershell "{}"'.format(filename)
-    
