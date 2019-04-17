@@ -164,7 +164,7 @@ def GetRelativePath(starting_dir, dest):
 def TrimPath(fullpath, initial_path):
     """Removes the intial path from the fullpath"""
 
-    if not initial_path:
+    if not initial_path or len(initial_path) > len(fullpath):
         return fullpath
 
     if CurrentShell.HasCaseSensitiveFileSystem:
