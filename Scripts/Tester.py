@@ -404,6 +404,34 @@ class Results(object):
                                                         ))
 
             if execute_result and execute_result.CoverageResult is not None:
+                # ----------------------------------------------------------------------
+                def GetPercentageInfo():
+                    if execute_result.CoveragePercentages is None:
+                        return "N/A"
+
+                    output = []
+
+                    display_template = "        - [{value:<7}] {name:<30}{suffix}"
+
+                    for name, percentage_info in six.iteritems(execute_result.CoveragePercentages):
+                        if isinstance(percentage_info, tuple):
+                            percentage, suffix = percentage_info
+                        else:
+                            percentage = percentage_info
+                            suffix = None
+
+                        output.append(
+                            display_template.format(
+                                value="{0:0.2f}%".format(percentage),
+                                name=name,
+                                suffix="" if not suffix else " ({})".format(suffix),
+                            ),
+                        )
+                    
+                    return "\n{}".format("\n".join(output))
+
+                # ----------------------------------------------------------------------
+
                 results.append(StringHelpers.LeftJustify( textwrap.dedent(
                                                             # <Wrong hanging indentation> pylint: disable = C0330
                                                             """\
@@ -419,7 +447,7 @@ class Results(object):
                                                                          time=execute_result.CoverageTime or "N/A",
                                                                          data=execute_result.CoverageDataFilename or "N/A",
                                                                          percentage="{0:0.2f}%".format(execute_result.CoveragePercentage) if execute_result.CoveragePercentage is not None else "N/A",
-                                                                         percentages="N/A" if execute_result.CoveragePercentages is None else "\n{}".format('\n'.join([ "        - [{value:<7}] {name}".format(value="{0:0.2f}%".format(percentage), name=name) for name, percentage in six.iteritems(execute_result.CoveragePercentages) ])),
+                                                                         percentages=GetPercentageInfo(),
                                                                        ),
                                                           4,
                                                           skip_first_line=False,
