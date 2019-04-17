@@ -52,6 +52,15 @@ class TestExecutorImpl(Interface):
                       coverage_percentage=None,
                       coverage_percentages=None,
                     ):
+            # If provided, coverage_percentages is a dict in the following form:
+            #
+            #   { "<module name>": <value> }
+            #
+            #   where <value> can be:
+            #       percentage: float
+            #       (percentage: float, additional_info: string)
+            #
+            
             self.TestResult                 = test_result
             self.TestOutput                 = test_output
             self.TestTime                   = test_time
