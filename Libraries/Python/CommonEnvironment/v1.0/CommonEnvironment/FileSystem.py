@@ -707,7 +707,7 @@ def _ProcessWalkArgs(include_items, exclude_items):
         if items is None:
             return []
 
-        if isinstance(items, list):
+        if isinstance(items, (list, tuple)):
             return items
 
         return [ items, ]
