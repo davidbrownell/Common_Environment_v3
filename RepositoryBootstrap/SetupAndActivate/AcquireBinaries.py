@@ -14,6 +14,7 @@
 # ----------------------------------------------------------------------
 """Methods that help during setup and activate to acquire/download/unzip/install binaries."""
 
+import hashlib
 import json
 import os
 import shutil
@@ -54,9 +55,13 @@ def Install( name,
              uri,
              output_dir,
              unique_id=None,
+             unique_id_is_hash=False,
              output_stream=sys.stdout,
            ):
     """Installs binaries to the specified output directory"""
+
+    if unique_id_is_hash and unique_id is None:
+        raise CommandLine.UsageException("An unique id must be provided when 'unique_id_is_hash' is set.")
 
     output_stream.write("Processing '{}'...".format(name))
     with StreamDecorator(output_stream).DoneManager( suffix='\n',
@@ -97,6 +102,8 @@ def Install( name,
             filename = uri.ToFilename()
             FilenameCleanup = lambda: None
 
+            uri = uri.ToString()
+            
         else:
             uri = uri.ToString()
 
@@ -142,16 +149,36 @@ def Install( name,
                     return download_dm.result
 
         with CallOnExit(FilenameCleanup):
+            if unique_id_is_hash:
+                dm.stream.write("Validating content...")
+                with dm.stream.DoneManager() as validate_dm:
+                    hash = hashlib.sha256()
+
+                    with open(filename, "rb") as f:
+                        while True:
+                            block = f.read(4096)
+                            if not block:
+                                break
+
+                            hash.update(block)
+
+                    hash = hash.hexdigest().lower()
+
+                    if hash != unique_id:
+                        validate_dm.stream.write("ERROR: The hash values do not match (actual: {}, expected: {})\n".format(hash, unique_id))
+                        validate_dm.result = -1
+
+                        return validate_dm.result
+
             assert os.path.isfile(filename), filename
             temp_directory = CurrentShell.CreateTempDirectory()
 
             # Extract the content to a temporary folder
             dm.stream.write("Extracting content...")
             with dm.stream.DoneManager() as extract_dm:
-                command_line = '7za x -y "{input}"' \
-                                    .format( input=filename,
-                                           )
+                command_line_template = '7za x -y "{}"'
 
+                command_line = command_line_template.format(filename)
                 sink = six.moves.StringIO()
                 
                 previous_dir = os.getcwd()
@@ -163,7 +190,39 @@ def Install( name,
                         extract_dm.stream.write(sink.getvalue())
                         return extract_dm.result
 
+                # On Linux, we may have extracted a single tar ball. If so, extract this too.
+                items = os.listdir(temp_directory)
+                if len(items) == 1 and os.path.splitext(os.path.splitext(uri)[0])[1] == ".tar":
+                    tarball_temp_directory = CurrentShell.CreateTempDirectory()
+
+                    with CallOnExit(lambda: FileSystem.RemoveTree(temp_directory)):
+                        extract_dm.stream.write("Extracting tarball...")
+                        with extract_dm.stream.DoneManager() as tarball_dm:
+                            command_line = command_line_template.format(os.path.join(temp_directory, items[0]))
+                            sink = six.moves.StringIO()
+
+                            tarball_previous_dir = os.getcwd()
+                            os.chdir(tarball_temp_directory)
+
+                            with CallOnExit(lambda: os.chdir(tarball_previous_dir)):
+                                tarball_dm.result = Process.Execute(command_line, sink)
+                                if tarball_dm.result != 0:
+                                    tarball_dm.stream.write(sink.getvalue())
+                                    return tarball_dm.result
+
+                    temp_directory = tarball_temp_directory
+
             with CallOnExit(lambda: FileSystem.RemoveTree(temp_directory)):
+                content_directory = temp_directory
+                
+                # If the content directory has a single item and that item is a directory, drill
+                # in and copy the contents rather than the directory iteself.
+                items = os.listdir(temp_directory)
+                if len(items) == 1:
+                    potential_dir = os.path.join(temp_directory, items[0])
+                    if os.path.isdir(potential_dir):
+                        content_directory = potential_dir
+
                 # Get a list of the original items
                 FileSystem.MakeDirs(output_dir)
                 original_items = list(os.listdir(output_dir))
@@ -171,13 +230,13 @@ def Install( name,
                 # Write the metadata
                 _PreviousInstallation( unique_id,
                                        original_items,
-                                     ).Save(temp_directory)
+                                     ).Save(content_directory)
 
                 # Move items
                 dm.stream.write("Finalizing content...")
                 with dm.stream.DoneManager() as final_dm:
-                    for item in os.listdir(temp_directory):
-                        src = os.path.join(temp_directory, item)
+                    for item in os.listdir(content_directory):
+                        src = os.path.join(content_directory, item)
                         dst = os.path.join(output_dir, item)
 
                         if os.path.exists(dst):
