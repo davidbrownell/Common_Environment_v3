@@ -176,9 +176,7 @@ def Install( name,
             # Extract the content to a temporary folder
             dm.stream.write("Extracting content...")
             with dm.stream.DoneManager() as extract_dm:
-                command_line_template = '7za x -y "{}"'
-
-                command_line = command_line_template.format(filename)
+                command_line = '7za x -y "{}"'.format(filename)
                 sink = six.moves.StringIO()
                 
                 previous_dir = os.getcwd()
@@ -198,7 +196,7 @@ def Install( name,
                     with CallOnExit(lambda: FileSystem.RemoveTree(temp_directory)):
                         extract_dm.stream.write("Extracting tarball...")
                         with extract_dm.stream.DoneManager() as tarball_dm:
-                            command_line = command_line_template.format(os.path.join(temp_directory, items[0]))
+                            command_line = 'tar -xf "{}"'.format(os.path.join(temp_directory, items[0]))
                             sink = six.moves.StringIO()
 
                             tarball_previous_dir = os.getcwd()
