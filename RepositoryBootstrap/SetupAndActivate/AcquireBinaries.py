@@ -214,7 +214,7 @@ def Install( name,
                 content_directory = temp_directory
                 
                 # If the content directory has a single item and that item is a directory, drill
-                # in and copy the contents rather than the directory iteself.
+                # in and copy the contents rather than the directory itself.
                 items = os.listdir(temp_directory)
                 if len(items) == 1:
                     potential_dir = os.path.join(temp_directory, items[0])
