@@ -247,6 +247,7 @@ class PythonActivationActivity(ActivationActivity):
                              version_specs,
                              generated_dir,
                              no_python_libraries=False,
+                             ignore_errors=False,
                            ):
         dest_dir = os.path.join(generated_dir, cls.Name)
 
@@ -392,6 +393,7 @@ class PythonActivationActivity(ActivationActivity):
                                                 generated_dir,
                                                 library_version_dirs={ tuple(python_version_dirs) : python_version_dir,
                                                                      },
+                                                ignore_errors=ignore_errors,
                                               ))
 
             if no_python_libraries:
