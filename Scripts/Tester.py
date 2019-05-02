@@ -189,6 +189,15 @@ def _CreateConfigurations():
             else:
                 configuration_map[configuration_name][type_] = value
     
+        # ----------------------------------------------------------------------
+        def GetFirstItem(item_or_items):
+            if isinstance(item_or_items, list):
+                item_or_items = item_or_items[0]
+            
+            return item_or_items
+
+        # ----------------------------------------------------------------------
+
         for item_key, item_map in six.iteritems(configuration_map):
             # compiler and test parser are required
             if "compiler" not in item_map or "test_parser" not in item_map:
@@ -208,9 +217,9 @@ def _CreateConfigurations():
             for compiler_key, compiler in compiler_info:
                 configurations[compiler_key] = Configuration.Create( compiler_key,
                                                                      compiler, 
-                                                                     item_map["test_parser"],
-                                                                     item_map.get("coverage_executor", None),
-                                                                     item_map.get("coverage_validator", None),
+                                                                     GetFirstItem(item_map["test_parser"]),
+                                                                     GetFirstItem(item_map.get("coverage_executor", None)),
+                                                                     GetFirstItem(item_map.get("coverage_validator", None)),
                                                                    )
     return configurations
 
@@ -2070,7 +2079,7 @@ def _ExecuteTreeImpl( input_dir,
                 Output(complete_result.Item, "Debug", complete_result.debug)
                 Output(complete_result.Item, "Release", complete_result.release)
 
-            dm.stream.write("\n{percentage:.02f}% - {total} build and run with {failures}.\n" \
+            dm.stream.write("\n{percentage:.02f}% - {total} built and run with {failures}.\n" \
                                     .format( percentage=0.0 if not nonlocals.tests else ((float(nonlocals.tests) - nonlocals.failures) / nonlocals.tests) * 100,
                                              total=inflect.no("test", nonlocals.tests),
                                              failures=inflect.no("failure", nonlocals.failures),

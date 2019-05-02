@@ -88,7 +88,7 @@ class ActivationData(object):
             configuration = os.getenv(Constants.DE_REPO_CONFIGURATION_NAME)
 
         filename = cls._GetFilename(repository_root, configuration, is_fast_environment)
-
+        
         if not force and os.path.isfile(filename):
             try:
                 # Load the json
@@ -139,6 +139,7 @@ class ActivationData(object):
         tool_version_info = []
         library_version_info = {}
         version_info_lookup = {}
+        ignore_library_conflicts = []
 
         # ----------------------------------------------------------------------
         def Walk( referencing_repo,
@@ -161,6 +162,12 @@ class ActivationData(object):
             bootstrap_info = repositories[repo.Id]
             bootstrap_info.priority_modifier += priority_modifier
 
+            # Capture the value of IgnoreLibraryConflicts for the root repository
+            # configuration.
+            if repo.Root == repository_root and len(bootstrap_info.Configurations) == 1 and None in bootstrap_info.Configurations:
+                assert not ignore_library_conflicts, ignore_library_conflicts
+                ignore_library_conflicts.extend(bootstrap_info.Configurations[None].IgnoreLibraryConflicts or [])
+            
             # Ensure that the configuration name is valid
             if bootstrap_info.IsConfigurable and not repo.Configuration:
                 raise Exception("The repository at '{}' is configurable, but no configuration was provided.".format(repo.Root))
@@ -287,7 +294,8 @@ class ActivationData(object):
                         version_info_lookup[version_info] = repo
             
                     elif version_info.Version != existing_version_info.Version:
-                        OnVersionMismatch("{} Libraries".format(library_language), version_info, existing_version_info)
+                        if version_info.Name not in ignore_library_conflicts:
+                            OnVersionMismatch("{} Libraries".format(library_language), version_info, existing_version_info)
             
             # Process this repository's dependencies
             if recurse:
@@ -300,7 +308,7 @@ class ActivationData(object):
         # ----------------------------------------------------------------------
 
         this_repository = Repository.Create(repository_root, configuration)
-
+        
         Walk(None, this_repository, 1)
 
         # Order the results from the most- to least-frequently requested
