@@ -551,8 +551,6 @@ def _SetupBootstrap( output_stream,
                                               ]),
                          configurations=CommonEnvironmentImports.StringHelpers.LeftJustify(configuration_info, 4),
                        ))
-        
-        return True
 
     # ----------------------------------------------------------------------
 
@@ -844,7 +842,7 @@ class _RepositoriesMap(OrderedDict):
                 search_depth=None,
                 max_num_searches=None,
                 required_ancestor_dir=None,
-                on_search_begin_func=None,              # def Func(self) -> Bool
+                on_search_begin_func=None,              # def Func(self)
               ):
         self = cls()
         repo_cache = {}
@@ -934,7 +932,11 @@ class _RepositoriesMap(OrderedDict):
                )
 
         if nonlocals.remaining_repos:
-            output_stream.write("\nSearching for repositories...")
+            if on_search_begin_func:
+                on_search_begin_func(self)
+            else:
+                output_stream.write("\nSearching for repositories...")
+            
             output_stream.flush()
 
             warnings = []

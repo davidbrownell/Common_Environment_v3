@@ -35,7 +35,7 @@ class LinuxShellImpl(Shell):
     Implements common Linux functionality.
 
     There are many Linux variations out there; this object can be used as
-    a base class when implementating those variations.
+    a base class when implementing those variations.
     """
 
     # ----------------------------------------------------------------------
