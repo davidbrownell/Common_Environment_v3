@@ -378,6 +378,7 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
                        version_specs,
                        generated_dir,
                        library_version_dirs=None,  # { ( <potential_version_dir>, ... ) : <dir_to_use>, }
+                       ignore_errors=False,
                      ):
         """Returns all versioned libraries that should be activated."""
         library_version_dirs = library_version_dirs or {}
@@ -477,7 +478,7 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
                                                                                                                    len("WARNING: "),
                                                                                                                  )))
 
-        if errors:
+        if errors and not ignore_errors:
             raise Exception(''.join(errors))
 
         return libraries
