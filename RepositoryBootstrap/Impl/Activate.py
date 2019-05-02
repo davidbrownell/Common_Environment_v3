@@ -382,6 +382,7 @@ def _ActivatePython(output_stream, configuration, repositories, version_specs, g
                                                     version_specs,
                                                     generated_dir,
                                                     no_python_libraries=no_python_libraries,
+                                                    ignore_errors=fast,
                                                   )
 
 # ----------------------------------------------------------------------
