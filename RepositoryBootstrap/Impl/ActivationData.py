@@ -125,6 +125,7 @@ class ActivationData(object):
                             Configuration.VersionSpecs( tool_version_specs,
                                                         library_version_specs,
                                                       ),
+                            data["IgnoreConflictedLibraryNames"],
                           )
 
             except:
@@ -139,7 +140,7 @@ class ActivationData(object):
         tool_version_info = []
         library_version_info = {}
         version_info_lookup = {}
-        ignore_library_conflicts = []
+        ignore_conflicted_library_names = []
 
         # ----------------------------------------------------------------------
         def Walk( referencing_repo,
@@ -162,11 +163,11 @@ class ActivationData(object):
             bootstrap_info = repositories[repo.Id]
             bootstrap_info.priority_modifier += priority_modifier
 
-            # Capture the value of IgnoreLibraryConflicts for the root repository
+            # Capture the value of IgnoreConflictedLibraryNames for the root repository
             # configuration.
             if repo.Root == repository_root and len(bootstrap_info.Configurations) == 1 and None in bootstrap_info.Configurations:
-                assert not ignore_library_conflicts, ignore_library_conflicts
-                ignore_library_conflicts.extend(bootstrap_info.Configurations[None].IgnoreLibraryConflicts or [])
+                assert not ignore_conflicted_library_names, ignore_conflicted_library_names
+                ignore_conflicted_library_names.extend(bootstrap_info.Configurations[None].IgnoreConflictedLibraryNames or [])
             
             # Ensure that the configuration name is valid
             if bootstrap_info.IsConfigurable and not repo.Configuration:
@@ -294,7 +295,7 @@ class ActivationData(object):
                         version_info_lookup[version_info] = repo
             
                     elif version_info.Version != existing_version_info.Version:
-                        if version_info.Name not in ignore_library_conflicts:
+                        if version_info.Name not in ignore_conflicted_library_names:
                             OnVersionMismatch("{} Libraries".format(library_language), version_info, existing_version_info)
             
             # Process this repository's dependencies
@@ -366,6 +367,7 @@ class ActivationData(object):
                     is_fast_environment,
                     [ repositories[id].Repo for id, _ in priority_values ],
                     Configuration.VersionSpecs(tool_version_info, library_version_info),
+                    ignore_conflicted_library_names=ignore_conflicted_library_names,
                   )
 
     # ----------------------------------------------------------------------
@@ -377,6 +379,7 @@ class ActivationData(object):
                   is_fast_environment,
                   prioritized_repositories,
                   version_specs,
+                  ignore_conflicted_library_names,
                 ):
         self.Id                             = id
         self.Root                           = repository_root
@@ -385,6 +388,7 @@ class ActivationData(object):
         self.IsFastEnvironment              = is_fast_environment
         self.PrioritizedRepositories        = prioritized_repositories
         self.VersionSpecs                   = version_specs
+        self.IgnoreConflictedLibraryNames   = ignore_conflicted_library_names
 
     # ----------------------------------------------------------------------
     def Save(self):

@@ -105,9 +105,9 @@ class Configuration(object):
                   description,
                   dependencies=None,
                   version_specs=None,
-                  ignore_library_conflicts=None,
+                  ignore_conflicted_library_names=None,
                 ):
-        # `ignore_library_conflicts` is a list of names of libraries that have conflicts that can be safely ignored.
+        # `ignore_conflicted_library_names` is a list of names of libraries that have conflicts that can be safely ignored.
         # In the vast majority of cases, two repos providing or requiring different versions of the same library is
         # a configuration error. However, in some cases (such as with bootstrap repos that don't actually use the
         # library), these conflicts can be ignored. In those scenarios, the first version encountered will always
@@ -116,7 +116,7 @@ class Configuration(object):
         self.Description                    = description
         self.Dependencies                   = dependencies or []
         self.VersionSpecs                   = version_specs or VersionSpecs([], {})
-        self.IgnoreLibraryConflicts         = ignore_library_conflicts
+        self.IgnoreConflictedLibraryNames   = ignore_conflicted_library_names
         self.Fingerprint                    = None      # Populated during setup
 
     # ----------------------------------------------------------------------
