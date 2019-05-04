@@ -103,6 +103,9 @@ class EnvironmentBootstrap(object):
             for k, version_infos in six.iteritems(config_info["VersionSpecs"]["Libraries"]):
                 libraries[k] = [ Configuration.VersionInfo(vi["Name"], vi["Version"]) for vi in version_infos ]
 
+            # Get the IgnoreConflictedLibraryNames
+            ignore_conflicted_library_names = config_info.get("IgnoreConflictedLibraryNames", [])
+
             # Update the fingerprint
             fingerprint = config_info["Fingerprint"]
 
@@ -117,6 +120,7 @@ class EnvironmentBootstrap(object):
             configurations[config_name] = Configuration.Configuration( config_info["Description"],
                                                                        dependencies,
                                                                        Configuration.VersionSpecs(tools, libraries),
+                                                                       ignore_conflicted_library_names=ignore_conflicted_library_names or None,
                                                                      )
             configurations[config_name].Fingerprint = fingerprint
 

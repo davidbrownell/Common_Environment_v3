@@ -88,7 +88,7 @@ class ActivationData(object):
             configuration = os.getenv(Constants.DE_REPO_CONFIGURATION_NAME)
 
         filename = cls._GetFilename(repository_root, configuration, is_fast_environment)
-
+        
         if not force and os.path.isfile(filename):
             try:
                 # Load the json
@@ -125,6 +125,7 @@ class ActivationData(object):
                             Configuration.VersionSpecs( tool_version_specs,
                                                         library_version_specs,
                                                       ),
+                            data["IgnoreConflictedLibraryNames"],
                           )
 
             except:
@@ -139,6 +140,7 @@ class ActivationData(object):
         tool_version_info = []
         library_version_info = {}
         version_info_lookup = {}
+        ignore_conflicted_library_names = []
 
         # ----------------------------------------------------------------------
         def Walk( referencing_repo,
@@ -161,6 +163,12 @@ class ActivationData(object):
             bootstrap_info = repositories[repo.Id]
             bootstrap_info.priority_modifier += priority_modifier
 
+            # Capture the value of IgnoreConflictedLibraryNames for the root repository
+            # configuration.
+            if repo.Root == repository_root and len(bootstrap_info.Configurations) == 1 and None in bootstrap_info.Configurations:
+                assert not ignore_conflicted_library_names, ignore_conflicted_library_names
+                ignore_conflicted_library_names.extend(bootstrap_info.Configurations[None].IgnoreConflictedLibraryNames or [])
+            
             # Ensure that the configuration name is valid
             if bootstrap_info.IsConfigurable and not repo.Configuration:
                 raise Exception("The repository at '{}' is configurable, but no configuration was provided.".format(repo.Root))
@@ -287,7 +295,8 @@ class ActivationData(object):
                         version_info_lookup[version_info] = repo
             
                     elif version_info.Version != existing_version_info.Version:
-                        OnVersionMismatch("{} Libraries".format(library_language), version_info, existing_version_info)
+                        if version_info.Name not in ignore_conflicted_library_names:
+                            OnVersionMismatch("{} Libraries".format(library_language), version_info, existing_version_info)
             
             # Process this repository's dependencies
             if recurse:
@@ -300,7 +309,7 @@ class ActivationData(object):
         # ----------------------------------------------------------------------
 
         this_repository = Repository.Create(repository_root, configuration)
-
+        
         Walk(None, this_repository, 1)
 
         # Order the results from the most- to least-frequently requested
@@ -358,6 +367,7 @@ class ActivationData(object):
                     is_fast_environment,
                     [ repositories[id].Repo for id, _ in priority_values ],
                     Configuration.VersionSpecs(tool_version_info, library_version_info),
+                    ignore_conflicted_library_names=ignore_conflicted_library_names,
                   )
 
     # ----------------------------------------------------------------------
@@ -369,6 +379,7 @@ class ActivationData(object):
                   is_fast_environment,
                   prioritized_repositories,
                   version_specs,
+                  ignore_conflicted_library_names,
                 ):
         self.Id                             = id
         self.Root                           = repository_root
@@ -377,6 +388,7 @@ class ActivationData(object):
         self.IsFastEnvironment              = is_fast_environment
         self.PrioritizedRepositories        = prioritized_repositories
         self.VersionSpecs                   = version_specs
+        self.IgnoreConflictedLibraryNames   = ignore_conflicted_library_names
 
     # ----------------------------------------------------------------------
     def Save(self):
