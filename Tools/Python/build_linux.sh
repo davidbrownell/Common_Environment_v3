@@ -78,7 +78,7 @@ BuildOpenSSL()
     make install
 
     pushd /opt/CommonEnvironment/openssl/${OPENSSL_VERSION} > /dev/null             # +install dir
-    tar czf - * > /local/openssl/v${OPENSSL_VERSION}/Linux/setup.tgz
+    tar czf - * > /local/openssl/v${OPENSSL_VERSION}/Linux/install.tgz
     popd > /dev/null                                                                # -install dir
     popd > /dev/null                                                                # -src dir
 }
@@ -134,7 +134,7 @@ BuildPython()
     python -m ensurepip --default-pip
     python -m pip install --upgrade pip
     
-    tar czf - * > /local/Python/v${VERSION}/Linux/setup.tgz
+    tar czf - * > /local/Python/v${VERSION}/Linux/install.tgz
 
     popd > /dev/null                                                                # -install dir
     popd > /dev/null                                                                # -src dir
