@@ -359,7 +359,11 @@ class Shell(Interface):
     @extensionmethod
     def DeleteSymLink(filename, command_only=False):
         assert not command_only, "'command_only' is not supported"
-        os.remove(filename)
+
+        if os.path.isfile(filename):
+            os.unlink(filename)
+        else:
+            os.remove(filename)
     
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
