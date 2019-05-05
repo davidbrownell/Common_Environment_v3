@@ -40,6 +40,13 @@ fi
 
 echo "  Finalizing..."
 
+# Link to the originally compiled location
+if [[ ! -e /opt/CommonEnvironment/python/3.6.5 ]]
+then
+    [[ -d /opt/CommonEnvironment/python ]] || mkdir -p "/opt/CommonEnvironment/python"
+    ln -fsd ${setup_python_dir} /opt/CommonEnvironment/python/3.6.5
+fi
+
 # Convert sep in '-', then remove the initial '-'
 conf_file=$(echo $(pwd)/bin/python3.6 | tr / - | cut -c 2-).conf
 
@@ -47,18 +54,9 @@ if [[ ! -e /etc/ld.so.conf.d/${conf_file} ]]
 then
     
 cat > /etc/ld.so.conf.d/${conf_file} << END
-`pwd`/lib
+/opt/CommonEnvironment/python/3.6.5/lib
 END
-    set +e
-    ldconfig
-    set -e
-fi
 
-# Link to the originally compiled location
-if [[ ! -e /opt/CommonEnvironment/python/3.6.5 ]]
-then
-    [[ -d /opt/CommonEnvironment/python ]] || mkdir -p "/opt/CommonEnvironment/python"
-    ln -fsd ${setup_python_dir} /opt/CommonEnvironment/python/3.6.5
 fi
 
 echo "DONE!"
