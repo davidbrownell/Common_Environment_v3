@@ -312,8 +312,17 @@ def _ActivateOriginalEnvironment(generated_dir):
 def _ActivateRepoEnvironmentVars(generated_dir, configuration):
     Commands = CommonEnvironmentImports.CurrentShell.Commands
 
+    # The generated dir has a component for "Generated", operating system, and configuration.
+    # Account for these dirs, along with dirs specified by the environment name when specifying
+    # the root of the repository.
+    environment_name = os.getenv(Constants.DE_ENVIRONMENT_NAME)
+    dirs_to_remove = 3 + len(environment_name.split(os.path.sep))
+
+    assert dirs_to_remove <= len(generated_dir.split(os.path.sep)), (dirs_to_remove, generated_dir)
+    join_args = [generated_dir] + ([".."] * dirs_to_remove)
+
     commands = [ Commands.Set(Constants.DE_REPO_ACTIVATED_FLAG, "1"),
-                 Commands.Set(Constants.DE_REPO_ROOT_NAME, os.path.realpath(os.path.join(generated_dir, "..", "..", ".."))),
+                 Commands.Set(Constants.DE_REPO_ROOT_NAME, os.path.realpath(os.path.join(*join_args))),
                  Commands.Set(Constants.DE_REPO_GENERATED_NAME, generated_dir),
                ]
 

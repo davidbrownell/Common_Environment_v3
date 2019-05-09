@@ -231,7 +231,12 @@ class WindowsShell(Shell):
         @staticmethod
         @override
         def OnPushDirectory(command):
-            return 'pushd "{}"'.format(command.Directory)
+            directory = command.Directory
+
+            if directory is None:
+                directory = "%~dp0"
+
+            return 'pushd "{}"'.format(directory)
 
         # ----------------------------------------------------------------------
         @staticmethod
@@ -294,7 +299,7 @@ class WindowsShell(Shell):
     @staticmethod
     @override
     def DecorateEnvironmentVariable(var_name):
-        return "\\%{}\\%".format(var_name)
+        return "%{}%".format(var_name)
 
     # ----------------------------------------------------------------------
 

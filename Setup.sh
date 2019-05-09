@@ -19,12 +19,22 @@ set +v                                      # Disable output
 # ----------------------------------------------------------------------
 # |  
 # |  Run as:
-# |     sudo -E ./Setup.sh [/debug] [/verbose] [/configuration=<config_name>]*
+# |     sudo ./Setup.sh [/debug] [/verbose] [/name=<name>] [/configuration=<config_name>]*
 # |  
 # ----------------------------------------------------------------------
-# Note that sudo is necessary because the process will create symbolic links
+# Note that sudo is necessary because the process updates ldconfig
+
+if [[ $EUID -ne 0 ]]; then
+    echo
+    echo "ERROR: Please run this script as root (via sudo)."
+    echo
+
+    exit -1
+fi
 
 # Begin bootstrap customization
+pushd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )" > /dev/null
+
 prev_development_environment_fundamental=${DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL}
 export DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=`dirname "$(readlink -f "${BASH_SOURCE[0]}")"`
 
@@ -32,6 +42,24 @@ export DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=`dirname "$(readlink -f "${BASH_SOURC
 initial_char="$(echo $1 | head -c 1)"
 if [[ "${initial_char}" == "" || "${initial_char}" == "/" || "${initial_char}" == "-" ]]
 then
+    # Get the tools unique name
+
+    # This should match the value in RepositoryBootstrap/Constants.py:DEFAULT_ENVIRONMENT_NAME
+    tools_unique_name=DefaultEnv
+
+    ARGS=()
+    for var in "$@"; do
+        if [[ $var == /name=* ]] || [[ $var == -name=* ]]; then
+            tools_unique_name=`echo $var | cut -d'=' -f 2`
+        else
+            ARGS+=("$var")
+        fi
+    done
+
+    # This should match the value in RepositoryBootstrap/Constants.py:DE_ENVIRONMENT_NAME
+    export DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME=${tools_unique_name}
+    set -- ${ARGS[@]}
+
     source ${DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL}/RepositoryBootstrap/Impl/Fundamental/Setup.sh "$@"
 fi
 # End bootstrap customization
@@ -39,13 +67,13 @@ fi
 if [[ "${DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL}" = "" ]]
 then
     echo 
-    echo "ERROR: Please run Activate.sh within a repository before running this script. It may be necessary to Setup and Activate the Common_Environment repository before setting up this one."
+    echo "ERROR: Please run Activate within a repository before running this script. It may be necessary to Setup and Activate the Common_Environment repository before setting up this one."
     echo 
     
     exit -1
 fi
 
-source ${DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL}/RepositoryBootstrap/Impl/Setup.sh "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )" "$@"
+source ${DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL}/RepositoryBootstrap/Impl/Setup.sh "$@"
 
 # Bootstrap customization
 if [[ "${prev_development_environment_fundamental}" != "" ]]; then
@@ -53,3 +81,5 @@ if [[ "${prev_development_environment_fundamental}" != "" ]]; then
 else
     unset DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL
 fi
+
+popd > /dev/null

@@ -20,7 +20,7 @@ pushd ${setup_openssl_dir} > /dev/null      # +dir
 
 echo "Setting up openssl v1.1.0h..."
 
-if [[ ! -d ./bin ]]
+if [[ ! -d "$1" ]]
 then 
     echo "  Unpacking content..."
 
@@ -32,7 +32,8 @@ then
     pushd ${temp_dir} > /dev/null           # +temp_dir
 
     tar -xzf ${setup_openssl_dir}/install.tgz
-    mv * ${setup_openssl_dir}
+    mkdir -p "${setup_openssl_dir}/$1"
+    mv * "${setup_openssl_dir}/$1"
 
     popd > /dev/null                        # -temp_dir
     rmdir ${temp_dir}
@@ -42,7 +43,7 @@ fi
 if [[ ! -e /opt/CommonEnvironment/openssl/1.1.0h ]]
 then
     [[ -d /opt/CommonEnvironment/openssl ]] || mkdir -p "/opt/CommonEnvironment/openssl"
-    ln -fsd ${setup_openssl_dir} /opt/CommonEnvironment/openssl/1.1.0h
+    ln -fsd "${setup_openssl_dir}/$1" /opt/CommonEnvironment/openssl/1.1.0h
 fi
 
 echo "DONE!"

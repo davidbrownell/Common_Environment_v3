@@ -35,6 +35,7 @@ def Invoke(repo_root, output_stream, method, json_content, is_debug):
 
         from RepositoryBootstrap import Constants
         from RepositoryBootstrap.Impl import CommonEnvironmentImports
+        from RepositoryBootstrap.Impl.EnvironmentBootstrap import EnvironmentBootstrap
 
         sys.path.pop(0)
     except:
@@ -47,11 +48,22 @@ def Invoke(repo_root, output_stream, method, json_content, is_debug):
 
     output_stream.write("Getting configurations...")
     with output_stream.DoneManager() as dm:
+        # Is this a mixin repo?
         activation_root = repo_root
 
-        # Is this a mixin repo?
-        bootstrap_filename = os.path.join(repo_root, Constants.GENERATED_DIRECTORY_NAME, CommonEnvironmentImports.CurrentShell.CategoryName, Constants.GENERATED_BOOTSTRAP_JSON_FILENAME)
-        if os.path.isfile(bootstrap_filename):
+        # ----------------------------------------------------------------------
+        def GetBootstrapFilename():
+            for root, dirs, filenames in os.walk(os.path.join(repo_root, Constants.GENERATED_DIRECTORY_NAME, CommonEnvironmentImports.CurrentShell.CategoryName)):
+                for filename in filenames:
+                    if filename == Constants.GENERATED_BOOTSTRAP_JSON_FILENAME:
+                        return os.path.join(root, filename)
+
+            return None
+
+        # ----------------------------------------------------------------------
+
+        bootstrap_filename = GetBootstrapFilename()
+        if bootstrap_filename is not None:
             with open(bootstrap_filename) as f:
                 bootstrap_data = json.load(f)
 
@@ -184,4 +196,5 @@ def Invoke(repo_root, output_stream, method, json_content, is_debug):
                                 terminate = True        # 0 is returned if a configuration was not used
                             else:
                                 assert False, result
+
     return 0

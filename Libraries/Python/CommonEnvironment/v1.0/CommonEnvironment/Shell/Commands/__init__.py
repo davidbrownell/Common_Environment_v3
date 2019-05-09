@@ -84,11 +84,13 @@ class SymbolicLink(object):
                   target, 
                   is_dir=None,
                   remove_existing=True,
+                  relative_path=True,
                 ):
         self.LinkFilename                   = link_filename
         self.Target                         = target
         self.IsDir                          = is_dir if is_dir is not None else os.path.isdir(target)
         self.RemoveExisting                 = remove_existing
+        self.RelativePath                   = relative_path
 
     # ----------------------------------------------------------------------
     def __repr__(self):
@@ -267,8 +269,8 @@ class PersistError(object):
 # ----------------------------------------------------------------------
 class PushDirectory(object):
     """Pushes a directory onto the directory stack"""
-    def __init__(self, directory):
-        self.Directory                      = directory
+    def __init__(self, directory_or_none):
+        self.Directory                      = directory_or_none
 
     # ----------------------------------------------------------------------
     def __repr__(self):

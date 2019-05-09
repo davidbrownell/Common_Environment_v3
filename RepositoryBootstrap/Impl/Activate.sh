@@ -18,49 +18,15 @@ set +v                                      # Disable output
 # Note that we can't exit or return from this script, as it is invoked via a short cut at the
 # repo's root. Because of this, we use the ugly 'should_continue hack.
 should_continue=1
-changed_dir=0
-
 previous_fundamental=${DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL}
 
-if [[ ${should_continue} == 1 ]]
-then
-    # Get the repo_root, which will be the the directory for the name of the script who links to
-    # this script as its target. Note that this code doesn't work on RedHat; when on RedHat the 
-    # script must be invoked from the repo root.
-    
-    distro_name=`uname -a | tr "[:upper:]" "[:lower:]"`
-    
-    if [[ ${distro_name} != *el5* ]]
-    then
-        GetCurrentDir()
-        {
-            current_dir="${BASH_SOURCE[0]}";
-            if [ -h "${SCRIPT_PATH}" ] 
-            then
-                while [ -h "${SCRIPT_PATH}" ] 
-                do 
-                    SCRIPT_PATH=`readlink "${SCRIPT_PATH}"`; 
-                done
-            fi
-            pushd . > /dev/null
-            cd `dirname ${current_dir}` > /dev/null
-            current_dir=`pwd`;
-            popd  > /dev/null
-        }
-        
-        GetCurrentDir
-        pushd ${current_dir} > /dev/null                                    # +repo_dir
-        changed_dir=1
-    fi
-fi
-
 # Read data created during setup
-if [[ ${should_continue} == 1 && ! -e `pwd`/Generated/Linux/EnvironmentBootstrap.data ]]
+if [[ ${should_continue} == 1 && ! -e `pwd`/Generated/Linux/${DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME}/EnvironmentBootstrap.data ]]
 then
     echo ""
     echo "ERROR: It appears that Setup.sh has not been run for this repository. Please run Setup.sh and run this script again."
     echo ""
-    echo "       [`pwd`/Generated/Linux/EnvironmentBootstrap.data was not found]"
+    echo "       [`pwd`/Generated/Linux/${DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME}/EnvironmentBootstrap.data was not found]"
     echo ""
 
     should_continue=0
@@ -82,7 +48,7 @@ then
             is_configurable=${line#is_configurable=}
         fi
 
-    done < "`pwd`/Generated/Linux/EnvironmentBootstrap.data"
+    done < "`pwd`/Generated/Linux/${DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME}/EnvironmentBootstrap.data"
 fi
 
 # Find the python binary
@@ -91,9 +57,9 @@ pushd ${python_dir} > /dev/null                                             # +p
 
 for d in $(find v* -maxdepth 0 -type d);
 do
-    if [[ -e ${python_dir}/${d}/Linux/bin/python ]]
+    if [[ -e ${python_dir}/${d}/Linux/${DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME}/bin/python ]]
     then
-        python_binary=${python_dir}/${d}/Linux/bin/python
+        python_binary=${python_dir}/${d}/Linux/${DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME}/bin/python
     fi
 done
 
@@ -256,9 +222,4 @@ if [[ "${previous_fundamental}" != "" ]]; then
     export DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=${previous_fundamental}
 else
     unset DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL
-fi
-
-if [[ ${changed_dir} == 1 ]]
-then
-    popd > /dev/null                                                        # -repo_dir
 fi

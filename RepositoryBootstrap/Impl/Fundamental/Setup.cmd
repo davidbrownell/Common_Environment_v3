@@ -36,9 +36,9 @@ echo.
 echo ------------------------  Python 2.7.14  -----------------------------
 
 pushd %DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\Tools\Python\v2.7.14\Windows
+call Setup.cmd "%DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME%"
 
-call Setup.cmd
-
+cd "%DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME%"
 echo Installing Python dependencies for 2.7.14...
 
 call :CreateTempScriptName
@@ -62,9 +62,9 @@ echo.
 echo ------------------------  Python 3.6.5  ------------------------------
 
 pushd %DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\Tools\Python\v3.6.5\Windows
+call Setup.cmd "%DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME%"
 
-call Setup.cmd
-
+cd "%DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME%"
 echo Installing Python dependencies for 3.6.5...
 
 call :CreateTempScriptName
@@ -84,7 +84,7 @@ echo.
 echo ----------------------------------------------------------------------
 
 REM Invoke fundamental setup activities
-%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\Tools\Python\v3.6.5\Windows\python %~dp0\Setup.py %*
+%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\Tools\Python\v3.6.5\Windows\%DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME%\python %~dp0\Setup.py %*
 if "%ERRORLEVEL%" NEQ "0" (
     exit /B -1
 )

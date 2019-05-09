@@ -18,14 +18,16 @@ pushd %~dp0
 
 echo Setting up Python v2.7.14...
 
-if not exist "./python.exe" (
+if not exist "%1" (
     echo   Unpacking content...
 
     if exist ".\unzipped" rmdir /S /Q .\unzipped
     powershell.exe -NoP -NonI -Command "Expand-Archive '.\install.zip' '.\unzipped\'"
 
+    mkdir "%1"
+
     pushd .\unzipped
-    xcopy /E /Q /Y . ..
+    xcopy /E /Q /Y . "..\%1"
     popd            
 
     rmdir /S /Q .\unzipped

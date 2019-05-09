@@ -18,11 +18,6 @@ REM The following environment variables must be set prior to invoking this batch
 REM     - DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL
 set PYTHONPATH=%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%
 
-set _SETUP_REPO_DIR=%1
-shift /1
-
-pushd %_SETUP_REPO_DIR%
-
 set _SETUP_FIRST_ARG=%1
 shift /1
 
@@ -42,7 +37,7 @@ if "%_SETUP_FIRST_ARG%" NEQ "" (
 
             REM If here, we are invoking special functionality within the setup file; pass all arguments as they 
             REM were originally provided.
-            %DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\Tools\Python\v3.6.5\Windows\python -m RepositoryBootstrap.Impl.Setup %_SETUP_FIRST_ARG% %_SETUP_REPO_DIR% %_SETUP_CLA%
+            %DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\Tools\Python\v3.6.5\Windows\%DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME%\python -m RepositoryBootstrap.Impl.Setup %_SETUP_FIRST_ARG% "%CD%" %_SETUP_CLA%
             set _SETUP_ERROR_LEVEL=%ERRORLEVEL%
 
             goto :Exit
@@ -55,7 +50,7 @@ REM to the python environment while still executing OS-specific commands.
 call :CreateTempScriptName
 
 REM Generate...
-%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\Tools\Python\v3.6.5\Windows\python -m RepositoryBootstrap.Impl.Setup Setup "%_SETUP_TEMP_SCRIPT_NAME%" %_SETUP_REPO_DIR% %_SETUP_FIRST_ARG% %_SETUP_CLA%
+%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\Tools\Python\v3.6.5\Windows\%DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME%\python -m RepositoryBootstrap.Impl.Setup Setup "%_SETUP_TEMP_SCRIPT_NAME%" "%CD%" %_SETUP_FIRST_ARG% %_SETUP_CLA%
 set _SETUP_GENERATION_ERROR_LEVEL=%ERRORLEVEL%
 
 REM Invoke...
@@ -111,10 +106,8 @@ set _SETUP_EXECUTION_ERROR_LEVEL=
 set _SETUP_TEMP_SCRIPT_NAME=
 set _SETUP_FIRST_ARG=
 set _SETUP_CLA=
-set _SETUP_REPO_DIR=
 
 set PYTHONPATH=
-popd
 
 exit /B %_SETUP_ERROR_LEVEL%
 
@@ -125,7 +118,7 @@ exit /B %_SETUP_ERROR_LEVEL%
 @REM ----------------------------------------------------------------------
 :CreateTempScriptName
 setlocal EnableDelayedExpansion
-set _filename=%_SETUP_REPO_DIR%\Setup-!RANDOM!-!Time:~6,5!.cmd
+set _filename=%CD%\Setup-!RANDOM!-!Time:~6,5!.cmd
 endlocal & set _SETUP_TEMP_SCRIPT_NAME=%_filename%
 
 if exist "%_SETUP_TEMP_SCRIPT_NAME%" goto :CreateTempScriptName

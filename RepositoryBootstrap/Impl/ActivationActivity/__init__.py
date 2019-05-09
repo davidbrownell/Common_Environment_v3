@@ -312,6 +312,10 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
             else:
                 break
 
+        potential_path = os.path.join(path, os.getenv(Constants.DE_ENVIRONMENT_NAME))
+        if os.path.isdir(potential_path):
+            path = potential_path
+
         return path
 
     # ----------------------------------------------------------------------

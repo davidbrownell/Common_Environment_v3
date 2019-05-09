@@ -43,6 +43,20 @@ class EnvironmentBootstrap(object):
     NoneJsonKeyReplacementName              = "__None__"
 
     # ----------------------------------------------------------------------
+    @staticmethod
+    def GetEnvironmentDir(*prefix_values):
+        """Appends a decorated environment name to the given prefix values"""
+
+        path = os.path.join(*prefix_values)
+
+        if not path.endswith(CommonEnvironmentImports.CurrentShell.CategoryName):
+            path = os.path.join(path, CommonEnvironmentImports.CurrentShell.CategoryName)
+
+        path = os.path.join(path, os.getenv(Constants.DE_ENVIRONMENT_NAME))
+
+        return path
+
+    # ----------------------------------------------------------------------
     @classmethod
     def Load(cls, repo_root):
         # ----------------------------------------------------------------------
@@ -69,8 +83,15 @@ class EnvironmentBootstrap(object):
 
         # ----------------------------------------------------------------------
 
-        filename = os.path.join(repo_root, Constants.GENERATED_DIRECTORY_NAME, CommonEnvironmentImports.CurrentShell.CategoryName, Constants.GENERATED_BOOTSTRAP_JSON_FILENAME)
-        assert os.path.isfile(filename), filename
+        filename = os.path.join(
+            cls.GetEnvironmentDir(
+                repo_root,
+                Constants.GENERATED_DIRECTORY_NAME,
+            ),
+            Constants.GENERATED_BOOTSTRAP_JSON_FILENAME,
+        )
+        if not os.path.isfile(filename):
+            raise Exception("'{}' does not exist; please setup this repository".format(filename))
         
         with open(filename) as f:
             data = json.load(f)
@@ -165,7 +186,7 @@ class EnvironmentBootstrap(object):
                     del config_info.Fingerprint[old_key]
 
         # Write the output files
-        output_dir = os.path.join(repo_root, Constants.GENERATED_DIRECTORY_NAME, CommonEnvironmentImports.CurrentShell.CategoryName)
+        output_dir = self.GetEnvironmentDir(repo_root, Constants.GENERATED_DIRECTORY_NAME)
         CommonEnvironmentImports.FileSystem.MakeDirs(output_dir, as_user=True)
 
         # Write the json file
