@@ -13,3 +13,5 @@ Activate.*.sh
 
 .coverage
 coverage.xml
+
+.vscode/*
