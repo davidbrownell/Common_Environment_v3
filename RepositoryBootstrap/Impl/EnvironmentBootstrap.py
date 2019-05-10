@@ -49,7 +49,10 @@ class EnvironmentBootstrap(object):
 
         path = os.path.join(*prefix_values)
 
-        if not path.endswith(CommonEnvironmentImports.CurrentShell.CategoryName):
+        if not (
+            path.endswith(CommonEnvironmentImports.CurrentShell.CategoryName) 
+            or path.endswith(CommonEnvironmentImports.CurrentShell.Name)
+        ):
             path = os.path.join(path, CommonEnvironmentImports.CurrentShell.CategoryName)
 
         path = os.path.join(path, os.getenv(Constants.DE_ENVIRONMENT_NAME))
