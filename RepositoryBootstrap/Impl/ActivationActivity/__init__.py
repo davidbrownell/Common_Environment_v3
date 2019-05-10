@@ -484,7 +484,7 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
                                                                                                                    len("WARNING: "),
                                                                                                                  )))
 
-        if errors and not ignore_errors:
+        if errors:
             raise Exception(''.join(errors))
 
         return libraries
