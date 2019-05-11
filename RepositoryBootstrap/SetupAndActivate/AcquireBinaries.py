@@ -41,6 +41,12 @@ _script_fullpath = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
+sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
+with CallOnExit(lambda: sys.path.pop(0)):
+    from RepositoryBootstrap import Constants
+    from RepositoryBootstrap.Impl.EnvironmentBootstrap import EnvironmentBootstrap
+
+# ----------------------------------------------------------------------
 inflect                                     = inflect_mod.engine()
 
 # ----------------------------------------------------------------------
@@ -63,6 +69,8 @@ def Install( name,
     if unique_id_is_hash and unique_id is None:
         raise CommandLine.UsageException("An unique id must be provided when 'unique_id_is_hash' is set.")
 
+    output_dir = _AugmentOutputDir(output_dir)
+    
     output_stream.write("Processing '{}'...".format(name))
     with StreamDecorator(output_stream).DoneManager( suffix='\n',
                                                    ) as dm:
@@ -258,6 +266,8 @@ def Install( name,
 def Clean( output_dir,
            output_stream=sys.stdout,
          ):
+    output_dir = _AugmentOutputDir(output_dir)
+
     with StreamDecorator(output_stream).DoneManager( line_prefix='',
                                                      prefix="\nResults: ",
                                                      suffix='\n',
@@ -300,6 +310,8 @@ def Verify( app_name,
             output_stream=sys.stdout,
           ):
     """Verifies that the unique_id associated with a previously installed output directory matches the expected value."""
+
+    output_dir = _AugmentOutputDir(output_dir)
 
     output_stream.write("Verifying '{}'...".format(app_name))
     with StreamDecorator(output_stream).DoneManager() as dm:
@@ -357,6 +369,24 @@ def _CleanImpl(output_dir, original_filenames, output_stream):
                                                num_concurrent_tasks=1,
                                              )
         return dm.result
+
+# ----------------------------------------------------------------------
+def _AugmentOutputDir(output_dir):
+    # Augment the path if we are looking at a tool installation
+    path_parts = output_dir.split(os.path.sep)
+
+    try:
+        tools_index = path_parts.index(Constants.TOOLS_SUBDIR)
+    except ValueError:
+        return output_dir
+
+    potential_root_dir = os.path.sep.join(path_parts[:tools_index])
+    if os.path.isdir(potential_root_dir) and os.path.isfile(os.path.join(potential_root_dir, Constants.SETUP_ENVIRONMENT_CUSTOMIZATION_FILENAME)):
+        # If here, the input dir was pointing to a tools dir off of a repository
+        # root. Augment the path with the environment dir.
+        output_dir = EnvironmentBootstrap.GetEnvironmentDir(output_dir)
+
+    return output_dir
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------

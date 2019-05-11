@@ -23,6 +23,9 @@ SETUP_ENVIRONMENT_CUSTOMIZATION_FILENAME                = "{}_custom.py".format(
 ACTIVATE_ENVIRONMENT_NAME                               = "Activate"
 ACTIVATE_ENVIRONMENT_CUSTOMIZATION_FILENAME             = "{}_custom.py".format(ACTIVATE_ENVIRONMENT_NAME)
 
+DEFAULT_ENVIRONMENT_NAME                                = "DefaultEnv"
+DEFAULT_CONFIGURATION_NAME                              = "DefaultConfig"
+
 HOOK_ENVIRONMENT_CUSTOMIZATION_FILENAME                 = "ScmHook_custom.py"
 
 GENERATED_DIRECTORY_NAME                                = "Generated"
@@ -78,6 +81,8 @@ REPOSITORY_ID_CONTENT_TEMPLATE                          = textwrap.dedent(
     """)
 
 # ----------------------------------------------------------------------
+DE_ENVIRONMENT_NAME                                     = "DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME"
+
 DE_FUNDAMENTAL_ROOT_NAME                                = "DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"
 
 DE_REPO_ROOT_NAME                                       = "DEVELOPMENT_ENVIRONMENT_REPOSITORY"

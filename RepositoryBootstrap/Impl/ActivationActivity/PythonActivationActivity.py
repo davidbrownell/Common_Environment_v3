@@ -29,6 +29,7 @@ import six
 from RepositoryBootstrap import Constants
 from RepositoryBootstrap.Impl import CommonEnvironmentImports
 from RepositoryBootstrap.Impl.ActivationActivity import ActivationActivity
+from RepositoryBootstrap.Impl.EnvironmentBootstrap import EnvironmentBootstrap
 
 # ----------------------------------------------------------------------
 _script_fullpath = CommonEnvironmentImports.CommonEnvironment.ThisFullpath()
@@ -118,7 +119,7 @@ class PythonActivationActivity(ActivationActivity):
                                                                       ))
                 with dm.stream.DoneManager( suffix='\n' if verbose else '',
                                           ) as this_dm:
-                    fullpath = os.path.join(fullpath, CommonEnvironmentImports.CurrentShell.CategoryName)
+                    fullpath = EnvironmentBootstrap.GetEnvironmentDir(fullpath)
                     assert os.path.isdir(fullpath), fullpath
 
                     # Get the script dir with its populated values
@@ -250,7 +251,7 @@ class PythonActivationActivity(ActivationActivity):
                              ignore_conflicted_library_names=None,
                            ):
         dest_dir = os.path.join(generated_dir, cls.Name)
-
+        
         verbose_stream.write("Cleaning previous content...")
         with verbose_stream.DoneManager():
             CommonEnvironmentImports.FileSystem.RemoveTree(dest_dir)
@@ -342,8 +343,8 @@ class PythonActivationActivity(ActivationActivity):
                                 # Pip uses the python binary to determine the default install path. On Linux,
                                 # pip will also resolve the symbolic link we are creating here. This means that
                                 # it will install libraries relative to the Tools version of python rather than
-                                # the generated version. To work around this, copy the python binaries rather
-                                # than creating a link to them.
+                                # the generated version. To work around this, copy the python binaries below rather
+                                # than creating a link to them here.
                                 continue
 
                             link_commands.append(CommonEnvironmentImports.CurrentShell.Commands.SymbolicLink( os.path.join(dest, item), 
@@ -366,7 +367,7 @@ class PythonActivationActivity(ActivationActivity):
                 assert cls.BinSubdirs
                 bin_source_dir = os.path.join(tools_dir, *cls.BinSubdirs)
                 bin_dest_dir = os.path.join(dest_dir, *cls.BinSubdirs)
-
+            
                 for item in os.listdir(bin_source_dir):
                     if item.startswith("python"):
                         try:

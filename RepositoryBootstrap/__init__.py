@@ -33,19 +33,25 @@ def GetFundamentalRepository():
     # Try to get the value relative to the working dir
     potential_generated_dir = os.path.join(os.getcwd(), "Generated")
     if os.path.isdir(potential_generated_dir):
-        # Any configuration will do, as the values are relative within the file
-        for item in os.listdir(potential_generated_dir):
-            fullpath = os.path.join(potential_generated_dir, item)
-            if os.path.isdir(fullpath):
-                break
+        # Get the bootstrap data file
+        # ----------------------------------------------------------------------
+        def GetBootstrapData():
+            for root, dirs, filenames in os.walk(potential_generated_dir):
+                for filename in filenames:
+                    if filename == "EnvironmentBootstrap.data":
+                        return os.path.join(root, filename)
 
-        potential_filename = os.path.join(fullpath, "EnvironmentBootstrap.data")
-        if os.path.isfile(potential_filename):
+            return None
+
+        # ----------------------------------------------------------------------
+
+        bootstrap_filename = GetBootstrapData()
+        if bootstrap_filename is not None:
             fundamental_root = None
 
-            for line in open(potential_filename).readlines():
+            for line in open(bootstrap_filename).readlines():
                 if line.startswith("fundamental_repo="):
-                    fundamental_repo = line[len("fundamental_repo="):].strip()
+                    fundamental_root = line[len("fundamental_repo="):].strip()
                     break
 
             if fundamental_root:
@@ -166,45 +172,66 @@ def GetPrioritizedRepositories():
 # will work as expected. However, this file may be invoked by a frozen executable.
 # In those cases, go through a bit more work to ensure that these imports work as
 # expected.
-try:
-    import enum
-    import inflect
-    import six
-    import wrapt
+_updated_path = False
+
+while True:
+    try:
+        import enum
+        import inflect
+        import six
+        import wrapt
     
-    # If here, everything was found and all is good
+        # If here, everything was found and all is good
+        break
 
-except ImportError:
+    except ImportError:
+        if _updated_path:
+            raise
 
-    # If here, we are in a frozen environment. Hard-code an import path to
-    # a known python location relative to the fundamental dir; this implies
-    # that the environment has been at least setup.
-    #
-    # It doesn't matter which version of python we use, as they should be
-    # a part of all of them.
+        _updated_path = True
 
-    fundamental_repo = GetFundamentalRepository()
+        # If here, we are in a frozen environment. Hard-code an import path to
+        # a known python location relative to the fundamental dir; this implies
+        # that the environment has been at least setup.
+        #
+        # It doesn't matter which version of python we use, as they should be
+        # a part of all of them.
+
+        fundamental_repo = GetFundamentalRepository()
     
-    python_root = os.path.join(fundamental_repo, "Tools", "Python", "v2.7.14")
-    assert os.path.isdir(python_root), python_root
+        python_root = os.path.join(fundamental_repo, "Tools", "Python", "v2.7.14")
+        assert os.path.isdir(python_root), python_root
 
-    for suffix in [ os.path.join("Windows", "Lib", "site-packages"),
-                    os.path.join("Linux", "lib", "python2.7", "site-packages"),
-                  ]:
-        potential_dir = os.path.join(python_root, suffix)
-        if os.path.isdir(potential_dir):
-            sys.path.insert(0, potential_dir)
-            break
+        import platform
 
-    # Try to import again
+        platform_name = platform.system().lower()
 
-    # <Imports are not grouped> pylint: disable = C0412
-    import enum
-    import inflect
-    import six
-    import wrapt
+        if platform_name == "windows":
+            python_name = "python.exe"
+            binary_dir_to_lib_dir_func = lambda binary_dir: os.path.join(binary_dir, "Lib", "site-packages")
+        elif platform_name == "linux":
+            python_name = "python"
+            binary_dir_to_lib_dir_func = lambda binary_dir: os.path.join(binary_dir, "..", "lib", "python2.7", "site-packages")
+        else:
+            raise Exception(platform_name)
 
-    del fundamental_repo
+        # ----------------------------------------------------------------------
+        def ApplyLibDir():
+            for root, dirs, filenames in os.walk(python_root):
+                for filename in filenames:
+                    if filename == python_name:
+                        lib_dir = binary_dir_to_lib_dir_func(root)
+                        
+                        sys.path.insert(0, lib_dir)
+                        return
+
+        # ----------------------------------------------------------------------
+
+        ApplyLibDir()
+        
+        del fundamental_repo
+
+if _updated_path:
     del sys.path[0]
 
 # ----------------------------------------------------------------------
