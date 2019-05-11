@@ -24,7 +24,9 @@ set +v                                      # Disable output
 # ----------------------------------------------------------------------
 # Note that sudo is necessary because the process updates ldconfig
 
-if [[ $EUID -ne 0 ]]; then
+# root is required the first time that this script is invoked. Root is not required
+# if the environment has already been setup.
+if [[ $EUID -ne 0 ]] && [[ -z "${DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL}" ]]; then
     echo
     echo "ERROR: Please run this script as root (via sudo)."
     echo
