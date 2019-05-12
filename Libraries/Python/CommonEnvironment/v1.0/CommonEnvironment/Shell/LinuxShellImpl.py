@@ -98,9 +98,10 @@ class LinuxShellImpl(Shell):
         def OnSymbolicLink(command):
             return textwrap.dedent(
                 """\
-                ln -{force_flag}s{dir_flag} "{target}" "{link}"
-                """).format( force_flag='' if not command.RemoveExisting else 'f',
-                             dir_flag='d' if command.IsDir else '',
+                ln -{dir_flag}{force_flag}{relative_flag}s "{target}" "{link}"
+                """).format( dir_flag='d' if command.IsDir else '',
+                             force_flag='' if not command.RemoveExisting else 'f',
+                             relative_flag='' if not command.RelativePath else 'r',
                              target=command.Target,
                              link=command.LinkFilename,
                            )
@@ -236,7 +237,12 @@ class LinuxShellImpl(Shell):
         @staticmethod
         @override
         def OnPushDirectory(command):
-            return 'pushd "{}" > /dev/null'.format(command.Directory)
+            directory = command.Directory
+
+            if directory is None:
+                directory = '''$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )'''
+
+            return 'pushd "{}" > /dev/null'.format(directory)
 
         # ----------------------------------------------------------------------
         @staticmethod

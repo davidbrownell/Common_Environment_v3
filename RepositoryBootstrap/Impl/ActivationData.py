@@ -418,12 +418,11 @@ class ActivationData(object):
     # ----------------------------------------------------------------------
     @staticmethod
     def _GetActivationDir(repository_root, configuration, is_fast_environment):
-
-        result = os.path.join( repository_root,
-                               Constants.GENERATED_DIRECTORY_NAME,
-                               CommonEnvironmentImports.CurrentShell.CategoryName,
-                               configuration or "Default",
-                             )
+        result = os.path.join(
+            EnvironmentBootstrap.GetEnvironmentDir(repository_root, Constants.GENERATED_DIRECTORY_NAME),
+            configuration or Constants.DEFAULT_CONFIGURATION_NAME,
+        )
+        
         if is_fast_environment:
             result += ".fast"
 

@@ -251,7 +251,7 @@ class Verifier(VerifierMod.Verifier):
                           passing_score=CommandLine.FloatTypeInfo(min=0.0, max=10.0, arity='?'),
                           output_stream=None,
                         )
-def Verify( input,                          # <Redefinig built-in type> pylint: disable = W0622
+def CommandLineVerify( input,                          # <Redefinig built-in type> pylint: disable = W0622
             passing_score=None,
             output_stream=sys.stdout,
             verbose=False,

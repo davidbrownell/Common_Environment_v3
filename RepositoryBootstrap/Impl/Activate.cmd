@@ -14,22 +14,20 @@
 @REM ----------------------------------------------------------------------
 @echo off
 
-pushd %~dp0
-
 set _ACTIVATE_ENVIRONMENT_PREVIOUS_FUNDAMENTAL=%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%
 
 REM Read the bootstrap data
-if not exist "%~dp0Generated\Windows\EnvironmentBootstrap.data" (
+if not exist "%CD%\Generated\Windows\%DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME%\EnvironmentBootstrap.data" (
     @echo.
     @echo ERROR: It appears that Setup.cmd has not been run for this repository. Please run Setup.cmd and run this script again.
     @echo.
-    @echo        [%~dp0Generated\Windows\EnvironmentBootstrap.data was not found]
+    @echo        [%CD%\Generated\Windows\%DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME%\EnvironmentBootstrap.data was not found]
     @echo.
 
     goto ErrorExit
 )
 
-for /f "tokens=1,2 delims==" %%a in (%~dp0Generated\Windows\EnvironmentBootstrap.data) do (
+for /f "tokens=1,2 delims==" %%a in (%CD%\Generated\Windows\%DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME%\EnvironmentBootstrap.data) do (
     if "%%a"=="fundamental_repo" set DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=%%~fb
     if "%%a"=="is_mixin_repo" set _ACTIVATE_ENVIRONMENT_IS_MIXIN_REPOSITORY=%%b
     if "%%a"=="is_configurable" set _ACTIVATE_ENVIRONMENT_IS_CONFIGURABLE_REPOSITORY=%%b
@@ -37,8 +35,8 @@ for /f "tokens=1,2 delims==" %%a in (%~dp0Generated\Windows\EnvironmentBootstrap
 
 REM Find the python binary
 for /f "tokens=*" %%G in ('dir /b /a:d "%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\Tools\Python\v*"') do (
-    if exist "%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\Tools\Python\%%G\Windows\python.exe" (
-        set _ACTIVATE_ENVIRONMENT_PYTHON_BINARY="%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\Tools\Python\%%G\Windows\python.exe"
+    if exist "%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\Tools\Python\%%G\Windows\%DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME%\python.exe" (
+        set _ACTIVATE_ENVIRONMENT_PYTHON_BINARY="%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\Tools\Python\%%G\Windows\%DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME%\python.exe"
     )
 )
 
@@ -46,12 +44,8 @@ set PYTHONPATH=%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%
 
 @REM ----------------------------------------------------------------------
 @REM |  List configurations if requested
-if "%1" NEQ "ListConfigurations" goto :AfterListConfiguration
-
-REM Get the remaining args
-set _ACTIVATE_ENVIRONMENT_WORKING_DIR=%~dp0
+if "%1" NEQ "ListConfigurations" goto :AfterListConfigurations
 set _ACTIVATE_ENVIRONMENT_CLA=
-
 shift /1
 
 :GetRemainingArgs_ListConfigurations
@@ -61,10 +55,10 @@ if "%1" NEQ "" (
     goto :GetRemainingArgs_ListConfigurations
 )
 
-%_ACTIVATE_ENVIRONMENT_PYTHON_BINARY% -m RepositoryBootstrap.Impl.Activate ListConfigurations %_ACTIVATE_ENVIRONMENT_WORKING_DIR% %_ACTIVATE_ENVIRONMENT_CLA%
+%_ACTIVATE_ENVIRONMENT_PYTHON_BINARY% -m RepositoryBootstrap.Impl.Activate ListConfigurations "%CD%" %_ACTIVATE_ENVIRONMENT_CLA%
 goto Exit
 
-:AfterListConfiguration
+:AfterListConfigurations
 
 @REM If here, we are in a verified activation scenario. Set the previous value to this value, knowing that that is the value
 @REM that will be committed.
@@ -72,7 +66,7 @@ set _ACTIVATE_ENVIRONMENT_PREVIOUS_FUNDAMENTAL=%DEVELOPMENT_ENVIRONMENT_FUNDAMEN
 
 @REM ----------------------------------------------------------------------
 @REM |  Only allow one activated environment at a time (unless we are activating a mixin repo)
-if "%_ACTIVATE_ENVIRONMENT_IS_MIXIN_REPOSITORY%" NEQ "1" if "%DEVELOPMENT_ENVIRONMENT_REPOSITORY%" NEQ "" if /i "%DEVELOPMENT_ENVIRONMENT_REPOSITORY%\" NEQ "%~dp0" (
+if "%_ACTIVATE_ENVIRONMENT_IS_MIXIN_REPOSITORY%" NEQ "1" if "%DEVELOPMENT_ENVIRONMENT_REPOSITORY%" NEQ "" if /i "%DEVELOPMENT_ENVIRONMENT_REPOSITORY%" NEQ "%CD%" (
     @echo.
     @echo ERROR: Only one repository can be activated within an environment at a time, and it appears as if one is already active. Please open a new console and run this script again.
     @echo.
@@ -101,7 +95,7 @@ if "%_ACTIVATE_ENVIRONMENT_IS_CONFIGURABLE_REPOSITORY%" NEQ "0" (
         @echo.
         @echo        Available configurations are:
         @echo.
-        %_ACTIVATE_ENVIRONMENT_PYTHON_BINARY% -m RepositoryBootstrap.Impl.Activate ListConfigurations %~dp0 command_line
+        %_ACTIVATE_ENVIRONMENT_PYTHON_BINARY% -m RepositoryBootstrap.Impl.Activate ListConfigurations "%CD%" command_line
         @echo.
     
         goto :ErrorExit
@@ -132,7 +126,7 @@ REM to the python environment while still executing OS-specific commands.
 call :CreateTempScriptName
 
 REM Generate...
-%_ACTIVATE_ENVIRONMENT_PYTHON_BINARY% -m RepositoryBootstrap.Impl.Activate Activate "%_ACTIVATE_ENVIRONMENT_TEMP_SCRIPT_NAME%" %~dp0 %_ACTIVATE_ENVIRONMENT_CLA%
+%_ACTIVATE_ENVIRONMENT_PYTHON_BINARY% -m RepositoryBootstrap.Impl.Activate Activate "%_ACTIVATE_ENVIRONMENT_TEMP_SCRIPT_NAME%" "%CD%" %_ACTIVATE_ENVIRONMENT_CLA%
 set _ACTIVATE_ENVIRONMENT_SCRIPT_GENERATION_ERROR_LEVEL=%ERRORLEVEL%
 
 REM Invoke...
@@ -196,14 +190,12 @@ set _ACTIVATE_ENVIRONMENT_PREVIOUS_FUNDAMENTAL=
 set _ACTIVATE_ENVIRONMENT_TEMP_SCRIPT_NAME=
 set PYTHONPATH=
 
-popd 
-
 exit /B %_ACTIVATE_ERROR_LEVEL%
 
 @REM ---------------------------------------------------------------------------
 :CreateTempScriptName
 setlocal EnableDelayedExpansion
-set _filename=%~dp0Activate-!RANDOM!-!Time:~6,5!.cmd
+set _filename=%CD%\Activate-!RANDOM!-!Time:~6,5!.cmd
 endlocal & set _ACTIVATE_ENVIRONMENT_TEMP_SCRIPT_NAME=%_filename%
 
 if exist "%_ACTIVATE_ENVIRONMENT_TEMP_SCRIPT_NAME%" goto :CreateTempScriptName
