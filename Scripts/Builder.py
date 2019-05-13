@@ -133,7 +133,9 @@ def Execute(
 
         for mode_index, mode in enumerate(modes):
             dm.stream.write("Invoking '{}' ({} of {})...".format(mode, mode_index + 1, len(modes)))
-            with dm.stream.DoneManager() as mode_dm:
+            with dm.stream.DoneManager(
+                suffix="\n",
+            ) as mode_dm:
                 for build_index, (build_filename, config, configuration) in enumerate(
                     build_configurations,
                 ):

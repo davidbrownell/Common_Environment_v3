@@ -69,18 +69,4 @@ def GetCustomActions(debug, verbose, explicit_configurations):
     cases, this is Bash on Linux systems and Batch or Powershell on Windows systems.
     """
 
-    # TODO: Remove this (begin)
-    # Remove the symbolic link that used to be used for the Formatter. This code can be removed once 
-    # this change has propagated through all of the CI workers.
-    formatter_filename = os.path.join(fundamental_repo, "Scripts", "Formatter.py")
-    
-    if os.path.isfile(formatter_filename) and CurrentShell.IsSymLink(formatter_filename):
-        CurrentShell.DeleteSymLink(formatter_filename)
-    # TODO: Remove this(end)
-
-    return [
-        CurrentShell.Commands.SymbolicLink(
-            os.path.join(fundamental_repo, "Scripts", "Formatter.py"),
-            os.path.join(fundamental_repo, "src", "Formatter", "CommonEnvironment_Formatter", "Formatter.py"),
-        )
-    ]
+    return []

@@ -5,8 +5,11 @@ __pycache__
 *.pyo
 
 Activate.cmd
+Activate.*.cmd
 Activate.ps1
+Activate.*.ps1
 Activate.sh
+Activate.*.sh
 
 Generated/*
 

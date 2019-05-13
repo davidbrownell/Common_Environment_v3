@@ -411,7 +411,7 @@ def CreateRepositoryBuildFunc( repository_name,
                                                                                                              len(repository_activation_configurations),
                                                                                                            ))
                             with all_activated_dm.stream.DoneManager(suffix='\n') as activated_dm:
-                                this_activated_dir = os.path.join(activated_image_dir, configuration or "Default")
+                                this_activated_dir = os.path.join(activated_image_dir, configuration or "DefaultConfig")
                                 FileSystem.MakeDirs(this_activated_dir)
 
                                 unique_id = str(uuid.uuid4())

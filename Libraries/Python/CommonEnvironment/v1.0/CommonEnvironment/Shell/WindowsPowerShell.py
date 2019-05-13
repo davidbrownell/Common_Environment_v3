@@ -174,6 +174,17 @@ class WindowsPowerShell(WindowsShell):
         def OnPersistError(command, *args, **kwargs):
             return '$env:{}=$?'.format(command.VariableName)
 
+        # ----------------------------------------------------------------------
+        @staticmethod
+        @override
+        def OnPushDirectory(command):
+            directory = command.Directory
+
+            if directory is None:
+                directory = "$PSScriptRoot"
+
+            return 'pushd "{}"'.format(directory)
+
     # ----------------------------------------------------------------------
     # |  
     # |  Public Properties

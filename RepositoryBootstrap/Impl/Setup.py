@@ -122,7 +122,7 @@ def Setup( output_filename_or_stdout,
             # If here, setup this specific repo
             activities = [ _SetupBootstrap,
                            _SetupCustom,
-                           _SetupShortcuts,
+                           _SetupActivateScript,
                          ]
 
             if not no_hooks:
@@ -640,22 +640,60 @@ def _SetupCustom( output_stream,
 
 # ----------------------------------------------------------------------
 # <Unused argument> pylint: disable = W0613
-def _SetupShortcuts( output_stream,
-                     repository_root,
-                     customization_mod,
-                     debug,
-                     verbose,
-                     explicit_configurations,
-                   ):
-    activate_script = CommonEnvironmentImports.CurrentShell.CreateScriptName(Constants.ACTIVATE_ENVIRONMENT_NAME, filename_only=True)
+def _SetupActivateScript( output_stream,
+                          repository_root,
+                          customization_mod,
+                          debug,
+                          verbose,
+                          explicit_configurations,
+                        ):
+    environment_name = os.getenv(Constants.DE_ENVIRONMENT_NAME)
+    assert environment_name
 
-    shortcut_target = os.path.join(_script_dir, activate_script)
-    assert os.path.isfile(shortcut_target), shortcut_target
+    # Create the commands
+    activate_script_name = CommonEnvironmentImports.CurrentShell.CreateScriptName(Constants.ACTIVATE_ENVIRONMENT_NAME, filename_only=True)
 
-    return [ CommonEnvironmentImports.CurrentShell.Commands.SymbolicLink( os.path.join(repository_root, activate_script),
-                                                                          shortcut_target,
-                                                                        ),
-           ]
+    implementation_script = os.path.join(_script_dir, activate_script_name)
+    assert os.path.isfile(implementation_script), implementation_script
+
+    commands = [ 
+        CommonEnvironmentImports.CurrentShell.Commands.EchoOff(),
+        CommonEnvironmentImports.CurrentShell.Commands.Set(Constants.DE_ENVIRONMENT_NAME, environment_name),
+        CommonEnvironmentImports.CurrentShell.Commands.PushDirectory(None),
+        CommonEnvironmentImports.CurrentShell.Commands.Call(
+            '{} {}'.format(
+                implementation_script,
+                CommonEnvironmentImports.CurrentShell.AllArgumentsScriptVariable,
+            ),
+            exit_on_error=False,
+        ),
+        CommonEnvironmentImports.CurrentShell.Commands.PersistError("_activate_error"),
+        CommonEnvironmentImports.CurrentShell.Commands.PopDirectory(),
+        CommonEnvironmentImports.CurrentShell.Commands.ExitOnError(
+            variable_name="_activate_error",
+            return_code=CommonEnvironmentImports.CurrentShell.DecorateEnvironmentVariable("_activate_error"),
+        ),
+    ]
+
+    # Write the local file
+    activate_name, activate_ext = os.path.splitext(activate_script_name)
+
+    activation_filename = os.path.join(
+        repository_root, 
+        "{}{}{}".format(
+            activate_name,
+            ".{}".format(environment_name) if environment_name != Constants.DEFAULT_ENVIRONMENT_NAME else "",
+            activate_ext,
+        ),
+    )
+
+    with open(activation_filename, "w") as f:
+        f.write(CommonEnvironmentImports.CurrentShell.GenerateCommands(commands))
+
+    CommonEnvironmentImports.CurrentShell.MakeFileExecutable(activation_filename)
+    CommonEnvironmentImports.CurrentShell.UpdateOwnership(activation_filename)
+
+    return None
 
 # ----------------------------------------------------------------------
 # <Unused argument> pylint: disable = W0613
@@ -727,7 +765,7 @@ def _SetupScmHooks( output_stream,
 
                 f.write(textwrap.dedent(
                     """\
-                    #!/bin/sh
+                    #!/bin/bash
                     python {} {} "$*"
                     exit $?
                     """).format( this_relative_hooks_impl_filename, 

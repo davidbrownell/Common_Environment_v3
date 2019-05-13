@@ -10,13 +10,16 @@
 # ----------------------------------------------------------------------
 # |  
 # |  Run as:
-# |     Setup.ps1 [/debug] [/verbose] [/configuration=<config_name>]*
+# |     Setup.ps1 [/debug] [/verbose] [/name=<name>] [/configuration=<config_name>]*
 # |  
 # ----------------------------------------------------------------------
 
 $env:DEVELOPMENT_ENVIRONMENT_USE_WINDOWS_POWERSHELL=1
 
+pushd "$PSScriptRoot"
+
 function ExitScript {
+    popd
     Remove-Item "NULL" -ErrorAction SilentlyContinue
     exit
 }
@@ -24,6 +27,14 @@ function ExitScript {
 # Begin bootstrap customization
 $env:_PREV_DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=$env:DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL
 $env:DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=$PSScriptRoot
+
+# This should match the value in RepositoryBootstrap/Constants.py:DEFAULT_ENVIRONMENT_NAME
+$environment_name=DefaultEnv
+
+# TODO: Parse name, remove command line arg
+
+# This should match the value in RepositoryBootstrap/Constants.py:DE_ENVIRONMENT_NAME
+$env:DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME=$environment_name
 
 # Only run the fundamental setup if we are in a standard setup scenario
 if ( ([string]::IsNullOrEmpty($args[0])) -or $args[0].Substring(0,1) -eq "/" -or $args[0].Substring(0,1) -eq "-" ) {
@@ -57,7 +68,7 @@ Please run Activate.ps1 within a repository before running this script. It may b
     ExitScript
 }
 
-Invoke-Expression "$env:DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL\RepositoryBootstrap\Impl\Setup.cmd $env:DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL $args"
+Invoke-Expression "$env:DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL\RepositoryBootstrap\Impl\Setup.cmd $args"
 
 # Bootstrap customization
 $env:DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=$env:_PREV_DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL
