@@ -58,7 +58,7 @@ cat > /etc/ld.so.conf.d/${conf_file} << END
 /opt/CommonEnvironment/python/3.6.5/lib
 END
     
-    ldconfig -i
+    ldconfig
 fi
 
 echo "DONE!"
