@@ -27,6 +27,7 @@ import CommonEnvironment
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CommandLine
 from CommonEnvironment.StreamDecorator import StreamDecorator
+from CommonEnvironment import StringHelpers
 
 # ----------------------------------------------------------------------
 _script_fullpath = CommonEnvironment.ThisFullpath()
@@ -88,15 +89,17 @@ def EntryPoint( output_stream=sys.stdout,
         support_git = _Prompt("Include .gitignore for Git support? ", "yes").lower() in [ "yes", "y", ]
         support_hg = _Prompt("Include .hgignore for Hg support? ", "yes").lower() in [ "yes", "y", ]
         support_windows = _Prompt("Support development on Windows? ", "yes").lower() in [ "yes", "y", ]
-
+        
         if support_windows:
             support_powershell = _Prompt("Support development on Windows using PowerShell? ", "yes").lower() in [ "yes", "y", ]
         else:
             support_powershell = False
-
+        
         support_linux = _Prompt("Support development on Linux? ", "yes").lower() in [ "yes", "y", ]
-
+        
         include_boost_license = _Prompt("Include the boost software license (https://www.boost.org/users/license.html)? ", "no").lower() in [ "yes", "y", ]
+        
+        include_bootstrap = _Prompt("Include bootstrap scripts? ", "no").lower() in [ "yes", "y", ]
 
         if not (support_git or support_hg):
             raise Exception("At least one of Git or Hg must be supported")
@@ -104,6 +107,8 @@ def EntryPoint( output_stream=sys.stdout,
             raise Exception("At least one of Windows, PowerShell, or Linux must be supported")
 
         # Get a list of the files based on feedback
+        templates_dir = os.path.join(_script_dir, "Templates")
+
         filenames = [ "Activate_custom.py",
                       "ScmHook_custom.py",
                       "Setup_custom.py",
@@ -126,6 +131,12 @@ def EntryPoint( output_stream=sys.stdout,
         if include_boost_license:
             filenames.append("LICENSE_1_0.txt")
 
+        if include_bootstrap:
+            filenames += [ "bootstrap.cmd",
+                           "bootstrap.sh",
+                           "bootstrap_impl.py",
+                         ]
+
         dm.stream.write("\nPopulating {}...".format(inflect.no("file", len(filenames) + 1)))
         with dm.stream.DoneManager() as this_dm:
             for filename in filenames:
@@ -134,7 +145,7 @@ def EntryPoint( output_stream=sys.stdout,
                 if os.path.exists(dest_filename):
                     continue
             
-                source_filename = os.path.join(_script_dir, "Templates", filename)
+                source_filename = os.path.join(templates_dir, filename)
                 assert os.path.isfile(source_filename), source_filename
             
                 shutil.copy2(source_filename, dest_filename)
@@ -176,7 +187,7 @@ def EntryPoint( output_stream=sys.stdout,
                 4) "{readme}"
 
                    Edit this file to include specific information about your new repository.
-
+                {bootstrap}
             See <Common_Environment>/Readme.rst[.md] for more information.
             **********************************************************************
 
@@ -185,6 +196,19 @@ def EntryPoint( output_stream=sys.stdout,
                          activate=os.path.join(repo_dir, RepositoryBootstrapConstants.ACTIVATE_ENVIRONMENT_CUSTOMIZATION_FILENAME),
                          scm_hook=os.path.join(repo_dir, RepositoryBootstrapConstants.HOOK_ENVIRONMENT_CUSTOMIZATION_FILENAME),
                          readme=os.path.join(repo_dir, "Readme.rst"),
+                         bootstrap="" if not include_bootstrap else StringHelpers.LeftJustify(
+                             textwrap.dedent(
+                                 """\
+    
+                                 5) "{}"
+
+                                    Edit this file and add all dependent repository information.
+                                 """,
+                             ).format(
+                                 os.path.join(repo_dir, "bootstrap_impl.py"),
+                             ),
+                             4,
+                         ),
                        ))
 
         return dm.result
