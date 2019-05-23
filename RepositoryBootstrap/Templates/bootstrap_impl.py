@@ -45,10 +45,9 @@ _REPO_DATA                                  = [
     ( "Common_cpp_Clang_8", 'git clone https://github.com/davidbrownell/Common_cpp_Clang_8 "{output_dir}"', "/configuration=python"),
 ]
 
-_ACTIVATION_REPO_NAME                       = "Common_cpp_Clang_8"
-_ACTIVATION_REPO_CONFIGURATION              = "python"
+_ACTIVATION_REPO_CONFIGURATION              = "python"  # Can be None
 
-raise Exception("Remove this exception when '_REPO_DATA', '_ACTIVATION_REPO_NAME', and '_ACTIVATION_REPO_CONFIGURATION' have been updated for your environment")
+raise Exception("Remove this exception when '_REPO_DATA', '_ACTIVATION_REPO_CONFIGURATION' have been updated for your environment")
 
 # ----------------------------------------------------------------------
 inflect                                     = inflect_mod.engine()
@@ -61,6 +60,7 @@ inflect                                     = inflect_mod.engine()
 )
 def EntryPoint(
     output_dir,
+    verbose=False,
     output_stream=sys.stdout,
 ):
     with StreamDecorator(output_stream).DoneManager(
@@ -70,28 +70,22 @@ def EntryPoint(
     ) as dm:
         repo_data = OrderedDict()
         enlistment_repositories = []
-        activation_repo_dir = None
-
+        
         dm.stream.write("Calculating enlistment repositories...")
         with dm.stream.DoneManager(
-            done_suffix=lambda: "{} found".format(inflect.no("repository", len(enlistment_repositories))),
+            done_suffix=lambda: "{} found for enlistment".format(inflect.no("repository", len(enlistment_repositories))),
             suffix="\n",
         ) as this_dm:
             for data in _REPO_DATA:
                 repo_name = data[0]
 
-                output_dir = os.path.join(output_dir, repo_name.replace("_", os.path.sep))
-                if not os.path.isdir(output_dir):
-                    enlistment_repositories.append((output_dir, data))
+                repo_output_dir = os.path.join(output_dir, repo_name.replace("_", os.path.sep))
+                if not os.path.isdir(repo_output_dir):
+                    enlistment_repositories.append((repo_output_dir, data))
 
-                repo_data[output_dir] = data
+                repo_data[repo_output_dir] = data
 
-                if repo_name == _ACTIVATION_REPO_NAME:
-                    assert activation_repo_dir is None, activation_repo_dir
-                    activation_repo_dir = output_dir
-
-        if activation_repo_dir is None:
-            raise Exception("'{}' was not found; is it in _REPO_DATA?".format(_ACTIVATION_REPO_NAME))
+        repo_data[_script_dir] = (_script_dir, None, None)
 
         if enlistment_repositories:
             dm.stream.write("Enlisting in {}...".format(inflect.no("repository", len(enlistment_repositories))))
@@ -107,13 +101,26 @@ def EntryPoint(
                             output_dir=temp_directory,
                         )
 
-                        this_dm.result, output = Process.Execute(
+                        sink = six.moves.StringIO()
+
+                        this_dm.result = Process.Execute(
                             data[1].format(
                                 output_dir=temp_directory,
                             ),
+                            StreamDecorator(
+                                [
+                                    sink,
+                                    StreamDecorator(
+                                        this_dm.stream if verbose else None,
+                                        line_prefix="INFO: ",
+                                    ),
+                                ],
+                            ),
                         )
                         if this_dm.result != 0:
-                            this_dm.stream.write(output)
+                            if not verbose:
+                                this_dm.stream.write(sink.getvalue())
+
                             return this_dm.result
 
                         FileSystem.MakeDirs(os.path.dirname(output_dir))
@@ -141,9 +148,24 @@ def EntryPoint(
                         elif CurrentShell.CategoryName == "Linux":
                             command_line = "./{}".format(command_line)
 
-                        this_dm.result, output = Process.Execute(command_line)
+                        sink = six.moves.StringIO()
+
+                        this_dm.result = Process.Execute(
+                            command_line,
+                            StreamDecorator(
+                                [
+                                    sink,
+                                    StreamDecorator(
+                                        this_dm.stream if verbose else None,
+                                        line_prefix="INFO: ",
+                                    ),
+                                ],
+                            ),
+                        )
                         if this_dm.result != 0:
-                            this_dm.stream.write(output)
+                            if not verbose:
+                                this_dm.stream.write(sink.getvalue())
+
                             return this_dm.result
 
         dm.stream.write(
@@ -164,7 +186,7 @@ def EntryPoint(
                     development activities, please run the following command. Note that
                     this command must be run every time you open a new terminal window.
 
-                        {} {}
+                        {}{} {}
 
                     # ----------------------------------------------------------------------
                     # ----------------------------------------------------------------------
@@ -172,7 +194,14 @@ def EntryPoint(
 
                     """,
                 ).format(
-                    os.path.join(activation_repo_dir, "Activate{}".format(CurrentShell.ScriptExtension)),
+                    ". " if CurrentShell.CategoryName == "Linux" else "",
+                    os.path.join(
+                        _script_dir,
+                        "Activate{}{}".format(
+                            ".{}".format(os.getenv("DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME")) if os.getenv("DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME") != "DefaultEnv" else "",
+                            CurrentShell.ScriptExtension,
+                        ),
+                    ),
                     _ACTIVATION_REPO_CONFIGURATION or "",
                 ),
                 16,
