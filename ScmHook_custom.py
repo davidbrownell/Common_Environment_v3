@@ -100,7 +100,6 @@ def OnCommitting(data, output_stream):
                          ]
 
             changes = {}
-            
 
             for groups in all_groups:
                 for item in groups:
@@ -118,11 +117,12 @@ def OnCommitting(data, output_stream):
                 has_changes = None
 
                 for item in group:
-                    if changes[item].Exists and changes[item].Changed != has_changes and has_changes is not None:
-                        errors.append(group)
-                        break
+                    if changes[item].Exists:
+                        if changes[item].Changed != has_changes and has_changes is not None:
+                            errors.append(group)
+                            break
 
-                    has_changes = changes[item].Changed
+                        has_changes = changes[item].Changed
 
             if errors:
                 dm.stream.write(textwrap.dedent(

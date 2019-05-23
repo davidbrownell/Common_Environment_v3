@@ -737,6 +737,10 @@ def _SetupScmHooks( output_stream,
 
     # ----------------------------------------------------------------------
     def Git():
+        # Git hooks don't work well on Windows
+        if CommonEnvironmentImports.CurrentShell.CategoryName == "Windows":
+            return
+
         hooks_dir = os.path.join(repository_root, ".git", "hooks")
         CommonEnvironmentImports.FileSystem.MakeDirs(hooks_dir)
 
