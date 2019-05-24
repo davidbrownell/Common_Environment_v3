@@ -1595,6 +1595,47 @@ def MatchAllTests( input_dir,
                    output_stream=sys.stdout,
                    verbose=False,
                  ):
+    """Matches tests for the test type with all configurations"""
+
+    with StreamDecorator(output_stream).DoneManager( line_prefix='',
+                                                     prefix="\nResults: ",
+                                                     suffix='\n',
+                                                   ) as dm:
+        for index, configuration in enumerate(six.iterkeys(CONFIGURATIONS)):
+            header = "Matching '{}' ({} of {})...".format( configuration,
+                                                           index + 1,
+                                                           len(CONFIGURATIONS),
+                                                         )
+            dm.stream.write("{sep}\n{header}\n{sep}\n".format( header=header,
+                                                               sep='-' * len(header),
+                                                             ))
+            with dm.stream.DoneManager( line_prefix='',
+                                        prefix="\n{} Results: ".format(configuration),
+                                        suffix='\n',
+                                      ) as this_dm:
+                this_dm.result = MatchTests( input_dir,
+                                             test_type,
+                                             configuration.Compiler.Name,
+                                             output_stream=this_dm.stream,
+                                             verbose=verbose,
+                                           )
+
+        return dm.result
+
+# ----------------------------------------------------------------------
+@CommandLine.EntryPoint( input_dir=_input_dir_param_descripiton,
+                         test_type=_test_type_param_description,
+                         verbose=_verbose_param_description,
+                       )
+@CommandLine.Constraints( input_dir=CommandLine.DirectoryTypeInfo(),
+                          test_type=CommandLine.StringTypeInfo(),
+                          output_stream=None,
+                        )
+def MatchAllTests( input_dir,
+                   test_type,
+                   output_stream=sys.stdout,
+                   verbose=False,
+                 ):
     """Matches all tests for the test type across all compilers."""
     
     with StreamDecorator(output_stream).DoneManager( line_prefix='',

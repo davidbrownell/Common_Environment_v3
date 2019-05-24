@@ -22,7 +22,7 @@
     <url uri ?>
     
 <Pushed>:
-    <change ChangeInfo +>:
+    <change ChangeInfo *>:
         # Note that the changes will not yet be applied on the repository, so we can't
         # be sure that the files will exist. This limits the amount of useful processing
         # that we can do during this event.
