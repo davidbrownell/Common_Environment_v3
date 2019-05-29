@@ -30,7 +30,7 @@ set DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=%~dp0
 set _SETUP_ERROR=0
 
 @REM Only run the fundamental setup if we are in a standard setup scenario
-set _SETUP_FIRST_ARG=%1
+set _SETUP_FIRST_ARG=%~1
 
 if "%_SETUP_FIRST_ARG%" NEQ "" (
     if "%_SETUP_FIRST_ARG:~,1%" NEQ "/" (
@@ -50,9 +50,9 @@ set _SETUP_CLA=
 @REM expansion rules. Modify at your own risk!
 :GetRemainingArgs_Begin
 
-if "%1"=="" goto :GetRemainingArgs_End
+if "%~1"=="" goto :GetRemainingArgs_End
 
-set _ARG=%1
+set _ARG=%~1
 
 if "%_ARG:~,9%"=="/name_EQ_" goto :GetRemainingArgs_Name
 if "%_ARG:~,9%"=="-name_EQ_" goto :GetRemainingArgs_Name
