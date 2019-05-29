@@ -18,14 +18,14 @@ REM The following environment variables must be set prior to invoking this batch
 REM     - DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL
 set PYTHONPATH=%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%
 
-set _SETUP_FIRST_ARG=%1
+set _SETUP_FIRST_ARG=%~1
 shift /1
 
 set _SETUP_CLA=
 
 :GetRemainingArgs
-if "%1" NEQ "" (
-    set _SETUP_CLA=%_SETUP_CLA% %1
+if "%~1" NEQ "" (
+    set _SETUP_CLA=%_SETUP_CLA% %~1
     shift /1
     goto :GetRemainingArgs
 )
