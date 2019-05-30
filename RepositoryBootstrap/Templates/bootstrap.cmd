@@ -79,7 +79,7 @@ if "%_BOOTSTRAP_NAME%" NEQ "" (
     set _BOOTSTRAP_NAME_ARG=/name_EQ_%_BOOTSTRAP_NAME%
 )
 
-"%_COMMON_CODE_DIR%\Common\Environment\Setup.cmd" %_BOOTSTRAP_NAME_ARG% %_BOOTSTRAP_CLA%
+call "%_COMMON_CODE_DIR%\Common\Environment\Setup.cmd" %_BOOTSTRAP_NAME_ARG% %_BOOTSTRAP_CLA%
 if %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
 
 REM Write the environment activation and python execution statements to a temporary
