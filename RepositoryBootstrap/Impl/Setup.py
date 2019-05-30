@@ -737,6 +737,12 @@ def _SetupScmHooks( output_stream,
 
     # ----------------------------------------------------------------------
     def Git():
+        # Detect if we are running directly on Windows or within WSL
+        is_windows = (
+            CommonEnvironmentImports.CurrentShell.CategoryName == "Windows"
+            or "Windows" in CommonEnvironmentImports.Process.Execute("uname -r")[1]
+        )
+
         hooks_dir = os.path.join(repository_root, ".git", "hooks")
         CommonEnvironmentImports.FileSystem.MakeDirs(hooks_dir)
 
@@ -753,7 +759,7 @@ def _SetupScmHooks( output_stream,
                     ]:
             # Git hooks don't work well on Windows; create them in an initially disabled state so that
             # someone can opt-in to their usage.
-            if CommonEnvironmentImports.CurrentShell.CategoryName == "Windows":
+            if is_windows:
                 name = "_{}".format(name)
 
             with io.open( os.path.join(hooks_dir, name),

@@ -409,15 +409,26 @@ class PythonActivationActivity(ActivationActivity):
                 assert os.path.isdir(library_dest_dir), library_dest_dir
 
                 for name, library_info in six.iteritems(libraries):
-                    for item in os.listdir(library_info.Fullpath):
-                        if item in [ SCRIPTS_DIR_NAME,
-                                   ]:
-                            continue
-
-                        link_commands.append(CommonEnvironmentImports.CurrentShell.Commands.SymbolicLink( os.path.join(library_dest_dir, item), 
-                                                                                                          os.path.join(library_info.Fullpath, item),
+                    # If the source dir has a setup file and subdir with the library name, assume that the local files are part of
+                    # the setup process and only include the subdir.
+                    if (
+                        os.path.isfile(os.path.join(library_info.Fullpath, "setup.py"))
+                        and os.path.isdir(os.path.join(library_info.Fullpath, name))
+                    ):
+                        link_commands.append(CommonEnvironmentImports.CurrentShell.Commands.SymbolicLink( os.path.join(library_dest_dir, name),
+                                                                                                          os.path.join(library_info.Fullpath, name),
                                                                                                           remove_existing=False,
                                                                                                         ))
+                    else:
+                        for item in os.listdir(library_info.Fullpath):
+                            if item in [ SCRIPTS_DIR_NAME,
+                                       ]:
+                                continue
+
+                            link_commands.append(CommonEnvironmentImports.CurrentShell.Commands.SymbolicLink( os.path.join(library_dest_dir, item), 
+                                                                                                              os.path.join(library_info.Fullpath, item),
+                                                                                                              remove_existing=False,
+                                                                                                            ))
 
         if libraries:
             # Apply scripts
