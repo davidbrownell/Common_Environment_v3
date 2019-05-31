@@ -669,7 +669,7 @@ def GenerateTestResults( test_items,
     assert test_parser
     assert iterations > 0, iterations
     assert output_stream
-    assert max_num_concurrent_tasks > 1, max_num_concurrent_tasks
+    assert max_num_concurrent_tasks > 0, max_num_concurrent_tasks
 
     # Check for congruent plugins
     result = compiler.ValidateEnvironment()
