@@ -20,7 +20,7 @@ IF "%~1"=="" (
     echo This script bootstraps common library enlistment and setup.
     echo.
     echo     Usage:
-    echo         %0 ^<common code dir^>
+    echo         %0 ^<common code dir^> ["/name=<custom environment name>"]
     echo.
 
     exit /B -1
@@ -56,14 +56,22 @@ if "%~1"=="" goto :GetRemainingArgs_End
 
 set _ARG=%~1
 
-if "%_ARG:~,9%"=="/name_EQ_" goto :GetRemainingArgs_Name
-if "%_ARG:~,9%"=="-name_EQ_" goto :GetRemainingArgs_Name
+if "%_ARG:~,6%"=="/name=" goto :GetRemainingArgs_Name1
+if "%_ARG:~,6%"=="-name=" goto :GetRemainingArgs_Name1
+
+if "%_ARG:~,9%"=="/name_EQ_" goto :GetRemainingArgs_Name2
+if "%_ARG:~,9%"=="-name_EQ_" goto :GetRemainingArgs_Name2
 
 REM If here, we are looking at an arg that should be passed to the script
 set _BOOTSTRAP_CLA=%_BOOTSTRAP_CLA% "%_ARG%"
 goto :GetRemainingArgs_Continue
 
-:GetRemainingArgs_Name
+:GetRemainingArgs_Name1
+REM If here, we are looking at a name argument
+set _BOOTSTRAP_NAME=%_ARG:~6%
+goto :GetRemainingArgs_Continue
+
+:GetRemainingArgs_Name2
 REM If here, we are looking at a name argument
 set _BOOTSTRAP_NAME=%_ARG:~9%
 goto :GetRemainingArgs_Continue

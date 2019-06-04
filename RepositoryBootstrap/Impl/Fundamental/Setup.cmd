@@ -37,6 +37,7 @@ echo ------------------------  Python 2.7.14  -----------------------------
 
 pushd %DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\Tools\Python\v2.7.14\Windows
 call Setup.cmd "%DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME%"
+if %ERRORLEVEL% NEQ 0 exit /B -1
 
 cd "%DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME%"
 echo Installing Python dependencies for 2.7.14...
@@ -63,6 +64,7 @@ echo ------------------------  Python 3.6.5  ------------------------------
 
 pushd %DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\Tools\Python\v3.6.5\Windows
 call Setup.cmd "%DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME%"
+if %ERRORLEVEL% NEQ 0 exit /B -1
 
 cd "%DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME%"
 echo Installing Python dependencies for 3.6.5...
