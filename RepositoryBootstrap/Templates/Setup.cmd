@@ -17,7 +17,7 @@
 @REM ----------------------------------------------------------------------
 @REM |  
 @REM |  Run as:
-@REM |     Setup.cmd [/debug] [/verbose] [/configuration_EQ_<config_name>]*
+@REM |     Setup.cmd [/debug] [/verbose] ["/configuration=<config_name>"]*
 @REM |  
 @REM ----------------------------------------------------------------------
 
