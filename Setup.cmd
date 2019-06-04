@@ -17,7 +17,7 @@
 @REM ----------------------------------------------------------------------
 @REM |  
 @REM |  Run as:
-@REM |     Setup.cmd [/debug] [/verbose] [/name_EQ_<name>] [/configuration_EQ_<config_name>]*
+@REM |     Setup.cmd [/debug] [/verbose] ["/name=<name>"] ["/configuration=<config_name>"]*
 @REM |  
 @REM ----------------------------------------------------------------------
 
@@ -54,14 +54,22 @@ if "%~1"=="" goto :GetRemainingArgs_End
 
 set _ARG=%~1
 
-if "%_ARG:~,9%"=="/name_EQ_" goto :GetRemainingArgs_Name
-if "%_ARG:~,9%"=="-name_EQ_" goto :GetRemainingArgs_Name
+if "%_ARG:~,6%"=="/name=" goto :GetRemainingArgs_Name1
+if "%_ARG:~,6%"=="-name=" goto :GetRemainingArgs_Name1
+
+if "%_ARG:~,9%"=="/name_EQ_" goto :GetRemainingArgs_Name2
+if "%_ARG:~,9%"=="-name_EQ_" goto :GetRemainingArgs_Name2
 
 @REM If here, we are looking at an arg that should be passed to the script
 set _SETUP_CLA=%_SETUP_CLA% "%_ARG%"
 goto :GetRemainingArgs_Continue
 
-:GetRemainingArgs_Name
+:GetRemainingArgs_Name1
+@REM If here, we are looking at a name argument
+set _ENVIRONMENT_NAME=%_ARG:~6%
+goto :GetRemainingArgs_Continue
+
+:GetRemainingArgs_Name2
 @REM If here, we are looking at a name argument
 set _ENVIRONMENT_NAME=%_ARG:~9%
 goto :GetRemainingArgs_Continue
