@@ -179,7 +179,9 @@ def Install( name,
                         return validate_dm.result
 
             assert os.path.isfile(filename), filename
-            temp_directory = CurrentShell.CreateTempDirectory()
+            
+            temp_directory = "{}_tmp".format(output_dir)
+            FileSystem.RemoveTree(temp_directory)
 
             # Extract the content to a temporary folder
             dm.stream.write("Extracting content...")
