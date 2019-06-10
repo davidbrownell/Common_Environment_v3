@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Tester.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-05-21 21:44:34
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-19.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """General purpose test executor."""
 
@@ -114,48 +114,48 @@ def _CreateConfigurations():
                 compiler = next((compiler for compiler in COMPILERS if compiler.Name == compiler_name), None)
                 if compiler is None:
                     raise Exception("The compiler '{}' used in the configuration '{}' does not exist".format(compiler_name, configuration_name))
-    
+
                 test_parser = next((test_parser for test_parser in TEST_PARSERS if test_parser.Name == test_parser_name), None)
                 if test_parser is None:
                     raise Exception("The test parser '{}' used in the configuration '{}' does not exist".format(test_parser_name, configuration_name))
-    
+
                 if coverage_executor_name:
                     coverage_executor = next((executor for executor in TEST_EXECUTORS if executor.Name == coverage_executor_name), None)
                     if coverage_executor is None:
                         raise Exception("The test executor '{}' used in the configuration '{}' does not exist".format(coverage_executor_name, configuration_name))
                 else:
                     coverage_executor = None
-    
+
                 if coverage_validator_name:
                     coverage_validator = next((validator for validator in CODE_COVERAGE_VALIDATORS if validator.Name == coverage_validator_name), None)
                     if coverage_validator is None:
                         raise Exception("The coverage validator '{}' used in the configuration '{}' does not exist".format(coverage_validator_name, configuration_name))
                 else:
                     coverage_validator = None
-    
-                return cls( compiler, 
-                            test_parser, 
+
+                return cls( compiler,
+                            test_parser,
                             coverage_executor,
                             coverage_validator,
                           )
-    
+
             # ----------------------------------------------------------------------
-            def __init__( self, 
-                          compiler, 
-                          test_parser, 
+            def __init__( self,
+                          compiler,
+                          test_parser,
                           optional_coverage_executor,
                           optional_code_coverage_validator=None,
                         ):
                 assert compiler
                 assert test_parser
-    
+
                 self.Compiler                               = compiler
                 self.TestParser                             = test_parser
                 self.OptionalCoverageExecutor               = optional_coverage_executor if optional_coverage_executor else None
                 self.OptionalCodeCoverageValidator          = optional_code_coverage_validator if optional_code_coverage_validator else None
-    
+
         # ----------------------------------------------------------------------
-                          
+
         regex = re.compile(textwrap.dedent(
             # <Wrong hanging indentation> pylint: disable = C0330
            r"""(?#
@@ -167,33 +167,33 @@ def _CreateConfigurations():
             Value       )(?P<value>[^"]+)(?#
                         )"?\s*(?#
             )"""))
-    
+
         configuration_map = OrderedDict()
-    
+
         for configuration in [ item for item in custom_configurations.split(os.pathsep) if item.strip() ]:
             match = regex.match(configuration)
             assert match, configuration
-    
+
             configuration_name = match.group("name").lower()
             type_ = match.group("type")
             value = match.group("value")
-    
+
             if configuration_name not in configuration_map:
                 configuration_map[configuration_name] = {}
-    
+
             if type_ in configuration_map[configuration_name]:
                 if not isinstance(configuration_map[configuration_name][type_], list):
                     configuration_map[configuration_name][type_] = [ configuration_map[configuration_name][type_], ]
-    
+
                 configuration_map[configuration_name][type_].append(value)
             else:
                 configuration_map[configuration_name][type_] = value
-    
+
         # ----------------------------------------------------------------------
         def GetFirstItem(item_or_items):
             if isinstance(item_or_items, list):
                 item_or_items = item_or_items[0]
-            
+
             return item_or_items
 
         # ----------------------------------------------------------------------
@@ -202,7 +202,7 @@ def _CreateConfigurations():
             # compiler and test parser are required
             if "compiler" not in item_map or "test_parser" not in item_map:
                 continue
-    
+
             if isinstance(item_map["compiler"], list):
                 compiler_info = [ ( "{}-{}".format(item_key, compiler),
                                     compiler,
@@ -213,10 +213,10 @@ def _CreateConfigurations():
                                 ]
             else:
                 assert False, type(item_map["compiler"])
-    
+
             for compiler_key, compiler in compiler_info:
                 configurations[compiler_key] = Configuration.Create( compiler_key,
-                                                                     compiler, 
+                                                                     compiler,
                                                                      GetFirstItem(item_map["test_parser"]),
                                                                      GetFirstItem(item_map.get("coverage_executor", None)),
                                                                      GetFirstItem(item_map.get("coverage_validator", None)),
@@ -229,9 +229,9 @@ CONFIGURATIONS                              = _CreateConfigurations()
 del _CreateConfigurations
 
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Public Types
-# |  
+# |
 # ----------------------------------------------------------------------
 class Results(object):
     """Results for executing a single test"""
@@ -261,11 +261,11 @@ class Results(object):
         self.compile_time                   = None
 
         self.has_errors                     = False
-        
+
         self.execute_results                = []        # TestExecutorImpl.ExecuteResult
         self.test_parse_results             = []        # TestParseResult
         self.coverage_validation_results    = []        # CoverageValidationResult
-                
+
     # ----------------------------------------------------------------------
     def __repr__(self):
         return ObjectReprImpl(self)
@@ -276,7 +276,7 @@ class Results(object):
             return self.compile_result
 
         nonlocals = Nonlocals(result=self.compile_result)
-        
+
         # ----------------------------------------------------------------------
         def ApplyResult(result):
             if result is not None:
@@ -325,13 +325,13 @@ class Results(object):
                 ):
         # ----------------------------------------------------------------------
         def ResultToString(result):
-            if result is None:     
+            if result is None:
                 result = "{}N/A".format(colorama.Style.DIM)
-            elif result == 0:                 
+            elif result == 0:
                 result = "{}{}Succeeded".format(colorama.Fore.GREEN, colorama.Style.BRIGHT)
-            elif result < 0:                  
+            elif result < 0:
                 result = "{}{}Failed ({})".format(colorama.Fore.RED, colorama.Style.BRIGHT, result)
-            elif result > 0:                  
+            elif result > 0:
                 result = "{}{}Unknown ({})".format(colorama.Fore.YELLOW, colorama.Style.BRIGHT, result)
             else:
                 assert False, result
@@ -354,7 +354,7 @@ class Results(object):
         if result_code is None:
             return "Result:                                         {}\n".format(ResultToString(result_code))
 
-        
+
 
         results.append(textwrap.dedent(
             """\
@@ -436,7 +436,7 @@ class Results(object):
                                 suffix="" if not suffix else " ({})".format(suffix),
                             ),
                         )
-                    
+
                     return "\n{}".format("\n".join(output))
 
                 # ----------------------------------------------------------------------
@@ -577,7 +577,7 @@ class CompleteResult(object):
                                                                                                             test_parser,
                                                                                                             optional_test_executor,
                                                                                                             optional_code_coverage_validator,
-                                                                                                          ), 
+                                                                                                          ),
                                                                                        4,
                                                                                        skip_first_line=False,
                                                                                      ).rstrip(),
@@ -585,16 +585,16 @@ class CompleteResult(object):
                                                                                                                   test_parser,
                                                                                                                   optional_test_executor,
                                                                                                                   optional_code_coverage_validator,
-                                                                                                                ), 
+                                                                                                                ),
                                                                                            4,
                                                                                            skip_first_line=False,
                                                                                          ).rstrip(),
                        )
 
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Public Methods
-# |  
+# |
 # ----------------------------------------------------------------------
 def ExtractTestItems( input_dir,
                       test_subdir,
@@ -605,13 +605,13 @@ def ExtractTestItems( input_dir,
     assert test_subdir
     assert compiler
 
-    verbose_stream = StreamDecorator( verbose_stream, 
-                                      prefix='\n', 
+    verbose_stream = StreamDecorator( verbose_stream,
+                                      prefix='\n',
                                       line_prefix='  ',
                                     )
 
     traverse_exclude_dir_names = [ "Generated", ]
-    
+
     test_items = []
 
     if isinstance(compiler.InputTypeInfo, FilenameTypeInfo):
@@ -638,7 +638,7 @@ def ExtractTestItems( input_dir,
             if compiler.IsSupported(root) and compiler.IsSupportedTestItem(root):
                 test_items.append(root)
             else:
-                verbose_stream.write("'{}' is not supported by the compiler.\n".format(_script_fullpath))
+                verbose_stream.write("'{}' is not supported by the compiler.\n".format(root))
 
     else:
         assert False, (compiler.Name, compiler.InputTypeInfo)
@@ -702,7 +702,7 @@ def GenerateTestResults( test_items,
             debug_only = True
             release_only = False
 
-    internal_exception_result_code = 54321 
+    internal_exception_result_code = 54321
 
     # ----------------------------------------------------------------------
     # |  Prepare the working data
@@ -731,7 +731,7 @@ def GenerateTestResults( test_items,
         for bad_char in [ '\\', '/', ':', '*', '?', '"', '<', '>', '|', ]:
             output_name = output_name.replace(bad_char, '_')
 
-        working_data_items.append(WorkingData( CompleteResult(test_item), 
+        working_data_items.append(WorkingData( CompleteResult(test_item),
                                                os.path.join(output_dir, output_name),
                                                threading.Lock(),
                                              ))
@@ -752,7 +752,7 @@ def GenerateTestResults( test_items,
                 results.compiler_binary = working_data.complete_result.Item
             else:
                 results.compiler_binary = os.path.join(output_dir, "test")
-                
+
                 ext = getattr(compiler, "BinaryExtension", None)
                 if ext:
                     results.compiler_binary += ext
@@ -775,7 +775,7 @@ def GenerateTestResults( test_items,
     # ----------------------------------------------------------------------
     def BuildThreadProc(task_index, output_stream, on_status_update):
         working_data = working_data_items[task_index % len(working_data_items)]
-        
+
         if task_index >= len(working_data_items):
             configuration_results = working_data.complete_result.release
             is_debug = False
@@ -786,37 +786,37 @@ def GenerateTestResults( test_items,
         if configuration_results.compiler_context is None:
             return 0
 
-        # Create the compiler context
-        if not no_status:
-            on_status_update("Configuring")
+        compile_result = None
+        compile_output = ''
+        start_time = time.time()
 
-        assert os.path.isdir(configuration_results.compiler_context), configuration_results.compiler_context
-
-        configuration_results.compiler_context = compiler.GetContextItem(
-            working_data.complete_result.Item,
-            is_debug=is_debug,
-            is_profile=bool(optional_test_executor),
-            output_filename=configuration_results.compile_binary,
-            output_dir=configuration_results.compiler_context,
-            force=True,
-        )
-
-        if configuration_results.compiler_context is None:
-            configuration_results.compile_binary = None
-            return None
-
-        if not no_status:
-            on_status_update("Waiting")
-
-        with working_data.execution_lock:
+        try:
+            # Create the compiler context
             if not no_status:
-                on_status_update("Building")
+                on_status_update("Configuring")
 
-            compile_result = None
-            compile_output = ''
-            start_time = time.time()
-            
-            try:
+            assert os.path.isdir(configuration_results.compiler_context), configuration_results.compiler_context
+
+            configuration_results.compiler_context = compiler.GetContextItem(
+                working_data.complete_result.Item,
+                is_debug=is_debug,
+                is_profile=bool(optional_test_executor),
+                output_filename=configuration_results.compile_binary,
+                output_dir=configuration_results.compiler_context,
+                force=True,
+            )
+
+            if configuration_results.compiler_context is None:
+                configuration_results.compile_binary = None
+                return None
+
+            if not no_status:
+                on_status_update("Waiting")
+
+            with working_data.execution_lock:
+                if not no_status:
+                    on_status_update("Building")
+
                 sink = six.moves.StringIO()
 
                 if compiler.IsCompiler:
@@ -834,24 +834,24 @@ def GenerateTestResults( test_items,
                 if compile_result != 0:
                     output_stream.write(compile_output)
 
-            except:
-                compile_result = internal_exception_result_code
-                compile_output = traceback.format_exc()
+        except:
+            compile_result = internal_exception_result_code
+            compile_output = traceback.format_exc()
 
-                raise
+            raise
 
-            finally:
-                configuration_results.compile_result = compile_result
-                configuration_results.compile_time = str(datetime.timedelta(seconds=(time.time() - start_time)))
+        finally:
+            configuration_results.compile_result = compile_result
+            configuration_results.compile_time = str(datetime.timedelta(seconds=(time.time() - start_time)))
 
-                with open(configuration_results.compile_log, 'w') as f:
-                    f.write(compile_output.replace('\r\n', '\n'))
+            with open(configuration_results.compile_log, 'w') as f:
+                f.write(compile_output.replace('\r\n', '\n'))
 
-                if compile_result != 0:
-                    with build_failures_lock:
-                        nonlocals.build_failures += 1
+            if compile_result != 0:
+                with build_failures_lock:
+                    nonlocals.build_failures += 1
 
-            return compile_result
+        return compile_result
 
     # ----------------------------------------------------------------------
 
@@ -877,7 +877,7 @@ def GenerateTestResults( test_items,
 
     # ----------------------------------------------------------------------
     # |  Execute
-    
+
     # ----------------------------------------------------------------------
     def TestThreadProc( output_stream,
                         on_status_update,
@@ -911,7 +911,7 @@ def GenerateTestResults( test_items,
                 return log_filename
 
             # ----------------------------------------------------------------------
-        
+
             # Run the test...
             on_status_update("Testing")
 
@@ -946,7 +946,7 @@ def GenerateTestResults( test_items,
 
             finally:
                 assert execute_result
-                
+
                 if execute_result.TestTime is None:
                     execute_result.TestTime = str(datetime.timedelta(seconds=(time.time() - execute_start_time)))
 
@@ -970,7 +970,7 @@ def GenerateTestResults( test_items,
                     test_parse_result = -1
                 else:
                     test_parse_result = test_parser.Parse(original_test_output)
-                
+
             except:
                 test_parse_result = internal_exception_result_code
                 raise
@@ -1117,9 +1117,9 @@ def GenerateTestResults( test_items,
     return [ working_data.complete_result for working_data in working_data_items ]
 
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Command Line Functionality
-# |  
+# |
 # ----------------------------------------------------------------------
 _compiler_type_info                                     = CommandLine.EnumTypeInfo([ compiler.Name for compiler in COMPILERS ] + [ str(index) for index in six.moves.range(1, len(COMPILERS) + 1) ])
 _test_parser_type_info                                  = CommandLine.EnumTypeInfo([ test_parser.Name for test_parser in TEST_PARSERS ] + [ str(index) for index in six.moves.range(1, len(TEST_PARSERS) + 1) ])
@@ -1198,7 +1198,7 @@ def Test( configuration,
           no_status=False,
         ):
     """Tests the given input"""
-    
+
     configuration = CONFIGURATIONS[configuration]
 
     if os.path.isfile(filename_or_dir) or (
@@ -1251,7 +1251,7 @@ def Test( configuration,
                            )
 
 # ----------------------------------------------------------------------
-@CommandLine.EntryPoint( filename=CommandLine.EntryPoint.Parameter("Filename to test."),
+@CommandLine.EntryPoint( filename_or_directory=CommandLine.EntryPoint.Parameter("Filename or directory to test."),
                          iterations=_iterations_param_description,
                          debug_on_error=_debug_on_error_param_description,
                          continue_iterations_on_error=_continue_iterations_on_error_param_description,
@@ -1262,11 +1262,11 @@ def Test( configuration,
                          preserve_ansi_escape_sequences=_preserve_ansi_escape_sequences_param_description,
                          no_status=_no_status_param_description,
                        )
-@CommandLine.Constraints( filename=CommandLine.FilenameTypeInfo(),
+@CommandLine.Constraints( filename_or_directory=CommandLine.FilenameTypeInfo(match_any=True),
                           iterations=CommandLine.IntTypeInfo(min=1, arity='?'),
                           output_stream=None,
                         )
-def TestFile( filename,
+def TestItem( filename_or_directory,
               iterations=1,
               debug_on_error=False,
               continue_iterations_on_error=False,
@@ -1278,24 +1278,24 @@ def TestFile( filename,
               preserve_ansi_escape_sequences=False,
               no_status=False,
             ):
-    """Tests the given input file"""
+    """Tests the given input file or directory (depending on the compiler invoked)"""
 
     # ----------------------------------------------------------------------
     def GetConfiguration():
-        for key, configuration in six.iteritems(CONFIGURATIONS): 
-            if configuration.Compiler.IsSupported(filename):
+        for key, configuration in six.iteritems(CONFIGURATIONS):
+            if configuration.Compiler.IsSupported(filename_or_directory):
                 return key
-        
+
         return None
 
     # ----------------------------------------------------------------------
 
     configuration = GetConfiguration()
     if not configuration:
-        raise CommandLine.UsageException("Unable to find a configuration with a compiler that supports the file '{}'".format(filename))
+        raise CommandLine.UsageException("Unable to find a configuration with a compiler that supports the input '{}'".format(filename_or_directory))
 
     return Test( configuration,
-                 filename,
+                 filename_or_directory,
                  output_dir=None,
                  test_type=None,
                  execute_in_parallel=False,
@@ -1311,7 +1311,7 @@ def TestFile( filename,
                  preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
                  no_status=no_status,
                )
- 
+
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint( configuration=_configuration_param_description,
                          input_dir=_input_dir_param_descripiton,
@@ -1355,7 +1355,7 @@ def TestType( configuration,
               no_status=False,
             ):
     """Run tests for the test type with the specified configuration"""
-    
+
     return Test( configuration,
                  input_dir,
                  output_dir=output_dir,
@@ -1414,7 +1414,7 @@ def TestAll( input_dir,
              no_status=False,
            ):
     """Run tests for the test type with all configurations"""
-    
+
     with StreamDecorator(output_stream).DoneManager( line_prefix='',
                                                      prefix="\nResults: ",
                                                      suffix='\n',
@@ -1471,7 +1471,7 @@ def MatchTests( input_dir,
                 verbose=False,
               ):
     """Matches tests to production code for tests found within 'test_type' subdirectories."""
-    
+
     compiler = _GetFromCommandLineArg(compiler, COMPILERS, compiler_flag)
     assert compiler
 
@@ -1481,7 +1481,7 @@ def MatchTests( input_dir,
 
     output_stream = StreamDecorator(output_stream)
 
-    traverse_exclude_dir_names = [ "Generated", 
+    traverse_exclude_dir_names = [ "Generated",
                                    "Impl",
                                    "Details",
                                  ]
@@ -1637,7 +1637,7 @@ def MatchAllTests( input_dir,
                    verbose=False,
                  ):
     """Matches all tests for the test type across all compilers."""
-    
+
     with StreamDecorator(output_stream).DoneManager( line_prefix='',
                                                      prefix="\nResults: ",
                                                      suffix='\n',
@@ -1803,7 +1803,7 @@ def ExecuteTree( input_dir,
     Executes tests found within 'test_type' subdirectories using a specific compiler, test parser, test executor, and code coverage validator. In most
     cases, it is easier to use a Test___ method rather than this one.
     """
-    
+
     if test_executor_flag and test_executor is None:
         raise CommandLine.UsageException("Test executor flags are only valid when a test executor is specified")
 
@@ -1862,7 +1862,7 @@ def CommandLineSuffix():
 
                                         {code_coverage_validators}
 
-                                        
+
                                         A valid name or index may be used for these command line arguments:
 
                                             - <compiler>
@@ -1901,7 +1901,7 @@ def _GetFromCommandLineArg(arg, items, flags, allow_empty=False):
     assert item
 
     # Parser/Compilers/etc are created via default constructors, so we have a concrete
-    # instance here. Create a new instance with the provided flags. This is pretty 
+    # instance here. Create a new instance with the provided flags. This is pretty
     # unusual behavior.
     return type(item)(**flags)
 
@@ -1956,7 +1956,7 @@ def _ExecuteImpl( filename_or_dir,
 
         if not complete_results:
             return 0
-        
+
         assert len(complete_results) == 1, len(complete_results)
         complete_result = complete_results[0]
 
@@ -2038,7 +2038,7 @@ def _ExecuteTreeImpl( input_dir,
                                                          suffix='\n',
                                                        ) as dm:
             test_items = []
-        
+
             dm.stream.write("Parsing '{}'...".format(input_dir))
             with dm.stream.DoneManager( done_suffix=lambda: "{} found".format(inflect.no("test", len(test_items))),
                                         suffix='\n',
@@ -2048,19 +2048,19 @@ def _ExecuteTreeImpl( input_dir,
                                                compiler,
                                                verbose_stream=StreamDecorator(this_dm.stream if verbose else None),
                                              )
-        
+
             if not test_items:
                 return dm.result
-        
+
             if execute_in_parallel is None:
                 for tt in TEST_TYPES:
                     if tt.Name == test_type:
                         execute_in_parallel = tt.ExecuteInParallel
                         break
-        
+
                 if execute_in_parallel is None:
                     execute_in_parallel = False
-        
+
             complete_results = GenerateTestResults( test_items,
                                                     output_dir,
                                                     compiler,
