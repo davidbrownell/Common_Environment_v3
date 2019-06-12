@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  RegularExpression.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-04-25 14:23:12
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-19.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Methods helpful when working with regular expressions."""
 
@@ -28,9 +28,9 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Public Methods
-# |  
+# |
 # ----------------------------------------------------------------------
 _TemplateStringToRegex_tag_regex                        = re.compile(textwrap.dedent(
                                                                r"""(?#
@@ -94,7 +94,7 @@ def TemplateStringToRegex( content,
 
     output = output.replace(re.escape(newline_placeholder), r"\r?\n")
     output = output.replace(r"\ ", ' ')
-    
+
     if as_string:
         return output
 
@@ -132,7 +132,7 @@ def WildcardSearchToRegularExpression( value,
     return re.compile(value)
 
 # ----------------------------------------------------------------------
-def Generate( regex_or_regex_string, 
+def Generate( regex_or_regex_string,
               content,
               leading_delimiter=False,
             ):
@@ -153,7 +153,7 @@ def Generate( regex_or_regex_string,
         regex = regex_or_regex_string
 
     results = regex.split(content)
-    
+
     if regex.groups:
         if len(results) == 1:
             # If here, there weren't any matches
@@ -170,7 +170,7 @@ def Generate( regex_or_regex_string,
 
                 if results[0]:
                     yield { None : results[0] }
-                
+
             else:
                 index_offset = 0
 

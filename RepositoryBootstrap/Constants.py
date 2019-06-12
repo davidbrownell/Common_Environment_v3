@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Constants.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-05-02 13:31:31
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-19.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Constants used in the bootstrap process"""
 
@@ -35,7 +35,7 @@ GENERATED_ACTIVATION_FILENAME                           = "EnvironmentActivation
 GENERATED_ACTIVATION_ORIGINAL_ENVIRONMENT_FILENAME      = "EnvironmentActivation.OriginalEnvironment.json"
 
 # Place a file or directory with this name in the file system to prevent
-# its siblings and their descendants from being scanned as potential repository 
+# its siblings and their descendants from being scanned as potential repository
 # locations. This is especially useful during Continuous Integration processes,
 # where code associated with CI working directories should not be considered
 # as potential dependencies for the CI processes itself.
@@ -73,9 +73,9 @@ REPOSITORY_ID_CONTENT_TEMPLATE                          = textwrap.dedent(
     This file is used to uniquely identify this repository for the purposes of dependency management.
     Other repositories that depend on this one will search for this file upon initial setup and 
     generate information that can be used when activating development environments.
-    
+
     **** PLEASE DO NOT MODIFY, REMOVE, OR RENAME THIS FILE, AS DOING SO WILL LIKELY BREAK OTHER REPOSITORIES! ****
-    
+
     Friendly Name:      {name}
     Id:                 {id}
     """)
@@ -88,6 +88,7 @@ DE_FUNDAMENTAL_ROOT_NAME                                = "DEVELOPMENT_ENVIRONME
 DE_REPO_ROOT_NAME                                       = "DEVELOPMENT_ENVIRONMENT_REPOSITORY"
 DE_REPO_CONFIGURATION_NAME                              = "DEVELOPMENT_ENVIRONMENT_REPOSITORY_CONFIGURATION"
 DE_REPO_GENERATED_NAME                                  = "DEVELOPMENT_ENVIRONMENT_REPOSITORY_GENERATED"
+DE_OPERATING_SYSTEM_NAME                                = "DEVELOPMENT_ENVIRONMENT_OPERATING_SYSTEM"
 
 DE_REPO_ACTIVATED_FLAG                                  = "DEVELOPMENT_ENVIRONMENT_REPOSITORY_ACTIVATED_FLAG"
 
