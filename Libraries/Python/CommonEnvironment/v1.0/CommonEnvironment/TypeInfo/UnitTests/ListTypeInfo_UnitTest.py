@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  ListTypeInfo_UnitTest.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-04-28 21:00:54
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-19.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Unit test for ListTypeInfo.py"""
 
@@ -40,7 +40,7 @@ class StandardSuite(unittest.TestCase):
     def test_Standard(self):
         self.assertEqual(self.ti.Desc, "List")
         self.assertEqual(self.ti.ExpectedType, (list, tuple))
-        self.assertEqual(self.ti.ConstraintsDesc, "List of 'String' values where each value must have more than 2 characters")
+        self.assertEqual(self.ti.ConstraintsDesc, "List of 'String' values where each value must have at least 2 characters")
 
         l = [ [ "abc", "def", "ghi", ],
               [ "012", "345", "678", ],
