@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  LinuxShellImpl.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-05-11 12:50:32
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-19.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Contains the LinuxShellImpl object"""
 
@@ -39,14 +39,14 @@ class LinuxShellImpl(Shell):
     """
 
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Public Types
-    # |  
+    # |
     # ----------------------------------------------------------------------
     @staticderived
     @override
     class CommandVisitor(Visitor):
-        
+
         # <Parameters differ from overridden '<...>' method> pylint: disable = W0221
 
         # ----------------------------------------------------------------------
@@ -54,7 +54,7 @@ class LinuxShellImpl(Shell):
         @override
         def OnComment(command):
             return "# {}".format(command)
-    
+
         # ----------------------------------------------------------------------
         @staticmethod
         @override
@@ -71,7 +71,7 @@ class LinuxShellImpl(Shell):
                                                                                                       ]),
                                                                                         )))
             return ' && '.join(output)
-    
+
         # ----------------------------------------------------------------------
         @classmethod
         @override
@@ -81,7 +81,7 @@ class LinuxShellImpl(Shell):
                 result += "\n{}".format(cls.Accept(ExitOnError()))
 
             return result
-    
+
         # ----------------------------------------------------------------------
         @classmethod
         @override
@@ -91,7 +91,7 @@ class LinuxShellImpl(Shell):
                 result += "\n{}".format(cls.Accept(ExitOnError()))
 
             return result
-    
+
         # ----------------------------------------------------------------------
         @staticmethod
         @override
@@ -105,19 +105,19 @@ class LinuxShellImpl(Shell):
                              target=command.Target,
                              link=command.LinkFilename,
                            )
-    
+
         # ----------------------------------------------------------------------
         @classmethod
         @override
         def OnPath(cls, command):
             return cls.OnSet(Set("PATH", command.Values))
-    
+
         # ----------------------------------------------------------------------
         @classmethod
         @override
         def OnAugmentPath(cls, command):
             return cls.OnAugment(Augment("PATH", command.Values))
-    
+
         # ----------------------------------------------------------------------
         @staticmethod
         @override
@@ -128,7 +128,7 @@ class LinuxShellImpl(Shell):
             assert command.Values
 
             return "export {}={}".format(command.Name, os.pathsep.join(command.Values))    # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
-    
+
         # ----------------------------------------------------------------------
         @staticmethod
         @override
@@ -140,7 +140,7 @@ class LinuxShellImpl(Shell):
                 name=command.Name,
                 values=os.pathsep.join(command.Values),
             )
-    
+
         # ----------------------------------------------------------------------
         @staticmethod
         @override
@@ -159,14 +159,14 @@ class LinuxShellImpl(Shell):
                                         """) if command.PauseOnSuccess else '',
                              error=textwrap.dedent(
                                         """\
-                                        if [[ $? -ne 0]] 
+                                        if [[ $? -ne 0]]
                                         then
                                             read -p "Press [Enter] to continue"
                                         fi
                                         """) if command.PauseOnError else '',
                              return_code=command.ReturnCode or 0,
                            )
-    
+
         # ----------------------------------------------------------------------
         @staticmethod
         @override
@@ -183,34 +183,34 @@ class LinuxShellImpl(Shell):
                 """).format( variable_name,
                              command.ReturnCode or "$error_code",
                            )
-    
+
         # ----------------------------------------------------------------------
         @staticmethod
         @override
         def OnRaw(command):
             return command.Value
-    
+
         # ----------------------------------------------------------------------
         @staticmethod
         @override
         def OnEchoOff(command):
             return ""
-    
+
         # ----------------------------------------------------------------------
         @staticmethod
         @override
         def OnCommandPrompt(command):
             return r'PS1="({}) `id -nu`@`hostname -s`:\w$ "'.format(command.Prompt)
-    
+
         # ----------------------------------------------------------------------
         @staticmethod
         @override
         def OnDelete(command):
             if command.IsDir:
                 return 'rm -Rfd "{}"'.format(command.FilenameOrDirectory)
-            
+
             return 'rm "{}"'.format(command.FilenameOrDirectory)
-    
+
         # ----------------------------------------------------------------------
         @staticmethod
         @override
@@ -218,7 +218,7 @@ class LinuxShellImpl(Shell):
             return 'cp "{source}" "{dest}"'.format( source=command.Source,
                                                     dest=command.Dest,
                                                   )
-    
+
         # ----------------------------------------------------------------------
         @staticmethod
         @override
@@ -226,7 +226,7 @@ class LinuxShellImpl(Shell):
             return 'mv "{source}" "{dest}"'.format( source=command.Source,
                                                     dest=command.Dest,
                                                   )
-    
+
         # ----------------------------------------------------------------------
         @staticmethod
         @override
@@ -251,9 +251,9 @@ class LinuxShellImpl(Shell):
             return "popd > /dev/null"
 
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Public Properties
-    # |  
+    # |
     # ----------------------------------------------------------------------
     CategoryName                            = DerivedProperty("Linux")
     ScriptExtension                         = DerivedProperty(".sh")
@@ -266,9 +266,9 @@ class LinuxShellImpl(Shell):
     TempDirectory                           = DerivedProperty("/tmp")
 
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Public Methods
-    # |  
+    # |
     # ----------------------------------------------------------------------
     @classmethod
     @override
@@ -292,22 +292,25 @@ class LinuxShellImpl(Shell):
     # ----------------------------------------------------------------------
     @staticmethod
     @override
-    def UpdateOwnership(filename_or_directory):
+    def UpdateOwnership(
+        filename_or_directory,
+        recursive=True,
+    ):
         if ( hasattr(os, "geteuid") and
-             os.geteuid() == 0 and 
+             os.geteuid() == 0 and
              not any(var for var in [ "SUDO_UID", "SUDO_GID", ] if var not in os.environ)
            ):
            os.system('chown {recursive} {user}:{group} "{input}"' \
-                        .format( recursive="--recursive" if os.path.isdir(filename_or_directory) else '',
+                        .format( recursive="--recursive" if recursive and os.path.isdir(filename_or_directory) else '',
                                  user=os.environ["SUDO_UID"],
                                  group=os.environ["SUDO_GID"],
                                  input=filename_or_directory,
                                ))
 
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Private Methods
-    # |  
+    # |
     # ----------------------------------------------------------------------
     @staticmethod
     @override
