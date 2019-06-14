@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  StringTypeInfo.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-04-23 10:09:51
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-19.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Contains the StringTypeInfo object."""
 
@@ -73,10 +73,10 @@ class StringTypeInfo(TypeInfo):
             constraints.append("match the regular expression '{}'".format(self.ValidationExpression))
 
         if self.MinLength is not None:
-            constraints.append("have more than {}".format(inflect.no("character", self.MinLength)))
+            constraints.append("have at least {}".format(inflect.no("character", self.MinLength)))
 
         if self.MaxLength is not None:
-            constraints.append("have less than {}".format(inflect.no("character", self.MaxLength)))
+            constraints.append("not have more than {}".format(inflect.no("character", self.MaxLength)))
 
         if not constraints:
             return ''
@@ -106,4 +106,3 @@ class StringTypeInfo(TypeInfo):
                                                                              item,
                                                                              inflect.no("character", self.MaxLength),
                                                                            )
-
