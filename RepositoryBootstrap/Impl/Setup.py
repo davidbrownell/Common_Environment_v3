@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Setup.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-06-20 10:54:55
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-19.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """One-time environment preparation for a repository."""
 
@@ -56,7 +56,7 @@ CODE_DIRECTORY_NAMES                        = [ "code",
                                                 "dev",
                                               ]
 
-ENUMERATE_EXCLUDE_DIRS                      = [ "generated", 
+ENUMERATE_EXCLUDE_DIRS                      = [ "generated",
                                                 ".hg",
                                                 ".git",
                                               ]
@@ -92,7 +92,7 @@ def Setup( output_filename_or_stdout,
     """Perform setup activities for this repository"""
 
     configurations = configuration or []; del configuration
-    
+
     if debug:
         verbose = True
 
@@ -110,20 +110,23 @@ def Setup( output_filename_or_stdout,
                  configurations,
                ]
 
+        activities = [ _SetupOperatingSystem,
+                     ]
+
         if recurse:
             # If here, invoke setup on this repo and all of its dependencies
-            activities = [ _SetupRecursive,
-                         ]
+            activities += [ _SetupRecursive,
+                          ]
 
             args += [ use_ascii,
                       all_configurations,
                     ]
         else:
             # If here, setup this specific repo
-            activities = [ _SetupBootstrap,
-                           _SetupCustom,
-                           _SetupActivateScript,
-                         ]
+            activities += [ _SetupBootstrap,
+                            _SetupCustom,
+                            _SetupActivateScript,
+                          ]
 
             if not no_hooks:
                 activities += [ _SetupScmHooks,
@@ -136,7 +139,7 @@ def Setup( output_filename_or_stdout,
             if these_commands:
                 if isinstance(these_commands, int):
                     return these_commands
-                    
+
                 commands += these_commands
 
         return commands
@@ -144,17 +147,17 @@ def Setup( output_filename_or_stdout,
     # ----------------------------------------------------------------------
 
     result, commands = Utilities.GenerateCommands(Execute, debug)
-    
+
     if output_filename_or_stdout == "stdout":
         output_stream = sys.stdout
         close_stream_func = lambda: None
     else:
         output_stream = open(output_filename_or_stdout, 'w')
         close_stream_func = output_stream.close
-    
+
     with CommonEnvironmentImports.CallOnExit(close_stream_func):
         output_stream.write(CommonEnvironmentImports.CurrentShell.GenerateCommands(commands))
-    
+
     return result
 
 # ----------------------------------------------------------------------
@@ -189,7 +192,7 @@ def List( repository_root,
           verbose=False,
         ):
     """Lists repository information"""
-    
+
     scm = _ScmParameterToScm(scm, repository_root)
 
     if decorate:
@@ -224,7 +227,7 @@ def List( repository_root,
             if isinstance(repo_map, int):
                 output_stream.write(sink.getvalue())
                 return repo_map
-        
+
             output_stream.write(json_mod.dumps([ { "name" : value.Name,
                                                    "id" : value.Id,
                                                    "root" : value.root,
@@ -235,17 +238,17 @@ def List( repository_root,
                                                  for value in six.itervalues(repo_map)
                                                ]))
             return 0
-        
+
         # ----------------------------------------------------------------------
         def Callback(output_stream, repo_map):
             for value in six.itervalues(repo_map):
                 if value.root is None:
                     return -1
-        
+
             return 0
-        
+
         # ----------------------------------------------------------------------
-        
+
         return _SimpleFuncImpl( Callback,
                                 repository_root,
                                 recurse,
@@ -315,7 +318,7 @@ def Enlist( repository_root,
                         try:
                             clone_uri = clone_uri.format(**uri_dict)
                         except KeyError as ex:
-                            output_stream.write("\nERROR: The key {} is used in the clone uri '{}' (defined in '{}') and must be provided on the command line using the 'uri_dict' argument.\n".format( str(ex), 
+                            output_stream.write("\nERROR: The key {} is used in the clone uri '{}' (defined in '{}') and must be provided on the command line using the 'uri_dict' argument.\n".format( str(ex),
                                                                                                                                                                                                         clone_uri,
                                                                                                                                                                                                         value.root,
                                                                                                                                                                                                       ))
@@ -335,7 +338,7 @@ def Enlist( repository_root,
                     WARNING: Unable to clone these repositories:
                     {}
                     """).format('\n'.join([ "    - {} <{}>".format(value.Name, value.Id) for value in missing ])))
-                
+
                 return 1
 
             output_stream.write("\n\nAll repositories were found.\n")
@@ -358,7 +361,7 @@ def Enlist( repository_root,
 
                     clone_dm.result, output = scm.Clone(clone_uri, dest_dir)
                     clone_dm.stream.write(output)
-            
+
         nonlocals.should_continue = (dm.result == 0)
         return dm.result
 
@@ -379,7 +382,7 @@ def Enlist( repository_root,
                                   required_ancestor_dir=repositories_root,
                                   use_ascii=use_ascii,
                                 )
-        
+
         if result != 0 or not nonlocals.should_continue:
             break
 
@@ -387,6 +390,43 @@ def Enlist( repository_root,
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+def _SetupOperatingSystem(output_stream, *args, **kwargs):
+    if CommonEnvironmentImports.CurrentShell.CategoryName == "Windows":
+        # Check to see if long paths are enabled on Windows
+        output_stream.write("Verifying long path support on Windows...")
+        with output_stream.DoneManager(
+            suffix="\n",
+        ) as this_dm:
+            # Python imports can begin to break down if long paths aren't enabled
+            import winreg
+
+            hkey = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SYSTEM\ControlSet001\Control\FileSystem")
+            with CommonEnvironmentImports.CallOnExit(lambda: winreg.CloseKey(hkey)):
+                value = winreg.QueryValueEx(hkey, "LongPathsEnabled")[0]
+
+                if value != 1:
+                    this_dm.stream.write(
+                        textwrap.dedent(
+                            """\
+
+
+                            WARNING: Long path support is not enabled. While this isn't a requirement
+                                     for running on Windows, it could present problems with
+                                     python imports in deeply nested directory hierarchies.
+
+                                     To enable long path support in Windows:
+
+                                        1) Launch 'regedit'
+                                        2) Navigate to 'HKEY_LOCAL_MACHINE\\SYSTEM\\ControlSet001\\Control\\FileSystem'
+                                        3) Edit the value 'LongPathsEnabled'
+                                        4) Set the value to 1
+
+
+                            """,
+                        ),
+                    )
+
 # ----------------------------------------------------------------------
 def _SetupRecursive( output_stream,
                      repository_root,
@@ -418,7 +458,7 @@ def _SetupRecursive( output_stream,
             for index, value in enumerate(values):
                 dm.stream.write("Setting up '{} <{}>' ({} of {})...".format( value.Name,
                                                                              value.Id,
-                                                                             index + 1, 
+                                                                             index + 1,
                                                                              len(values),
                                                                            ))
                 with dm.stream.DoneManager( suffix='\n',
@@ -526,7 +566,7 @@ def _SetupBootstrap( output_stream,
                                                                                                     """\
 
                                                                                                     To operate on specific configurations, specify this argument one or more times on the command line:
-                                                                                                                                            
+
                                                                                                         /configuration=<configuration name>
                                                                                                     """).rstrip(),
                                                )
@@ -575,12 +615,12 @@ def _SetupBootstrap( output_stream,
     output_stream.write(textwrap.dedent(
         """\
         {repository} {was} found at {this} {location}
-    
+
             {header}
             {sep}
             {values}
-    
-    
+
+
         """).format( repository=inflect.no("repository", len(repo_map)),
                      was=inflect.plural("was", len(repo_map)),
                      this=inflect.plural("this", len(repo_map)),
@@ -609,7 +649,7 @@ def _SetupBootstrap( output_stream,
 
             repository_roots.append(dependency.RepositoryRoot)
 
-        config_info.Fingerprint = Utilities.CalculateFingerprint( [ repository_root, ] + repository_roots, 
+        config_info.Fingerprint = Utilities.CalculateFingerprint( [ repository_root, ] + repository_roots,
                                                                   repository_root,
                                                                 )
 
@@ -656,7 +696,7 @@ def _SetupActivateScript( output_stream,
     implementation_script = os.path.join(_script_dir, activate_script_name)
     assert os.path.isfile(implementation_script), implementation_script
 
-    commands = [ 
+    commands = [
         CommonEnvironmentImports.CurrentShell.Commands.EchoOff(),
         CommonEnvironmentImports.CurrentShell.Commands.Set(Constants.DE_ENVIRONMENT_NAME, environment_name),
         CommonEnvironmentImports.CurrentShell.Commands.PushDirectory(None),
@@ -679,7 +719,7 @@ def _SetupActivateScript( output_stream,
     activate_name, activate_ext = os.path.splitext(activate_script_name)
 
     activation_filename = os.path.join(
-        repository_root, 
+        repository_root,
         "{}{}{}".format(
             activate_name,
             ".{}".format(environment_name) if environment_name != Constants.DEFAULT_ENVIRONMENT_NAME else "",
@@ -748,9 +788,9 @@ def _SetupScmHooks( output_stream,
 
         hooks_impl_filename = os.path.normpath(os.path.join(_script_dir, "Hooks", "Git.py"))
         assert os.path.isfile(hooks_impl_filename), hooks_impl_filename
-        
+
         relative_hooks_impl_filename = CommonEnvironmentImports.FileSystem.GetRelativePath(repository_root, hooks_impl_filename).replace(os.path.sep, '/')
-        
+
         import io
 
         for name in [ "commit-msg",
@@ -779,7 +819,7 @@ def _SetupScmHooks( output_stream,
                     #!/bin/bash
                     python {} {} "$*"
                     exit $?
-                    """).format( this_relative_hooks_impl_filename, 
+                    """).format( this_relative_hooks_impl_filename,
                                  name.replace('-', '_'),
                                ))
 
@@ -813,7 +853,7 @@ class _RepoData(object):
                     configurations = { None : configurations, }
 
                 # Mixin repos are specified via the MixinRepository decorator
-                is_mixin_repository = ( hasattr(dependencies_func, "_self_wrapper") and 
+                is_mixin_repository = ( hasattr(dependencies_func, "_self_wrapper") and
                                         dependencies_func._self_wrapper.__name__ == "MixinRepository"
                                       )
 
@@ -917,7 +957,7 @@ class _RepositoriesMap(OrderedDict):
                    ):
             if id not in self:
                 value = cls.Value(name, id, directory)
-                
+
                 value.root = directory
                 value.configurations = list(six.iterkeys(repo_data.Configurations))
 
@@ -929,7 +969,7 @@ class _RepositoriesMap(OrderedDict):
                 config_dependencies = config_info.Dependencies
 
                 if not config_dependencies and id != fundamental_repo_id:
-                    config_dependencies.append(Dependency( fundamental_repo_id, 
+                    config_dependencies.append(Dependency( fundamental_repo_id,
                                                            fundamental_repo_name,
                                                            Constants.DEFAULT_FUNDAMENTAL_CONFIGURATION,
                                                          ))
@@ -985,11 +1025,11 @@ class _RepositoriesMap(OrderedDict):
                 on_search_begin_func(self)
             else:
                 output_stream.write("\nSearching for repositories...")
-            
+
             output_stream.flush()
 
             warnings = []
-                
+
             with output_stream.DoneManager( suffix='\n\n',
                                           ) as dm:
                 for enum_result in cls._Enumerate( repository_root,
@@ -1001,23 +1041,23 @@ class _RepositoriesMap(OrderedDict):
                     if enum_result.Id not in self:
                         if enum_result.Id not in repo_cache:
                             repo_cache[enum_result.Id] = enum_result
-                
+
                         continue
-                
+
                     value = self[enum_result.Id]
-                
+
                     # Note that we may already have a root associated with this repo.
                     # This can happen when the repo has already been found in a location
                     # nearer to the repository_root and the search has continued to find
                     # other repositories.
                     if value.root is not None:
                         continue
-                
+
                     enum_repo_data = CreateRepoData(enum_result.Root)
 
                     if value.Name != enum_result.Name:
                         warnings.append(( enum_result.Name, value.Name, value.Source ))
-                        
+
                     value.Name = enum_result.Name
 
                     value.root = enum_result.Root
@@ -1032,7 +1072,7 @@ class _RepositoriesMap(OrderedDict):
 
                     assert nonlocals.remaining_repos
                     nonlocals.remaining_repos -= 1
-                
+
                     if nonlocals.remaining_repos == 0:
                         break
 
@@ -1061,11 +1101,11 @@ class _RepositoriesMap(OrderedDict):
         # The map now has every possible dependency, regardless of what configurations were specified.
         # Walk the actual roots and configurations and remove any repo that cannot be accessed.
         visited = set()
-        
+
         # ----------------------------------------------------------------------
         def Traverse(value, config_name):
             visited.add(value.Id)
-        
+
             if value.root and config_name not in value.configurations:
                 raise Exception("The configuration '{}' specified by '{}' is not valid for '{} <{}>' in '{}'".format( config_name,
                                                                                                                       value.Source,
@@ -1078,15 +1118,15 @@ class _RepositoriesMap(OrderedDict):
                 for child_id, child_configuration in value.dependencies[config_name]:
                     assert child_id in self, child_id
                     child_value = self[child_id]
-        
+
                     Traverse(child_value, child_configuration)
-        
+
         # ----------------------------------------------------------------------
-        
+
         for root in [ value for value in six.itervalues(self) if not value.dependents ]:
             for config_name in six.iterkeys(root.dependencies):
                 Traverse(root, config_name)
-        
+
         # Remove values that were not visited
         for id in list(six.iterkeys(self)):
             if id not in visited:
@@ -1115,54 +1155,54 @@ class _RepositoriesMap(OrderedDict):
                   ):
         search_depth = search_depth or 5
         assert required_ancestor_dir is None or repository_root.startswith(required_ancestor_dir), (required_ancestor_dir, repository_root)
-    
+
         # Augment the search depth to account for the provided root
         search_depth += repository_root.count(os.path.sep)
         if CommonEnvironmentImports.CurrentShell.CategoryName == "Windows":
             # Don't count the slash associated with the drive name
             assert search_depth
             search_depth -= 1
-    
+
             # ----------------------------------------------------------------------
             def ItemPreprocessor(item):
                 drive, suffix = os.path.splitdrive(item)
                 if drive[-1] == ':':
                     drive = drive[:-1]
-            
+
                 return "{}:{}".format(drive.upper(), suffix)
-            
+
             # ----------------------------------------------------------------------
-            
+
         else:
             # ----------------------------------------------------------------------
             def ItemPreprocessor(item):
                 return item
-    
+
             # ----------------------------------------------------------------------
-                
+
         if required_ancestor_dir:
             required_ancestor_dir = ItemPreprocessor(CommonEnvironmentImports.FileSystem.RemoveTrailingSep(required_ancestor_dir))
-    
+
             # ----------------------------------------------------------------------
             def IsValidAncestor(fullpath):
                 return fullpath.startswith(required_ancestor_dir)
-    
+
             # ----------------------------------------------------------------------
         else:
             # ----------------------------------------------------------------------
             def IsValidAncestor(fullpath):
                 return True
-    
+
             # ----------------------------------------------------------------------
-    
+
         # ----------------------------------------------------------------------
         def Enumerate():
             repository_root_dirname = os.path.dirname(repository_root)
             len_repository_root_dirname = len(repository_root_dirname)
-    
+
             search_items = []
             searched_items = set()
-    
+
             # ----------------------------------------------------------------------
             def FirstNonmatchingChar(s):
                 for index, c in enumerate(s):
@@ -1170,25 +1210,25 @@ class _RepositoriesMap(OrderedDict):
                          c != repository_root_dirname[index]
                        ):
                         break
-    
+
                 return index
-    
+
             # ----------------------------------------------------------------------
             def PushSearchItem(fullpath):
                 fullpath = os.path.realpath(os.path.normpath(fullpath))
-    
+
                 parts = fullpath.split(os.path.sep)
                 if len(parts) > search_depth:
                     return
-    
+
                 parts_lower = set([ part.lower() for part in parts ])
-    
+
                 priority = 1
                 for bump_name in CODE_DIRECTORY_NAMES:
                     if bump_name in parts_lower:
                         priority = 0
                         break
-    
+
                 # Every item except the last is used for sorting
                 search_items.append(( -FirstNonmatchingChar(fullpath),          # Favor ancestors over other locations
                                       priority,                                 # Favor names that look like source locations
@@ -1197,107 +1237,107 @@ class _RepositoriesMap(OrderedDict):
                                       fullpath,
                                     ))
                 search_items.sort()
-    
+
             # ----------------------------------------------------------------------
             def PopSearchItem():
                 return search_items.pop(0)[-1]
-    
+
             # ----------------------------------------------------------------------
             def Impl(skip_root):
                 ctr = 0
-    
+
                 while search_items:
                     search_item = PopSearchItem()
-    
+
                     # Don't process the dir if it has already been procssed
                     if search_item in searched_items:
                         continue
-    
+
                     searched_items.add(search_item)
-    
-                    # Don't process if the dir doesn't exist anymore (these searches 
+
+                    # Don't process if the dir doesn't exist anymore (these searches
                     # can take a while and dirs come and go)
                     if not os.path.isdir(search_item):
                         continue
-    
+
                     # Don't process if the dir has been explicitly ignored
                     if os.path.exists(os.path.join(search_item, Constants.IGNORE_DIRECTORY_AS_BOOTSTRAP_DEPENDENCY_SENTINEL_FILENAME)):
                         continue
-    
+
                     yield search_item
-    
+
                     ctr += 1
                     if max_num_searches and ctr == max_num_searches:
                         break
-    
+
                     # Add the parent to the queue
                     try:
                         potential_parent = os.path.dirname(search_item)
                         if potential_parent != search_item:
-                            if ( IsValidAncestor(potential_parent) and 
+                            if ( IsValidAncestor(potential_parent) and
                                  ( not skip_root or os.path.dirname(potential_parent) != potential_parent )
                                ):
                                 PushSearchItem(ItemPreprocessor(potential_parent))
-                    
+
                     except (PermissionError, FileNotFoundError):
                         pass
-    
+
                     # Add the children to the queue
                     try:
                         for item in os.listdir(search_item):
                             fullpath = os.path.join(search_item, item)
                             if not os.path.isdir(fullpath):
                                 continue
-    
+
                             if item.lower() in ENUMERATE_EXCLUDE_DIRS:
                                 continue
-    
+
                             PushSearchItem(ItemPreprocessor(fullpath))
-                    
+
                     except (PermissionError, FileNotFoundError):
                         pass
-    
+
             # ----------------------------------------------------------------------
-    
+
             PushSearchItem(ItemPreprocessor(repository_root))
-    
+
             if CommonEnvironmentImports.CurrentShell.CategoryName == "Windows":
                 for result in Impl(True):
                     yield result
-            
+
                 if not required_ancestor_dir:
                     # If here, look at other drive locations
                     import win32api
                     import win32file
-            
+
                     # <Module 'win32api' has not 'GetLogicalDriveStrings' member, but source is unavailable. Consider adding this module to extension-pkg-whitelist if you want to perform analysis based on run-time introspection of living objects.> pylint: disable = I1101
-            
+
                     for drive in [ drive for drive in win32api.GetLogicalDriveStrings().split('\000') if drive and win32file.GetDriveType(drive) == win32file.DRIVE_FIXED ]:
                         PushSearchItem(drive)
-            
+
                     for result in Impl(False):
                         yield result
-            
+
             else:
                 for result in Impl(False):
                     yield result
-    
+
         # ----------------------------------------------------------------------
-    
+
         for directory in Enumerate():
             verbose_stream.write("Searching in '{}'\n".format(directory))
-    
+
             result = RepositoryBootstrap.GetRepositoryInfo(directory, raise_on_error=False)
             if result is None:
                 continue
-    
+
             repo_name, repo_id = result
 
             yield cls._EnumerateResult( repo_name,
                                         repo_id,
                                         directory,
                                       )
-    
+
         verbose_stream.write("\n")
 
 # ----------------------------------------------------------------------
@@ -1343,7 +1383,7 @@ def _CreateRepoMap( repository_root,
                                     max_num_searches=max_num_searches,
                                     required_ancestor_dir=required_ancestor_dir,
                                   )
-                                                      
+
 # ----------------------------------------------------------------------
 def _SimpleFuncImpl( callback,              # def Func(output_stream, repo_map) -> result code
                      repository_root,
@@ -1447,7 +1487,7 @@ def _SimpleFuncImpl( callback,              # def Func(output_stream, repo_map) 
                 uri = (display_info.GetCloneUri(scm) if display_info.GetCloneUri else None) or "N/A"
                 max_uri_length = max(max_uri_length, len(uri))
 
-                resolved_display_infos.append([ configuration, 
+                resolved_display_infos.append([ configuration,
                                                 display_info.Id,
                                                 location,
                                                 uri,
@@ -1465,7 +1505,7 @@ def _SimpleFuncImpl( callback,              # def Func(output_stream, repo_map) 
 
                 if common_prefix[-1] in [ '\\', '/', ]:
                     common_prefix = common_prefix[:-1]
-                    
+
                 header = "{} ({}...)".format(header, common_prefix)
 
                 # Replace values
@@ -1476,7 +1516,7 @@ def _SimpleFuncImpl( callback,              # def Func(output_stream, repo_map) 
                         continue
 
                     resolved_display_infos[rdi_index][item_index] = "...{}".format(resolved_display_info[item_index][common_prefix_len:])
-                
+
                 return header, max_length - len(common_prefix) + 3
 
             # ----------------------------------------------------------------------
@@ -1485,11 +1525,11 @@ def _SimpleFuncImpl( callback,              # def Func(output_stream, repo_map) 
             uri_header, max_uri_length = TrimValues("Clone Uri", max_uri_length, 3)
 
             # Space is tight here, so minimize the display width
-            display_cols = [ max(len("Repository"), len(max(lines, key=len))), 
+            display_cols = [ max(len("Repository"), len(max(lines, key=len))),
                              max(len("Configuration"), max_configuration_name_length),
-                             max(len("Id"), 32), 
-                             max(len(location_header), max_location_length), 
-                             max(len(uri_header), max_uri_length), 
+                             max(len("Id"), 32),
+                             max(len(location_header), max_location_length),
+                             max(len(uri_header), max_uri_length),
                            ]
 
             display_template = "{{0:<{0}}}  {{1:<{1}}}  {{2:<{2}}}  {{3:<{3}}}  {{4}}".format(*display_cols)

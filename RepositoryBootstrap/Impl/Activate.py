@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Activate.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-05-04 19:59:15
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-19.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Activates an environment for development activities."""
 
@@ -205,7 +205,7 @@ def Activate( output_filename_or_stdout,
             method = CommonEnvironmentImports.Interface.CreateCulledCallable(original_method)
 
             result = method(args)
-            
+
             if isinstance(result, list):
                 commands += result
             elif result is not None:
@@ -270,7 +270,7 @@ def ListConfigurations( repository_root,
                                     max_length,
                                     " : {}".format(repo_info.Configurations[config_name].Description),
                                   )
-              for config_name in config_names 
+              for config_name in config_names
             ]
 
     if display_format == "standard":
@@ -304,7 +304,7 @@ def _ActivateOriginalEnvironment(generated_dir):
             if elimination_func(k):
                 del original_environment[k]
                 break
-    
+
     with open(os.path.join(generated_dir, Constants.GENERATED_ACTIVATION_ORIGINAL_ENVIRONMENT_FILENAME), 'w') as f:
         json.dump(original_environment, f)
 
@@ -324,6 +324,7 @@ def _ActivateRepoEnvironmentVars(generated_dir, configuration):
     commands = [ Commands.Set(Constants.DE_REPO_ACTIVATED_FLAG, "1"),
                  Commands.Set(Constants.DE_REPO_ROOT_NAME, os.path.realpath(os.path.join(*join_args))),
                  Commands.Set(Constants.DE_REPO_GENERATED_NAME, generated_dir),
+                 Commands.Set(Constants.DE_OPERATING_SYSTEM_NAME, CommonEnvironmentImports.CurrentShell.CategoryName),
                ]
 
     if configuration:
@@ -358,7 +359,7 @@ def _ActivateNames(output_stream, repositories):
                                 {sep}
                                 {values}
 
-                            
+
                             """).format( this=inflect.plural_adj("this", len(names)),
                                          repository=inflect.no("repository", len(names)),
                                          header=template.format( name="Repository Name",

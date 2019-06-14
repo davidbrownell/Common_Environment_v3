@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  MultipleOutputMixin.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-05-31 17:35:39
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-19.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Contains the MultipleOutputMixin object"""
 
@@ -36,19 +36,20 @@ class MultipleOutputMixin(OutputMixin):
     # ----------------------------------------------------------------------
     @classmethod
     @override
-    def _GetRequiredContextNames(cls):
-        return [ "output_filenames",
-               ] + super(MultipleOutputMixin, cls)._GetRequiredContextNames()
+    def _CreateContext(cls, metadata):
+        if "output_filenames" in metadata:
+            for index, output_filename in enumerate(metadata["output_filenames"]):
+                metadata["output_filenames"][index] = os.path.realpath(output_filename)
+                FileSystem.MakeDirs(os.path.dirname(metadata["output_filenames"][index]))
+
+        return super(MultipleOutputMixin, cls)._CreateContext(metadata)
 
     # ----------------------------------------------------------------------
     @classmethod
     @override
-    def _CreateContext(cls, metadata):
-        for index, output_filename in enumerate(metadata["output_filenames"]):
-            metadata["output_filenames"][index] = os.path.realpath(output_filename)
-            FileSystem.MakeDirs(os.path.dirname(metadata["output_filenames"][index]))
-
-        return super(MultipleOutputMixin, cls)._CreateContext(metadata)
+    def _GetRequiredContextNames(cls):
+        return [ "output_filenames",
+               ] + super(MultipleOutputMixin, cls)._GetRequiredContextNames()
 
     # ----------------------------------------------------------------------
     @staticmethod

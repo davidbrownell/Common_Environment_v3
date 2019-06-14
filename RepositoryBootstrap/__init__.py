@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  __init__.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-05-01 18:32:46
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-19.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Code helpful during the bootstrap process."""
 
@@ -180,7 +180,7 @@ while True:
         import inflect
         import six
         import wrapt
-    
+
         # If here, everything was found and all is good
         break
 
@@ -198,7 +198,7 @@ while True:
         # a part of all of them.
 
         fundamental_repo = GetFundamentalRepository()
-    
+
         python_root = os.path.join(fundamental_repo, "Tools", "Python", "v2.7.14")
         assert os.path.isdir(python_root), python_root
 
@@ -221,23 +221,23 @@ while True:
                 for filename in filenames:
                     if filename == python_name:
                         lib_dir = binary_dir_to_lib_dir_func(root)
-                        
+
                         sys.path.insert(0, lib_dir)
                         return
 
         # ----------------------------------------------------------------------
 
         ApplyLibDir()
-        
+
         del fundamental_repo
 
 if _updated_path:
     del sys.path[0]
 
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Public Methods
-# |  
+# |
 # ----------------------------------------------------------------------
 @wrapt.decorator
 def MixinRepository(wrapped, instance, args, kwargs):
@@ -245,7 +245,7 @@ def MixinRepository(wrapped, instance, args, kwargs):
     Signals that a repository is a mixin repository (a repository that
     contains items that help in the development process but doesn't contain
     primitives used by other dependent repositories). Mixin repositories
-    must be activated on top of other repositories and make not may any 
+    must be activated on top of other repositories and make not may any
     assumptions about the state of the repository on which they are activated.
     """
     return wrapped(*args, **kwargs)

@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  StringTypeInfo_UnitTest.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-04-23 11:36:02
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-19.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Unit test for StringTypeInfo.py."""
 
@@ -35,7 +35,7 @@ class StandardSuite(unittest.TestCase):
         sti = StringTypeInfo()
 
         self.assertEqual(sti.Desc, "String")
-        self.assertEqual(sti.ConstraintsDesc, "Value must have more than 1 character")
+        self.assertEqual(sti.ConstraintsDesc, "Value must have at least 1 character")
         self.assertEqual(sti.ExpectedType, six.string_types)
         self.assertEqual(sti.MinLength, 1)
         self.assertEqual(sti.MaxLength, None)
@@ -63,7 +63,7 @@ class StandardSuite(unittest.TestCase):
         sti = StringTypeInfo(min_length=2)
 
         self.assertEqual(sti.Desc, "String")
-        self.assertEqual(sti.ConstraintsDesc, "Value must have more than 2 characters")
+        self.assertEqual(sti.ConstraintsDesc, "Value must have at least 2 characters")
         self.assertEqual(sti.ExpectedType, six.string_types)
         self.assertEqual(sti.MinLength, 2)
         self.assertEqual(sti.MaxLength, None)
@@ -77,7 +77,7 @@ class StandardSuite(unittest.TestCase):
         sti = StringTypeInfo(max_length=4)
 
         self.assertEqual(sti.Desc, "String")
-        self.assertEqual(sti.ConstraintsDesc, "Value must have more than 1 character, have less than 4 characters")
+        self.assertEqual(sti.ConstraintsDesc, "Value must have at least 1 character, not have more than 4 characters")
         self.assertEqual(sti.ExpectedType, six.string_types)
         self.assertEqual(sti.MinLength, 1)
         self.assertEqual(sti.MaxLength, 4)
