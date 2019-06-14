@@ -403,7 +403,11 @@ def _SetupOperatingSystem(output_stream, *args, **kwargs):
 
             hkey = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SYSTEM\ControlSet001\Control\FileSystem")
             with CommonEnvironmentImports.CallOnExit(lambda: winreg.CloseKey(hkey)):
-                value = winreg.QueryValueEx(hkey, "LongPathsEnabled")[0]
+                try:
+                    value = winreg.QueryValueEx(hkey, "LongPathsEnabled")[0]
+                except FileNotFoundError:
+                    # This value does not exist on all versions of Windows
+                    value = 1
 
                 if value != 1:
                     this_dm.stream.write(
