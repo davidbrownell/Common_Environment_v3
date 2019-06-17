@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  DistutilsCompilerImpl.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-06-02 12:03:24
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-19.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Contains the DistutilsCompilerImpl object"""
 
@@ -102,7 +102,7 @@ class DistutilsCompilerImpl( AtomicInputProcessingMixin,
     # ----------------------------------------------------------------------
     @classmethod
     @override
-    def _CreateContext(cls, metadata):
+    def _CreateContext(cls, metadata, status_stream):
         if len(metadata["inputs"]) != 1 and metadata["output_name"]:
             raise Exception("'output_name' cannot be specified when multiple input files are provided")
 
@@ -119,7 +119,7 @@ class DistutilsCompilerImpl( AtomicInputProcessingMixin,
             metadata["excludes"] += [ "tkconstants", "tkinter", "tcl", ]
         del metadata["include_tcl"]
 
-        return super(DistutilsCompilerImpl, cls)._CreateContext(metadata)
+        return super(DistutilsCompilerImpl, cls)._CreateContext(metadata, status_stream)
 
     # ----------------------------------------------------------------------
     @classmethod
@@ -176,7 +176,7 @@ class DistutilsCompilerImpl( AtomicInputProcessingMixin,
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 def CreateCompileMethod(compiler_type):
-    
+
     # ----------------------------------------------------------------------
     @CommandLine.EntryPoint
     @CommandLine.Constraints( input=CommandLine.FilenameTypeInfo(arity='+'),
@@ -190,7 +190,7 @@ def CreateCompileMethod(compiler_type):
                               exclude_module=CommandLine.StringTypeInfo(arity='*'),
                               package=CommandLine.StringTypeInfo(arity='*'),
                               distutil_arg=CommandLine.StringTypeInfo(arity='*'),
-                              
+
                               comments=CommandLine.StringTypeInfo(arity='?'),
                               company_name=CommandLine.StringTypeInfo(arity='?'),
                               file_description=CommandLine.StringTypeInfo(arity='?'),
@@ -199,7 +199,7 @@ def CreateCompileMethod(compiler_type):
                               trademark=CommandLine.StringTypeInfo(arity='?'),
                               name=CommandLine.StringTypeInfo(arity='?'),
                               version=CommandLine.StringTypeInfo(arity='?'),
-    
+
                               output_stream=None,
                             )
     def Compile( input,
@@ -216,7 +216,7 @@ def CreateCompileMethod(compiler_type):
                  exclude_module=None,
                  package=None,
                  distutil_arg=None,
-    
+
                  comments=None,
                  company_name=None,
                  file_description=None,
@@ -225,29 +225,29 @@ def CreateCompileMethod(compiler_type):
                  copyright=None,
                  name=None,
                  version=None,
-    
+
                  preserve_temp_dir=False,
-    
+
                  output_stream=sys.stdout,
                  no_verbose=False,
                ):
         """Creates an executable from one or more python files."""
-        
+
         if build_type == "console":
             build_type = DistutilsCompilerImpl.BuildType.Console
         elif build_type == "windows":
             build_type = DistutilsCompilerImpl.BuildType.Windows
         else:
             assert False, build_type
-    
+
         return CommandLineCompile( compiler_type,
                                    input,
                                    output_stream,
                                    verbose=not no_verbose,
-    
+
                                    # Generate compiler options
                                    output_dir=output_dir,
-                                   
+
                                    # This compiler options
                                    preserve_temp_dir=preserve_temp_dir,
                                    build_type=build_type,
@@ -262,7 +262,7 @@ def CreateCompileMethod(compiler_type):
                                    packages=package,
                                    distutil_args=distutil_arg,
                                    output_name=output_name,
-    
+
                                    comments=comments,
                                    company_name=company_name,
                                    file_description=file_description,
@@ -276,10 +276,10 @@ def CreateCompileMethod(compiler_type):
     # ----------------------------------------------------------------------
 
     return Compile
-    
+
 # ----------------------------------------------------------------------
 def CreateCleanMethod(compiler_type):
-    
+
     # ----------------------------------------------------------------------
     @CommandLine.EntryPoint
     @CommandLine.Constraints( output_dir=CommandLine.DirectoryTypeInfo(),
@@ -290,7 +290,7 @@ def CreateCleanMethod(compiler_type):
              ):
         """Cleans previously compiled output."""
         return CommandLineClean(output_dir, output_stream)
-    
+
     # ----------------------------------------------------------------------
 
     return Clean
