@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  CommandLine.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-05-19 20:39:53
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-19.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Contains command line utilities used with compilers"""
 
@@ -131,7 +131,7 @@ def _CommandLineImpl( compiler,
             try:
                 inputs = [ os.path.realpath(input) for input in inputs ]    # <Redefinig built-in type> pylint: disable = W0622
 
-                contexts = list(compiler.GenerateContextItems(inputs, **compiler_kwargs))
+                contexts = list(compiler.GenerateContextItems(inputs, this_dm.stream, **compiler_kwargs))
             except Exception as ex:
                 this_dm.result = -1
 
@@ -151,4 +151,3 @@ def _CommandLineImpl( compiler,
                 dm.result = result
 
         return dm.result
-            
