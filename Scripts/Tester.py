@@ -799,6 +799,7 @@ def GenerateTestResults( test_items,
 
             configuration_results.compiler_context = compiler.GetContextItem(
                 working_data.complete_result.Item,
+                six.moves.StringIO(),
                 is_debug=is_debug,
                 is_profile=bool(optional_test_executor),
                 output_filename=configuration_results.compile_binary,

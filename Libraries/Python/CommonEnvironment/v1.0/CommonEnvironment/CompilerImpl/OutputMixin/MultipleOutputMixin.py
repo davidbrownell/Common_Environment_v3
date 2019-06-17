@@ -36,13 +36,13 @@ class MultipleOutputMixin(OutputMixin):
     # ----------------------------------------------------------------------
     @classmethod
     @override
-    def _CreateContext(cls, metadata):
+    def _CreateContext(cls, metadata, status_stream):
         if "output_filenames" in metadata:
             for index, output_filename in enumerate(metadata["output_filenames"]):
                 metadata["output_filenames"][index] = os.path.realpath(output_filename)
                 FileSystem.MakeDirs(os.path.dirname(metadata["output_filenames"][index]))
 
-        return super(MultipleOutputMixin, cls)._CreateContext(metadata)
+        return super(MultipleOutputMixin, cls)._CreateContext(metadata, status_stream)
 
     # ----------------------------------------------------------------------
     @classmethod

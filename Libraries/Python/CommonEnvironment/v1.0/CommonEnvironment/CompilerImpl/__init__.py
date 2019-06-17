@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  __init__.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-05-19 08:28:42
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-19.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Contains the CompilerImpl object"""
 
@@ -50,18 +50,18 @@ class CompilerImpl(Interface):
     """
 
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Public Types
-    # |  
+    # |
     # ----------------------------------------------------------------------
     class DiagnosticException(Exception):
         """Exception that should be displayed without stack trace information."""
         IsDiagnosticException               = True
 
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Public Properties
-    # |  
+    # |
     # ----------------------------------------------------------------------
 
     @abstractproperty
@@ -91,9 +91,9 @@ class CompilerImpl(Interface):
     IsVerifier                              = False
 
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Public Methods
-    # |  
+    # |
     # ----------------------------------------------------------------------
 
     @staticmethod
@@ -110,7 +110,7 @@ class CompilerImpl(Interface):
         """
 
         # No validation by default
-        pass 
+        pass
 
     # ----------------------------------------------------------------------
     @classmethod
@@ -125,12 +125,12 @@ class CompilerImpl(Interface):
     def IsSupportedContent(filename):
         """
         Returns True if the given input is supported by the compiler.
-        
+
         In most cases, InputTypeInfo is sufficient to determine if an input is valid.
         However, this method exists in case it is necessary to look at the contents
         of the item itself.
         """
-        
+
         # Rely on InputTypeInfo by default
         return True
 
@@ -154,7 +154,7 @@ class CompilerImpl(Interface):
         """
         Converts from an item name to its corresponding test file name.
 
-        Override this method if the derived compiler uses custom conventions to 
+        Override this method if the derived compiler uses custom conventions to
         convert from an item's name to its corresponding test name.
         """
 
@@ -182,7 +182,7 @@ class CompilerImpl(Interface):
         """
         Converts from a test name to its corresponding item name.
 
-        Override this method if the derived compiler uses custom conventions to 
+        Override this method if the derived compiler uses custom conventions to
         convert from a test's name to its corresponding item name.
         """
 
@@ -215,15 +215,16 @@ class CompilerImpl(Interface):
     @classmethod
     def GenerateContextItems( cls,
                               inputs,
+                              status_stream,
                               **kwargs
                             ):
         """
         Yields one or more context items from the given input.
 
         Context objects are arbitrary python objects used to define state/context
-        about the invocation of the compiler. This information is used to specify 
-        input and determine if the compiler should be invoked. 
-        
+        about the invocation of the compiler. This information is used to specify
+        input and determine if the compiler should be invoked.
+
         This context object must support pickling.
         """
 
@@ -265,7 +266,7 @@ class CompilerImpl(Interface):
 
         # Populate default metadata
         optional_metadata = cls._GetOptionalMetadata()
-        
+
         if optional_metadata is None:
             # ----------------------------------------------------------------------
             def MetadataGenerator():
@@ -312,7 +313,7 @@ class CompilerImpl(Interface):
             if display_name:
                 metadata["display_name"] = display_name
 
-            context = cls._CreateContext(metadata)
+            context = cls._CreateContext(metadata, status_stream)
             if not context:
                 continue
 
@@ -329,11 +330,12 @@ class CompilerImpl(Interface):
     @classmethod
     def GetContextItem( cls,
                         input,
+                        status_stream,
                         **kwargs
                       ):
         """Calls GenerateContextItems, ensuring that there is only one context generated"""
 
-        contexts = list(cls.GenerateContextItems(input, **kwargs))
+        contexts = list(cls.GenerateContextItems(input, status_stream, **kwargs))
         if not contexts:
             return None
 
@@ -359,14 +361,14 @@ class CompilerImpl(Interface):
             return dm.result
 
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Protected Methods
-    # |  
+    # |
     # ----------------------------------------------------------------------
     @classmethod
     def _Invoke(cls, context, status_stream, verbose):
         """Handles the complexities of compiler invocation, ultimately calling _InvokeImpl."""
-    
+
         assert context
         status_stream = StreamDecorator(status_stream)
 
@@ -398,7 +400,7 @@ class CompilerImpl(Interface):
                                                                                         {}
                                                                                                 ->
                                                                                             {}
-                                                                                        ========================================      
+                                                                                        ========================================
                                                                                         """).format( '\n'.join(input_items),
                                                                                                      StringHelpers.LeftJustify('\n'.join(output_items) if output_items else "[None]", 4),
                                                                                                    ),
@@ -440,9 +442,9 @@ class CompilerImpl(Interface):
         raise Exception("Abstract method")
 
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Private Methods
-    # |  
+    # |
     # ----------------------------------------------------------------------
     @staticmethod
     @extensionmethod
@@ -455,7 +457,7 @@ class CompilerImpl(Interface):
     @extensionmethod
     def _GetOptionalMetadata():
         """
-        Metadata that should be applied if it doesn't already exist. 
+        Metadata that should be applied if it doesn't already exist.
 
         [ ( key, value ), ... ]
         """
@@ -488,7 +490,7 @@ class CompilerImpl(Interface):
     # ----------------------------------------------------------------------
     @staticmethod
     @extensionmethod
-    def _CreateContext(metadata):
+    def _CreateContext(metadata, status_stream):
         """Returns a context object tuned specifically for the provided metadata"""
 
         # No conversion by default
