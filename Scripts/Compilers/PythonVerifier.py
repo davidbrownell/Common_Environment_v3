@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  PythonVerifier.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-05-19 22:39:08
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-19.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Verifies Python source code using PyLint"""
 
@@ -42,18 +42,18 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 inflect                                     = inflect_mod.engine()
 
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Public Types
-# |  
+# |
 # ----------------------------------------------------------------------
 @staticderived
 class Verifier(VerifierMod.Verifier):
     """Verifies Python source code using PyLint"""
 
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Public Properties
-    # |  
+    # |
     # ----------------------------------------------------------------------
     Name                                    = DerivedProperty("PyLint")
     Description                             = DerivedProperty("Statically analyzes Python source code, reporting common mistakes and errors.")
@@ -66,9 +66,9 @@ class Verifier(VerifierMod.Verifier):
     CONFIGURATION_ENVIRONMENT_VAR_NAME      = "DEVELOPMENT_ENVIRONMENT_PYTHON_VERIFIER_CONFIGURATION"
 
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Public Methods
-    # |  
+    # |
     # ----------------------------------------------------------------------
     def __repr__(self):
         return CommonEnvironment.ObjectReprImpl(self)
@@ -115,7 +115,7 @@ class Verifier(VerifierMod.Verifier):
             potential_module_name = os.path.join(os.path.dirname(filename), "__init__.py")
             if os.path.isfile(potential_module_name):
                 filename = potential_module_name
-            
+
         return filename
 
     # ----------------------------------------------------------------------
@@ -125,9 +125,9 @@ class Verifier(VerifierMod.Verifier):
         return os.path.basename(item) not in ["__init__.py", "Build.py"]
 
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Private Methods
-    # |  
+    # |
     # ----------------------------------------------------------------------
     @classmethod
     @override
@@ -138,14 +138,14 @@ class Verifier(VerifierMod.Verifier):
     # ----------------------------------------------------------------------
     @classmethod
     @override
-    def _CreateContext(cls, metadata):
+    def _CreateContext(cls, metadata, status_stream):
         if metadata["passing_score"] is None:
             metadata["passing_score"] = cls.DEFAULT_PASSING_SCORE
             metadata["explicit_passing_score"] = False
         else:
             metadata["explicit_passing_score"] = True
 
-        return super(Verifier, cls)._CreateContext(metadata)
+        return super(Verifier, cls)._CreateContext(metadata, status_stream)
 
     # ----------------------------------------------------------------------
     @classmethod
@@ -206,7 +206,7 @@ class Verifier(VerifierMod.Verifier):
             result = 0
 
             # Extract the results
-            match = re.search( r"Your code has been rated at (?P<score>[-\d\.]+)/(?P<max>[\d\.]+)", 
+            match = re.search( r"Your code has been rated at (?P<score>[-\d\.]+)/(?P<max>[\d\.]+)",
                                regex_sink,
                                re.MULTILINE,
                              )

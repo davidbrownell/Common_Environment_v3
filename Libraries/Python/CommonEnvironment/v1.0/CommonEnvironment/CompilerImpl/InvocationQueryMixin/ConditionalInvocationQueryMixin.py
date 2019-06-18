@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  ConditionalInvocationQueryMixin.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-05-19 20:16:44
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-19.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Contains the ConditionalInvocationQueryMixin object"""
 
@@ -66,12 +66,12 @@ class ConditionalInvocationQueryMixin(InvocationQueryMixin):
     # ----------------------------------------------------------------------
     @classmethod
     @override
-    def _CreateContext(cls, metadata):
+    def _CreateContext(cls, metadata, status_stream):
         metadata["output_dir"] = os.path.realpath(metadata["output_dir"])
 
         FileSystem.MakeDirs(metadata["output_dir"])
 
-        return super(ConditionalInvocationQueryMixin, cls)._CreateContext(metadata)
+        return super(ConditionalInvocationQueryMixin, cls)._CreateContext(metadata, status_stream)
 
     # ----------------------------------------------------------------------
     @classmethod
@@ -79,7 +79,7 @@ class ConditionalInvocationQueryMixin(InvocationQueryMixin):
     def _GetInvokeReasonImpl(cls, context, output_stream):
 
         prev_info, prev_modified_time = _PersistedInfo.Load(cls, context, output_stream)
-        
+
         # Don't persist force
         force = context["force"]
         del context["force"]
@@ -95,7 +95,7 @@ class ConditionalInvocationQueryMixin(InvocationQueryMixin):
         # Check calculated reasons
         # ----------------------------------------------------------------------
         def HaveGeneratorFilesBeenModified():
-            
+
             # ----------------------------------------------------------------------
             def CheckObject(obj):
                 if not isinstance(obj, type):
@@ -233,7 +233,7 @@ class ConditionalInvocationQueryMixin(InvocationQueryMixin):
                 return invoke_reason
 
         return None
-    
+
     # ----------------------------------------------------------------------
     @classmethod
     @override
@@ -267,7 +267,7 @@ class ConditionalInvocationQueryMixin(InvocationQueryMixin):
     @extensionmethod
     def _CustomContextComparison(context, prev_context):
         """
-        Opportunity for a compiler to perform custom comparison when determining if invocation should 
+        Opportunity for a compiler to perform custom comparison when determining if invocation should
         continue. Returns a string describing mis-compare reasons (if any).
         """
 
@@ -279,8 +279,8 @@ class ConditionalInvocationQueryMixin(InvocationQueryMixin):
     @extensionmethod
     def _GetAdditionalGeneratorItems(context):
         """
-        Specify a list of additional filenames or objects that are used to implement 
-        compilation functionality. Any changes to these files imply that all previously 
+        Specify a list of additional filenames or objects that are used to implement
+        compilation functionality. Any changes to these files imply that all previously
         generated content should be regenerated when invoked again.
         """
 
@@ -327,7 +327,7 @@ class _PersistedInfo(object):
         data = pickle.dumps(self)
         data = base64.b64encode(data)
         data = data.decode("utf-8")
-        
+
         filename = self._GetPersistedFilename(self.Context)
 
         FileSystem.MakeDirs(os.path.dirname(filename))
