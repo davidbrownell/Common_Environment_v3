@@ -545,6 +545,6 @@ class CompilerImpl(Interface):
                                 """\
 
                                 {}
-                                """).fromat('\n'.join([ "    - {}".format(input_item) for input_item in input_items ]))
+                                """).format('\n'.join([ "    - {}".format(input_item) for input_item in input_items ]))
 
         return "{} {}".format(verb, status_suffix)
