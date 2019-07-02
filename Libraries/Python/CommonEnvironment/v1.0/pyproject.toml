@@ -6,7 +6,7 @@ alignment_columns = [45,57,77]
 
 # AlignAssignmentPlugin.Plugin.ModuleLevel | AlignAssignmentPlugin.Plugin.ClassLevel | AlignAssignmentPlugin.Plugin.InitLevel
 #                      1                   |                      2                  |                      4
-flags = 7
+alignment_flags = 7
 
 [tool.pythonformatter.AlignTrailingComments]
 alignment_columns = [45,57,77]

@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Activate_custom.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-05-07 08:59:57
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-19.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Functionality to further enhance Common_Environment activation"""
 
@@ -53,7 +53,7 @@ def GetCustomActions( output_stream,
     """
     Returns an action or list of actions that should be invoked as part of the activation process.
 
-    Actions are generic command line statements defined in 
+    Actions are generic command line statements defined in
     <Common_Environment>/Libraries/Python/CommonEnvironment/v1.0/CommonEnvironment/Shell/Commands/__init__.py
     that are converted into statements appropriate for the current scripting language (in most
     cases, this is Bash on Linux systems and Batch or Powershell on Windows systems.
@@ -91,12 +91,12 @@ def GetCustomActions( output_stream,
                                                                            os.path.join(_script_dir, "Scripts", "TestExecutors"),
                                                                            lambda fullpath, name, ext: ext == ".py" and name.endswith("TestExecutor"),
                                                                          )
-        
+
         actions += DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_TEST_PARSERS",
                                                                            os.path.join(_script_dir, "Scripts", "TestParsers"),
                                                                            lambda fullpath, name, ext: ext == ".py" and name.endswith("TestParser"),
                                                                          )
-        
+
         actions += DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_VALIDATORS",
                                                                            os.path.join(_script_dir, "Scripts", "CodeCoverageValidators"),
                                                                            lambda fullpath, name, ext: ext == ".py" and name.endswith("CodeCoverageValidator"),
@@ -143,11 +143,15 @@ def GetCustomScriptExtractors():
 
     # ----------------------------------------------------------------------
     def PowershellScriptWrapper(script_filename):
-        return Commands.Execute('powershell -executionpolicy unrestricted "{}" {}'.format(script_filename, CurrentShell.AllArgumentsScriptVariable))
+        return [ Commands.EchoOff(),
+                 Commands.Execute('powershell -executionpolicy unrestricted "{}" {}'.format(script_filename, CurrentShell.AllArgumentsScriptVariable)),
+               ]
 
     # ----------------------------------------------------------------------
     def EnvironmentScriptWrapper(script_filename):
-        return Commands.Execute('"{}" {}'.format(script_filename, CurrentShell.AllArgumentsScriptVariable))
+        return [ Commands.EchoOff(),
+                 Commands.Execute('"{}" {}'.format(script_filename, CurrentShell.AllArgumentsScriptVariable)),
+               ]
 
     # ----------------------------------------------------------------------
 
