@@ -90,7 +90,10 @@ class Plugin(HorizontalAlignmentImpl):
                     comment_token = token
                     break
 
-        if comment_token and getattr(comment_token, cls._ORIGINAL_VALUE_ATTRIBUTE_NAME).startswith("# BugBug"):
+        if comment_token and getattr(
+            comment_token,
+            cls._ORIGINAL_VALUE_ATTRIBUTE_NAME,
+        ).startswith("# BugBug"):
             comment_token = None
 
         return comment_token

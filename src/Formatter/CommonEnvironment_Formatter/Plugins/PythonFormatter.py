@@ -28,6 +28,7 @@ import CommonEnvironment
 from CommonEnvironment import FileSystem
 from CommonEnvironment.FormatterImpl import FormatterImpl                   # <unable to import> pylint: disable = E0401
 from CommonEnvironment import Interface
+
 from CommonEnvironment.TypeInfo.FundamentalTypes.FilenameTypeInfo import FilenameTypeInfo
 
 from PythonFormatterImpl.Tokenizer import BlackTokenizer
