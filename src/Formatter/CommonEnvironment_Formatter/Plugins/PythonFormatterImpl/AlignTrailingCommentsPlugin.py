@@ -37,14 +37,45 @@ class Plugin(HorizontalAlignmentImpl):
     Priority                                = Interface.DerivedProperty(AlignAssignmentsPlugin().Priority + 1)
 
     # ----------------------------------------------------------------------
+    # |  Public Methods
+    @classmethod
+    @Interface.override
+    def PreprocessLines(cls, lines):
+        # We don't want the length of a comment to cause line wrapping in black. Remote the comment's
+        # contents here, and then restore it once complete.
+        for line in lines:
+            for _, comment in line.comments:
+                assert not hasattr(comment, cls._ORIGINAL_VALUE_ATTRIBUTE_NAME)
+                setattr(comment, cls._ORIGINAL_VALUE_ATTRIBUTE_NAME, comment.value)
+                comment.value = "#"
+
+        return lines
+
+    # ----------------------------------------------------------------------
+    @classmethod
+    @Interface.override
+    def PostprocessLines(cls, lines):
+        # Restore the original comments
+        for line in lines:
+            for _, comment in line.comments:
+                assert hasattr(comment, cls._ORIGINAL_VALUE_ATTRIBUTE_NAME)
+                comment.value = getattr(comment, cls._ORIGINAL_VALUE_ATTRIBUTE_NAME)
+
+                delattr(comment, cls._ORIGINAL_VALUE_ATTRIBUTE_NAME)
+
+        return lines
+
+    # ----------------------------------------------------------------------
     # |  Private Properties
+    _ORIGINAL_VALUE_ATTRIBUTE_NAME          = "_align_trailing_comment_original_value"
+
     _AlignToLinesWithoutAlignmentToken      = Interface.DerivedProperty(True)
 
     # ----------------------------------------------------------------------
     # |  Private Methods
-    @staticmethod
+    @classmethod
     @Interface.override
-    def _GetAlignmentToken(line, is_initial_line):
+    def _GetAlignmentToken(cls, line, is_initial_line):
         comment_token = None
 
         if line.comments:
@@ -59,7 +90,7 @@ class Plugin(HorizontalAlignmentImpl):
                     comment_token = token
                     break
 
-        if comment_token and comment_token.value.startswith("# BugBug"):
+        if comment_token and getattr(comment_token, cls._ORIGINAL_VALUE_ATTRIBUTE_NAME).startswith("# BugBug"):
             comment_token = None
 
         return comment_token
