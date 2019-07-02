@@ -288,10 +288,7 @@ else:
                         four,
                     ]
 
-                    return '$env:{}="{}"'.format(
-                        command.Name,
-                        os.pathsep.join(command.Values),
-                    )                                           # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
+                    return '$env:{}="{}"'.format(command.Name, os.pathsep.join(command.Values)) # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
 
                     return '$env:{name}="{values};" + $env:{name}'.format(
                         name=command.Name,
