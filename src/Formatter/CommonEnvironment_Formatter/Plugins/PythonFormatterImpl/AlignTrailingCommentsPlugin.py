@@ -45,9 +45,9 @@ class Plugin(HorizontalAlignmentImpl):
         # contents here, and then restore it once complete.
         for line in lines:
             for _, comment in line.comments:
-                assert not hasattr(comment, cls._ORIGINAL_VALUE_ATTRIBUTE_NAME)
-                setattr(comment, cls._ORIGINAL_VALUE_ATTRIBUTE_NAME, comment.value)
-                comment.value = "#"
+                if not hasattr(comment, cls._ORIGINAL_VALUE_ATTRIBUTE_NAME):
+                    setattr(comment, cls._ORIGINAL_VALUE_ATTRIBUTE_NAME, comment.value)
+                    comment.value = "#"
 
         return lines
 
@@ -58,10 +58,9 @@ class Plugin(HorizontalAlignmentImpl):
         # Restore the original comments
         for line in lines:
             for _, comment in line.comments:
-                assert hasattr(comment, cls._ORIGINAL_VALUE_ATTRIBUTE_NAME)
-                comment.value = getattr(comment, cls._ORIGINAL_VALUE_ATTRIBUTE_NAME)
-
-                delattr(comment, cls._ORIGINAL_VALUE_ATTRIBUTE_NAME)
+                if hasattr(comment, cls._ORIGINAL_VALUE_ATTRIBUTE_NAME):
+                    comment.value = getattr(comment, cls._ORIGINAL_VALUE_ATTRIBUTE_NAME)
+                    delattr(comment, cls._ORIGINAL_VALUE_ATTRIBUTE_NAME)
 
         return lines
 
