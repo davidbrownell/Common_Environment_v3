@@ -19,14 +19,14 @@ import os
 
 from collections import defaultdict
 
-import black
+import black                                            # <unable to import> pylint: disable = E0401
 from blib2to3.pygram import token as python_tokens
 import six
 import toml
 
 import CommonEnvironment
 from CommonEnvironment import FileSystem
-from CommonEnvironment.FormatterImpl import FormatterImpl
+from CommonEnvironment.FormatterImpl import FormatterImpl                   # <unable to import> pylint: disable = E0401
 from CommonEnvironment import Interface
 from CommonEnvironment.TypeInfo.FundamentalTypes.FilenameTypeInfo import FilenameTypeInfo
 
@@ -80,11 +80,11 @@ class Formatter(FormatterImpl):
     def Format(
         cls,
         filename_or_content,
-        *plugin_input_dirs,
         black_line_length=None,
         include_plugin_names=None,
         exclude_plugin_names=None,
         debug=False,
+        *plugin_input_dirs,
         **plugin_args
     ):
         # Get the file's contents
@@ -290,8 +290,8 @@ class Formatter(FormatterImpl):
 
         for plugin in cls._GetPlugins(
             os.path.join(_script_dir, "PythonFormatterImpl"),
-            *plugin_input_dirs,
             sort=False,
+            *plugin_input_dirs
         ):
             args = []
             kwargs = {}
