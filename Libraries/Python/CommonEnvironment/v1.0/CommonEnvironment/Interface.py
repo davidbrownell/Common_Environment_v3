@@ -1026,10 +1026,15 @@ def _ResolveType(verified_types, cls, is_concrete_type):
     cls._ClassOverrides = these_overrides
 
     # Convert pseudo properties into their actual values
+    if sys.version[0] == "2":
+        RequiresPropertyWrapper = lambda value: IsStaticMethod(value)
+    else:
+        RequiresPropertyWrapper = lambda value: IsStandardMethod(value)
+
     for k, v in six.iteritems(overrides):
         if v[-1].RealizedValue != _Entity.DoesNotExist:
             value = v[-1].RealizedValue
-            if IsStandardMethod(value):
+            if RequiresPropertyWrapper(value):
                 value = property(value)
 
             setattr(cls, k, value)
