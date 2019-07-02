@@ -33,7 +33,9 @@ setup(
         "Foundation",
     ],
     url="https://github.com/davidbrownell/Common_Environment_v3",
-    project_urls={"Bug Tracker": "https://github.com/davidbrownell/Common_Environment_v3/issues"},
+    project_urls={
+        "Bug Tracker": "https://github.com/davidbrownell/Common_Environment_v3/issues",
+    },
     classifiers=[
         "Development Status :: 4 - Beta",                                   # "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",

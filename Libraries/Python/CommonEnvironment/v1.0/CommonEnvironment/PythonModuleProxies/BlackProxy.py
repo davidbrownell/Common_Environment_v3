@@ -14,10 +14,10 @@
 # |
 # ----------------------------------------------------------------------
 """\
-Updates python source code with the PythonFormatter while presenting an 
+Updates python source code with the PythonFormatter while presenting an
 interface similar to the Black formatter.
 
-This proxy is useful for tools that are configured to invoke Black (see 
+This proxy is useful for tools that are configured to invoke Black (see
 the list below) by presenting a consistent interface. This python script
 resides here (rather than in <root>/Scripts) because those tools often
 expect to invoke Black as a python module rather than as a script.
@@ -101,9 +101,7 @@ def Convert(
     else:
         command_line_template = '"{script}" Format "{filename}" /quiet'
 
-    script_name = "Formatter"
-    if CurrentShell.CategoryName != "Linux":
-        script_name = CurrentShell.CreateScriptName(script_name)
+    script_name = CurrentShell.CreateScriptName("Formatter")
 
     result, formatted_content = Process.Execute(
         command_line_template.format(
@@ -111,7 +109,7 @@ def Convert(
             filename=input_filename,
         ),
     )
-    
+
     if is_check:
         return 1 if result == 1 else -1
 

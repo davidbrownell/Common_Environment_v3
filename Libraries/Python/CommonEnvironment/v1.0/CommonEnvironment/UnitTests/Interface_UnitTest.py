@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Interface_UnitTest.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-04-21 19:24:20
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-19.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Unit tst for Interface.py"""
 
@@ -83,15 +83,15 @@ class InterfaceSuite(unittest.TestCase):
         class MyObject(self.MyIterface):
             @override
             def Method(self, a, b): pass
-    
+
             @staticmethod
             @override
             def StaticMethod(a, b, c=None): pass
-    
+
             @classmethod
             @override
             def ClassMethod(cls, a, b): pass
-    
+
         # ----------------------------------------------------------------------
 
         self.assertRaises(InterfaceException, MyObject)
@@ -115,7 +115,7 @@ class InterfaceSuite(unittest.TestCase):
         # ----------------------------------------------------------------------
 
         self.assertRaises(InterfaceException, MyObject)
-        
+
     # ----------------------------------------------------------------------
     def test_MissingStaticMethod(self):
         # ----------------------------------------------------------------------
@@ -134,7 +134,7 @@ class InterfaceSuite(unittest.TestCase):
         # ----------------------------------------------------------------------
 
         self.assertRaises(InterfaceException, MyObject)
-        
+
     # ----------------------------------------------------------------------
     def test_MissingClassMethod(self):
         # ----------------------------------------------------------------------
@@ -153,7 +153,7 @@ class InterfaceSuite(unittest.TestCase):
         # ----------------------------------------------------------------------
 
         self.assertRaises(InterfaceException, MyObject)
-        
+
     # ----------------------------------------------------------------------
     def test_AllMethods(self):
         # ----------------------------------------------------------------------
@@ -200,7 +200,7 @@ class InterfaceSuite(unittest.TestCase):
 
         MyObject()
         self.assertTrue(True)
-        
+
     # ----------------------------------------------------------------------
     def test_AllClassMethods(self):
         # ----------------------------------------------------------------------
@@ -272,7 +272,7 @@ class InterfaceSuite(unittest.TestCase):
         # ----------------------------------------------------------------------
 
         self.assertRaises(InterfaceException, MyObject)
-        
+
     # ----------------------------------------------------------------------
     def test_InvalidStaticMethodParam(self):
         # ----------------------------------------------------------------------
@@ -295,7 +295,7 @@ class InterfaceSuite(unittest.TestCase):
         # ----------------------------------------------------------------------
 
         self.assertRaises(InterfaceException, MyObject)
-        
+
     # ----------------------------------------------------------------------
     def test_InvalidClassMethodParam(self):
         # ----------------------------------------------------------------------
@@ -603,6 +603,19 @@ class DerivedPropertySuite(unittest.TestCase):
         self.assertEqual(Derived1.Property, 10)
         self.assertEqual(DerivedWithOverride.Property, 20)
 
+    # ----------------------------------------------------------------------
+    def test_Method(self):
+        class Derived(self.Base):
+            def __init__(self, property):
+                self._property              = property
+
+            @DerivedProperty
+            def Property(self):
+                return self._property
+
+        self.assertEqual(Derived(10).Property, 10)
+        self.assertEqual(Derived(20).Property, 20)
+
 # ----------------------------------------------------------------------
 class StaticDerivedSuite(unittest.TestCase):
 
@@ -610,7 +623,7 @@ class StaticDerivedSuite(unittest.TestCase):
     class Base(Interface):
         @staticmethod
         @abstractmethod
-        def Method(): 
+        def Method():
             return 100
 
     # ----------------------------------------------------------------------
@@ -620,7 +633,7 @@ class StaticDerivedSuite(unittest.TestCase):
             pass
 
         # ----------------------------------------------------------------------
-    
+
         # This shouldn't be valid, as Base.Method is conceptually abstract
         self.assertEqual(Derived.Method(), 100)
 
@@ -710,7 +723,7 @@ class TestCreateCulledCallable(unittest.TestCase):
     def test_Invoke(self):
         single_arg_func = CreateCulledCallable(lambda a: a)
 
-        self.assertEqual(single_arg_func(OrderedDict([ ( "a", 10 ), 
+        self.assertEqual(single_arg_func(OrderedDict([ ( "a", 10 ),
                                                      ])), 10)
         self.assertEqual(single_arg_func(OrderedDict([ ( "a", 10 ),
                                                        ( "b", 20 ),
@@ -781,9 +794,9 @@ class TestCreateCulledCallable(unittest.TestCase):
                                                           ( "bar", 20 ),
                                                           ( "baz", 300 ),
                                                         ])), ( 10, 20, 30, 40 ))
-                                                        
+
         no_arg_func = CreateCulledCallable(lambda: 10)
-        
+
         self.assertEqual(no_arg_func(OrderedDict()), 10)
         self.assertEqual(no_arg_func(OrderedDict([ ( "foo", 1 ),
                                                    ( "bar", 2 ),
@@ -821,7 +834,7 @@ class TestIsMethodsSuite(unittest.TestCase):
         self.assertEqual(IsClassMethod(self.Object.ClassMethod), True)
 
         o = self.Object()
-        
+
         self.assertEqual(IsClassMethod(o.Method), False)
         self.assertEqual(IsClassMethod(o.StaticMethod), False)
         self.assertEqual(IsClassMethod(o.ClassMethod), True)

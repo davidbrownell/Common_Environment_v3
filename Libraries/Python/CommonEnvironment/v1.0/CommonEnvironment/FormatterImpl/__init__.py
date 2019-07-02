@@ -33,7 +33,7 @@ _script_dir, _script_name                   = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 class FormatterImpl(Interface.Interface):
     """\
-    Abstract base class for formatters (automated functionality able to format 
+    Abstract base class for formatters (automated functionality able to format
     source code according to an established coding standard).
     """
 
@@ -75,7 +75,11 @@ class FormatterImpl(Interface.Interface):
     # ----------------------------------------------------------------------
     # |  Protected Methods
     @staticmethod
-    def _GetPlugins(local_plugin_dir, *plugin_input_dirs):
+    def _GetPlugins(
+        local_plugin_dir,
+        *plugin_input_dirs,
+        sort=True,
+    ):
         plugins = []
 
         for plugin_input_dir in itertools.chain([local_plugin_dir], plugin_input_dirs):
@@ -87,7 +91,7 @@ class FormatterImpl(Interface.Interface):
                 for filename in FileSystem.WalkFiles(
                     plugin_input_dir,
                     include_file_extensions=[".py"],
-                    include_file_base_names=[lambda basename: basename.endswith("Plugin")],
+                    include_file_base_names=[lambda basename: basename.endswith("Plugin") and basename != "Plugin"],
                 ):
                     plugin_name = os.path.splitext(os.path.basename(filename))[0]
 
@@ -113,8 +117,9 @@ class FormatterImpl(Interface.Interface):
 
                     plugins.append(potential_class)
 
-        plugins.sort(
-            key=lambda plugin: (plugin.Priority, plugin.Name),
-        )
+        if sort:
+            plugins.sort(
+                key=lambda plugin: (plugin.Priority, plugin.Name),
+            )
 
         return plugins
