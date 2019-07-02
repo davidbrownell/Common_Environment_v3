@@ -1029,7 +1029,7 @@ def _ResolveType(verified_types, cls, is_concrete_type):
     for k, v in six.iteritems(overrides):
         if v[-1].RealizedValue != _Entity.DoesNotExist:
             value = v[-1].RealizedValue
-            if callable(value):
+            if IsStandardMethod(value):
                 value = property(value)
 
             setattr(cls, k, value)
