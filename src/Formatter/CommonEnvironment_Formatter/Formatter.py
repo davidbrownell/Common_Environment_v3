@@ -100,7 +100,9 @@ FORMATTERS                                  = [_LoadFormatterFromModule(mod) for
 # |
 # ----------------------------------------------------------------------
 _formatter_type_info                        = CommandLine.EnumTypeInfo(
-    [formatter.Name for formatter in FORMATTERS] + [str(index) for index in six.moves.range(1, len(FORMATTERS) + 1)],
+    [formatter.Name for formatter in FORMATTERS] + [
+        str(index) for index in six.moves.range(1, len(FORMATTERS) + 1)
+    ],
     arity="?",
 )
 
@@ -110,7 +112,9 @@ _formatter_type_info                        = CommandLine.EnumTypeInfo(
         "Filename or directory (used to search for files) to format",
     ),
     formatter=CommandLine.EntryPoint.Parameter("The formatter to use while formatting"),
-    overwrite=CommandLine.EntryPoint.Parameter("Overwrite the input files with changes (if any)"),
+    overwrite=CommandLine.EntryPoint.Parameter(
+        "Overwrite the input files with changes (if any)",
+    ),
     quiet=CommandLine.EntryPoint.Parameter(
         "Only output changes (if any). This option is only valid when providing a single file",
     ),
@@ -191,10 +195,13 @@ def Format(
             display=not quiet,
         ) as dm:
             if os.path.isfile(filename_or_dir):
-                formatter = _GetFormatterByFilename(filename_or_dir)
+                filename = filename_or_dir
+                del filename_or_dir
+
+                formatter = _GetFormatterByFilename(filename)
                 if formatter is None:
                     dm.stream.write(
-                        "\nERROR: '{}' is not a supported file type.\n".format(filename_or_dir),
+                        "\nERROR: '{}' is not a supported file type.\n".format(filename),
                     )
                     dm.result = -1
 
@@ -205,14 +212,14 @@ def Format(
                 )
 
                 if not quiet:
-                    dm.stream.write("Formatting '{}'...".format(filename_or_dir))
+                    dm.stream.write("Formatting '{}'...".format(filename))
 
                 with dm.stream.DoneManager(
                     done_suffix=lambda: None if nonlocals.has_changes else "No changes detected",
                     display=not quiet,
                 ) as this_dm:
                     output, nonlocals.has_changes = formatter.Format(
-                        filename_or_dir,
+                        filename,
                         **plugin_args
                     )
 
@@ -227,6 +234,9 @@ def Format(
 
             # Process the dir
             assert os.path.isdir(filename_or_dir), filename_or_dir
+
+            directory = filename_or_dir
+            del filename_or_dir
 
             if formatter is not None:
                 formatters = [_GetFormatterByName(formatter)]
@@ -275,7 +285,7 @@ def Format(
                         this_dm.stream,
                         verbose,
                         formatter,
-                        filename_or_dir,
+                        directory,
                         single_threaded,
                         skip_generated_dirs,
                     )
@@ -296,7 +306,10 @@ def Format(
                         count=inflect.no("file", len(changed_files)),
                         prefix="" if overwrite else "would be ",
                         names="\n".join(
-                            ["    - {}".format(filename) for filename in sorted(changed_files)],
+                            [
+                                "    - {}".format(filename)
+                                for filename in sorted(changed_files)
+                            ],
                         ),
                     ),
                 )
@@ -309,7 +322,9 @@ def Format(
     filename_or_dir=CommandLine.EntryPoint.Parameter(
         "Filename or directory (used to search for files) to query for changes",
     ),
-    formatter=CommandLine.EntryPoint.Parameter("The formatter to use while querying for changes"),
+    formatter=CommandLine.EntryPoint.Parameter(
+        "The formatter to use while querying for changes",
+    ),
     single_threaded=CommandLine.EntryPoint.Parameter(
         "Run with a single thread. This option is only valid when providing a directory",
     ),
@@ -369,7 +384,9 @@ def HasChanges(
                 formatter = _GetFormatterByFilename(filename_or_dir)
                 if formatter is None:
                     dm.stream.write(
-                        "\nERROR: '{}' is not a supported file type.\n".format(filename_or_dir),
+                        "\nERROR: '{}' is not a supported file type.\n".format(
+                            filename_or_dir,
+                        ),
                     )
                     dm.result = -1
 
@@ -441,7 +458,10 @@ def HasChanges(
                     ).format(
                         count=inflect.no("change", len(changed_files)),
                         names="\n".join(
-                            ["    - {}".format(filename) for filename in sorted(changed_files)],
+                            [
+                                "    - {}".format(filename)
+                                for filename in sorted(changed_files)
+                            ],
                         ),
                     ),
                 )
@@ -525,12 +545,12 @@ def _Impl(
         done_suffix=lambda: "{} found".format(inflect.no("file", len(input_filenames))),
     ):
         input_filenames += [
-            filename
-            for filename in FileSystem.WalkFiles(
+            filename for filename in FileSystem.WalkFiles(
                 input_dir,
-                traverse_exclude_dir_names=[lambda name: "generated" in name.lower()] if skip_generated_dirs else [],
-            )
-            if formatter.InputTypeInfo.ValidateItemNoThrow(filename) is None
+                traverse_exclude_dir_names=[
+                    lambda name: "generated" in name.lower()
+                ] if skip_generated_dirs else [],
+            ) if formatter.InputTypeInfo.ValidateItemNoThrow(filename) is None
         ]
 
     if not input_filenames:
