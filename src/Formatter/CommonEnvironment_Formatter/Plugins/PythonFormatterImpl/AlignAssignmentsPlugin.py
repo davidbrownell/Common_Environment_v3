@@ -24,7 +24,7 @@ import CommonEnvironment
 from CommonEnvironment.BitFlagEnum import BitFlagEnum, auto
 from CommonEnvironment import Interface
 
-from PythonFormatterImpl.Impl.HorizontalAlignmentImpl import HorizontalAlignmentImpl
+from PythonFormatterImpl.Impl.HorizontalAlignmentImpl import HorizontalAlignmentImpl # <Unable to import> pylint: disable = E0401
 
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()
@@ -53,8 +53,8 @@ class Plugin(HorizontalAlignmentImpl):
     # |  Methods
     def __init__(
         self,
-        alignment_flags=None,
         *args,
+        alignment_flags=None,
         **kwargs
     ):
         if alignment_flags is None:
@@ -73,7 +73,11 @@ class Plugin(HorizontalAlignmentImpl):
     # ----------------------------------------------------------------------
     # |  Private Methods
     @Interface.override
-    def _GetAlignmentToken(self, line, is_initial_line):
+    def _GetAlignmentToken(
+        self,
+        line,
+        is_initial_line,                    # <Unused argument> pylint: disable = W0613
+    ):
         tokens = line.leaves
 
         assignment_index = self._GetRootTokenIndex(tokens, "=")
@@ -85,14 +89,14 @@ class Plugin(HorizontalAlignmentImpl):
         parent = token.parent
         while parent:
             if parent.type in black.VARARGS_PARENTS or parent.type in [
-                python_symbols.parameters
+                python_symbols.parameters   # <invalid member> pylint: disable = E1101
             ]:
                 return None
 
-            if parent.type == python_symbols.classdef:
+            if parent.type == python_symbols.classdef:  # <invalid member> pylint: disable = E1101
                 return token if self._alignment_flags & self.Flag.ClassLevel else None
 
-            if parent.type == python_symbols.funcdef:
+            if parent.type == python_symbols.funcdef:   # <invalid member> pylint: disable = E1101
                 # This code will be hit on the first token of a line
                 # that is a function def. Look at the function definition's
                 # name to determine what kind of method it is.

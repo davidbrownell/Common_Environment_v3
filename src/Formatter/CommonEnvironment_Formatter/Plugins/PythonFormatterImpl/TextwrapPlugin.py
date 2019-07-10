@@ -20,8 +20,8 @@ import os
 import CommonEnvironment
 from CommonEnvironment import Interface
 
-from PythonFormatterImpl.Plugin import PluginBase
-from PythonFormatterImpl.Tokenizer import Tokenizer
+from PythonFormatterImpl.Plugin import PluginBase       # <Unable to import> pylint: disable = E0401
+from PythonFormatterImpl.Tokenizer import Tokenizer     # <Unable to import> pylint: disable = E0401
 
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()
@@ -44,7 +44,12 @@ class Plugin(PluginBase):
     # |  Methods
     @classmethod
     @Interface.override
-    def PreprocessTokens(cls, tokenizer, tokenize_func, recurse_count):
+    def PreprocessTokens(
+        cls,
+        tokenizer,
+        tokenize_func,                      # <Unused argument> pylint: disable = W0613
+        recurse_count,                      # <Unused argument> pylint: disable = W0613
+    ):
         # ----------------------------------------------------------------------
         def GenerateTokens():
             for token in tokenizer.Tokens:

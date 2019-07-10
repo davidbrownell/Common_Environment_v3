@@ -17,13 +17,12 @@
 
 import os
 
-import black
 from blib2to3.pygram import python_symbols
 
 import CommonEnvironment
 from CommonEnvironment import Interface
 
-from PythonFormatterImpl.Impl.SplitterImpl import SplitterImpl, SimpleInitialTokenMixin
+from PythonFormatterImpl.Impl.SplitterImpl import SplitterImpl, SimpleInitialTokenMixin # <Unable to import> pylint: disable = E0401
 
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()
@@ -42,7 +41,7 @@ class Plugin(SimpleInitialTokenMixin, SplitterImpl):
     # ----------------------------------------------------------------------
     # |  Private Properties
     _DefaultSplitArgsValue                  = Interface.DerivedProperty(3)
-    _InitialTokenType                       = Interface.DerivedProperty(python_symbols.listmaker)
+    _InitialTokenType                       = Interface.DerivedProperty(python_symbols.listmaker) # <No member> pylint: disable = E1101
 
     # ----------------------------------------------------------------------
     # |  Private Methods
@@ -50,7 +49,7 @@ class Plugin(SimpleInitialTokenMixin, SplitterImpl):
     @staticmethod
     def _InsertTrailingComma(args):
         for arg in args:
-            if arg.parent and arg.parent.type == python_symbols.old_comp_for:
+            if arg.parent and arg.parent.type == python_symbols.old_comp_for: # <No member> pylint: disable = E1101
                 return False
 
         return True

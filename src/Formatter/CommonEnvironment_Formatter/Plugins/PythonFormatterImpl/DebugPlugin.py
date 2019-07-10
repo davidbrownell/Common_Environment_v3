@@ -25,8 +25,8 @@ import CommonEnvironment
 from CommonEnvironment.BitFlagEnum import BitFlagEnum, auto
 from CommonEnvironment import Interface
 
-from Plugin import PluginBase
-from Tokenizer import Tokenizer
+from PythonFormatterImpl.Plugin import PluginBase       # <Unable to import> pylint: disable = E0401
+from PythonFormatterImpl.Tokenizer import Tokenizer     # <Unable to import> pylint: disable = E0401
 
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()
@@ -222,7 +222,7 @@ class Plugin(PluginBase):
         symbol_table = black.pygram.python_grammar.number2symbol
 
         # Create the line's content for display
-        line_template = "{}Line {{}}) {{}}\n{}".format(
+        line_template = "{}Line {{}}){{}}\n{}".format(
             display_prefix,
             "\n" if display_tokens else "",
         )
@@ -235,7 +235,11 @@ class Plugin(PluginBase):
 
             line_content.append("{}{}".format(token.prefix, token.value))
 
-        sys.stdout.write(line_template.format(line_index, "".join(line_content)))
+        line_content = "".join(line_content)
+        if line_content and line_content[0] != "\n":
+            line_content = " {}".format(line_content)
+
+        sys.stdout.write(line_template.format(line_index, line_content))
 
         if display_tokens:
             for token_index, token in enumerate(line_tokens):
