@@ -19,7 +19,6 @@ import os
 import sys
 import textwrap
 import unittest
-import unittest.mock
 
 import six
 
@@ -41,6 +40,19 @@ with CallOnExit(lambda: sys.path.pop(0)):
 class StandardSuite(TestImpl):
     # ----------------------------------------------------------------------
     def Test(self, expected, flags):
+        if sys.version_info[0] == 2:
+            typ = type(self)
+
+            if not hasattr(typ, "_displayed_message"):
+                sys.stdout.write("This script does not run with python2.\n")
+                setattr(typ, "_displayed_message", True)
+
+            self.assertTrue(True)
+            return
+
+        # Avoid import problems on python27
+        import unittest.mock
+
         with unittest.mock.patch("PythonFormatterImpl.DebugPlugin.sys.stdout") as mocked:
             sink = six.moves.StringIO()
 

@@ -16,9 +16,11 @@
 """Contains the Tokenizer object"""
 
 import os
+import sys
 
-import black
-from blib2to3.pygram import token as python_tokens
+if sys.version_info[0] != 2:
+    import black
+    from blib2to3.pygram import token as python_tokens
 
 import CommonEnvironment
 from CommonEnvironment import Interface

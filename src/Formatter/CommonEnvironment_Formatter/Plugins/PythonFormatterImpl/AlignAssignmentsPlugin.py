@@ -17,9 +17,6 @@
 
 import os
 
-import black
-from blib2to3.pygram import python_symbols
-
 import CommonEnvironment
 from CommonEnvironment.BitFlagEnum import BitFlagEnum, auto
 from CommonEnvironment import Interface
@@ -51,10 +48,11 @@ class Plugin(HorizontalAlignmentImpl):
 
     # ----------------------------------------------------------------------
     # |  Methods
+    # <Keyword argument before variable positional arguments> pylint: disable = W1113
     def __init__(
         self,
-        *args,
         alignment_flags=None,
+        *args,
         **kwargs
     ):
         if alignment_flags is None:
@@ -78,6 +76,10 @@ class Plugin(HorizontalAlignmentImpl):
         line,
         is_initial_line,                    # <Unused argument> pylint: disable = W0613
     ):
+        # Importing here to avoid errors on Python 2.7 (where black is not supported)
+        import black                        # <Unable to import> pylint: disable = E0401
+        from blib2to3.pygram import python_symbols
+
         tokens = line.leaves
 
         assignment_index = self._GetRootTokenIndex(tokens, "=")

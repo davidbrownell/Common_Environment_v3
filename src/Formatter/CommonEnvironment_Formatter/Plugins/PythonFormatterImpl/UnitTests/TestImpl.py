@@ -46,7 +46,7 @@ class TestImpl(unittest.TestCase):
         black_line_length=None,
         **plugin_args
     ):
-        if sys.version[0] == "2":
+        if sys.version_info[0] == 2:
             typ = type(self)
 
             if not hasattr(typ, "_displayed_message"):
