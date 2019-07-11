@@ -87,11 +87,16 @@ class StandardSuite(TestImpl):
             num_args=1,
         )
 
+
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 if __name__ == "__main__":
     try:
-        sys.exit(unittest.main(verbosity=2))
+        sys.exit(
+            unittest.main(
+                verbosity=2,
+            ),
+        )
     except KeyboardInterrupt:
         pass

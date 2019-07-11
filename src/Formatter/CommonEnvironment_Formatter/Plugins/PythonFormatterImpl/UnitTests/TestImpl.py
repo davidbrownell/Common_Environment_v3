@@ -64,7 +64,7 @@ class TestImpl(unittest.TestCase):
             original,
             black_line_length=black_line_length,
             include_plugin_names=[plugin_name],
-            **{plugin_name: plugin_args},
+            **{plugin_name: plugin_args}
         )
 
         self.assertEqual(result[0], expected)

@@ -32,11 +32,16 @@ class StandardSuite(unittest.TestCase):
     def test_Standard(self):
         self.assertTrue(True)
 
+
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 if __name__ == "__main__":
     try:
-        sys.exit(unittest.main(verbosity=2))
+        sys.exit(
+            unittest.main(
+                verbosity=2,
+            ),
+        )
     except KeyboardInterrupt:
         pass
