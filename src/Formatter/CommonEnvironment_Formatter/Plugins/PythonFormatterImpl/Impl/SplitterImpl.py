@@ -284,16 +284,15 @@ class SplitterImpl(PluginBase):
             if comma_index is None:
                 # Get the tokens and comments (where the comment comes
                 # before the last index)
-                these_tokens = []
+                these_tokens = tokens[first_index:last_index]
+
+                # Get the comments at the end of the line
                 these_comments = []
 
-                while first_index != last_index:
-                    if tokens[first_index].type == python_tokens.COMMENT:
-                        these_comments.append(tokens[first_index])
-                    else:
-                        these_tokens.append(tokens[first_index])
+                while these_tokens and these_tokens[-1].type == python_tokens.COMMENT:
+                    these_comments.insert(0, these_tokens.pop())
 
-                    first_index += 1
+                first_index = last_index
 
             else:
                 these_tokens = tokens[first_index:comma_index]
