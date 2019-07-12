@@ -24,16 +24,16 @@ _script_fullpath = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
-if sys.version[0] == '2':
+if sys.version_info[0] == 2:
     # Have at least something defined for Python2.7
     auto                                    = lambda: 1
 
+    # <Too few public methods> pylint: disable = R0903
     class BitFlagEnum(object):
         pass
 
 else:
-    # <No name '<name>' in module '<module>'> pylint: disable = E0611
-    from enum import IntFlag, auto as auto_func
+    from enum import IntFlag, auto as auto_func         # <No name '<name>' in module '<module>'> pylint: disable = E0611
 
     # <Class name "<name>" doesn't conform to PascalCase naming style> pylint: disable = C0103
     auto                                    = auto_func
