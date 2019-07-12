@@ -20,8 +20,8 @@ import os
 import CommonEnvironment
 from CommonEnvironment import Interface
 
-from PythonFormatterImpl.AlignAssignmentsPlugin import Plugin as AlignAssignmentsPlugin
-from PythonFormatterImpl.Impl.HorizontalAlignmentImpl import HorizontalAlignmentImpl
+from PythonFormatterImpl.AlignAssignmentsPlugin import Plugin as AlignAssignmentsPlugin # <Unable to import> pylint: disable = E0401
+from PythonFormatterImpl.Impl.HorizontalAlignmentImpl import HorizontalAlignmentImpl    # <Unable to import> pylint: disable = E0401
 
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()

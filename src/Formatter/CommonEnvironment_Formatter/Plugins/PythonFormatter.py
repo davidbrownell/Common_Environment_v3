@@ -283,7 +283,7 @@ class Formatter(FormatterImpl):
         plugin_input_dirs,
         plugin_args,
     ):
-        if not debug:
+        if not debug and "Debug" not in include_plugin_names:
             exclude_plugin_names.add("Debug")
 
         # Get the plugins
@@ -297,7 +297,7 @@ class Formatter(FormatterImpl):
             args = []
             kwargs = {}
 
-            defaults = plugin_args.get(plugin.Name, None)
+            defaults = plugin_args.get(plugin().Name, None)
             if defaults is not None:
                 if (
                     isinstance(defaults, tuple)

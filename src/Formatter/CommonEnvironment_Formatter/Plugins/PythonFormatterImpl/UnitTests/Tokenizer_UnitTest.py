@@ -1,9 +1,9 @@
 # ----------------------------------------------------------------------
 # |
-# |  FinalNewlinePlugin.py
+# |  Tokenizer_UnitTest.py
 # |
 # |  David Brownell <db@DavidBrownell.com>
-# |      2019-06-30 14:31:09
+# |      2019-07-09 20:37:49
 # |
 # ----------------------------------------------------------------------
 # |
@@ -13,36 +13,35 @@
 # |  http://www.boost.org/LICENSE_1_0.txt.
 # |
 # ----------------------------------------------------------------------
-"""Contains the Plugin object"""
+"""Unit test for Tokenizer.py"""
 
 import os
+import sys
+import unittest
 
 import CommonEnvironment
-from CommonEnvironment import Interface
-
-from PythonFormatterImpl.Plugin import PluginBase       # <Unable to import> pylint: disable = E0401
 
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name                   = os.path.split(_script_fullpath)
-#  ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 # ----------------------------------------------------------------------
-@Interface.staticderived
-class Plugin(PluginBase):
-    """Removes the final newline from the file"""
-
+class StandardSuite(unittest.TestCase):
     # ----------------------------------------------------------------------
-    # |  Properties
-    Name                                    = Interface.DerivedProperty("FinalNewline")
-    Priority                                = Interface.DerivedProperty(9999999999999999999)
+    def test_Standard(self):
+        self.assertTrue(True)
 
-    # ----------------------------------------------------------------------
-    # |  Methods
-    @staticmethod
-    @Interface.override
-    def PostprocessLines(lines):
-        if lines and not lines[-1].leaves:
-            lines = lines[:-1]
 
-        return lines
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+if __name__ == "__main__":
+    try:
+        sys.exit(
+            unittest.main(
+                verbosity=2,
+            ),
+        )
+    except KeyboardInterrupt:
+        pass

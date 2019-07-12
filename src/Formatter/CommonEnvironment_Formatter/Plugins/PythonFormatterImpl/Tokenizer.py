@@ -16,9 +16,11 @@
 """Contains the Tokenizer object"""
 
 import os
+import sys
 
-import black
-from blib2to3.pygram import python_symbols, token as python_tokens
+if sys.version_info[0] != 2:
+    import black
+    from blib2to3.pygram import token as python_tokens
 
 import CommonEnvironment
 from CommonEnvironment import Interface
@@ -82,9 +84,8 @@ class Tokenizer(Interface.Interface):
             if len(new_tokens) != end_token_index - start_token_index - 1:
                 return True
 
-            for index in range(len(new_tokens)):
-                new_token = new_tokens[index]
-                original_token = self.Tokens[start_token_index + index]
+            for new_token_index, new_token in enumerate(new_tokens):
+                original_token = self.Tokens[start_token_index + new_token_index]
 
                 if new_token != original_token:
                     return True
@@ -116,7 +117,7 @@ class Tokenizer(Interface.Interface):
     # ----------------------------------------------------------------------
     def Commit(self):
         if not self.HasModifications():
-            return
+            return self
 
         if self._original_token_index < len(self.Tokens):
             self._new_tokens += self.Tokens[self._original_token_index :]

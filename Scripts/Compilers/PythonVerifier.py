@@ -122,7 +122,15 @@ class Verifier(VerifierMod.Verifier):
     @staticmethod
     @override
     def IsSupportedTestItem(item):
-        return os.path.basename(item) not in ["__init__.py", "Build.py"]
+        basename = os.path.basename(item)
+        if basename in ["__init__.py", "Build.py"]:
+            return False
+
+        name = os.path.splitext(basename)[0]
+        if name.lower().endswith("impl"):
+            return False
+
+        return True
 
     # ----------------------------------------------------------------------
     # |
