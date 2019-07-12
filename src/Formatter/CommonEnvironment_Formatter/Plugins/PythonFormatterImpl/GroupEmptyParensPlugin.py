@@ -3,7 +3,7 @@
 # |  GroupEmptyParensPlugin.py
 # |
 # |  David Brownell <db@DavidBrownell.com>
-# |      2019-02-08 11:40:52
+# |      2019-07-09 15:36:21
 # |
 # ----------------------------------------------------------------------
 # |
@@ -20,7 +20,8 @@ import os
 import CommonEnvironment
 from CommonEnvironment import Interface
 
-from PluginBase import PluginBase
+from PythonFormatterImpl.Plugin import PluginBase       # <unable to import> pylint: disable = E0401
+from PythonFormatterImpl.Tokenizer import Tokenizer     # <unable to import> pylint: disable = E0401
 
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()
@@ -30,7 +31,7 @@ _script_dir, _script_name                   = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 @Interface.staticderived
 class Plugin(PluginBase):
-    """Ensures that empty parens are not split across multiple lines"""
+    """Removes any newlines placed between empty parens/brackets/braces"""
 
     # ----------------------------------------------------------------------
     # |  Properties
@@ -41,31 +42,27 @@ class Plugin(PluginBase):
     # |  Methods
     @staticmethod
     @Interface.override
-    def Decorate(lines):
-        # Decoration activities are handled in PostprocessLines
-        return lines
-
-    # ----------------------------------------------------------------------
-    @classmethod
-    @Interface.override
-    def PostprocessLines(cls, lines):
-        new_lines = []
-
-        for index, line in enumerate(lines):
-            if (
-                index != 0
-                and cls.FirstLeafValue(line) == ")"
-                and cls.LastLeafValue(new_lines[-1]) == "("
-                and (
-                    len(line.leaves) == 1
-                    or (len(line.leaves) == 2 and line.leaves[1].value == ",")
-                )
-            ):
-                # Merge the contents of this line with the previous
-                # line.
-                new_lines[-1].leaves += line.leaves
+    def DecorateTokens(
+        tokenizer,
+        tokenize_func,                      # <Unused argument> pylint: disable = W0613
+        recurse_count,                      # <Unused argument> pylint: disable = W0613
+    ):
+        for token_index, token in enumerate(tokenizer.Tokens):
+            if token_index == 0:
                 continue
 
-            new_lines.append(line)
+            if token_index + 1 == len(tokenizer.Tokens):
+                continue
 
-        return new_lines
+            if token != Tokenizer.NEWLINE:
+                continue
+
+            prev_token_value = tokenizer.Tokens[token_index - 1].value
+            next_token_value = tokenizer.Tokens[token_index + 1].value
+
+            if (
+                (prev_token_value == "(" and next_token_value == ")")
+                or (prev_token_value == "[" and next_token_value == "]")
+                or (prev_token_value == "{" and next_token_value == "}")
+            ):
+                tokenizer.ReplaceTokens(token_index, token_index + 1, [])

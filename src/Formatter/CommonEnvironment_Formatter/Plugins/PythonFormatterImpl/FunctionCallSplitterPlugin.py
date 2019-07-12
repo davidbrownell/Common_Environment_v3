@@ -17,13 +17,12 @@
 
 import os
 
-import black
 from blib2to3.pygram import python_symbols
 
 import CommonEnvironment
 from CommonEnvironment import Interface
 
-from PythonFormatterImpl.Impl.FunctionSplitterImpl import FunctionSplitterImpl
+from PythonFormatterImpl.Impl.FunctionSplitterImpl import FunctionSplitterImpl # <Unable to import> pylint: disable = E0401
 
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()
@@ -50,4 +49,4 @@ class Plugin(FunctionSplitterImpl):
         if token.value != "(":
             return False
 
-        return token.parent.type in [python_symbols.decorator, python_symbols.trailer]
+        return token.parent.type in [python_symbols.decorator, python_symbols.trailer] # <No member> pylint: disable = E1101

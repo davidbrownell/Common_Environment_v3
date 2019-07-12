@@ -17,14 +17,13 @@
 
 import os
 
-import black
 from blib2to3.pygram import python_symbols
 
 import CommonEnvironment
 from CommonEnvironment import Interface
 
-from PythonFormatterImpl.Impl.FunctionSplitterImpl import FunctionSplitterImpl
-from PythonFormatterImpl.Impl.SplitterImpl import SimpleInitialTokenMixin
+from PythonFormatterImpl.Impl.FunctionSplitterImpl import FunctionSplitterImpl # <Unable import> pylint: disable = E0401
+from PythonFormatterImpl.Impl.SplitterImpl import SimpleInitialTokenMixin      # <Unable import> pylint: disable = E0401
 
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()
@@ -42,4 +41,4 @@ class Plugin(SimpleInitialTokenMixin, FunctionSplitterImpl):
 
     # ----------------------------------------------------------------------
     # |  Private Properties
-    _InitialTokenType                       = Interface.DerivedProperty(python_symbols.typedargslist)
+    _InitialTokenType                       = Interface.DerivedProperty(python_symbols.typedargslist) # <No member> pylint: disable = E1101

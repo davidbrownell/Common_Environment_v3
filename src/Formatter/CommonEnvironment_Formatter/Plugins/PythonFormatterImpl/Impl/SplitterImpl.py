@@ -169,15 +169,10 @@ class SplitterImpl(PluginBase):
 
                     # ----------------------------------------------------------------------
                     def ShouldSplit():
-                        # We need to split if there are multiple comments associated with more than one line
-                        found_one_comment = False
-
+                        # We need to split if there are embedded comments associated with more than one line
                         for _, arg_info_comments in args_info:
                             if arg_info_comments:
-                                if found_one_comment:
-                                    return True
-
-                                found_one_comment = True
+                                return True
 
                         # Do we need to split based on the args?
                         if should_split_func([tokens for tokens, _ in args_info]):
@@ -287,26 +282,31 @@ class SplitterImpl(PluginBase):
 
             # Get the args
             if comma_index is None:
+                # Get the tokens and comments (where the comment comes
+                # before the last index)
                 these_tokens = tokens[first_index:last_index]
-                comma_index = last_index
+
+                # Get the comments at the end of the line
+                these_comments = []
+
+                while these_tokens and these_tokens[-1].type == python_tokens.COMMENT:
+                    these_comments.insert(0, these_tokens.pop())
+
+                first_index = last_index
+
             else:
                 these_tokens = tokens[first_index:comma_index]
+                first_index = comma_index + 1
 
-            # Get the comments
-            first_index = comma_index + 1
-            comment_delta = 0
-
-            while (
-                first_index + comment_delta < last_index
-                and tokens[first_index + comment_delta].type == python_tokens.COMMENT
-            ):
-                comment_delta += 1
-
-            if comment_delta != 0:
-                these_comments = tokens[first_index : first_index + comment_delta]
-                first_index += comment_delta
-            else:
                 these_comments = []
+
+                # Get the comments (where the comment comes after the comma)
+                while (
+                    first_index < last_index
+                    and tokens[first_index].type == python_tokens.COMMENT
+                ):
+                    these_comments.append(tokens[first_index])
+                    first_index += 1
 
             results.append([these_tokens, these_comments])
 

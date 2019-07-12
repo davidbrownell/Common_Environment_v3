@@ -17,9 +17,6 @@
 
 import os
 
-import black
-from blib2to3.pygram import token as python_tokens
-
 import CommonEnvironment
 from CommonEnvironment import Interface
 
@@ -44,6 +41,9 @@ class HorizontalAlignmentImpl(PluginBase):
     # ----------------------------------------------------------------------
     @Interface.override
     def PostprocessBlocks(self, blocks):
+        # Import here to avoid problems on python2.7
+        from blib2to3.pygram import token as python_tokens
+
         for block in blocks:
             alignment_tokens = []
             max_line_length = 0
