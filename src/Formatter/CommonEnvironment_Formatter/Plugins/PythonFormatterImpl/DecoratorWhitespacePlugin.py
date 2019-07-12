@@ -17,13 +17,12 @@
 
 import os
 
-import black
-from blib2to3.pygram import python_symbols, token as python_tokens
+from blib2to3.pygram import python_symbols
 
 import CommonEnvironment
 from CommonEnvironment import Interface
 
-from Plugin import PluginBase
+from PythonFormatterImpl.Plugin import PluginBase       # <Unable to import> pylint: disable = E0401
 
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()
@@ -47,12 +46,12 @@ class Plugin(PluginBase):
     def DecorateLines(lines):
         # ----------------------------------------------------------------------
         def IsDecorator(token):
-            return token is not None and token.type == python_symbols.decorator
+            return token is not None and token.type == python_symbols.decorator # <no member> pylint: disable = E1101
 
         # ----------------------------------------------------------------------
         def IsFuncOrDecorator(token):
             return IsDecorator(token) or (
-                token is not None and token.type == python_symbols.funcdef
+                token is not None and token.type == python_symbols.funcdef  # <no member> pylint: disable = E1101
             )
 
         # ----------------------------------------------------------------------
@@ -67,7 +66,7 @@ class Plugin(PluginBase):
 
         # ----------------------------------------------------------------------
 
-        for line_index, line in enumerate(lines):
+        for line_index in range(len(lines)):
             if IsPrevLineADecorator(line_index):
                 lines[line_index].leaves[0].prefix = ""
 
