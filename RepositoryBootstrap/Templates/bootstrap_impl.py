@@ -42,7 +42,7 @@ _script_dir, _script_name                   = os.path.split(_script_fullpath)
 # Tuples in the form:
 #   ("<repo name>", "<clone command line>", "<setup command suffix>" or None)
 _REPO_DATA                                  = [
-    ( "Common_cpp_Clang_8", 'git clone https://github.com/davidbrownell/Common_cpp_Clang_8 "{output_dir}"', "/configuration=python"),
+    ( "Common_cpp_Clang_8", 'git clone https://github.com/davidbrownell/Common_cpp_Clang_8 "{output_dir}"', '"/configuration=python"'),
 ]
 
 _ACTIVATION_REPO_CONFIGURATION              = "python"  # Can be None
@@ -163,9 +163,7 @@ def EntryPoint(
                             suffix=data[2] or "",
                         )
 
-                        if CurrentShell.CategoryName == "Windows":
-                            command_line = command_line.replace("=", "_EQ_")
-                        elif CurrentShell.CategoryName == "Linux":
+                        if CurrentShell.CategoryName == "Linux":
                             command_line = "./{}".format(command_line)
 
                         sink = six.moves.StringIO()
