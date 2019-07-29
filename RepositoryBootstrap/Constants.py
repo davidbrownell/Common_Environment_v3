@@ -55,6 +55,7 @@ SETUP_ENVIRONMENT_ACTIONS_METHOD_NAME                   = "GetCustomActions"
 # ----------------------------------------------------------------------
 # |  Custom Activate Methods
 ACTIVATE_ENVIRONMENT_ACTIONS_METHOD_NAME                                    = "GetCustomActions"
+ACTIVATE_ENVIRONMENT_ACTIONS_EPILOGUE_METHOD_NAME                           = "GetCustomActionsEpilogue"
 ACTIVATE_ENVIRONMENT_CUSTOM_SCRIPT_EXTRACTOR_METHOD_NAME                    = "GetCustomScriptExtractors"
 
 SCRIPT_LIST_NAME                                                            = "DevEnvScripts"
