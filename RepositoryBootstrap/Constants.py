@@ -46,6 +46,8 @@ SCRIPTS_SUBDIR                                          = "Scripts"
 TOOLS_SUBDIR                                            = "Tools"
 
 AGNOSTIC_OS_NAME                                        = "Agnostic"
+SRC_OS_NAME                                             = "src"
+CUSTOMIZATIONS_OS_NAME                                  = "customizations"
 
 # ----------------------------------------------------------------------
 # |  Custom Setup Methods
