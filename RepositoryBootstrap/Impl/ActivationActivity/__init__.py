@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  __init__.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-05-06 10:32:50
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-19.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Types and methods useful during environment activation"""
 
@@ -34,9 +34,9 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Public Types
-# |  
+# |
 # ----------------------------------------------------------------------
 class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
     """
@@ -46,9 +46,9 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
     """
 
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Public Properties
-    # |  
+    # |
     # ----------------------------------------------------------------------
     @CommonEnvironmentImports.Interface.abstractproperty
     def Name(self):
@@ -60,7 +60,7 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
         True if the commands should be executed via DelayExecute
 
         The vast majority of activation activities can be created as script generation
-        time. However, there are some actions that must be generated at execution time, as 
+        time. However, there are some actions that must be generated at execution time, as
         they rely on information or state changes output by the statements that run immediately
         before them.
 
@@ -74,9 +74,9 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
         raise Exception("Abstract property")
 
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Public Methods
-    # |  
+    # |
     # ----------------------------------------------------------------------
     @classmethod
     def CreateCommands( cls,
@@ -86,7 +86,7 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
                         repositories,
                         version_specs,
                         generated_dir,
-                        *args, 
+                        *args,
                         **kwargs
                       ):
         commands = []
@@ -137,7 +137,7 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
 
         for version_string in version_strings:
             original_version_string = version_string
-            
+
             for potential_prefix in [ "v", "r", ]:
                 if version_string.startswith(potential_prefix):
                     version_string = version_string[len(potential_prefix):]
@@ -219,7 +219,7 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
                 assert os.path.isdir(this_fullpath), this_fullpath
 
                 return this_fullpath, version
-                
+
             except Exception as ex:
                 exceptions.append(ex)
 
@@ -236,7 +236,8 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
         # Lazy init the set of potential os names
         if cls._GetCustomizedFullpath_PotentialOSNames is None:
             potential_names = set([ Constants.AGNOSTIC_OS_NAME,
-                                    "src",
+                                    Constants.SRC_OS_NAME,
+                                    Constants.CUSTOMIZATIONS_OS_NAME,
                                   ])
 
             for this_shell in CommonEnvironmentImports.Shell_ALL_TYPES:
@@ -320,9 +321,9 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
 
     # ----------------------------------------------------------------------
     @staticmethod
-    def CallCustomMethod( customization_filename, 
-                          method_name, 
-                          kwargs, 
+    def CallCustomMethod( customization_filename,
+                          method_name,
+                          kwargs,
                           as_list=True,
                         ):
         """
@@ -344,9 +345,9 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
             return result
 
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Protected Types
-    # |  
+    # |
     # ----------------------------------------------------------------------
     class LibraryInfo(object):
         # ----------------------------------------------------------------------
@@ -371,9 +372,9 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
             return CommonEnvironmentImports.CommonEnvironment.ObjectReprImpl(self)
 
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Protected Methods
-    # |  
+    # |
     # ----------------------------------------------------------------------
     @classmethod
     def _GetLibraries( cls,
@@ -549,7 +550,7 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
                     # ----------------------------------------------------------------------
 
                     new_name = GenerateNewName(scripts[item_name].Repository)
-                    
+
                     scripts[new_name] = scripts[item_name]
 
                     item_name = GenerateNewName(library_info.Repository)
@@ -566,9 +567,9 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
         # Text file
         with open(os.path.join(generated_dir, "{}.txt".format(cls.Name)), 'w') as f:
             col_sizes = [ 40, 15, 60, ]
-        
+
             template = "{{name:{0}}}  {{version:<{1}}}  {{fullpath:<{2}}}".format(*col_sizes)
-        
+
             f.write(textwrap.dedent(
                 """\
                 {}
@@ -594,9 +595,9 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
             pickle.dump(libraries, f)
 
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Private Methods
-    # |  
+    # |
     # ----------------------------------------------------------------------
     @staticmethod
     @CommonEnvironmentImports.Interface.abstractmethod
