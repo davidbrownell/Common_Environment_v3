@@ -63,6 +63,8 @@ ENUMERATE_EXCLUDE_DIRS                      = [ "generated",
 
 _ScmConstraint                              = CommonEnvironmentImports.CommandLine.EnumTypeInfo([ scm.Name for scm in CommonEnvironmentImports.SourceControlManagement_ALL_TYPES ], arity='?')
 
+_DEFAULT_SEARCH_DEPTH                       = 5
+
 # ----------------------------------------------------------------------
 @CommonEnvironmentImports.CommandLine.EntryPoint( output_filename_or_stdout=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Filename for generated content or standard output if the value is 'stdout'"),
                                                   repository_root=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Root of the repository"),
@@ -76,6 +78,7 @@ _ScmConstraint                              = CommonEnvironmentImports.CommandLi
 @CommonEnvironmentImports.CommandLine.Constraints( output_filename_or_stdout=CommonEnvironmentImports.CommandLine.StringTypeInfo(),
                                                    repository_root=CommonEnvironmentImports.CommandLine.DirectoryTypeInfo(),
                                                    configuration=CommonEnvironmentImports.CommandLine.StringTypeInfo(arity='*'),
+                                                   search_depth=CommonEnvironmentImports.CommandLine.IntTypeInfo(min=1, arity='?'),
                                                    output_stream=None,
                                                  )
 def Setup( output_filename_or_stdout,
@@ -84,6 +87,7 @@ def Setup( output_filename_or_stdout,
            debug=False,
            verbose=False,
            configuration=None,
+           search_depth=None,
            use_ascii=False,
            all_configurations=False,
            no_hooks=False,
@@ -123,7 +127,11 @@ def Setup( output_filename_or_stdout,
                     ]
         else:
             # If here, setup this specific repo
-            activities += [ _SetupBootstrap,
+            activities += [ lambda *args, **kwargs: _SetupBootstrap(
+                                *args,
+                                search_depth=search_depth,
+                                **kwargs,
+                            ),
                             _SetupCustom,
                             _SetupActivateScript,
                           ]
@@ -393,14 +401,12 @@ def Enlist( repository_root,
 # ----------------------------------------------------------------------
 def _SetupOperatingSystem(output_stream, *args, **kwargs):
     if CommonEnvironmentImports.CurrentShell.CategoryName == "Windows":
+        import winreg
+
         # Check to see if long paths are enabled on Windows
         output_stream.write("Verifying long path support on Windows...")
-        with output_stream.DoneManager(
-            suffix="\n",
-        ) as this_dm:
+        with output_stream.DoneManager() as this_dm:
             # Python imports can begin to break down if long paths aren't enabled
-            import winreg
-
             hkey = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SYSTEM\ControlSet001\Control\FileSystem")
             with CommonEnvironmentImports.CallOnExit(lambda: winreg.CloseKey(hkey)):
                 try:
@@ -430,6 +436,36 @@ def _SetupOperatingSystem(output_stream, *args, **kwargs):
                             """,
                         ),
                     )
+
+        # Check to see if developer mode is enabled on Windows
+        output_stream.write("Verifying developer mode on Windows...")
+        with output_stream.DoneManager() as this_dm:
+            hkey = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock")
+            with CommonEnvironmentImports.CallOnExit(lambda: winreg.CloseKey(hkey)):
+                try:
+                    value = winreg.QueryValueEx(hkey, "AllowDevelopmentWithoutDevLicense")[0]
+                except FileNotFoundError:
+                    # This value does not exist on all versions of Windows
+                    value = 1
+
+                if value != 1:
+                    raise Exception(
+                        textwrap.dedent(
+                            """\
+
+                            Windows Developer Mode is not enabled, which is a requirement for setup as Developer Mode
+                            allows for the creation of symbolic links without admin privileges.
+
+                            To enable Developer Mode in Windows:
+
+                                1) Launch 'Developer settings'
+                                2) Select 'Developer mode'
+
+                            """,
+                        ),
+                    )
+
+        output_stream.write("\n")
 
 # ----------------------------------------------------------------------
 def _SetupRecursive( output_stream,
@@ -511,6 +547,7 @@ def _SetupBootstrap( output_stream,
                      debug,
                      verbose,
                      explicit_configurations,
+                     search_depth,
                    ):
     repo_data = _RepoData.Create( customization_mod,
                                   supported_configurations=explicit_configurations,
@@ -603,6 +640,7 @@ def _SetupBootstrap( output_stream,
                                         recurse=False,
                                         output_stream=output_stream,
                                         verbose=verbose,
+                                        search_depth=search_depth,
                                         on_search_begin_func=InitialDisplay,
                                       )
 
@@ -611,9 +649,15 @@ def _SetupBootstrap( output_stream,
         raise Exception(textwrap.dedent(
             """\
             Unable to find {repository}
+
             {repos}
+
+            If you believe that these repositories are already on your system, consider
+            increasing the folder search depth by providing the '/search_depth=<value>'
+            command line argument with a value greater than '{search_depth}'.
             """).format( repository=inflect.no("repository", len(remaining_repos)),
                          repos='\n'.join([ "    - {} <{}>".format(ri.Name, ri.Id) for ri in remaining_repos ]),
+                         search_depth=search_depth or _DEFAULT_SEARCH_DEPTH,
                        ))
 
     output_stream.write(textwrap.dedent(
@@ -1157,7 +1201,8 @@ class _RepositoriesMap(OrderedDict):
                     max_num_searches=None,
                     required_ancestor_dir=None,
                   ):
-        search_depth = search_depth or 5
+        search_depth = search_depth or _DEFAULT_SEARCH_DEPTH
+
         assert required_ancestor_dir is None or repository_root.startswith(required_ancestor_dir), (required_ancestor_dir, repository_root)
 
         # Augment the search depth to account for the provided root
