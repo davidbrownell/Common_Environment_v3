@@ -401,14 +401,12 @@ def Enlist( repository_root,
 # ----------------------------------------------------------------------
 def _SetupOperatingSystem(output_stream, *args, **kwargs):
     if CommonEnvironmentImports.CurrentShell.CategoryName == "Windows":
+        import winreg
+
         # Check to see if long paths are enabled on Windows
         output_stream.write("Verifying long path support on Windows...")
-        with output_stream.DoneManager(
-            suffix="\n",
-        ) as this_dm:
+        with output_stream.DoneManager() as this_dm:
             # Python imports can begin to break down if long paths aren't enabled
-            import winreg
-
             hkey = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SYSTEM\ControlSet001\Control\FileSystem")
             with CommonEnvironmentImports.CallOnExit(lambda: winreg.CloseKey(hkey)):
                 try:
@@ -438,6 +436,36 @@ def _SetupOperatingSystem(output_stream, *args, **kwargs):
                             """,
                         ),
                     )
+
+        # Check to see if developer mode is enabled on Windows
+        output_stream.write("Verifying developer mode on Windows...")
+        with output_stream.DoneManager() as this_dm:
+            hkey = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock")
+            with CommonEnvironmentImports.CallOnExit(lambda: winreg.CloseKey(hkey)):
+                try:
+                    value = winreg.QueryValueEx(hkey, "AllowDevelopmentWithoutDevLicense")[0]
+                except FileNotFoundError:
+                    # This value does not exist on all versions of Windows
+                    value = 1
+
+                if value != 1:
+                    raise Exception(
+                        textwrap.dedent(
+                            """\
+
+                            Windows Developer Mode is not enabled, which is a requirement for setup as Developer Mode
+                            allows for the creation of symbolic links without admin privileges.
+
+                            To enable Developer Mode in Windows:
+
+                                1) Launch 'Developer settings'
+                                2) Select 'Developer mode'
+
+                            """,
+                        ),
+                    )
+
+        output_stream.write("\n")
 
 # ----------------------------------------------------------------------
 def _SetupRecursive( output_stream,
