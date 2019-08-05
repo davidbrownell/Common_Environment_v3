@@ -717,6 +717,27 @@ class ClsInitSuite(unittest.TestCase):
         self.assertTrue(nonlocals.value)
 
 # ----------------------------------------------------------------------
+class InitializationOrderSuite(unittest.TestCase):
+    class Base(Interface):
+        @staticmethod
+        @abstractmethod
+        def Virtual():
+            raise Exception("Abstract method")
+
+    class Derived(Base):
+        @staticmethod
+        @override
+        def Virtual():
+            return 10
+
+    # ----------------------------------------------------------------------
+    def test_VerificationOrder(self):
+        # Base should not validate successfully on its own, even
+        # if derived classes have already been verified.
+        self.Derived()
+        self.assertRaises(InterfaceException, lambda: self.Base())
+
+# ----------------------------------------------------------------------
 class TestCreateCulledCallable(unittest.TestCase):
 
     # ----------------------------------------------------------------------
