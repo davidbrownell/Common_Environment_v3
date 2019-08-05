@@ -53,14 +53,20 @@ raise Exception("Remove this exception when '_REPO_DATA', '_ACTIVATION_REPO_CONF
 inflect                                     = inflect_mod.engine()
 
 # ----------------------------------------------------------------------
-@CommandLine.EntryPoint
+@CommandLine.EntryPoint(
+    setup_args=CommandLine.EntryPoint.Parameter("Optional arguments passed to this repository's setup command"),
+)
 @CommandLine.Constraints(
     output_dir=CommandLine.DirectoryTypeInfo(),
+    setup_args=CommandLine.StringTypeInfo(
+        arity="?",
+    ),
     output_stream=None,
 )
 def EntryPoint(
     output_dir,
     verbose=False,
+    setup_args=None,
     output_stream=sys.stdout,
 ):
     with StreamDecorator(output_stream).DoneManager(
@@ -88,7 +94,7 @@ def EntryPoint(
 
                 repo_data[repo_output_dir] = data
 
-        repo_data[_script_dir] = (_script_dir, None, None)
+        repo_data[_script_dir] = (_script_dir, None, setup_args)
 
         if enlistment_repositories:
             dm.stream.write("Enlisting in {}...".format(inflect.no("repository", len(enlistment_repositories))))
