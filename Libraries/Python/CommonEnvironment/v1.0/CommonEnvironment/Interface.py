@@ -124,6 +124,7 @@ class Interface(object):
 
     __metaclass__                       = abc.ABCMeta
     _verified_types                     = set()
+    _processed_types                    = set()
 
     # ----------------------------------------------------------------------
     # <Too many local variables> pylint: disable = R0914
@@ -132,7 +133,11 @@ class Interface(object):
         # present and named correctly. We not need to validate static methods and parameters.
 
         try:
-            _ResolveType(Interface._verified_types, cls, is_concrete_type=True)
+            _ResolveType(
+                Interface._verified_types,
+                Interface._processed_types,
+                cls,
+            )
 
             try:
                 return super(Interface, cls).__new__(cls)
@@ -495,7 +500,7 @@ class _Entity(object):
 
     # ----------------------------------------------------------------------
     # |  Public Methods
-    def __init__(self, cls, is_mixin, item):
+    def __init__(self, cls, item):
         if not _is_python2:
             while hasattr(item, "__func__"):
                 item = item.__func__
@@ -518,7 +523,6 @@ class _Entity(object):
         self._is_abstract                   = getattr(abstract_check_item, "__isabstractmethod__", False)
 
         self.Cls                            = cls
-        self.IsMixin                        = is_mixin
         self.Type                           = typ
         self.Item                           = item
         self.FuncCode                       = getattr(item, "__code__", None)
@@ -600,7 +604,7 @@ class _Entity(object):
     def LocationString(self):
         if self.FuncCode is not None:
             filename = self.FuncCode.co_filename
-            line = self.FuncCode.co_firstlineno
+            line = self.FuncCode.co_firstlineno + 1
         else:
             filename = "Unknown"
             line = 0
@@ -634,17 +638,13 @@ class _Entity(object):
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
-def _ResolveType(verified_types, cls, is_concrete_type):
-    if cls in verified_types:
+def _ProcessType(processed_types, cls):
+    if cls in processed_types:
         return
-
-    verified_types.add(cls)
-
-    is_mixin = getattr(cls, "__mixin", False) == cls
 
     bases = list(reversed(inspect.getmro(cls)))
 
-    # Collect information about the members of the cls
+    # Collect information about the member of the class
     abstracts = {}
     extensions = {}
     overrides = {}
@@ -659,22 +659,22 @@ def _ResolveType(verified_types, cls, is_concrete_type):
 
     # ----------------------------------------------------------------------
 
-    # Collect information in the bases
     for base in bases:
         if base == cls or base.__name__ == "object":
             continue
 
-        _ResolveType(verified_types, base, is_concrete_type=False)
+        _ProcessType(processed_types, base)
 
-        for src, dest in [ ( base._AbstractItems, abstracts ),
-                           ( base._ExtensionItems, extensions ),
-                           ( base._OverrideItems, overrides ),
-                         ]:
+        for src, dest in [
+            (base._AbstractItems, abstracts),           # <Access to a proected member> pylint: disable = W0212
+            (base._ExtensionItems, extensions),         # <Access to a proected member> pylint: disable = W0212
+            (base._OverrideItems, overrides),           # <Access to a proected member> pylint: disable = W0212
+        ]:
             for k, v in six.iteritems(src):
                 if isinstance(v, list):
                     src_items = v
                 else:
-                    src_items = [ v, ]
+                    src_items = [v]
 
                 dest_items = dest.setdefault(k, [])
 
@@ -684,19 +684,18 @@ def _ResolveType(verified_types, cls, is_concrete_type):
 
                     dest_items.append(src_item)
 
-    # Collect information in this class
-    these_abstracts = []
-    these_extensions = []
-    these_overrides = []
-    extra_validations = []
+    # Collect information about this class
+    abstract_names = []
+    extension_names = []
+    override_names = []
 
     errors = []
 
     for member_name, value in inspect.getmembers(cls):
-        if member_name.startswith('__'):
+        if member_name.startswith("__"):
             continue
 
-        entity = _Entity(cls, is_mixin, value)
+        entity = _Entity(cls, value)
 
         decorator_count = 0
 
@@ -705,28 +704,51 @@ def _ResolveType(verified_types, cls, is_concrete_type):
 
             if member_name not in abstracts or not EntityInList(abstracts[member_name], entity):
                 abstracts.setdefault(member_name, []).append(entity)
-                these_abstracts.append(member_name)
+                abstract_names.append(member_name)
 
         if entity.IsExtension:
             decorator_count += 1
 
             if member_name not in extensions or not EntityInList(extensions[member_name], entity):
                 extensions.setdefault(member_name, []).append(entity)
-                these_extensions.append(member_name)
+                extension_names.append(member_name)
 
         if entity.IsOverride:
             decorator_count += 1
 
             if member_name not in overrides or not EntityInList(overrides[member_name], entity):
                 overrides.setdefault(member_name, []).append(entity)
-                these_overrides.append(member_name)
-
-            if not is_mixin and member_name in overrides and overrides[member_name][-1].IsMixin:
-                extra_validations.append(member_name)
+                override_names.append(member_name)
 
         if decorator_count > 1:
             assert entity is not None
-            errors.append("Only one of 'abstract/abstractproperty', 'extension', 'override' may be applied to an item ({}, {})".fomrat(member_name, entity.LocationString()))
+            errors.append("Only one of 'abstract/abstractproperty', 'extension', or 'override' may be applied to an item ({}, {})".format(member_name, entity.LocationString()))
+
+    if errors:
+        raise InterfaceException(errors)
+
+    # We shouldn't have multiple abstract or extension methods defined across
+    # multiple bases. Check for this as we squash the lists.
+    errors = []
+
+    for desc, d, multiple_is_error in [
+        ("abstract", abstracts, True),
+        ("extension", extensions, True),
+        ("override", overrides, False),
+    ]:
+        for k, v in six.iteritems(d):
+            if multiple_is_error and len(v) > 1:
+                errors.append(
+                    "The {} {} '{}' has already been defined; did you mean 'override'? (new: {}, previous: {})".format(
+                        desc,
+                        v[-1].TypeString(),
+                        k,
+                        v[-1].LocationString(),
+                        v[-2].LocationString(),
+                    ),
+                )
+
+            d[k] = v[-1]
 
     if errors:
         raise InterfaceException(errors)
@@ -762,282 +784,301 @@ def _ResolveType(verified_types, cls, is_concrete_type):
     # ----------------------------------------------------------------------
 
     abstracts = SortedEntities(abstracts)
-    these_abstracts = SortedNames(abstracts, these_abstracts)
+    abstract_names = SortedNames(abstracts, abstract_names)
 
     extensions = SortedEntities(extensions)
-    these_extensions = SortedNames(extensions, these_extensions)
+    extension_names = SortedNames(extensions, extension_names)
 
     overrides = SortedEntities(overrides)
-    these_overrides = SortedNames(overrides, these_overrides)
-
-    if __debug__:
-        # We shouldn't have multiple abstract or extension methods defined across multiple
-        # bases. Check for this condition as we squash the lists.
-        errors = []
-
-        for desc, d in [ ( "abstract", abstracts ),
-                         ( "extension", extensions ),
-                       ]:
-            for k, v in six.iteritems(d):
-                if len(v) > 1:
-                    errors.append("The {} {} '{}' has already been defined; did you mean 'override'? (new: {}, previous: {})" \
-                                    .format( desc,
-                                             v[-1].TypeString(),
-                                             k,
-                                             v[-1].LocationString(),
-                                             v[-2].LocationString(),
-                                           ))
-                d[k] = v[-1]
-
-        if errors:
-            raise InterfaceException(errors)
-
-        # We should not have items that are both abstract and extensions
-        errors = []
-
-        for abstract_name, abstract_entity in six.iteritems(abstracts):
-            extension_entity = extensions.get(abstract_name, None)
-            if extension_entity is None:
-                continue
-
-            errors.append("'{}' is defined as both an abstract and extension item ({}, {})".format(abstract_entity.LocationString(), extension_entity.LocationString()))
-
-        if errors:
-            raise InterfaceException(errors)
-
-        if not is_mixin:
-            overrides_to_validate = these_overrides + extra_validations
-
-            # Ensure that derived items are associated with abstract/extension items
-            errors = []
-
-            for override in overrides_to_validate:
-                if override not in abstracts and override not in extensions:
-                    entity = overrides[override][-1]
-
-                    errors.append("The {} '{}' is decorated with 'override' but doesn't match an abstract/extension item ({})".format( entity.TypeString(),
-                                                                                                                                       override,
-                                                                                                                                       entity.LocationString(),
-                                                                                                                                     ))
-
-            if errors:
-                raise InterfaceException(errors)
-
-            # Ensure that derived items are the right type
-            errors = []
-
-            for override in overrides_to_validate:
-                derived_entity = overrides[override][-1]
-
-                base_entity = abstracts.get(override, extensions.get(override, None))
-                assert base_entity is not None, override
-
-                if not ( base_entity.Type == derived_entity.Type or
-                         ( base_entity.Type in [ _Entity.Type.StaticMethod, _Entity.Type.ClassMethod, _Entity.Type.Method, ] and
-                           derived_entity.Type in [ _Entity.Type.StaticMethod, _Entity.Type.ClassMethod, _Entity.Type.Method, ]
-                         )
-                       ):
-                    errors.append("The {} '{}' was implemented as a {} ({}, {})" \
-                                    .format( base_entity.TypeString(),
-                                             override,
-                                             derived_entity.TypeString(),
-                                             base_entity.LocationString(),
-                                             derived_entity.LocationString(),
-                                           ))
-
-            if errors:
-                raise InterfaceException(errors)
-
-            # Ensure that derived items are defined with the correct arguments
-            errors = []
-
-            kwargs_flag = 4
-            var_args_flag = 8
-
-            for override in overrides_to_validate:
-                derived_entity = overrides[override][-1]
-
-                base_entity = abstracts.get(override, extensions.get(override, None))
-                assert base_entity is not None, override
-
-                if base_entity.Type == _Entity.Type.Property:
-                    continue
-
-                base_params = base_entity.GetParams()
-                derived_params = derived_entity.GetParams()
-
-                # We can skip the test if either the base or derived params represents a
-                # forwarding function:
-                #
-                #   def Func(*args, **kwargs)
-
-                # ----------------------------------------------------------------------
-                def IsForwardingFunction(entity, params):
-                    return ( not params and
-                             entity.FuncCode.co_flags & kwargs_flag and
-                             entity.FuncCode.co_flags & var_args_flag
-                           )
-
-                # ----------------------------------------------------------------------
-
-                if IsForwardingFunction(base_entity, base_params):
-                    continue
-
-                if IsForwardingFunction(derived_entity, derived_params):
-                    continue
-
-                # If the base specifies a variable number of args, only check those
-                # that are positional.
-                require_exact_match = True
-
-                for flag in [ kwargs_flag,
-                              var_args_flag,
-                            ]:
-                    if base_entity.FuncCode.co_flags & flag:
-                        require_exact_match = False
-                        break
-
-                # This is not standard from an object-oriented perspective, but all custom
-                # parameters with default values in derived functions, even if they weren't
-                # present in the base function.
-                if len(derived_params) > len(base_params):
-                    params_to_remove = min(len(derived_params) - len(base_params), len(derived_entity.FuncDefaults or []))
-
-                    keys = list(six.iterkeys(derived_params))
-
-                    for _ in range(params_to_remove):
-                        del derived_params[keys.pop()]
-
-                if ( (require_exact_match and len(derived_params) != len(base_params)) or
-                     not all(k in derived_params and derived_params[k] == v for k, v in six.iteritems(base_params))
-                   ):
-                    errors.append(( override,
-                                    base_params,
-                                    base_entity,
-                                    derived_params,
-                                    derived_entity,
-                                  ))
-
-            if errors:
-                # ----------------------------------------------------------------------
-                def DisplayParams(params):
-                    values = []
-                    has_default_value = False
-
-                    for param_name, default_value in six.iteritems(params):
-                        if default_value != _Entity.DoesNotExist:
-                            has_default_value = True
-
-                            values.append("{name:<40}  {default:<20}  {type_}".format( name=param_name,
-                                                                                       default=str(default_value),
-                                                                                       type_=type(default_value),
-                                                                                     ))
-                        else:
-                            values.append(param_name)
-
-                    if has_default_value:
-                        return '\n'.join([ "            {}".format(value) for value in values ])
-
-                    return "            {}".format(", ".join(values))
-
-                # ----------------------------------------------------------------------
-
-                raise InterfaceException([ textwrap.dedent(
-                                                """\
-                                                {name}
-                                                        Base {base_location}
-                                                {base_params}
-
-                                                        Derived {derived_location}
-
-                                                {derived_params}
-
-                                                """).format( name=override_name,
-                                                             base_location=bentity.LocationString(),
-                                                             base_params=DisplayParams(bparams),
-                                                             derived_location=dentity.LocationString(),
-                                                             derived_params=DisplayParams(dparams),
-                                                           )
-                                           for override_name, bparams, bentity, dparams, dentity in errors
-                                         ])
-
-            # Ensure that derived items are marked with override
-            warnings = []
-
-            for member_name, value in inspect.getmembers(cls):
-                if member_name.startswith('__'):
-                    continue
-
-                base_entity = abstracts.get(member_name, extensions.get(member_name, None))
-                if base_entity is None:
-                    continue
-
-                entity = _Entity(cls, is_mixin, value)
-
-                if entity.IsSameLocation(base_entity):
-                    continue
-
-                if member_name not in overrides or not overrides[member_name][-1].IsSameLocation(entity):
-                    overrides.setdefault(member_name, []).append(entity)
-
-                    warnings.append("{} '{}' {}".format( entity.TypeString(),
-                                                         member_name,
-                                                         entity.LocationString(),
-                                                       ))
-
-            if warnings:
-                sys.stderr.write(textwrap.dedent(
-                    """\
-                    WARNING: Missing override decorations in the object '{name}'
-                                Filename:   {filename}
-                                Line:       {line}
-
-                    {warnings}
-
-                    """).format( name=cls.__name__,
-                                 filename=inspect.getfile(cls),
-                                 line=inspect.findsource(cls)[1],
-                                 warnings='\n'.join([ "               - {}".format(warning) for warning in warnings ]),
-                               ))
-
-            if is_concrete_type:
-                # Ensure that all abstracts are decorated
-                errors = []
-
-                for abstract_name, base_entity in six.iteritems(abstracts):
-                    this_entity = _Entity(cls, is_mixin, getattr(cls, abstract_name))
-
-                    if this_entity.IsSameLocation(base_entity):
-                        errors.append("The abstract {} '{}' is missing {}".format( base_entity.TypeString(),
-                                                                                   abstract_name,
-                                                                                   base_entity.LocationString(),
-                                                                                 ))
-
-                if errors:
-                    raise InterfaceException(errors)
-
-    # Commit the values
-    cls._AbstractItems = abstracts
-    cls._ExtensionItems = extensions
-    cls._OverrideItems = overrides
-
-    cls._ClassAbstractions = these_abstracts
-    cls._ClassExtensions = these_extensions
-    cls._ClassOverrides = these_overrides
+    override_names = SortedNames(overrides, override_names)
 
     # Convert pseudo properties into their actual values
+    resolved_derived_property_names = set()
+
     if sys.version[0] == "2":
         RequiresPropertyWrapper = lambda value: IsStaticMethod(value)
     else:
         RequiresPropertyWrapper = lambda value: IsStandardMethod(value)
 
     for k, v in six.iteritems(overrides):
-        if v[-1].RealizedValue != _Entity.DoesNotExist:
-            value = v[-1].RealizedValue
+        if v.RealizedValue != _Entity.DoesNotExist:
+            value = v.RealizedValue
             if RequiresPropertyWrapper(value):
                 value = property(value)
 
             setattr(cls, k, value)
+
+            resolved_derived_property_names.add(k)
+
+    # Commit the values
+    cls._AbstractItems = abstracts          # <Access to a proected member> pylint: disable = W0212
+    cls._ExtensionItems = extensions        # <Access to a proected member> pylint: disable = W0212
+    cls._OverrideItems = overrides          # <Access to a proected member> pylint: disable = W0212
+
+    cls._ClassAbstractions = abstract_names             # <Access to a proected member> pylint: disable = W0212
+    cls._ClassExtensions = extension_names              # <Access to a proected member> pylint: disable = W0212
+    cls._ClassOverrides = override_names                # <Access to a proected member> pylint: disable = W0212
+
+    cls._ResolvedDerivedPropertyNames = resolved_derived_property_names
+
+    processed_types.add(cls)
+
+# ----------------------------------------------------------------------
+def _VerifyType(cls):
+    if not __debug__:
+        return
+
+    # Ensure that all abstracts are defined
+    errors = []
+
+    for abstract_name, base_entity in six.iteritems(cls._AbstractItems):
+        this_entity = _Entity(cls, getattr(cls, abstract_name))
+
+        if this_entity.IsSameLocation(base_entity):
+            errors.append(
+                "The abstract {} '{}' is missing from {} ({})".format(
+                    base_entity.TypeString(),
+                    abstract_name,
+                    this_entity.LocationString(),
+                    base_entity.LocationString(),
+                ),
+            )
+
+    if errors:
+        raise InterfaceException(errors)
+
+    # We should not have items that are both abstract and extensions across different classes
+    errors = []
+
+    for abstract_name, abstract_entity in six.iteritems(cls._AbstractItems):
+        extension_entity = cls._ExtensionItems.get(abstract_name, None)
+        if extension_entity is None:
+            continue
+
+        errors.append(
+            "'{}' is defined as both an abstract and extension item ({}, {})".format(
+                abstract_entity.LocationString(),
+                extension_entity.LocationString(),
+            ),
+        )
+
+    if errors:
+        raise InterfaceException(errors)
+
+    # Ensure that derived items are associated with abstract/extension items
+    errors = []
+
+    for override_name, override_entity in six.iteritems(cls._OverrideItems):
+        if override_name not in cls._AbstractItems and override_name not in cls._ExtensionItems:
+            errors.append(
+                "The {} '{}' is decorated with 'override' but doesn't match an abstract/extension item ({})".format(
+                    override_entity.TypeString(),
+                    override_name,
+                    override_entity.LocationString(),
+                ),
+            )
+
+    if errors:
+        raise InterfaceException(errors)
+
+    # Ensure that derived items are the right type
+    errors = []
+
+    for override_name, override_entity in six.iteritems(cls._OverrideItems):
+        base_entity = cls._AbstractItems.get(override_name, cls._ExtensionItems.get(override_name, None))
+        assert base_entity is not None, override_name
+
+        if (
+            not (
+                base_entity.Type == override_entity.Type
+                or (
+                    base_entity.Type in [_Entity.Type.StaticMethod, _Entity.Type.ClassMethod, _Entity.Type.Method]
+                    and override_entity.Type in [_Entity.Type.StaticMethod, _Entity.Type.ClassMethod, _Entity.Type.Method]
+                )
+            )
+        ):
+            errors.append(
+                "The {} '{}' was implemented as a {} ({}, {})".format(
+                    base_entity.TypeString(),
+                    override_name,
+                    override_entity.TypeString(),
+                    base_entity.LocationString(),
+                    override_entity.LocationString(),
+                ),
+            )
+
+    if errors:
+        raise InterfaceException(errors)
+
+    # Ensure that derived methods are defined with the correct arguments
+    errors = []
+
+    kwargs_flag = 4
+    var_args_flag = 8
+
+    for override_name, override_entity in six.iteritems(cls._OverrideItems):
+        base_entity = cls._AbstractItems.get(override_name, cls._ExtensionItems.get(override_name, None))
+        assert base_entity is not None, override_name
+
+        if base_entity.Type == _Entity.Type.Property:
+            continue
+
+        base_params = base_entity.GetParams()
+        override_params = override_entity.GetParams()
+
+        # We can skip the test if either the base or derived params represents a
+        # forwarding function:
+        #
+        #   def Func(*args, **kwargs)
+
+        # ----------------------------------------------------------------------
+        def IsForwardingFunction(entity, params):
+            return ( not params and
+                     entity.FuncCode.co_flags & kwargs_flag and
+                     entity.FuncCode.co_flags & var_args_flag
+                   )
+
+        # ----------------------------------------------------------------------
+
+        if IsForwardingFunction(base_entity, base_params):
+            continue
+
+        if IsForwardingFunction(override_entity, override_params):
+            continue
+
+        # If the base specifies a variable number of args, only check those
+        # that are positional.
+        require_exact_match = True
+
+        for flag in [kwargs_flag, var_args_flag]:
+            if base_entity.FuncCode.co_flags & flag:
+                require_exact_match = False
+                break
+
+        # This is not standard from an object-oriented perspective, but all custom
+        # parameters with default values in derived functions, even if they weren't
+        # present in the base function.
+        if len(override_params) > len(base_params):
+            params_to_remove = min(len(override_params) - len(base_params), len(override_entity.FuncDefaults or []))
+
+            keys = list(six.iterkeys(override_params))
+
+            while params_to_remove:
+                del override_params[keys.pop()]
+                params_to_remove -= 1
+
+        if (
+            (require_exact_match and len(override_params) != len(base_params))
+            or not all(k in override_params and override_params[k] == v for k, v in six.iteritems(base_params))
+        ):
+            errors.append(
+                (
+                    override,
+                    base_params,
+                    base_entity,
+                    override_params,
+                    override_entity,
+                ),
+            )
+
+    if errors:
+        # ----------------------------------------------------------------------
+        def DisplayParams(params):
+            values = []
+            has_default_value = False
+
+            for param_name, default_value in six.iteritems(params):
+                if default_value != _Entity.DoesNotExist:
+                    has_default_value = True
+
+                    values.append(
+                        "{name:<40}  {default:<20}  {type_}".format(
+                            name=param_name,
+                            default=str(default_value),
+                            type_=type(default_value),
+                        ),
+                    )
+                else:
+                    values.append(param_name)
+
+            if has_default_value:
+                return "\n".join(["            {}".format(value) for value in values])
+
+            return "            {}".format(", ".join(values))
+
+        # ----------------------------------------------------------------------
+
+        raise InterfaceException(
+            [
+                textwrap.dedent(
+                    """\
+                    {name}
+                            Base {base_location}
+                    {base_params}
+
+                            Override {override_location}
+                    {override_params}
+
+                    """).format(
+                        name=override_name,
+                        base_location=bentity.LocationString(),
+                        base_params=DisplayParams(bparams),
+                        override_location=oentity.LocationString(),
+                        override_params=DisplayParams(oparams),
+                    )
+                for override_name, bparams, bentity, oparams, oentity in errors
+            ]
+        )
+
+    # Ensure that derived items are marked with override
+    warnings = []
+
+    for member_name, value in inspect.getmembers(cls):
+        if member_name.startswith("__"):
+            continue
+
+        base_entity = cls._AbstractItems.get(member_name, cls._ExtensionItems.get(member_name, None))
+        if base_entity is None:
+            continue
+
+        entity = _Entity(cls, value)
+
+        if entity.IsSameLocation(base_entity):
+            continue
+
+        if member_name not in cls._OverrideItems or not cls._OverrideItems[member_name].IsSameLocation(entity):
+            warnings.append(
+                "{} '{}' {}".format(entity.TypeString(), member_name, entity.LocationString()),
+            )
+
+    if warnings:
+        sys.stderr.write(
+            textwrap.dedent(
+                """\
+                WARNING: Missing override decorations in the object '{name}'
+                            Filename:   {filename}
+                            Line:       {line}
+
+                {warnings}
+
+                """,
+            ).format(
+                name=cls.__name__,
+                filename=inspect.getfile(cls),
+                line=inspect.findsource(cls)[1],
+                warnings='\n'.join([ "               - {}".format(warning) for warning in warnings ]),
+            ),
+        )
+
+# ----------------------------------------------------------------------
+def _ResolveType(verified_types, processed_types, cls):
+    if cls in verified_types:
+        return
+
+    _ProcessType(processed_types, cls)
+
+    _VerifyType(cls)
+    verified_types.add(cls)
 
 # ----------------------------------------------------------------------
 def _CheckVariableNameVariants(var, *variants):
