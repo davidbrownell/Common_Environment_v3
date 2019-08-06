@@ -72,6 +72,8 @@ _DEFAULT_SEARCH_DEPTH                       = 5
                                                   debug=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Write additional debug information to the console"),
                                                   verbose=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Write additional verbose information to the console"),
                                                   configuration=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Configurations to setup; all configurations defined will be setup if explicit values are not provided"),
+                                                  max_num_searches=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Limit the number of directories searched when looking for dependencies; this value can be used to reduce the overall time it takes to search for dependencies that ultimately can't be found"),
+                                                  required_ancestor_dir=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("When searching for dependencies, limit the search to directories that are descendants of this ancestor"),
                                                   all_configurations=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Setup all configurations, not just the ones used by this repository and those that it depends upon  (used with '/recurse')"),
                                                   no_hooks=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Do not setup SCM hooks"),
                                                 )
@@ -79,6 +81,8 @@ _DEFAULT_SEARCH_DEPTH                       = 5
                                                    repository_root=CommonEnvironmentImports.CommandLine.DirectoryTypeInfo(),
                                                    configuration=CommonEnvironmentImports.CommandLine.StringTypeInfo(arity='*'),
                                                    search_depth=CommonEnvironmentImports.CommandLine.IntTypeInfo(min=1, arity='?'),
+                                                   max_num_searches=CommonEnvironmentImports.CommandLine.IntTypeInfo(min=1, arity='?'),
+                                                   required_ancestor_dir=CommonEnvironmentImports.CommandLine.DirectoryTypeInfo(arity='?'),
                                                    output_stream=None,
                                                  )
 def Setup( output_filename_or_stdout,
@@ -88,6 +92,8 @@ def Setup( output_filename_or_stdout,
            verbose=False,
            configuration=None,
            search_depth=None,
+           max_num_searches=None,
+           required_ancestor_dir=None,
            use_ascii=False,
            all_configurations=False,
            no_hooks=False,
@@ -130,6 +136,8 @@ def Setup( output_filename_or_stdout,
             activities += [ lambda *args, **kwargs: _SetupBootstrap(
                                 *args,
                                 search_depth=search_depth,
+                                max_num_searches=max_num_searches,
+                                required_ancestor_dir=required_ancestor_dir,
                                 **kwargs,
                             ),
                             _SetupCustom,
@@ -174,7 +182,7 @@ def Setup( output_filename_or_stdout,
                                                   scm=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Specify the Source Control Management system to use when displaying clone uris"),
                                                   configuration=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Specific configurations to list for this repository; configurations not provided with be omitted"),
                                                   max_num_searches=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Limit the number of directories searched when looking for dependencies; this value can be used to reduce the overall time it takes to search for dependencies that ultimately can't be found"),
-                                                  required_ancestor_dir=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("When searching for dependencies, limit the search to directories that are descenendants of this ancestor"),
+                                                  required_ancestor_dir=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("When searching for dependencies, limit the search to directories that are descendants of this ancestor"),
                                                   json=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Output data as JSON"),
                                                   decorate=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter("Decorate output so that it can be easily extracted from output"),
                                                 )
@@ -406,64 +414,65 @@ def _SetupOperatingSystem(output_stream, *args, **kwargs):
         # Check to see if long paths are enabled on Windows
         output_stream.write("Verifying long path support on Windows...")
         with output_stream.DoneManager() as this_dm:
-            # Python imports can begin to break down if long paths aren't enabled
-            hkey = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SYSTEM\ControlSet001\Control\FileSystem")
-            with CommonEnvironmentImports.CallOnExit(lambda: winreg.CloseKey(hkey)):
-                try:
+            try:
+                # Python imports can begin to break down if long paths aren't enabled
+                hkey = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SYSTEM\ControlSet001\Control\FileSystem")
+                with CommonEnvironmentImports.CallOnExit(lambda: winreg.CloseKey(hkey)):
                     value = winreg.QueryValueEx(hkey, "LongPathsEnabled")[0]
-                except FileNotFoundError:
-                    # This value does not exist on all versions of Windows
-                    value = 1
 
-                if value != 1:
-                    this_dm.stream.write(
-                        textwrap.dedent(
-                            """\
+                    if value != 1:
+                        this_dm.stream.write(
+                            textwrap.dedent(
+                                """\
 
 
-                            WARNING: Long path support is not enabled. While this isn't a requirement
-                                     for running on Windows, it could present problems with
-                                     python imports in deeply nested directory hierarchies.
+                                WARNING: Long path support is not enabled. While this isn't a requirement
+                                         for running on Windows, it could present problems with
+                                         python imports in deeply nested directory hierarchies.
 
-                                     To enable long path support in Windows:
+                                         To enable long path support in Windows:
 
-                                        1) Launch 'regedit'
-                                        2) Navigate to 'HKEY_LOCAL_MACHINE\\SYSTEM\\ControlSet001\\Control\\FileSystem'
-                                        3) Edit the value 'LongPathsEnabled'
-                                        4) Set the value to 1
+                                            1) Launch 'regedit'
+                                            2) Navigate to 'HKEY_LOCAL_MACHINE\\SYSTEM\\ControlSet001\\Control\\FileSystem'
+                                            3) Edit the value 'LongPathsEnabled'
+                                            4) Set the value to 1
 
 
-                            """,
-                        ),
-                    )
+                                """,
+                            ),
+                        )
+
+            except FileNotFoundError:
+                # This key isn't available on all versions of Windows
+                pass
 
         # Check to see if developer mode is enabled on Windows
         output_stream.write("Verifying developer mode on Windows...")
         with output_stream.DoneManager() as this_dm:
-            hkey = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock")
-            with CommonEnvironmentImports.CallOnExit(lambda: winreg.CloseKey(hkey)):
-                try:
+            try:
+                hkey = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock")
+                with CommonEnvironmentImports.CallOnExit(lambda: winreg.CloseKey(hkey)):
                     value = winreg.QueryValueEx(hkey, "AllowDevelopmentWithoutDevLicense")[0]
-                except FileNotFoundError:
-                    # This value does not exist on all versions of Windows
-                    value = 1
 
-                if value != 1:
-                    raise Exception(
-                        textwrap.dedent(
-                            """\
+                    if value != 1:
+                        raise Exception(
+                            textwrap.dedent(
+                                """\
 
-                            Windows Developer Mode is not enabled, which is a requirement for setup as Developer Mode
-                            allows for the creation of symbolic links without admin privileges.
+                                Windows Developer Mode is not enabled, which is a requirement for setup as Developer Mode
+                                allows for the creation of symbolic links without admin privileges.
 
-                            To enable Developer Mode in Windows:
+                                To enable Developer Mode in Windows:
 
-                                1) Launch 'Developer settings'
-                                2) Select 'Developer mode'
+                                    1) Launch 'Developer settings'
+                                    2) Select 'Developer mode'
 
-                            """,
-                        ),
-                    )
+                                """,
+                            ),
+                        )
+            except FileNotFoundError:
+                # This key isn't available on all versions of Windows
+                pass
 
         output_stream.write("\n")
 
@@ -547,7 +556,9 @@ def _SetupBootstrap( output_stream,
                      debug,
                      verbose,
                      explicit_configurations,
-                     search_depth,
+                     search_depth=None,
+                     max_num_searches=None,
+                     required_ancestor_dir=None,
                    ):
     repo_data = _RepoData.Create( customization_mod,
                                   supported_configurations=explicit_configurations,
@@ -641,6 +652,8 @@ def _SetupBootstrap( output_stream,
                                         output_stream=output_stream,
                                         verbose=verbose,
                                         search_depth=search_depth,
+                                        max_num_searches=max_num_searches,
+                                        required_ancestor_dir=required_ancestor_dir,
                                         on_search_begin_func=InitialDisplay,
                                       )
 
@@ -653,8 +666,16 @@ def _SetupBootstrap( output_stream,
             {repos}
 
             If you believe that these repositories are already on your system, consider
-            increasing the folder search depth by providing the '/search_depth=<value>'
+            increasing the directory search depth by providing the '/search_depth=<value>'
             command line argument with a value greater than '{search_depth}'.
+
+            These command line arguments can be used to limit the number of directories
+            queried when searching for dependencies:
+
+                /max_num_searches=<value>
+                /required_ancestor_dir=<value>
+                /search_depth=<value>
+
             """).format( repository=inflect.no("repository", len(remaining_repos)),
                          repos='\n'.join([ "    - {} <{}>".format(ri.Name, ri.Id) for ri in remaining_repos ]),
                          search_depth=search_depth or _DEFAULT_SEARCH_DEPTH,
