@@ -1349,7 +1349,7 @@ class _RepositoriesMap(OrderedDict):
                                ):
                                 PushSearchItem(ItemPreprocessor(potential_parent))
 
-                    except (PermissionError, FileNotFoundError):
+                    except (PermissionError, FileNotFoundError, OSError):
                         pass
 
                     # Add the children to the queue
@@ -1364,7 +1364,7 @@ class _RepositoriesMap(OrderedDict):
 
                             PushSearchItem(ItemPreprocessor(fullpath))
 
-                    except (PermissionError, FileNotFoundError):
+                    except (PermissionError, FileNotFoundError, OSError):
                         pass
 
             # ----------------------------------------------------------------------
