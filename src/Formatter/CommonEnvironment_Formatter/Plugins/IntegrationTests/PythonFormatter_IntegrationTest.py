@@ -165,6 +165,32 @@ else:
                         two,
                     ):
                         pass
+
+
+                    Func1(
+                        a,
+                        b # There should be a comma after b
+                    )
+
+
+                    Func2(
+                        a,
+                        b   # There should be a comma
+                            # after b
+                    )
+
+
+                    Func3(
+                        a,  # Trailing comment
+                        # Header comment
+                        b   # There should be a comma
+                            # after b
+                    )
+
+
+                    Func4(
+                        # no trailing comma
+                    )
                     """,
                 ),
                 textwrap.dedent(
@@ -340,6 +366,32 @@ else:
                         two,
                     ):
                         pass
+
+
+                    Func1(
+                        a,
+                        b,                                      # There should be a comma after b
+                    )
+
+
+                    Func2(
+                        a,
+                        b,                                      # There should be a comma
+                                                                # after b
+                    )
+
+
+                    Func3(
+                        a,                                      # Trailing comment
+                        # Header comment
+                        b,                                      # There should be a comma
+                                                                # after b
+                    )
+
+
+                    Func4(
+                        # no trailing comma
+                    )
                     """,
                 ),
             )

@@ -116,6 +116,8 @@ class Formatter(FormatterImpl):
         )
 
         # Process the content
+        for plugin in plugins:
+            content = plugin.PreprocessContent(content)
 
         # ----------------------------------------------------------------------
         def ProcessTokensImpl(tokenizer, plugin_method_name, recurse_count):

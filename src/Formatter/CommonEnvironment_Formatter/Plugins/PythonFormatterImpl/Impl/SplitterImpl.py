@@ -210,19 +210,20 @@ class SplitterImpl(PluginBase):
                             while tokens and tokens[-1] in arg_tokens_to_strip:
                                 tokens = tokens[:-1]
 
-                            if not tokens:
-                                continue
+                            if tokens:
+                                tokens[0].prefix = ""
+                                new_tokens += tokens
 
-                            tokens[0].prefix = ""
-                            new_tokens += tokens
+                                if index != len(args_info) - 1 or self._InsertTrailingComma(
+                                    tokens,
+                                ):
+                                    new_tokens.append(black.Leaf(python_tokens.COMMA, ","))
 
-                            if index != len(args_info) - 1 or self._InsertTrailingComma(
-                                tokens,
-                            ):
-                                new_tokens.append(black.Leaf(python_tokens.COMMA, ","))
+                            if comments:
+                                new_tokens += comments
 
-                            new_tokens += comments
-                            new_tokens += [StandardTokenizer.NEWLINE]
+                            if tokens or comments:
+                                new_tokens += [StandardTokenizer.NEWLINE]
 
                         new_tokens += [
                             StandardTokenizer.DEDENT,
@@ -285,28 +286,31 @@ class SplitterImpl(PluginBase):
                 # Get the tokens and comments (where the comment comes
                 # before the last index)
                 these_tokens = tokens[first_index:last_index]
-
-                # Get the comments at the end of the line
-                these_comments = []
-
-                while these_tokens and these_tokens[-1].type == python_tokens.COMMENT:
-                    these_comments.insert(0, these_tokens.pop())
-
                 first_index = last_index
 
             else:
                 these_tokens = tokens[first_index:comma_index]
                 first_index = comma_index + 1
 
-                these_comments = []
-
-                # Get the comments (where the comment comes after the comma)
+                # Associate any trailing comments with this set of tokens
                 while (
                     first_index < last_index
                     and tokens[first_index].type == python_tokens.COMMENT
                 ):
-                    these_comments.append(tokens[first_index])
+                    these_tokens.append(tokens[first_index])
                     first_index += 1
+
+            # Extract the comments associated with this arg
+            these_comments = []
+
+            token_index = 0
+            while token_index < len(these_tokens):
+                this_token = these_tokens[token_index]
+
+                if this_token.type == python_tokens.COMMENT:
+                    these_comments.append(these_tokens.pop(token_index))
+                else:
+                    token_index += 1
 
             results.append([these_tokens, these_comments])
 

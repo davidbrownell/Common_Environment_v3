@@ -135,9 +135,24 @@ class Tokenizer(Interface.Interface):
 
         # ----------------------------------------------------------------------
         def CompleteLine():
-            if comments:
-                lines[-1].comments = list(comments)
-                comments[:] = []
+            add_newline = False
+
+            while comments:
+                # Put each comment on its own line. We can do this because we ensure
+                # that any split-able object with embedded comments will be broken up
+                # into multiple lines.
+                comment = comments.pop(0)
+
+                if add_newline:
+                    lines.append(black.Line())
+
+                if lines[-1].leaves:
+                    lines[-1].comments = [comment]
+                else:
+                    comment[1].type = black.STANDALONE_COMMENT
+                    lines[-1].leaves.append(comment[1])
+
+                add_newline = True
 
         # ----------------------------------------------------------------------
 
@@ -154,16 +169,18 @@ class Tokenizer(Interface.Interface):
                 lines[-1].depth -= 1
 
             elif token == self.NEWLINE:
-                if lines and lines[-1].leaves:
+                if lines and (lines[-1].leaves or comments):
                     CompleteLine()
 
                     lines.append(black.Line())
                     lines[-1].depth = depth
+
+                    prefix_line_count = 0
                 else:
                     prefix_line_count += 1
 
             elif token.type == python_tokens.COMMENT:
-                comments.append((len(lines[-1].leaves) - 1, token))
+                comments.append((len(lines[-1].leaves) + len(lines[-1].comments) - 1, token))
 
             else:
                 if prefix_line_count != 0:
@@ -260,6 +277,18 @@ class BlackTokenizer(Tokenizer):
                         token_modifications[id(line_tokens[0])] = line_tokens[0].prefix
 
                         line_tokens[0].prefix = line_tokens[0].prefix[newline_ctr:]
+
+                # Convert the STANDALONE_COMMENT type to COMMON to simplify plugin development.
+                # When we construct lines, restore this type.
+                line_token_index = 0
+                while line_token_index < len(line_tokens):
+                    token = line_tokens[line_token_index]
+                    line_token_index += 1
+
+                    if token.type != black.STANDALONE_COMMENT:
+                        continue
+
+                    token.type = python_tokens.COMMENT
 
                 tokens += line_tokens
                 tokens += [self.NEWLINE]
