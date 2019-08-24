@@ -144,7 +144,8 @@ class Formatter(FormatterImpl):
             # Process the tokens
             method_name = "{}Tokens".format(plugin_method_prefix)
 
-            tokenizer = ProcessTokensImpl(BlackTokenizer(black_lines), method_name, 0)
+            tokenizer = BlackTokenizer(black_lines)
+            tokenizer = ProcessTokensImpl(tokenizer, method_name, 0)
             black_lines = tokenizer.ToBlackLines()
 
             # Process the blocks

@@ -131,30 +131,6 @@ class Tokenizer(Interface.Interface):
 
         prefix_line_count = 0
         depth = 0
-        comments = []
-
-        # ----------------------------------------------------------------------
-        def CompleteLine():
-            add_newline = False
-
-            while comments:
-                # Put each comment on its own line. We can do this because we ensure
-                # that any split-able object with embedded comments will be broken up
-                # into multiple lines.
-                comment = comments.pop(0)
-
-                if add_newline:
-                    lines.append(black.Line())
-
-                if lines[-1].leaves:
-                    lines[-1].comments = [comment]
-                else:
-                    comment[1].type = black.STANDALONE_COMMENT
-                    lines[-1].leaves.append(comment[1])
-
-                add_newline = True
-
-        # ----------------------------------------------------------------------
 
         for token in self.Tokens:
             if token == self.INDENT:
@@ -169,9 +145,7 @@ class Tokenizer(Interface.Interface):
                 lines[-1].depth -= 1
 
             elif token == self.NEWLINE:
-                if lines and (lines[-1].leaves or comments):
-                    CompleteLine()
-
+                if lines and lines[-1].leaves:
                     lines.append(black.Line())
                     lines[-1].depth = depth
 
@@ -180,7 +154,13 @@ class Tokenizer(Interface.Interface):
                     prefix_line_count += 1
 
             elif token.type == python_tokens.COMMENT:
-                comments.append((len(lines[-1].leaves) + len(lines[-1].comments) - 1, token))
+                if not lines[-1].leaves or lines[-1].comments:
+                    token.prefix = "\n" * prefix_line_count
+                    token.type = black.STANDALONE_COMMENT
+
+                    lines[-1].leaves.append(token)
+                else:
+                    lines[-1].comments.append((len(lines[-1].leaves), token))
 
             else:
                 if prefix_line_count != 0:
@@ -189,8 +169,6 @@ class Tokenizer(Interface.Interface):
                     prefix_line_count = 0
 
                 lines[-1].leaves.append(token)
-
-        CompleteLine()
 
         return lines
 
@@ -257,6 +235,10 @@ class BlackTokenizer(Tokenizer):
                             comment_index,
                             len(line_tokens),
                         )
+
+                        if comment_index != len(line_tokens):
+                            line_tokens.insert(comment_index + 1, self.NEWLINE)
+
                         line_tokens.insert(comment_index + 1, comment)
 
                 if line_tokens and line_tokens[0].prefix:
@@ -289,6 +271,11 @@ class BlackTokenizer(Tokenizer):
                         continue
 
                     token.type = python_tokens.COMMENT
+
+                    # Insert a newline if there are tokens that follow this one
+                    if len(line_tokens) > 1:
+                        line_tokens.insert(line_token_index, self.NEWLINE)
+                        line_token_index += 1
 
                 tokens += line_tokens
                 tokens += [self.NEWLINE]
