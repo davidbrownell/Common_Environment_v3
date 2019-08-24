@@ -67,6 +67,33 @@ class Plugin(HorizontalAlignmentImpl):
             re.MULTILINE,
         )
 
+        # We don't want to decorate python code embedded in mutliline strings,
+        # so remove that content first.
+        multiline_strings = []
+
+        multiline_string_regex = re.compile(r"(?P<quote>\"\"\"|\'\'\')(?P<content>.*?)(?P=quote)", re.DOTALL | re.MULTILINE)
+
+        # ----------------------------------------------------------------------
+        def OnMultilineStripMatch(match):
+            multiline_strings.append(match.group("content"))
+
+            return "{quote}<<__stripped_content__>>{quote}".format(
+                quote=match.group("quote"),
+            )
+
+        # ----------------------------------------------------------------------
+        def OnMultilineRestoreMatch(match):
+            assert multiline_strings
+
+            return "{quote}{content}{quote}".format(
+                quote=match.group("quote"),
+                content=multiline_strings.pop(0),
+            )
+
+        # ----------------------------------------------------------------------
+
+        content = multiline_string_regex.sub(OnMultilineStripMatch, content)
+
         # ----------------------------------------------------------------------
         def OnMatch(match):
             return "{ws}{comment}{newline}{ws}{first_char}".format(
@@ -81,6 +108,7 @@ class Plugin(HorizontalAlignmentImpl):
         # ----------------------------------------------------------------------
 
         content = regex.sub(OnMatch, content)
+        content = multiline_string_regex.sub(OnMultilineRestoreMatch, content)
 
         return content
 
