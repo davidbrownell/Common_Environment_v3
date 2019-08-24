@@ -227,6 +227,12 @@ class BlackTokenizer(Tokenizer):
                 # Merge the line's comments into its tokens
                 line_tokens = line.leaves
                 if line.comments:
+                    # Get the index of the last valid token. Sometimes lines end with
+                    # tokens without values.
+                    last_valid_token_index = len(line_tokens) - 1
+                    while last_valid_token_index > 0 and not line_tokens[last_valid_token_index].value:
+                        last_valid_token_index -= 1
+
                     line_tokens = list(line_tokens)
                     assert line_tokens
 
@@ -236,7 +242,7 @@ class BlackTokenizer(Tokenizer):
                             len(line_tokens),
                         )
 
-                        if comment_index != len(line_tokens):
+                        if comment_index < last_valid_token_index:
                             line_tokens.insert(comment_index + 1, self.NEWLINE)
 
                         line_tokens.insert(comment_index + 1, comment)
