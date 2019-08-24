@@ -136,20 +136,15 @@ class Plugin(HorizontalAlignmentImpl):
             line = lines[line_index]
 
             if len(line.leaves) == 1 and line.leaves[0].type in [black.STANDALONE_COMMENT, python_tokens.COMMENT]:
-                ProcessComment(line.leaves[0])
+                if ProcessComment(line.leaves[0]):
+                    # Keep newlines but remove spaces
+                    line.leaves[0].prefix = line.leaves[0].prefix.replace(" ", "")
+
+                    assert line_index + 1 != len(lines)
+                    line.depth = lines[line_index + 1].depth
 
             for _, comment in line.comments:
-                if ProcessComment(comment):
-                    # If here, this trailing comment is a header comment on its own line
-                    # prior to this one.
-                    assert len(line.comments) == 1, len(line.comments)
-                    new_line = black.Line()
-                    new_line.depth = line.depth
-
-                    new_line.leaves.append(line.comments.pop(0)[1])
-                    new_line.leaves[0].prefix = ""
-
-                    lines.insert(line_index, new_line)
+                ProcessComment(comment)
 
             line_index += 1
 
