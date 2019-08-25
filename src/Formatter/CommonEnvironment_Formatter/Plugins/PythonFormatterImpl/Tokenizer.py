@@ -107,9 +107,7 @@ class Tokenizer(Interface.Interface):
             self._original_token_index,
         )
         if start_token_index > self._original_token_index:
-            self._new_tokens += self.Tokens[
-                self._original_token_index : start_token_index
-            ]
+            self._new_tokens += self.Tokens[self._original_token_index : start_token_index]
 
         self._new_tokens += new_tokens
         self._original_token_index = end_token_index + 1
@@ -232,8 +230,7 @@ class BlackTokenizer(Tokenizer):
                     # tokens without values.
                     last_valid_token_index = len(line_tokens) - 1
                     while (
-                        last_valid_token_index > 0
-                        and not line_tokens[last_valid_token_index].value
+                        last_valid_token_index > 0 and not line_tokens[last_valid_token_index].value
                     ):
                         last_valid_token_index -= 1
 
@@ -241,10 +238,7 @@ class BlackTokenizer(Tokenizer):
                     assert line_tokens
 
                     for comment_index, comment in reversed(line.comments):
-                        assert comment_index <= len(line_tokens), (
-                            comment_index,
-                            len(line_tokens),
-                        )
+                        assert comment_index <= len(line_tokens), (comment_index, len(line_tokens))
 
                         if comment_index < last_valid_token_index:
                             line_tokens.insert(comment_index + 1, self.NEWLINE)
@@ -302,15 +296,9 @@ class BlackTokenizer(Tokenizer):
             if self._token_modifications:
                 for line in self._lines:
                     for token in line.leaves:
-                        token.prefix = self._token_modifications.get(
-                            id(token),
-                            token.prefix,
-                        )
+                        token.prefix = self._token_modifications.get(id(token), token.prefix)
 
-                    if (
-                        len(line.leaves) == 1
-                        and line.leaves[0].type == python_tokens.COMMENT
-                    ):
+                    if len(line.leaves) == 1 and line.leaves[0].type == python_tokens.COMMENT:
                         line.leaves[0].type = black.STANDALONE_COMMENT
 
                 self._token_modifications = None

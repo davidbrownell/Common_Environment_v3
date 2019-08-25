@@ -112,9 +112,7 @@ _formatter_type_info                        = CommandLine.EnumTypeInfo(
         "Filename or directory (used to search for files) to format",
     ),
     formatter=CommandLine.EntryPoint.Parameter("The formatter to use while formatting"),
-    overwrite=CommandLine.EntryPoint.Parameter(
-        "Overwrite the input files with changes (if any)",
-    ),
+    overwrite=CommandLine.EntryPoint.Parameter("Overwrite the input files with changes (if any)"),
     quiet=CommandLine.EntryPoint.Parameter(
         "Only output changes (if any). This option is only valid when providing a single file",
     ),
@@ -218,10 +216,7 @@ def Format(
                     done_suffix=lambda: None if nonlocals.has_changes else "No changes detected",
                     display=not quiet,
                 ) as this_dm:
-                    output, nonlocals.has_changes = formatter.Format(
-                        filename,
-                        **plugin_args
-                    )
+                    output, nonlocals.has_changes = formatter.Format(filename, **plugin_args)
 
                     if nonlocals.has_changes:
                         if overwrite:
@@ -261,10 +256,7 @@ def Format(
                 ) as this_dm:
                     # ----------------------------------------------------------------------
                     def Invoke(input_filename, output_stream):
-                        content, has_changes = formatter.Format(
-                            input_filename,
-                            **plugin_args
-                        )
+                        content, has_changes = formatter.Format(input_filename, **plugin_args)
                         if not has_changes:
                             return
 
@@ -306,10 +298,7 @@ def Format(
                         count=inflect.no("file", len(changed_files)),
                         prefix="" if overwrite else "would be ",
                         names="\n".join(
-                            [
-                                "    - {}".format(filename)
-                                for filename in sorted(changed_files)
-                            ],
+                            ["    - {}".format(filename) for filename in sorted(changed_files)],
                         ),
                     ),
                 )
@@ -322,9 +311,7 @@ def Format(
     filename_or_dir=CommandLine.EntryPoint.Parameter(
         "Filename or directory (used to search for files) to query for changes",
     ),
-    formatter=CommandLine.EntryPoint.Parameter(
-        "The formatter to use while querying for changes",
-    ),
+    formatter=CommandLine.EntryPoint.Parameter("The formatter to use while querying for changes"),
     single_threaded=CommandLine.EntryPoint.Parameter(
         "Run with a single thread. This option is only valid when providing a directory",
     ),
@@ -384,9 +371,7 @@ def HasChanges(
                 formatter = _GetFormatterByFilename(filename_or_dir)
                 if formatter is None:
                     dm.stream.write(
-                        "\nERROR: '{}' is not a supported file type.\n".format(
-                            filename_or_dir,
-                        ),
+                        "\nERROR: '{}' is not a supported file type.\n".format(filename_or_dir),
                     )
                     dm.result = -1
 
@@ -458,10 +443,7 @@ def HasChanges(
                     ).format(
                         count=inflect.no("change", len(changed_files)),
                         names="\n".join(
-                            [
-                                "    - {}".format(filename)
-                                for filename in sorted(changed_files)
-                            ],
+                            ["    - {}".format(filename) for filename in sorted(changed_files)],
                         ),
                     ),
                 )

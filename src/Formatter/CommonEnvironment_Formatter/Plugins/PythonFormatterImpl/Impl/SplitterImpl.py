@@ -159,9 +159,7 @@ class SplitterImpl(PluginBase):
 
                 if args_info:
                     # Tokenize the tokens
-                    for (args_info_index, (args_info_tokens, _, _)) in enumerate(
-                        args_info,
-                    ):
+                    for (args_info_index, (args_info_tokens, _, _)) in enumerate(args_info):
                         args_info[args_info_index][0] = tokenize_func(
                             StandardTokenizer(args_info_tokens),
                         ).Tokens
@@ -182,11 +180,7 @@ class SplitterImpl(PluginBase):
                     # ----------------------------------------------------------------------
 
                     if ShouldSplit():
-                        new_tokens = [
-                            token,
-                            StandardTokenizer.NEWLINE,
-                            StandardTokenizer.INDENT,
-                        ]
+                        new_tokens = [token, StandardTokenizer.NEWLINE, StandardTokenizer.INDENT]
 
                         arg_tokens_to_strip = [
                             StandardTokenizer.INDENT,
@@ -194,10 +188,9 @@ class SplitterImpl(PluginBase):
                             StandardTokenizer.NEWLINE,
                         ]
 
-                        for (
-                            index,
-                            (tokens, prefix_comments, suffix_comments),
-                        ) in enumerate(args_info):
+                        for (index, (tokens, prefix_comments, suffix_comments)) in enumerate(
+                            args_info,
+                        ):
                             # Strip existing newlines, indents, and dedents from the content
                             strip_index = 0
                             while (
@@ -222,12 +215,8 @@ class SplitterImpl(PluginBase):
                                 tokens[0].prefix = ""
                                 new_tokens += tokens
 
-                                if index != len(
-                                    args_info,
-                                ) - 1 or self._InsertTrailingComma(tokens):
-                                    new_tokens.append(
-                                        black.Leaf(python_tokens.COMMA, ","),
-                                    )
+                                if index != len(args_info) - 1 or self._InsertTrailingComma(tokens):
+                                    new_tokens.append(black.Leaf(python_tokens.COMMA, ","))
 
                             if suffix_comments:
                                 new_tokens += suffix_comments
@@ -235,10 +224,7 @@ class SplitterImpl(PluginBase):
                             if tokens or prefix_comments or suffix_comments:
                                 new_tokens += [StandardTokenizer.NEWLINE]
 
-                        new_tokens += [
-                            StandardTokenizer.DEDENT,
-                            tokenizer.Tokens[last_index],
-                        ]
+                        new_tokens += [StandardTokenizer.DEDENT, tokenizer.Tokens[last_index]]
 
                         tokenizer.ReplaceTokens(token_index, last_index, new_tokens)
 
@@ -305,8 +291,7 @@ class SplitterImpl(PluginBase):
 
                 # Associate any trailing comments with this set of tokens
                 while (
-                    first_index < last_index
-                    and tokens[first_index].type == python_tokens.COMMENT
+                    first_index < last_index and tokens[first_index].type == python_tokens.COMMENT
                 ):
                     these_tokens.append(tokens[first_index])
                     first_index += 1

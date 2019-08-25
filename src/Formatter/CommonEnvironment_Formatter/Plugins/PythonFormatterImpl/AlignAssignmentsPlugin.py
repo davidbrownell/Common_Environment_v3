@@ -56,9 +56,7 @@ class Plugin(HorizontalAlignmentImpl):
         **kwargs
     ):
         if alignment_flags is None:
-            alignment_flags = (
-                self.Flag.ModuleLevel | self.Flag.ClassLevel | self.Flag.InitLevel
-            )
+            alignment_flags = self.Flag.ModuleLevel | self.Flag.ClassLevel | self.Flag.InitLevel
 
         self._alignment_flags               = alignment_flags
 
@@ -117,9 +115,7 @@ class Plugin(HorizontalAlignmentImpl):
                     return None
 
                 else:
-                    return (
-                        token if self._alignment_flags & self.Flag.MethodLevel else None
-                    )
+                    return token if self._alignment_flags & self.Flag.MethodLevel else None
 
             parent = parent.parent
 

@@ -97,10 +97,9 @@ class Plugin(PluginBase):
 
                     string_lines = [
                         string_line.expandtabs(4).rstrip()
-                        for string_line in getattr(
-                            token,
-                            cls.ORIGINAL_TEXT_ATTRIBUTE_NAME,
-                        ).split("\n")
+                        for string_line in getattr(token, cls.ORIGINAL_TEXT_ATTRIBUTE_NAME).split(
+                            "\n",
+                        )
                     ]
                     delattr(token, cls.ORIGINAL_TEXT_ATTRIBUTE_NAME)
 
@@ -116,16 +115,10 @@ class Plugin(PluginBase):
                             continue
 
                         string_index = 0
-                        while (
-                            string_index < len(string_line)
-                            and string_line[string_index] == " "
-                        ):
+                        while string_index < len(string_line) and string_line[string_index] == " ":
                             string_index += 1
 
-                        if (
-                            leading_whitespace is None
-                            or string_index < leading_whitespace
-                        ):
+                        if leading_whitespace is None or string_index < leading_whitespace:
                             assert string_index
                             leading_whitespace = string_index
 

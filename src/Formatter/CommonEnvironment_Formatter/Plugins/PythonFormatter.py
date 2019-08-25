@@ -131,11 +131,7 @@ class Formatter(FormatterImpl):
             # ----------------------------------------------------------------------
 
             for plugin in plugins:
-                getattr(plugin, plugin_method_name)(
-                    tokenizer,
-                    ProcessTokens,
-                    recurse_count,
-                )
+                getattr(plugin, plugin_method_name)(tokenizer, ProcessTokens, recurse_count)
                 if tokenizer.HasModifications():
                     tokenizer = tokenizer.Commit()
 
@@ -254,18 +250,13 @@ class Formatter(FormatterImpl):
                         black_line_length = black_data["line-length"]
 
                     python_formatter_data = GetTomlSection(data, cls.TOML_SECTION_NAME)
-                    for plugin_name, plugin_values in six.iteritems(
-                        python_formatter_data,
-                    ):
+                    for plugin_name, plugin_values in six.iteritems(python_formatter_data):
                         for k, v in six.iteritems(plugin_values):
                             these_plugin_args[plugin_name][k] = v
 
                 except Exception as ex:
                     raise Exception(
-                        "The toml file at '{}' is not valid ({})".format(
-                            toml_filename,
-                            str(ex),
-                        ),
+                        "The toml file at '{}' is not valid ({})".format(toml_filename, str(ex)),
                     )
 
             # Apply the provided args. Use `these_plugin_args` as the result to
