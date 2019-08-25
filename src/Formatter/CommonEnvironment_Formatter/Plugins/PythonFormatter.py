@@ -19,7 +19,6 @@ import os
 
 from collections import defaultdict
 
-import black                                            # <unable to import> pylint: disable = E0401
 from blib2to3.pygram import token as python_tokens
 import six
 import toml
@@ -31,6 +30,7 @@ from CommonEnvironment import Interface
 
 from CommonEnvironment.TypeInfo.FundamentalTypes.FilenameTypeInfo import FilenameTypeInfo
 
+from PythonFormatterImpl import black_modified
 from PythonFormatterImpl.Tokenizer import BlackTokenizer
 
 # ----------------------------------------------------------------------
@@ -193,7 +193,7 @@ class Formatter(FormatterImpl):
 
         # ----------------------------------------------------------------------
 
-        formatted_content = black.format_str(
+        formatted_content = black_modified.format_str(
             content,
             line_length=black_line_length,
             preprocess_lines_func=Preprocess,
