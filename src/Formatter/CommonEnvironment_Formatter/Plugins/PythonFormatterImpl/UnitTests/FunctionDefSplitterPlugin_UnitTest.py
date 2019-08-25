@@ -36,20 +36,20 @@ class StandardSuite(TestImpl):
         self.Test(
             textwrap.dedent(
                 """\
-                def Foo(a, b, c):
+                def Foo1(a, b, c):
                     pass
 
-                def Foo(a, b, c, d, e, f, g, h, i, j, k, l, m, n):
+                def Foo2(a, b, c, d, e, f, g, h, i, j, k, l, m, n):
                     pass
 
-                def Foo(a, b, c=3):
+                def Foo3(a, b, c=3):
                     pass
 
-                def Foo(a # one
+                def Foo4(a # one
                 ):
                     pass
 
-                def Foo(
+                def Foo5(
                     a, # one
                     b, # two
                 ):
@@ -58,11 +58,11 @@ class StandardSuite(TestImpl):
             ),
             textwrap.dedent(
                 """\
-                def Foo(a, b, c):
+                def Foo1(a, b, c):
                     pass
 
 
-                def Foo(
+                def Foo2(
                     a,
                     b,
                     c,
@@ -81,7 +81,7 @@ class StandardSuite(TestImpl):
                     pass
 
 
-                def Foo(
+                def Foo3(
                     a,
                     b,
                     c=3,
@@ -89,11 +89,14 @@ class StandardSuite(TestImpl):
                     pass
 
 
-                def Foo(a):  # one
+                def Foo4(a  # one
+
+
+                ):
                     pass
 
 
-                def Foo(
+                def Foo5(
                     a,  # one
                     b,  # two
                 ):

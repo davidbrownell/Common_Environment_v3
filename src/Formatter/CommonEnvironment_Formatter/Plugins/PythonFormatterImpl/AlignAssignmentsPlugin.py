@@ -56,9 +56,7 @@ class Plugin(HorizontalAlignmentImpl):
         **kwargs
     ):
         if alignment_flags is None:
-            alignment_flags = (
-                self.Flag.ModuleLevel | self.Flag.ClassLevel | self.Flag.InitLevel
-            )
+            alignment_flags = self.Flag.ModuleLevel | self.Flag.ClassLevel | self.Flag.InitLevel
 
         self._alignment_flags               = alignment_flags
 
@@ -90,8 +88,7 @@ class Plugin(HorizontalAlignmentImpl):
 
         parent = token.parent
         while parent:
-            if parent.type in black.VARARGS_PARENTS or parent.type in [
-                python_symbols.parameters   # <invalid member> pylint: disable = E1101
+            if parent.type in black.VARARGS_PARENTS or parent.type in [python_symbols.parameters # <invalid member> pylint: disable = E1101
             ]:
                 return None
 
@@ -118,9 +115,7 @@ class Plugin(HorizontalAlignmentImpl):
                     return None
 
                 else:
-                    return (
-                        token if self._alignment_flags & self.Flag.MethodLevel else None
-                    )
+                    return token if self._alignment_flags & self.Flag.MethodLevel else None
 
             parent = parent.parent
 

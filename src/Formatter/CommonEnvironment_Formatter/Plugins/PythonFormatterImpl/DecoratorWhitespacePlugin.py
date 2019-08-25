@@ -49,17 +49,18 @@ class Plugin(PluginBase):
             return token is not None and token.type == python_symbols.decorator # <no member> pylint: disable = E1101
 
         # ----------------------------------------------------------------------
-        def IsFuncOrDecorator(token):
-            return IsDecorator(token) or (
-                token is not None and token.type == python_symbols.funcdef  # <no member> pylint: disable = E1101
-            )
+        def IsDecoratorOrDecoratedType(token):
+            return IsDecorator(token) or (token is not None and token.type in [
+                python_symbols.funcdef,     # <no member> pylint: disable = E1101
+                python_symbols.classdef,    # <no member> pylint: disable = E1101
+            ])
 
         # ----------------------------------------------------------------------
         def IsPrevLineADecorator(line_index):
             return (
                 line_index != 0
                 and lines[line_index].leaves
-                and IsFuncOrDecorator(lines[line_index].leaves[0].parent)
+                and IsDecoratorOrDecoratedType(lines[line_index].leaves[0].parent)
                 and lines[line_index - 1].leaves
                 and IsDecorator(lines[line_index - 1].leaves[-1].parent)
             )
