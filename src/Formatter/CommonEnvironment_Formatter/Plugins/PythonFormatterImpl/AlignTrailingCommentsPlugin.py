@@ -56,7 +56,7 @@ class Plugin(HorizontalAlignmentImpl):
         # identified and then restored after black has altered the content.
         regex = re.compile(
             textwrap.dedent(
-               r"""(?#
+                r"""(?#
                 Initial Whitespace                      )^(?P<whitespace>\s*)(?#
                 Comment                                 )(?P<content>#[^\r\n]*)(?#
                 Newline                                 )(?P<newline>\r?\n)(?#
@@ -71,7 +71,10 @@ class Plugin(HorizontalAlignmentImpl):
         # so remove that content first.
         multiline_strings = []
 
-        multiline_string_regex = re.compile(r"(?P<quote>\"\"\"|\'\'\')(?P<content>.*?)(?P=quote)", re.DOTALL | re.MULTILINE)
+        multiline_string_regex = re.compile(
+            r"(?P<quote>\"\"\"|\'\'\')(?P<content>.*?)(?P=quote)",
+            re.DOTALL | re.MULTILINE,
+        )
 
         # ----------------------------------------------------------------------
         def OnMultilineStripMatch(match):
@@ -163,7 +166,10 @@ class Plugin(HorizontalAlignmentImpl):
         while line_index < len(lines):
             line = lines[line_index]
 
-            if len(line.leaves) == 1 and line.leaves[0].type in [black.STANDALONE_COMMENT, python_tokens.COMMENT]:
+            if len(line.leaves) == 1 and line.leaves[0].type in [
+                black.STANDALONE_COMMENT,
+                python_tokens.COMMENT,
+            ]:
                 if ProcessComment(line.leaves[0]):
                     # Keep newlines but remove spaces
                     line.leaves[0].prefix = line.leaves[0].prefix.replace(" ", "")
