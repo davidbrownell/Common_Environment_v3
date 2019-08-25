@@ -30,8 +30,8 @@ from CommonEnvironment import Interface
 
 from CommonEnvironment.TypeInfo.FundamentalTypes.FilenameTypeInfo import FilenameTypeInfo
 
-from PythonFormatterImpl import black_modified
 from PythonFormatterImpl.Tokenizer import BlackTokenizer
+from PythonFormatterImpl.Impl import black_modified
 
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()
