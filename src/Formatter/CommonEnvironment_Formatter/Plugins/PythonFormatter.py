@@ -103,7 +103,7 @@ class Formatter(FormatterImpl):
         if black_line_length is None:
             black_line_length = cls.DEFAULT_BLACK_LINE_LENGTH
 
-        content = filename_or_content
+        original_content = filename_or_content
         del filename_or_content
 
         # Load the plugins
@@ -115,7 +115,9 @@ class Formatter(FormatterImpl):
             plugin_args,
         )
 
-        # Process the content
+        # Preprocess the content
+        content = original_content
+
         for plugin in plugins:
             content = plugin.PreprocessContent(content)
 
@@ -202,7 +204,7 @@ class Formatter(FormatterImpl):
             postprocess_lines_func=Postprocess,
         )
 
-        return formatted_content, formatted_content != content
+        return formatted_content, formatted_content != original_content
 
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
