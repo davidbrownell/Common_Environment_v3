@@ -231,7 +231,10 @@ class BlackTokenizer(Tokenizer):
                     # Get the index of the last valid token. Sometimes lines end with
                     # tokens without values.
                     last_valid_token_index = len(line_tokens) - 1
-                    while last_valid_token_index > 0 and not line_tokens[last_valid_token_index].value:
+                    while (
+                        last_valid_token_index > 0
+                        and not line_tokens[last_valid_token_index].value
+                    ):
                         last_valid_token_index -= 1
 
                     line_tokens = list(line_tokens)
@@ -304,7 +307,10 @@ class BlackTokenizer(Tokenizer):
                             token.prefix,
                         )
 
-                    if len(line.leaves) == 1 and line.leaves[0].type == python_tokens.COMMENT:
+                    if (
+                        len(line.leaves) == 1
+                        and line.leaves[0].type == python_tokens.COMMENT
+                    ):
                         line.leaves[0].type = black.STANDALONE_COMMENT
 
                 self._token_modifications = None

@@ -90,8 +90,7 @@ class Plugin(HorizontalAlignmentImpl):
 
         parent = token.parent
         while parent:
-            if parent.type in black.VARARGS_PARENTS or parent.type in [
-                python_symbols.parameters   # <invalid member> pylint: disable = E1101
+            if parent.type in black.VARARGS_PARENTS or parent.type in [python_symbols.parameters # <invalid member> pylint: disable = E1101
             ]:
                 return None
 
