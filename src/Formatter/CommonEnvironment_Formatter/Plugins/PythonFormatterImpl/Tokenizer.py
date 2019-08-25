@@ -159,6 +159,7 @@ class Tokenizer(Interface.Interface):
                     token.type = black.STANDALONE_COMMENT
 
                     lines[-1].leaves.append(token)
+
                 else:
                     lines[-1].comments.append((len(lines[-1].leaves), token))
 
@@ -302,6 +303,9 @@ class BlackTokenizer(Tokenizer):
                             id(token),
                             token.prefix,
                         )
+
+                    if len(line.leaves) == 1 and line.leaves[0].type == python_tokens.COMMENT:
+                        line.leaves[0].type = black.STANDALONE_COMMENT
 
                 self._token_modifications = None
 
