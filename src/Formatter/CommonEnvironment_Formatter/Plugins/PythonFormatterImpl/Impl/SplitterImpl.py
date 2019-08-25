@@ -291,7 +291,9 @@ class SplitterImpl(PluginBase):
 
                 # Associate any trailing comments with this set of tokens
                 while (
-                    first_index < last_index and tokens[first_index].type == python_tokens.COMMENT
+                    first_index < last_index
+                    and tokens[first_index].type == python_tokens.COMMENT
+                    and not hasattr(tokens[first_index], "_python_formatter_is_standalone_comment")
                 ):
                     these_tokens.append(tokens[first_index])
                     first_index += 1
