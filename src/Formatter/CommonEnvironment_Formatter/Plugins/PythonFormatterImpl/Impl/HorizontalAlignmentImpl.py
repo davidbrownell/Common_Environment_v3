@@ -71,9 +71,7 @@ class HorizontalAlignmentImpl(PluginBase):
                     if (
                         alignment_token is None
                         and token.type == python_tokens.STRING
-                        and (
-                            token.value.startswith('"""') or token.value.startswith("'''")
-                        )
+                        and (token.value.startswith('"""') or token.value.startswith("'''"))
                     ):
                         continue
 

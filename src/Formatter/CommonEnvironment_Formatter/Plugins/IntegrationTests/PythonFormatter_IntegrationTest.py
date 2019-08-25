@@ -137,7 +137,7 @@ else:
                         four,
                     ]
 
-                    return '$env:{}="{}"'.format(command.Name, os.pathsep.join(command.Values))  # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
+                    return '$env:{}="{}"'.format(command.Name, os.pathsep.join(command.Values))
 
                     return '$env:{name}="{values};" + $env:{name}'.format( name=command.Name,
                                                                            values=os.pathsep.join(command.Values),   # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
@@ -165,6 +165,32 @@ else:
                         two,
                     ):
                         pass
+
+
+                    Func1(
+                        a,
+                        b # There should be a comma after b
+                    )
+
+
+                    Func2(
+                        a,
+                        b   # There should be a comma
+                            # after b
+                    )
+
+
+                    Func3(
+                        a,  # Trailing comment
+                        # Header comment
+                        b   # There should be a comma
+                            # after b
+                    )
+
+
+                    Func4(
+                        # no trailing comma
+                    )
                     """,
                 ),
                 textwrap.dedent(
@@ -308,7 +334,7 @@ else:
                         four,
                     ]
 
-                    return '$env:{}="{}"'.format(command.Name, os.pathsep.join(command.Values)) # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
+                    return '$env:{}="{}"'.format(command.Name, os.pathsep.join(command.Values))
 
                     return '$env:{name}="{values};" + $env:{name}'.format(
                         name=command.Name,
@@ -340,6 +366,32 @@ else:
                         two,
                     ):
                         pass
+
+
+                    Func1(
+                        a,
+                        b,                                      # There should be a comma after b
+                    )
+
+
+                    Func2(
+                        a,
+                        b,                                      # There should be a comma
+                                                                # after b
+                    )
+
+
+                    Func3(
+                        a,                                      # Trailing comment
+                        # Header comment
+                        b,                                      # There should be a comma
+                                                                # after b
+                    )
+
+
+                    Func4(
+                        # no trailing comma
+                    )
                     """,
                 ),
             )
@@ -410,7 +462,7 @@ else:
                         four,
                     ]
 
-                    return '$env:{}="{}"'.format(command.Name, os.pathsep.join(command.Values))  # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
+                    return '$env:{}="{}"'.format(command.Name, os.pathsep.join(command.Values))
 
                     return '$env:{name}="{values};" + $env:{name}'.format( name=command.Name,
                                                                            values=os.pathsep.join(command.Values),   # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
@@ -566,7 +618,7 @@ else:
                     return '$env:{}="{}"'.format(
                         command.Name,
                         os.pathsep.join(command.Values),
-                    )                                           # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
+                    )
 
                     return '$env:{name}="{values};" + $env:{name}'.format(
                         name=command.Name,
@@ -649,10 +701,10 @@ else:
                         four,
                     ]
 
-                    return '$env:{}="{}"'.format(command.Name, os.pathsep.join(command.Values))  # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
+                    return '$env:{}="{}"'.format(command.Name, os.pathsep.join(command.Values))
 
                     return '$env:{name}="{values};" + $env:{name}'.format( name=command.Name,
-                                                                           values=os.pathsep.join(command.Values),   # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
+                                                                           values=os.pathsep.join(command.Values),
                                                                          )
 
                     @Decorator1(foo=bar)
@@ -805,13 +857,13 @@ else:
                     return '$env:{}="{}"'.format(
                         command.Name,
                         os.pathsep.join(command.Values),
-                    )                                           # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
+                    )
 
                     return '$env:{name}="{values};" + $env:{name}'.format(
                         name=command.Name,
                         values=os.pathsep.join(
                             command.Values,
-                        ),                                      # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
+                        ),
                     )
 
 
@@ -892,7 +944,7 @@ else:
                         four,
                     ]
 
-                    return '$env:{}="{}"'.format(command.Name, os.pathsep.join(command.Values))  # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
+                    return '$env:{}="{}"'.format(command.Name, os.pathsep.join(command.Values))
 
                     return '$env:{name}="{values};" + $env:{name}'.format( name=command.Name,
                                                                            values=os.pathsep.join(command.Values),   # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
@@ -1045,7 +1097,7 @@ else:
                         four,
                     ]
 
-                    return '$env:{}="{}"'.format(command.Name, os.pathsep.join(command.Values)) # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
+                    return '$env:{}="{}"'.format(command.Name, os.pathsep.join(command.Values))
 
                     return '$env:{name}="{values};" + $env:{name}'.format(
                         name=command.Name,
@@ -1137,7 +1189,7 @@ else:
                         four,
                     ]
 
-                    return '$env:{}="{}"'.format(command.Name, os.pathsep.join(command.Values))  # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
+                    return '$env:{}="{}"'.format(command.Name, os.pathsep.join(command.Values))
 
                     return '$env:{name}="{values};" + $env:{name}'.format( name=command.Name,
                                                                            values=os.pathsep.join(command.Values),   # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
@@ -1205,7 +1257,7 @@ else:
 
                     b                                           = [one, two, three, four]       # first value  # third value
 
-                    return '$env:{}="{}"'.format(command.Name, os.pathsep.join(command.Values)) # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
+                    return '$env:{}="{}"'.format(command.Name, os.pathsep.join(command.Values))
 
                     return '$env:{name}="{values};" + $env:{name}'.format(name=command.Name, values=os.pathsep.join(command.Values)) # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
 
@@ -1283,7 +1335,7 @@ else:
                         four,
                     ]
 
-                    return '$env:{}="{}"'.format(command.Name, os.pathsep.join(command.Values))  # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
+                    return '$env:{}="{}"'.format(command.Name, os.pathsep.join(command.Values))
 
                     return '$env:{name}="{values};" + $env:{name}'.format( name=command.Name,
                                                                            values=os.pathsep.join(command.Values),   # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
@@ -1424,7 +1476,7 @@ else:
                         four,
                     ]
 
-                    return '$env:{}="{}"'.format(command.Name, os.pathsep.join(command.Values)) # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
+                    return '$env:{}="{}"'.format(command.Name, os.pathsep.join(command.Values))
 
                     return '$env:{name}="{values};" + $env:{name}'.format(
                         name=command.Name,

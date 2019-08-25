@@ -55,6 +55,22 @@ class PluginBase(Interface.Interface):
     # ----------------------------------------------------------------------
     @staticmethod
     @Interface.extensionmethod
+    def PreprocessContent(content):
+        """Opportunity to modify content before black is called.
+
+        Args:
+            content (str):
+                The textual content.
+
+        Returns (str):
+            The modified content.
+
+        """
+        return content
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @Interface.extensionmethod
     def PreprocessTokens(tokenizer, tokenize_func, recurse_count):
         """Opportunity to modify tokens before black is called.
 

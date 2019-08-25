@@ -159,10 +159,7 @@ class SplitterImpl(PluginBase):
 
                 if args_info:
                     # Tokenize the tokens
-                    for (
-                        args_info_index,
-                        (args_info_tokens, args_info_comments),
-                    ) in enumerate(args_info):
+                    for (args_info_index, (args_info_tokens, _, _)) in enumerate(args_info):
                         args_info[args_info_index][0] = tokenize_func(
                             StandardTokenizer(args_info_tokens),
                         ).Tokens
@@ -170,12 +167,12 @@ class SplitterImpl(PluginBase):
                     # ----------------------------------------------------------------------
                     def ShouldSplit():
                         # We need to split if there are embedded comments associated with more than one line
-                        for _, arg_info_comments in args_info:
-                            if arg_info_comments:
+                        for _, prefix_comments, suffix_comments in args_info:
+                            if prefix_comments or suffix_comments:
                                 return True
 
                         # Do we need to split based on the args?
-                        if should_split_func([tokens for tokens, _ in args_info]):
+                        if should_split_func([tokens for tokens, _, _ in args_info]):
                             return True
 
                         return False
@@ -183,11 +180,7 @@ class SplitterImpl(PluginBase):
                     # ----------------------------------------------------------------------
 
                     if ShouldSplit():
-                        new_tokens = [
-                            token,
-                            StandardTokenizer.NEWLINE,
-                            StandardTokenizer.INDENT,
-                        ]
+                        new_tokens = [token, StandardTokenizer.NEWLINE, StandardTokenizer.INDENT]
 
                         arg_tokens_to_strip = [
                             StandardTokenizer.INDENT,
@@ -195,7 +188,9 @@ class SplitterImpl(PluginBase):
                             StandardTokenizer.NEWLINE,
                         ]
 
-                        for index, (tokens, comments) in enumerate(args_info):
+                        for (index, (tokens, prefix_comments, suffix_comments)) in enumerate(
+                            args_info,
+                        ):
                             # Strip existing newlines, indents, and dedents from the content
                             strip_index = 0
                             while (
@@ -210,24 +205,26 @@ class SplitterImpl(PluginBase):
                             while tokens and tokens[-1] in arg_tokens_to_strip:
                                 tokens = tokens[:-1]
 
-                            if not tokens:
-                                continue
+                            if prefix_comments:
+                                new_tokens += prefix_comments
 
-                            tokens[0].prefix = ""
-                            new_tokens += tokens
+                                if tokens:
+                                    new_tokens += [StandardTokenizer.NEWLINE]
 
-                            if index != len(args_info) - 1 or self._InsertTrailingComma(
-                                tokens,
-                            ):
-                                new_tokens.append(black.Leaf(python_tokens.COMMA, ","))
+                            if tokens:
+                                tokens[0].prefix = ""
+                                new_tokens += tokens
 
-                            new_tokens += comments
-                            new_tokens += [StandardTokenizer.NEWLINE]
+                                if index != len(args_info) - 1 or self._InsertTrailingComma(tokens):
+                                    new_tokens.append(black.Leaf(python_tokens.COMMA, ","))
 
-                        new_tokens += [
-                            StandardTokenizer.DEDENT,
-                            tokenizer.Tokens[last_index],
-                        ]
+                            if suffix_comments:
+                                new_tokens += suffix_comments
+
+                            if tokens or prefix_comments or suffix_comments:
+                                new_tokens += [StandardTokenizer.NEWLINE]
+
+                        new_tokens += [StandardTokenizer.DEDENT, tokenizer.Tokens[last_index]]
 
                         tokenizer.ReplaceTokens(token_index, last_index, new_tokens)
 
@@ -261,6 +258,7 @@ class SplitterImpl(PluginBase):
         results = []
 
         while first_index < last_index:
+            # Find the delimiter for this arg
             if StartsWithLambda(first_index):
                 # Move past all the commas within the lambda
                 first_comma_search_index = cls._GetRootTokenIndex(
@@ -285,30 +283,61 @@ class SplitterImpl(PluginBase):
                 # Get the tokens and comments (where the comment comes
                 # before the last index)
                 these_tokens = tokens[first_index:last_index]
-
-                # Get the comments at the end of the line
-                these_comments = []
-
-                while these_tokens and these_tokens[-1].type == python_tokens.COMMENT:
-                    these_comments.insert(0, these_tokens.pop())
-
                 first_index = last_index
 
             else:
                 these_tokens = tokens[first_index:comma_index]
                 first_index = comma_index + 1
 
-                these_comments = []
-
-                # Get the comments (where the comment comes after the comma)
+                # Associate any trailing comments with this set of tokens
                 while (
                     first_index < last_index
                     and tokens[first_index].type == python_tokens.COMMENT
+                    and not hasattr(tokens[first_index], "_python_formatter_is_standalone_comment")
                 ):
-                    these_comments.append(tokens[first_index])
+                    these_tokens.append(tokens[first_index])
                     first_index += 1
 
-            results.append([these_tokens, these_comments])
+            # Get the prefix comments
+            prefix_comments = []
+
+            search_index = 0
+            while search_index < len(these_tokens):
+                token = these_tokens[search_index]
+
+                if token.type == python_tokens.COMMENT:
+                    prefix_comments.append(these_tokens.pop(search_index))
+                    continue
+
+                if token not in [
+                    StandardTokenizer.NEWLINE,
+                    StandardTokenizer.INDENT,
+                    StandardTokenizer.DEDENT,
+                ]:
+                    break
+
+                search_index += 1
+
+            # Get the suffix comments
+            suffix_comments = []
+
+            search_index = len(these_tokens) - 1
+            while search_index >= 0:
+                token = these_tokens[search_index]
+
+                if token.type == python_tokens.COMMENT:
+                    suffix_comments.append(these_tokens.pop(search_index))
+
+                if token not in [
+                    StandardTokenizer.NEWLINE,
+                    StandardTokenizer.INDENT,
+                    StandardTokenizer.DEDENT,
+                ]:
+                    break
+
+                search_index -= 1
+
+            results.append([these_tokens, prefix_comments, suffix_comments])
 
         return results
 
