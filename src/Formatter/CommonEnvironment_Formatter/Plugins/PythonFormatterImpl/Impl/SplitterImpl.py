@@ -196,6 +196,20 @@ class SplitterImpl(PluginBase):
                         ]
 
                         for index, (tokens, prefix_comments, suffix_comments) in enumerate(args_info):
+                            # Strip existing newlines, indents, and dedents from the content
+                            strip_index = 0
+                            while (
+                                strip_index < len(tokens)
+                                and tokens[strip_index] in arg_tokens_to_strip
+                            ):
+                                strip_index += 1
+
+                            if strip_index != 0:
+                                tokens = tokens[strip_index:]
+
+                            while tokens and tokens[-1] in arg_tokens_to_strip:
+                                tokens = tokens[:-1]
+
                             if prefix_comments:
                                 new_tokens += prefix_comments
 
@@ -254,27 +268,6 @@ class SplitterImpl(PluginBase):
         results = []
 
         while first_index < last_index:
-            # Get any opening comments
-            prefix_comments = []
-
-            while first_index < last_index:
-                token = tokens[first_index]
-
-                if (
-                    token not in [
-                        StandardTokenizer.NEWLINE,
-                        StandardTokenizer.INDENT,
-                        StandardTokenizer.DEDENT,
-                    ]
-                    and token.type != python_tokens.COMMENT
-                ):
-                    break
-
-                if token.type == python_tokens.COMMENT:
-                    prefix_comments.append(token)
-
-                first_index += 1
-
             # Find the delimiter for this arg
             if StartsWithLambda(first_index):
                 # Move past all the commas within the lambda
@@ -314,26 +307,44 @@ class SplitterImpl(PluginBase):
                     these_tokens.append(tokens[first_index])
                     first_index += 1
 
+            # Get the prefix comments
+            prefix_comments = []
+
+            search_index = 0
+            while search_index < len(these_tokens):
+                token = these_tokens[search_index]
+
+                if token.type == python_tokens.COMMENT:
+                    prefix_comments.append(these_tokens.pop(search_index))
+                    continue
+
+                if token not in [
+                    StandardTokenizer.NEWLINE,
+                    StandardTokenizer.INDENT,
+                    StandardTokenizer.DEDENT,
+                ]:
+                    break
+
+                search_index += 1
+
             # Get the suffix comments
             suffix_comments = []
 
-            while these_tokens:
-                token = these_tokens[-1]
-
-                if (
-                    token not in [
-                        StandardTokenizer.NEWLINE,
-                        StandardTokenizer.INDENT,
-                        StandardTokenizer.DEDENT,
-                    ]
-                    and token.type != python_tokens.COMMENT
-                ):
-                    break
+            search_index = len(these_tokens) - 1
+            while search_index >= 0:
+                token = these_tokens[search_index]
 
                 if token.type == python_tokens.COMMENT:
-                    suffix_comments.append(token)
+                    suffix_comments.append(these_tokens.pop(search_index))
 
-                these_tokens.pop()
+                if token not in [
+                    StandardTokenizer.NEWLINE,
+                    StandardTokenizer.INDENT,
+                    StandardTokenizer.DEDENT,
+                ]:
+                    break
+
+                search_index -= 1
 
             results.append([these_tokens, prefix_comments, suffix_comments])
 
