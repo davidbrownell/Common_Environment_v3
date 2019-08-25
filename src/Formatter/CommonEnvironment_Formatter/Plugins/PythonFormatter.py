@@ -25,13 +25,13 @@ import toml
 
 import CommonEnvironment
 from CommonEnvironment import FileSystem
-from CommonEnvironment.FormatterImpl import FormatterImpl                   # <unable to import> pylint: disable = E0401
+from CommonEnvironment.FormatterImpl import FormatterImpl                   # <unable to import> pylint: disable = E0401,E0611
 from CommonEnvironment import Interface
 
 from CommonEnvironment.TypeInfo.FundamentalTypes.FilenameTypeInfo import FilenameTypeInfo
 
-from PythonFormatterImpl.Tokenizer import BlackTokenizer
-from PythonFormatterImpl.Impl import black_modified
+from PythonFormatterImpl.Tokenizer import BlackTokenizer                    # <Unable to import, Relative import should be...> pylint: disable = E0401,W0403
+from PythonFormatterImpl.Impl import black_modified                         # <Unable to import, Relative import should be...> pylint: disable = E0401,W0403
 
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()
