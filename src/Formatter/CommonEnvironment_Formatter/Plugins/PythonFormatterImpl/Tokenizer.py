@@ -263,8 +263,8 @@ class BlackTokenizer(Tokenizer):
 
                         # ----------------------------------------------------------------------
                         def RestoreTokenPrefix(
-                            token=line_tokens[0],
-                            prefix=line_tokens[0].prefix,
+                            token=line_tokens[0],                           # <Cell variable defined in loop> pylint: disable = W0640
+                            prefix=line_tokens[0].prefix,                   # <Cell variable defined in loop> pylint: disable = W0640
                         ):
                             token.prefix = prefix
 
@@ -295,7 +295,7 @@ class BlackTokenizer(Tokenizer):
                     restore_funcs.append(RestoreTokenType)
 
                     token.type = python_tokens.COMMENT
-                    token._python_formatter_is_standalone_comment = True
+                    token._python_formatter_is_standalone_comment = True    # <Access to a protected member> pylint: disable = W0212
 
                     # Insert a newline if there are tokens that follow this one
                     if len(line_tokens) > 1:
