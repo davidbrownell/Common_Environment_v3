@@ -619,12 +619,7 @@ def format_file_contents(
 
 
 def format_str(
-    src_contents: str,
-    line_length: int,
-    *,
-    mode: FileMode = FileMode.AUTO_DETECT,
-    preprocess_lines_func: Any = None,
-    postprocess_lines_func: Any = None,
+    src_contents: str, line_length: int, *, mode: FileMode = FileMode.AUTO_DETECT
 ) -> FileContent:
     """Reformat a string and return new contents.
 
@@ -644,31 +639,18 @@ def format_str(
         allow_underscores=py36
         and not bool(mode & FileMode.NO_NUMERIC_UNDERSCORE_NORMALIZATION),
     )
-
-    lines = list(lines.visit(src_node))
-
-    if preprocess_lines_func is not None:
-        lines = preprocess_lines_func(lines)
-
     elt = EmptyLineTracker(is_pyi=is_pyi)
     empty_line = Line()
     after = 0
-
-    dst_lines = []
-
-    for current_line in lines:
+    for current_line in lines.visit(src_node):
         for _ in range(after):
-            dst_lines.append(empty_line)
+            dst_contents += str(empty_line)
         before, after = elt.maybe_empty_lines(current_line)
         for _ in range(before):
-            dst_lines.append(empty_line)
+            dst_contents += str(empty_line)
         for line in split_line(current_line, line_length=line_length, py36=py36):
-            dst_lines.append(line)
-
-    if postprocess_lines_func is not None:
-        dst_lines = postprocess_lines_func(dst_lines)
-
-    return ''.join([str(line) for line in dst_lines])
+            dst_contents += str(line)
+    return dst_contents
 
 
 def decode_bytes(src: bytes) -> Tuple[FileContent, Encoding, NewLine]:
