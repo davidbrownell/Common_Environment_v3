@@ -219,8 +219,4 @@ class Plugin(HorizontalAlignmentImpl):
     # ----------------------------------------------------------------------
     @classmethod
     def _GetCommentValue(cls, comment_token):
-        return getattr(
-            comment_token,
-            cls._ORIGINAL_VALUE_ATTRIBUTE_NAME,
-            comment_token.value,
-        )
+        return getattr(comment_token, cls._ORIGINAL_VALUE_ATTRIBUTE_NAME, comment_token.value)
