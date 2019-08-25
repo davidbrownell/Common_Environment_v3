@@ -107,9 +107,7 @@ class Tokenizer(Interface.Interface):
             self._original_token_index,
         )
         if start_token_index > self._original_token_index:
-            self._new_tokens += self.Tokens[
-                self._original_token_index : start_token_index
-            ]
+            self._new_tokens += self.Tokens[self._original_token_index : start_token_index]
 
         self._new_tokens += new_tokens
         self._original_token_index = end_token_index + 1
@@ -131,15 +129,6 @@ class Tokenizer(Interface.Interface):
 
         prefix_line_count = 0
         depth = 0
-        comments = []
-
-        # ----------------------------------------------------------------------
-        def CompleteLine():
-            if comments:
-                lines[-1].comments = list(comments)
-                comments[:] = []
-
-        # ----------------------------------------------------------------------
 
         for token in self.Tokens:
             if token == self.INDENT:
@@ -155,15 +144,22 @@ class Tokenizer(Interface.Interface):
 
             elif token == self.NEWLINE:
                 if lines and lines[-1].leaves:
-                    CompleteLine()
-
                     lines.append(black.Line())
                     lines[-1].depth = depth
+
+                    prefix_line_count = 0
                 else:
                     prefix_line_count += 1
 
             elif token.type == python_tokens.COMMENT:
-                comments.append((len(lines[-1].leaves) - 1, token))
+                if not lines[-1].leaves or lines[-1].comments:
+                    token.prefix = "\n" * prefix_line_count
+                    token.type = black.STANDALONE_COMMENT
+
+                    lines[-1].leaves.append(token)
+
+                else:
+                    lines[-1].comments.append((len(lines[-1].leaves), token))
 
             else:
                 if prefix_line_count != 0:
@@ -172,8 +168,6 @@ class Tokenizer(Interface.Interface):
                     prefix_line_count = 0
 
                 lines[-1].leaves.append(token)
-
-        CompleteLine()
 
         return lines
 
@@ -203,7 +197,7 @@ class BlackTokenizer(Tokenizer):
         self._lines                         = lines
 
         self._tokens                        = None
-        self._token_modifications           = None
+        self._restore_funcs                 = None
 
         super(BlackTokenizer, self).__init__()
 
@@ -212,7 +206,7 @@ class BlackTokenizer(Tokenizer):
     def Tokens(self):
         if self._tokens is None:
             tokens = []
-            token_modifications = {}
+            restore_funcs = []
 
             depth = 0
 
@@ -232,14 +226,23 @@ class BlackTokenizer(Tokenizer):
                 # Merge the line's comments into its tokens
                 line_tokens = line.leaves
                 if line.comments:
+                    # Get the index of the last valid token. Sometimes lines end with
+                    # tokens without values.
+                    last_valid_token_index = len(line_tokens) - 1
+                    while (
+                        last_valid_token_index > 0 and not line_tokens[last_valid_token_index].value
+                    ):
+                        last_valid_token_index -= 1
+
                     line_tokens = list(line_tokens)
                     assert line_tokens
 
                     for comment_index, comment in reversed(line.comments):
-                        assert comment_index <= len(line_tokens), (
-                            comment_index,
-                            len(line_tokens),
-                        )
+                        assert comment_index <= len(line_tokens), (comment_index, len(line_tokens))
+
+                        if comment_index < last_valid_token_index:
+                            line_tokens.insert(comment_index + 1, self.NEWLINE)
+
                         line_tokens.insert(comment_index + 1, comment)
 
                 if line_tokens and line_tokens[0].prefix:
@@ -257,31 +260,64 @@ class BlackTokenizer(Tokenizer):
                         # Preserve the original prefix value so that it can be restored if no other modifications
                         # have been made. This is a hack, but black gets confused when introducing deep copies of
                         # tokens as it breaks previous- and next-based relationships.
-                        token_modifications[id(line_tokens[0])] = line_tokens[0].prefix
+
+                        # ----------------------------------------------------------------------
+                        def RestoreTokenPrefix(
+                            token=line_tokens[0],                           # <Cell variable defined in loop> pylint: disable = W0640
+                            prefix=line_tokens[0].prefix,                   # <Cell variable defined in loop> pylint: disable = W0640
+                        ):
+                            token.prefix = prefix
+
+                        # ----------------------------------------------------------------------
+
+                        restore_funcs.append(RestoreTokenPrefix)
 
                         line_tokens[0].prefix = line_tokens[0].prefix[newline_ctr:]
+
+                # Convert the STANDALONE_COMMENT type to COMMON to simplify plugin development.
+                # When we construct lines, restore this type.
+                line_token_index = 0
+                while line_token_index < len(line_tokens):
+                    token = line_tokens[line_token_index]
+                    line_token_index += 1
+
+                    if token.type != black.STANDALONE_COMMENT:
+                        continue
+
+                    # ----------------------------------------------------------------------
+                    def RestoreTokenType(
+                        token=token,
+                    ):
+                        token.type = black.STANDALONE_COMMENT
+
+                    # ----------------------------------------------------------------------
+
+                    restore_funcs.append(RestoreTokenType)
+
+                    token.type = python_tokens.COMMENT
+                    token._python_formatter_is_standalone_comment = True    # <Access to a protected member> pylint: disable = W0212
+
+                    # Insert a newline if there are tokens that follow this one
+                    if len(line_tokens) > 1:
+                        line_tokens.insert(line_token_index, self.NEWLINE)
+                        line_token_index += 1
 
                 tokens += line_tokens
                 tokens += [self.NEWLINE]
 
             self._tokens = tokens
-            self._token_modifications = token_modifications
+            self._restore_funcs = restore_funcs
 
         return self._tokens
 
     # ----------------------------------------------------------------------
     def ToBlackLines(self):
-        if not self.HasModifications():
-            # Restore the modifications that were previously made
-            if self._token_modifications:
-                for line in self._lines:
-                    for token in line.leaves:
-                        token.prefix = self._token_modifications.get(
-                            id(token),
-                            token.prefix,
-                        )
+        restore_funcs = self._restore_funcs or []
+        self._restore_funcs = None
 
-                self._token_modifications = None
+        if not self.HasModifications():
+            for restore_func in restore_funcs:
+                restore_func()
 
             return self._lines
 

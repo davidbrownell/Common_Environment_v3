@@ -19,19 +19,19 @@ import os
 
 from collections import defaultdict
 
-import black                                            # <unable to import> pylint: disable = E0401
 from blib2to3.pygram import token as python_tokens
 import six
 import toml
 
 import CommonEnvironment
 from CommonEnvironment import FileSystem
-from CommonEnvironment.FormatterImpl import FormatterImpl                   # <unable to import> pylint: disable = E0401
+from CommonEnvironment.FormatterImpl import FormatterImpl                   # <unable to import> pylint: disable = E0401,E0611
 from CommonEnvironment import Interface
 
 from CommonEnvironment.TypeInfo.FundamentalTypes.FilenameTypeInfo import FilenameTypeInfo
 
-from PythonFormatterImpl.Tokenizer import BlackTokenizer
+from PythonFormatterImpl.Tokenizer import BlackTokenizer                    # <Unable to import, Relative import should be...> pylint: disable = E0401,W0403
+from PythonFormatterImpl.Impl import black_modified                         # <Unable to import, Relative import should be...> pylint: disable = E0401,W0403
 
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()
@@ -103,7 +103,7 @@ class Formatter(FormatterImpl):
         if black_line_length is None:
             black_line_length = cls.DEFAULT_BLACK_LINE_LENGTH
 
-        content = filename_or_content
+        original_content = filename_or_content
         del filename_or_content
 
         # Load the plugins
@@ -115,7 +115,11 @@ class Formatter(FormatterImpl):
             plugin_args,
         )
 
-        # Process the content
+        # Preprocess the content
+        content = original_content
+
+        for plugin in plugins:
+            content = plugin.PreprocessContent(content)
 
         # ----------------------------------------------------------------------
         def ProcessTokensImpl(tokenizer, plugin_method_name, recurse_count):
@@ -127,11 +131,7 @@ class Formatter(FormatterImpl):
             # ----------------------------------------------------------------------
 
             for plugin in plugins:
-                getattr(plugin, plugin_method_name)(
-                    tokenizer,
-                    ProcessTokens,
-                    recurse_count,
-                )
+                getattr(plugin, plugin_method_name)(tokenizer, ProcessTokens, recurse_count)
                 if tokenizer.HasModifications():
                     tokenizer = tokenizer.Commit()
 
@@ -142,7 +142,8 @@ class Formatter(FormatterImpl):
             # Process the tokens
             method_name = "{}Tokens".format(plugin_method_prefix)
 
-            tokenizer = ProcessTokensImpl(BlackTokenizer(black_lines), method_name, 0)
+            tokenizer = BlackTokenizer(black_lines)
+            tokenizer = ProcessTokensImpl(tokenizer, method_name, 0)
             black_lines = tokenizer.ToBlackLines()
 
             # Process the blocks
@@ -192,14 +193,14 @@ class Formatter(FormatterImpl):
 
         # ----------------------------------------------------------------------
 
-        formatted_content = black.format_str(
+        formatted_content = black_modified.format_str(
             content,
             line_length=black_line_length,
             preprocess_lines_func=Preprocess,
             postprocess_lines_func=Postprocess,
         )
 
-        return formatted_content, formatted_content != content
+        return formatted_content, formatted_content != original_content
 
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
@@ -249,18 +250,13 @@ class Formatter(FormatterImpl):
                         black_line_length = black_data["line-length"]
 
                     python_formatter_data = GetTomlSection(data, cls.TOML_SECTION_NAME)
-                    for plugin_name, plugin_values in six.iteritems(
-                        python_formatter_data,
-                    ):
+                    for plugin_name, plugin_values in six.iteritems(python_formatter_data):
                         for k, v in six.iteritems(plugin_values):
                             these_plugin_args[plugin_name][k] = v
 
                 except Exception as ex:
                     raise Exception(
-                        "The toml file at '{}' is not valid ({})".format(
-                            toml_filename,
-                            str(ex),
-                        ),
+                        "The toml file at '{}' is not valid ({})".format(toml_filename, str(ex)),
                     )
 
             # Apply the provided args. Use `these_plugin_args` as the result to
