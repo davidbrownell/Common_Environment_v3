@@ -119,7 +119,7 @@ def Execute(
                         or (release_only and "release" in potential_config_lower)
                         or (not debug_only and not release_only)
                     ):
-                        yield config
+                        yield potential_config
 
             # ----------------------------------------------------------------------
 
