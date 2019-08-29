@@ -45,6 +45,7 @@ BUILD_FILENAME_IGNORE                       = "{}-ignore".format(BUILD_FILENAME)
 BUILD_LOG_TEMPLATE                          = "Build.{mode}.log"
 
 COMPLETE_CONFIGURATION_NAME                 = "Complete"
+STANDARD_CONFIGURATION_NAMES                = ["Debug", "Release"]
 
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint(
@@ -84,7 +85,12 @@ def Execute(
         prefix="\nResults: ",
         suffix="\n",
     ) as dm:
-        build_infos = _GetBuildInfos(root_dir, dm.stream, build_filename, build_filename_ignore)
+        build_infos = _GetBuildInfos(
+            root_dir,
+            dm.stream,
+            build_filename,
+            build_filename_ignore,
+        )
         if not build_infos:
             return dm.result
 
@@ -105,10 +111,14 @@ def Execute(
                     yield COMPLETE_CONFIGURATION_NAME
                     return
 
-                for config in build_configurations:
-                    config_lower = config.lower()
+                for potential_config in STANDARD_CONFIGURATION_NAMES:
+                    potential_config_lower = potential_config.lower()
 
-                    if (debug_only and "debug" in config_lower) or (release_only and "release" in config_lower) or (not debug_only and not release_only):
+                    if (
+                        (debug_only and "debug" in potential_config_lower)
+                        or (release_only and "release" in potential_config_lower)
+                        or (not debug_only and not release_only)
+                    ):
                         yield config
 
             # ----------------------------------------------------------------------
@@ -132,7 +142,9 @@ def Execute(
         dm.stream.write("\n")
 
         for mode_index, mode in enumerate(modes):
-            dm.stream.write("Invoking '{}' ({} of {})...".format(mode, mode_index + 1, len(modes)))
+            dm.stream.write(
+                "Invoking '{}' ({} of {})...".format(mode, mode_index + 1, len(modes)),
+            )
             with dm.stream.DoneManager(
                 suffix="\n",
             ) as mode_dm:
@@ -158,8 +170,12 @@ def Execute(
                         command_line = 'python "{build_filename}" {mode}{configuration}{output_dir}'.format(
                             build_filename=build_filename,
                             mode=mode,
-                            configuration=' "{}"'.format(configuration) if configuration else "",
-                            output_dir=' "{}"'.format(build_output_dir) if config.RequiresOutputDir else "",
+                            configuration=' "{}"'.format(
+                                configuration,
+                            ) if configuration else "",
+                            output_dir=' "{}"'.format(
+                                build_output_dir,
+                            ) if config.RequiresOutputDir else "",
                         )
 
                         build_dm.result, output = Process.Execute(command_line)
@@ -183,7 +199,10 @@ def Execute(
                             build_dm.stream.write(output)
                         elif verbose:
                             build_dm.stream.write(
-                                StringHelpers.LeftJustify("INFO: {}".format(output), len("INFO: ")),
+                                StringHelpers.LeftJustify(
+                                    "INFO: {}".format(output),
+                                    len("INFO: "),
+                                ),
                             )
 
         return dm.result
@@ -209,7 +228,12 @@ def List(
         prefix="\nResults: ",
         suffix="\n",
     ) as dm:
-        for build_info in _GetBuildInfos(root_dir, dm.stream, build_filename, build_filename_ignore):
+        for build_info in _GetBuildInfos(
+            root_dir,
+            dm.stream,
+            build_filename,
+            build_filename_ignore,
+        ):
             dm.stream.write(
                 "{filename:<120}  {priority}\n".format(
                     filename="{}:".format(build_info.filename),
@@ -245,7 +269,9 @@ def _GetBuildInfos(root_dir, output_stream, build_filename, build_filename_ignor
             include_file_base_names=[name],
             include_file_extensions=[ext],
         ):
-            if os.path.exists(os.path.join(os.path.dirname(fullpath), build_filename_ignore)):
+            if os.path.exists(
+                os.path.join(os.path.dirname(fullpath), build_filename_ignore),
+            ):
                 continue
 
             build_infos.append(
