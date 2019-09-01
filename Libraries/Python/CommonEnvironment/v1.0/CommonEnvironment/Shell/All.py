@@ -1,40 +1,43 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  All.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-05-01 08:55:20
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-19.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """All items from this module"""
 
 import os
 
 import CommonEnvironment
+from CommonEnvironment.Shell.CentOsShell import CentOsShell
 from CommonEnvironment.Shell.UbuntuShell import UbuntuShell
 from CommonEnvironment.Shell.WindowsShell import WindowsShell
 from CommonEnvironment.Shell.WindowsPowerShell import WindowsPowerShell
 
 # ----------------------------------------------------------------------
-_script_fullpath = CommonEnvironment.ThisFullpath()
-_script_dir, _script_name = os.path.split(_script_fullpath)
+_script_fullpath                            = CommonEnvironment.ThisFullpath()
+_script_dir, _script_name                   = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Public Types
-# |  
+# |
 # ----------------------------------------------------------------------
-ALL_TYPES                                   = [ WindowsPowerShell,
-                                                WindowsShell, 
-                                                UbuntuShell,
-                                              ]
+ALL_TYPES                                   = [
+    WindowsPowerShell,
+    WindowsShell,
+    UbuntuShell,
+    CentOsShell,
+]
 
 # ----------------------------------------------------------------------
 def _GetShell():
@@ -49,8 +52,10 @@ def _GetShell():
         if result is None:
             try:
                 import distro
-                
-                result = distro.linux_distribution(full_distribution_name=False)[0].lower()
+
+                result = distro.linux_distribution(
+                    full_distribution_name=False,
+                )[0].lower()
 
             except ImportError:
                 pass
@@ -66,12 +71,13 @@ def _GetShell():
     # ----------------------------------------------------------------------
 
     plat = GetPlatform()
-    
+
     for shell in ALL_TYPES:
         if shell.IsActive(plat):
             return shell.DecorateObjectWithCommands()
 
     raise Exception("No shell found for '{}'".format(plat))
+
 
 # ----------------------------------------------------------------------
 
