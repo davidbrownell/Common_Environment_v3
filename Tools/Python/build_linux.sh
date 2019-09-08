@@ -1,17 +1,17 @@
-#/bin/bash
+#!/bin/bash
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  build_linux.sh
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-05-12 22:22:08
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-19.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 set -e                                      # Exit on error
 set -x                                      # statements
@@ -96,7 +96,7 @@ BuildPython()
     curl https://www.python.org/ftp/python/${VERSION}/Python-${VERSION}.tgz | gunzip -c | tar xf -
 
     pushd Python-${VERSION} > /dev/null                                             # +src dir
-    
+
     # Update Setup.dist
     cp ./Modules/Setup.dist ./Modules/Setup.dist.bak
     sed -r "s:#SSL=/usr/local/ssl:SSL=/opt/CommonEnvironment/openssl/${OPENSSL_VERSION}:" ./Modules/Setup.dist.bak |\
@@ -104,13 +104,13 @@ BuildPython()
         sed -r "s:#\s+-DUSE_SSL -I\\$\\(SSL\\)/include -I\\$\\(SSL\\)/include/openssl:    -DUSE_SSL -I\\$\\(SSL\\)/include -I\\$\\(SSL\\)/include/openssl:" |\
         sed -r "s:#\s+-L\\$\\(SSL\\)/lib -lssl -lcrypto:    -L\\$\\(SSL\\)/lib -lssl -lcrypto:" \
         > ./Modules/Setup.dist
-    
+
     # Update setup.py
     cp setup.py setup.py.bak
     sed -r "s:search_for_ssl_incs_in = \[:search_for_ssl_incs_in = \[ '/opt/CommonEnvironment/openssl/${OPENSSL_VERSION}/include', :" setup.py.bak | \
         sed -r "s:\['/usr/local/ssl/lib',:\['/opt/CommonEnvironment/openssl/${OPENSSL_VERSION}/lib', '/usr/local/ssl/lib',:" \
         > setup.py
-    
+
     export LD_LIBRARY_PATH=/opt/CommonEnvironment/openssl/${OPENSSL_VERSION}/lib
     export LDFLAGS="${LDFLAGS} -Wl,-rpath,/opt/CommonEnvironment/openssl/${OPENSSL_VERSION}/lib"
 
@@ -118,14 +118,14 @@ BuildPython()
     make clean
     make
     make altinstall
-    
+
     pushd /opt/CommonEnvironment/python/${VERSION} > /dev/null                      # +install dir
 
     pushd ./bin > /dev/null                                                         # +bin
-    
+
     ln -fs python${VERSION_SHORT} python
     ln -fs python${VERSION_SHORT} python${VERSION_SHORTER}
-    
+
     popd > /dev/null                                                                # -bin
 
     export PATH=/opt/CommonEnvironment/python/${VERSION}/bin:${PATH}
@@ -133,7 +133,7 @@ BuildPython()
 
     python -m ensurepip --default-pip
     python -m pip install --upgrade pip
-    
+
     tar czf - * > /local/Python/v${VERSION}/Linux/install.tgz
 
     popd > /dev/null                                                                # -install dir
@@ -142,7 +142,7 @@ BuildPython()
 
 [[ -d /src ]] || mkdir "/src"
 pushd /src > /dev/null
-    
+
 UpdateEnvironment
 BuildOpenSSL
 BuildPython
