@@ -17,11 +17,10 @@
 
 import os
 
-from blib2to3.pygram import python_symbols
-
 import CommonEnvironment
 from CommonEnvironment import Interface
 
+from PythonFormatterImpl.Impl.BlackImports import python_symbols    # <Unable to import> pylint: disable = E0401
 from PythonFormatterImpl.Impl.FunctionSplitterImpl import FunctionSplitterImpl # <Unable to import> pylint: disable = E0401
 
 # ----------------------------------------------------------------------

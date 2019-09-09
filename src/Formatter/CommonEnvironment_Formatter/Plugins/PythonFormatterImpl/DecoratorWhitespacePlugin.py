@@ -17,12 +17,11 @@
 
 import os
 
-from blib2to3.pygram import python_symbols
-
 import CommonEnvironment
 from CommonEnvironment import Interface
 
-from PythonFormatterImpl.Plugin import PluginBase       # <Unable to import> pylint: disable = E0401
+from PythonFormatterImpl.Plugin import PluginBase                   # <Unable to import> pylint: disable = E0401
+from PythonFormatterImpl.Impl.BlackImports import python_symbols    # <Unable to import> pylint: disable = E0401
 
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()
@@ -67,8 +66,8 @@ class Plugin(PluginBase):
 
         # ----------------------------------------------------------------------
 
-        for line_index in range(len(lines)):
+        for line_index, line in enumerate(lines):
             if IsPrevLineADecorator(line_index):
-                lines[line_index].leaves[0].prefix = ""
+                line.leaves[0].prefix = ""
 
         return lines
