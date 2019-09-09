@@ -19,7 +19,6 @@ import os
 
 from collections import defaultdict
 
-from blib2to3.pygram import token as python_tokens
 import six
 import toml
 
@@ -31,7 +30,7 @@ from CommonEnvironment import Interface
 from CommonEnvironment.TypeInfo.FundamentalTypes.FilenameTypeInfo import FilenameTypeInfo
 
 from PythonFormatterImpl.Tokenizer import BlackTokenizer                    # <Unable to import, Relative import should be...> pylint: disable = E0401,W0403
-from PythonFormatterImpl.Impl import black_modified                         # <Unable to import, Relative import should be...> pylint: disable = E0401,W0403
+from PythonFormatterImpl.Impl.BlackImports import black, python_tokens      # <Unable to import, Relative import should be...> pylint: disable = E0401,W0403
 
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()
@@ -193,7 +192,7 @@ class Formatter(FormatterImpl):
 
         # ----------------------------------------------------------------------
 
-        formatted_content = black_modified.format_str(
+        formatted_content = black.format_str(
             content,
             line_length=black_line_length,
             preprocess_lines_func=Preprocess,

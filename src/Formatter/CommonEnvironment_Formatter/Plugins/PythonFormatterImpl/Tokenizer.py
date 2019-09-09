@@ -18,12 +18,10 @@
 import os
 import sys
 
-if sys.version_info[0] != 2:
-    import black
-    from blib2to3.pygram import token as python_tokens
-
 import CommonEnvironment
 from CommonEnvironment import Interface
+
+from PythonFormatterImpl.Impl.BlackImports import black, python_tokens
 
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()

@@ -17,9 +17,9 @@ from setuptools import setup, find_packages
 # Do the setup
 setup(
     name="CommonEnvironment-Formatter",
-    version="0.5.0-b2",
+    version="0.5.0-b3",
     packages=find_packages(),
-    install_requires=["CommonEnvironment >= 1.0.6", "black >= 18.9.b0"],
+    install_requires=["CommonEnvironment >= 1.0.6"],
     scripts=["bin/Formatter", "bin/Formatter.cmd"],
     author="David Brownell",
     author_email="pypi@DavidBrownell.com",

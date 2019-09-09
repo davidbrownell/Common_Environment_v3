@@ -17,11 +17,10 @@
 
 import os
 
-from blib2to3.pygram import python_symbols
-
 import CommonEnvironment
 from CommonEnvironment import Interface
 
+from PythonFormatterImpl.Impl.BlackImports import python_symbols                        # <Unable to import> pylint: disable = E0401
 from PythonFormatterImpl.Impl.SplitterImpl import SplitterImpl, SimpleInitialTokenMixin # <Unable to import> pylint: disable = E0401
 
 # ----------------------------------------------------------------------
@@ -50,4 +49,8 @@ class Plugin(SimpleInitialTokenMixin, SplitterImpl):
     def _InsertTrailingComma(
         args,                               # <Unused argument> pylint: disable = W0613
     ):
+        for arg in args:
+            if arg.parent and arg.parent.type == python_symbols.old_comp_for: # <No member> pylint: disable = E1101
+                return False
+
         return True

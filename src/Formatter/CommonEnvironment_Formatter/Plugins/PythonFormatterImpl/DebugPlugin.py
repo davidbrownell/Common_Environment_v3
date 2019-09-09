@@ -28,6 +28,8 @@ from CommonEnvironment import Interface
 from PythonFormatterImpl.Plugin import PluginBase       # <Unable to import> pylint: disable = E0401
 from PythonFormatterImpl.Tokenizer import Tokenizer     # <Unable to import> pylint: disable = E0401
 
+from PythonFormatterImpl.Impl.BlackImports import black
+
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name                   = os.path.split(_script_fullpath)
@@ -216,9 +218,6 @@ class Plugin(PluginBase):
         display_tokens=True,
         display_prefix="",
     ):
-        # Import black code here, as the import will fail in Python2
-        import black
-
         symbol_table = black.pygram.python_grammar.number2symbol
 
         # Create the line's content for display
