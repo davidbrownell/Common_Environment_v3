@@ -25,11 +25,9 @@ from CommonEnvironment import Interface
 from CommonEnvironment import RegularExpression
 
 from PythonFormatterImpl.AlignAssignmentsPlugin import Plugin as AlignAssignmentsPlugin # <Unable to import> pylint: disable = E0401
-from PythonFormatterImpl.Impl.HorizontalAlignmentImpl import HorizontalAlignmentImpl    # <Unable to import> pylint: disable = E0401
 
-if sys.version_info[0] != 2:
-    import black
-    from blib2to3.pygram import token as python_tokens
+from PythonFormatterImpl.Impl.BlackImports import black, python_tokens
+from PythonFormatterImpl.Impl.HorizontalAlignmentImpl import HorizontalAlignmentImpl # <Unable to import> pylint: disable = E0401
 
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()

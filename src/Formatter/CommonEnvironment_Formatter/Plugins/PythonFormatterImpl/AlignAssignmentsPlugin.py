@@ -21,6 +21,7 @@ import CommonEnvironment
 from CommonEnvironment.BitFlagEnum import BitFlagEnum, auto
 from CommonEnvironment import Interface
 
+from PythonFormatterImpl.Impl.BlackImports import black, python_symbols              # <Unable to import> pylint: disable = E0401
 from PythonFormatterImpl.Impl.HorizontalAlignmentImpl import HorizontalAlignmentImpl # <Unable to import> pylint: disable = E0401
 
 # ----------------------------------------------------------------------
@@ -74,10 +75,6 @@ class Plugin(HorizontalAlignmentImpl):
         line,
         is_initial_line,                    # <Unused argument> pylint: disable = W0613
     ):
-        # Importing here to avoid errors on Python 2.7 (where black is not supported)
-        import black                                    # <Unable to import> pylint: disable = E0401
-        from blib2to3.pygram import python_symbols
-
         tokens = line.leaves
 
         assignment_index = self._GetRootTokenIndex(tokens, "=")
