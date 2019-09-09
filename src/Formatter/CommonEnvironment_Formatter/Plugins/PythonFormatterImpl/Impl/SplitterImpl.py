@@ -18,13 +18,13 @@
 import os
 import sys
 
-import black
-from blib2to3.pygram import python_symbols, token as python_tokens
 import six
 
 import CommonEnvironment
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import Interface
+
+from PythonFormatterImpl.Impl.BlackImports import *
 
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()
