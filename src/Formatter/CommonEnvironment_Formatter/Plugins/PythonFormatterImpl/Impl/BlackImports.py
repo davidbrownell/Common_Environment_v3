@@ -26,7 +26,11 @@ _script_fullpath                            = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name                   = os.path.split(_script_fullpath)
 #  ----------------------------------------------------------------------
 
-if sys.version_info[0] != 2:
+if sys.version_info[0] == 2:
+    black = None
+    python_symbols = None
+    python_tokens = None
+else:
     sys.path.insert(0, os.path.join(_script_dir, "black"))
     with CallOnExit(lambda: sys.path.pop(0)):
         from PythonFormatterImpl.Impl.black import black
