@@ -21,8 +21,8 @@ import CommonEnvironment
 from CommonEnvironment.BitFlagEnum import BitFlagEnum, auto
 from CommonEnvironment import Interface
 
-from PythonFormatterImpl.Impl.BlackImports import black, python_symbols                 # <Unable to import> pylint: disable = E0401
-from PythonFormatterImpl.Impl.HorizontalAlignmentImpl import HorizontalAlignmentImpl    # <Unable to import> pylint: disable = E0401
+from PythonFormatterImpl.Impl.BlackImports import black, python_symbols              # <Unable to import> pylint: disable = E0401
+from PythonFormatterImpl.Impl.HorizontalAlignmentImpl import HorizontalAlignmentImpl # <Unable to import> pylint: disable = E0401
 
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()
