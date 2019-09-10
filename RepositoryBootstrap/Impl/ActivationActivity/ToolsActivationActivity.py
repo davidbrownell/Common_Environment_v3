@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  ToolsActivationActivity.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-05-06 22:40:57
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-19.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Contains the ToolsActivationActivity object"""
 
@@ -37,17 +37,17 @@ IGNORE_AS_TOOL_DIR_FILENAME                 = "IgnoreAsTool"
 class ToolsActivationActivity(ActivationActivity):
 
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Public Properties
-    # |  
+    # |
     # ----------------------------------------------------------------------
     Name                                    = CommonEnvironmentImports.Interface.DerivedProperty("Tools")
     DelayExecute                            = CommonEnvironmentImports.Interface.DerivedProperty(False)
 
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Private Methods
-    # |  
+    # |
     # ----------------------------------------------------------------------
     @classmethod
     @CommonEnvironmentImports.Interface.override
@@ -85,7 +85,7 @@ class ToolsActivationActivity(ActivationActivity):
                     try:
                         fullpath = cls.GetVersionedDirectory(version_info, fullpath)
                         assert os.path.isdir(fullpath), fullpath
-                    
+
                     except Exception as ex:
                         dm.stream.write("WARNING: {}\n".format(str(ex)))
                         continue
@@ -124,6 +124,10 @@ class ToolsActivationActivity(ActivationActivity):
                     paths += existing_paths
 
         if paths:
+            # We want the most derived paths to appear before the more basic paths, so reverse
+            # this list.
+            paths.reverse()
+
             actions.append(CommonEnvironmentImports.CurrentShell.Commands.AugmentPath(paths))
 
         return actions
