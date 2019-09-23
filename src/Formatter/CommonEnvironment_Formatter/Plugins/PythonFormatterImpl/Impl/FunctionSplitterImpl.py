@@ -58,10 +58,7 @@ class FunctionSplitterImpl(SplitterImpl):
         for arg in args:
             if arg.value.startswith("*"):
                 return False
-            if arg.parent and arg.parent.type in [
-                python_symbols.comp_for,                # <No member> pylint: disable = E1101
-                python_symbols.old_comp_for,            # <No member> pylint: disable = E1101
-            ]:
+            if arg.parent and arg.parent.type == python_symbols.comp_for:   # <No member> pylint: disable = E1101
                 return False
 
         return True
