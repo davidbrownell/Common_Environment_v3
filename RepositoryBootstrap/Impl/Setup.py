@@ -64,7 +64,7 @@ _ScmConstraint                              = CommonEnvironmentImports.CommandLi
     arity="?",
 )
 
-_DEFAULT_SEARCH_DEPTH                       = 5
+_DEFAULT_SEARCH_DEPTH                       = 6
 
 # ----------------------------------------------------------------------
 @CommonEnvironmentImports.CommandLine.EntryPoint(
@@ -114,7 +114,7 @@ _DEFAULT_SEARCH_DEPTH                       = 5
         arity="?",
     ),
     required_ancestor_dir=CommonEnvironmentImports.CommandLine.DirectoryTypeInfo(
-        arity="?",
+        arity="*",
     ),
     output_stream=None,
 )
@@ -137,6 +137,9 @@ def Setup(
 
     configurations = configuration or []
     del configuration
+
+    required_ancestor_dirs = required_ancestor_dir
+    del required_ancestor_dir
 
     if debug:
         verbose = True
@@ -170,7 +173,7 @@ def Setup(
                     *args,
                     search_depth=search_depth,
                     max_num_searches=max_num_searches,
-                    required_ancestor_dir=required_ancestor_dir,
+                    required_ancestor_dirs=required_ancestor_dirs,
                     **kwargs
                 ),
                 _SetupCustom,
@@ -250,7 +253,7 @@ def Setup(
         arity="?",
     ),
     required_ancestor_dir=CommonEnvironmentImports.CommandLine.DirectoryTypeInfo(
-        arity="?",
+        arity="*",
     ),
     output_stream=None,
 )
@@ -269,6 +272,9 @@ def List(
     verbose=False,
 ):
     """Lists repository information"""
+
+    required_ancestor_dirs = required_ancestor_dir
+    del required_ancestor_dir
 
     scm = _ScmParameterToScm(scm, repository_root)
 
@@ -304,7 +310,7 @@ def List(
                 verbose,
                 search_depth=search_depth,
                 max_num_searches=max_num_searches,
-                required_ancestor_dir=required_ancestor_dir,
+                required_ancestor_dirs=required_ancestor_dirs,
             )
             if isinstance(repo_map, int):
                 output_stream.write(sink.getvalue())
@@ -360,7 +366,7 @@ def List(
             verbose,
             search_depth=search_depth,
             max_num_searches=max_num_searches,
-            required_ancestor_dir=required_ancestor_dir,
+            required_ancestor_dirs=required_ancestor_dirs,
             use_ascii=use_ascii,
         )
 
@@ -390,7 +396,9 @@ def List(
 )
 @CommonEnvironmentImports.CommandLine.Constraints(
     repository_root=CommonEnvironmentImports.CommandLine.DirectoryTypeInfo(),
-    repositories_root=CommonEnvironmentImports.CommandLine.DirectoryTypeInfo(),
+    repositories_root=CommonEnvironmentImports.CommandLine.DirectoryTypeInfo(
+        ensure_exists=False,
+    ),
     scm=_ScmConstraint,
     uri_dict=CommonEnvironmentImports.CommandLine.DictTypeInfo(
         require_exact_match=False,
@@ -423,15 +431,6 @@ def Enlist(
     verbose=False,
 ):
     """Enlists in provided repositories"""
-
-    if not repository_root.startswith(repositories_root):
-        output_stream.write(
-            "ERROR: The repository root '{}' does not begin with the repositories root '{}'.\n".format(
-                repository_root,
-                repositories_root,
-            ),
-        )
-        return -1
 
     scm = _ScmParameterToScm(scm, repository_root)
 
@@ -540,7 +539,8 @@ def Enlist(
             verbose,
             search_depth=search_depth,
             max_num_searches=max_num_searches,
-            required_ancestor_dir=repositories_root,
+            required_ancestor_dirs=[repository_root, repositories_root],
+            additional_repo_search_dirs=[repositories_root],
             use_ascii=use_ascii,
         )
 
@@ -734,7 +734,7 @@ def _SetupRecursive(
                                 if not configurations
                                 else " ".join(
                                     [
-                                        "/configuration_EQ_{}".format(configuration)
+                                        '"/configuration={}"'.format(configuration)
                                         for configuration in configurations
                                     ],
                                 ),
@@ -778,7 +778,7 @@ def _SetupBootstrap(
     explicit_configurations,
     search_depth=None,
     max_num_searches=None,
-    required_ancestor_dir=None,
+    required_ancestor_dirs=None,
 ):
     repo_data = _RepoData.Create(
         customization_mod,
@@ -910,7 +910,7 @@ def _SetupBootstrap(
         verbose=verbose,
         search_depth=search_depth,
         max_num_searches=max_num_searches,
-        required_ancestor_dir=required_ancestor_dir,
+        required_ancestor_dirs=required_ancestor_dirs,
         on_search_begin_func=InitialDisplay,
     )
 
@@ -927,8 +927,8 @@ def _SetupBootstrap(
                 increasing the directory search depth by providing the '/search_depth=<value>'
                 command line argument with a value greater than '{search_depth}'.
 
-                These command line arguments can be used to limit the number of directories
-                queried when searching for dependencies:
+                Any or all of these command line arguments can be used to limit the number
+                of directories queried when searching for dependencies:
 
                     /max_num_searches=<value>
                     /required_ancestor_dir=<value>
@@ -1331,8 +1331,9 @@ class _RepositoriesMap(OrderedDict):
         verbose,
         search_depth=None,
         max_num_searches=None,
-        required_ancestor_dir=None,
+        required_ancestor_dirs=None,
         on_search_begin_func=None,          # def Func(self)
+        additional_search_dirs=None,
     ):
         self = cls()
         repo_cache = {}
@@ -1443,55 +1444,61 @@ class _RepositoriesMap(OrderedDict):
             with output_stream.DoneManager(
                 suffix="\n\n",
             ) as dm:
-                for enum_result in cls._Enumerate(
-                    repository_root,
-                    CommonEnvironmentImports.StreamDecorator(
-                        dm.stream if verbose else None,
-                    ),
-                    search_depth=search_depth,
-                    max_num_searches=max_num_searches,
-                    required_ancestor_dir=required_ancestor_dir,
-                ):
-                    if enum_result.Id not in self:
-                        if enum_result.Id not in repo_cache:
-                            repo_cache[enum_result.Id] = enum_result
+                search_dirs = [repository_root]
 
-                        continue
+                if additional_search_dirs:
+                    search_dirs += additional_search_dirs
 
-                    value = self[enum_result.Id]
+                for search_dir in search_dirs:
+                    for enum_result in cls._Enumerate(
+                        search_dir,
+                        CommonEnvironmentImports.StreamDecorator(
+                            dm.stream if verbose else None,
+                        ),
+                        search_depth=search_depth,
+                        max_num_searches=max_num_searches,
+                        required_ancestor_dirs=required_ancestor_dirs,
+                    ):
+                        if enum_result.Id not in self:
+                            if enum_result.Id not in repo_cache:
+                                repo_cache[enum_result.Id] = enum_result
 
-                    # Note that we may already have a root associated with this repo.
-                    # This can happen when the repo has already been found in a location
-                    # nearer to the repository_root and the search has continued to find
-                    # other repositories.
-                    if value.root is not None:
-                        continue
+                            continue
 
-                    enum_repo_data = CreateRepoData(enum_result.Root)
+                        value = self[enum_result.Id]
 
-                    if value.Name != enum_result.Name:
-                        warnings.append((enum_result.Name, value.Name, value.Source))
+                        # Note that we may already have a root associated with this repo.
+                        # This can happen when the repo has already been found in a location
+                        # nearer to the repository_root and the search has continued to find
+                        # other repositories.
+                        if value.root is not None:
+                            continue
 
-                    value.Name = enum_result.Name
+                        enum_repo_data = CreateRepoData(enum_result.Root)
 
-                    value.root = enum_result.Root
-                    value.configurations = list(
-                        six.iterkeys(enum_repo_data.Configurations),
-                    )
+                        if value.Name != enum_result.Name:
+                            warnings.append((enum_result.Name, value.Name, value.Source))
 
-                    if recurse:
-                        AddRepo(
-                            enum_result.Name,
-                            enum_result.Id,
-                            enum_result.Root,
-                            enum_repo_data,
+                        value.Name = enum_result.Name
+
+                        value.root = enum_result.Root
+                        value.configurations = list(
+                            six.iterkeys(enum_repo_data.Configurations),
                         )
 
-                    assert nonlocals.remaining_repos
-                    nonlocals.remaining_repos -= 1
+                        if recurse:
+                            AddRepo(
+                                enum_result.Name,
+                                enum_result.Id,
+                                enum_result.Root,
+                                enum_repo_data,
+                            )
 
-                    if nonlocals.remaining_repos == 0:
-                        break
+                        assert nonlocals.remaining_repos
+                        nonlocals.remaining_repos -= 1
+
+                        if nonlocals.remaining_repos == 0:
+                            break
 
             if warnings:
                 output_stream.write(
@@ -1579,20 +1586,20 @@ class _RepositoriesMap(OrderedDict):
         verbose_stream,
         search_depth=None,
         max_num_searches=None,
-        required_ancestor_dir=None,
+        required_ancestor_dirs=None,
     ):
         search_depth = search_depth or _DEFAULT_SEARCH_DEPTH
 
-        assert required_ancestor_dir is None or repository_root.startswith(
-            required_ancestor_dir,
-        ), (required_ancestor_dir, repository_root)
+        assert not required_ancestor_dirs or any(
+            repository_root.startswith(required_ancestor_dir)
+            for required_ancestor_dir in required_ancestor_dirs
+        ), (required_ancestor_dirs, repository_root)
 
         # Augment the search depth to account for the provided root
         search_depth += repository_root.count(os.path.sep)
         if CommonEnvironmentImports.CurrentShell.CategoryName == "Windows":
             # Don't count the slash associated with the drive name
             assert search_depth
-            search_depth -= 1
 
             # ----------------------------------------------------------------------
             def ItemPreprocessor(item):
@@ -1611,16 +1618,22 @@ class _RepositoriesMap(OrderedDict):
 
             # ----------------------------------------------------------------------
 
-        if required_ancestor_dir:
-            required_ancestor_dir = ItemPreprocessor(
-                CommonEnvironmentImports.FileSystem.RemoveTrailingSep(
-                    required_ancestor_dir,
-                ),
-            )
+        if required_ancestor_dirs:
+            required_ancestor_dirs = [
+                ItemPreprocessor(
+                    CommonEnvironmentImports.FileSystem.RemoveTrailingSep(
+                        required_ancestor_dir,
+                    ),
+                )
+                for required_ancestor_dir in required_ancestor_dirs
+            ]
 
             # ----------------------------------------------------------------------
             def IsValidAncestor(fullpath):
-                return fullpath.startswith(required_ancestor_dir)
+                return any(
+                    fullpath.startswith(required_ancestor_dir)
+                    for required_ancestor_dir in required_ancestor_dirs
+                )
 
             # ----------------------------------------------------------------------
         else:
@@ -1750,7 +1763,7 @@ class _RepositoriesMap(OrderedDict):
                 for result in Impl(True):
                     yield result
 
-                if not required_ancestor_dir:
+                if not required_ancestor_dirs:
                     # If here, look at other drive locations
                     import win32api
                     import win32file
@@ -1823,7 +1836,8 @@ def _CreateRepoMap(
     verbose,
     search_depth=None,
     max_num_searches=None,
-    required_ancestor_dir=None,
+    required_ancestor_dirs=None,
+    additional_repo_search_dirs=None,
 ):
     customization_mod = _GetCustomizationMod(repository_root)
     if customization_mod is None:
@@ -1843,7 +1857,8 @@ def _CreateRepoMap(
         verbose,
         search_depth=search_depth,
         max_num_searches=max_num_searches,
-        required_ancestor_dir=required_ancestor_dir,
+        required_ancestor_dirs=required_ancestor_dirs,
+        additional_search_dirs=additional_repo_search_dirs,
     )
 
 # ----------------------------------------------------------------------
@@ -1857,8 +1872,9 @@ def _SimpleFuncImpl(
     verbose,
     search_depth=None,
     max_num_searches=None,
-    required_ancestor_dir=None,
+    required_ancestor_dirs=None,
     use_ascii=False,
+    additional_repo_search_dirs=None,
 ):
     """Scaffolding the creates a repo map, displays it, and invokes the provided callback within a command line context"""
 
@@ -1876,7 +1892,8 @@ def _SimpleFuncImpl(
             verbose,
             search_depth=search_depth,
             max_num_searches=max_num_searches,
-            required_ancestor_dir=required_ancestor_dir,
+            required_ancestor_dirs=required_ancestor_dirs,
+            additional_repo_search_dirs=additional_repo_search_dirs,
         )
         if isinstance(repo_map, int):
             return repo_map
