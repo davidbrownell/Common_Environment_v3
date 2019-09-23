@@ -20,6 +20,7 @@ import os
 import CommonEnvironment
 from CommonEnvironment import Interface
 
+from PythonFormatterImpl.Impl.BlackImports import python_symbols            # <Unable to import> pylint: disable = E0401
 from PythonFormatterImpl.Impl.SplitterImpl import SplitterImpl
 
 # ----------------------------------------------------------------------
@@ -56,6 +57,11 @@ class FunctionSplitterImpl(SplitterImpl):
     def _InsertTrailingComma(args):
         for arg in args:
             if arg.value.startswith("*"):
+                return False
+            if arg.parent and arg.parent.type in [
+                python_symbols.comp_for,                # <No member> pylint: disable = E1101
+                python_symbols.old_comp_for,            # <No member> pylint: disable = E1101
+            ]:
                 return False
 
         return True
