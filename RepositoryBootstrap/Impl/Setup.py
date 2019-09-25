@@ -733,7 +733,7 @@ def _SetupRecursive(
                     else:
                         configurations = [
                             configuration
-                            for configuration in six.iterkeys(value.dependents)
+                            for configuration in value.configurations
                             if configuration is not None
                         ]
 
@@ -1272,6 +1272,18 @@ class _RepoData(object):
                         if config_name not in supported_configurations:
                             del configurations[config_name]
 
+                    if not configurations:
+                        raise Exception(
+                            "No configurations were found matching {}".format(
+                                ", ".join(
+                                    [
+                                        '"{}"'.format(supported_configuration)
+                                        for supported_configuration in supported_configurations
+                                    ],
+                                ),
+                            ),
+                        )
+
                 return cls(
                     configurations,
                     bool(supported_configurations),
@@ -1341,6 +1353,7 @@ class _RepositoriesMap(OrderedDict):
         recurse,
         output_stream,
         verbose,
+        supported_configurations=None,
         search_depth=None,
         max_num_searches=None,
         required_ancestor_dirs=None,
@@ -1548,11 +1561,11 @@ class _RepositoriesMap(OrderedDict):
 
         # The map now has every possible dependency, regardless of what configurations were specified.
         # Walk the actual roots and configurations and remove any repo that cannot be accessed.
-        visited = set()
+        visited = {}
 
         # ----------------------------------------------------------------------
         def Traverse(value, config_name):
-            visited.add(value.Id)
+            visited.setdefault(value.Id, set()).add(config_name)
 
             if value.root and config_name not in value.configurations:
                 raise Exception(
@@ -1575,13 +1588,39 @@ class _RepositoriesMap(OrderedDict):
         # ----------------------------------------------------------------------
 
         for root in [value for value in six.itervalues(self) if not value.dependents]:
-            for config_name in six.iterkeys(root.dependencies):
+            assert root.configurations, root
+
+            for config_name in root.configurations:
+                if (
+                    root.root == repository_root
+                    and supported_configurations
+                    and config_name not in supported_configurations
+                ):
+                    continue
+
                 Traverse(root, config_name)
 
         # Remove values that were not visited
         for id in list(six.iterkeys(self)):
             if id not in visited:
                 del self[id]
+                continue
+
+            # Remove configurations that are not used
+            if not supported_configurations:
+                continue
+
+            value = self[id]
+            visited_configurations = visited[id]
+
+            config_index = 0
+            while config_index < len(value.configurations):
+                config_name = value.configurations[config_index]
+
+                if config_name not in visited_configurations:
+                    del value.configurations[config_index]
+                else:
+                    config_index += 1
 
         return self
 
@@ -1867,6 +1906,7 @@ def _CreateRepoMap(
         recurse,
         output_stream,
         verbose,
+        supported_configurations=supported_configurations,
         search_depth=search_depth,
         max_num_searches=max_num_searches,
         required_ancestor_dirs=required_ancestor_dirs,
