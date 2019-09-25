@@ -692,9 +692,19 @@ def _SetupRecursive(
                 verbose="" if not verbose else " /verbose",
             )
 
-            setup_error_variable_name = "_setup_error"
+            fundamental_root_dir = CommonEnvironmentImports.FileSystem.RemoveTrailingSep(
+                os.getenv(Constants.DE_FUNDAMENTAL_ROOT_NAME),
+            )
 
-            values = [value for value in six.itervalues(repo_map) if value.root]
+            # Get all repos other than the fundamental repo (as this will already be
+            # setup and activated when this functionality is invoked).
+            values = [
+                value
+                for value in six.itervalues(repo_map)
+                if (value.root and value.root != fundamental_root_dir)
+            ]
+
+            setup_error_variable_name = "_setup_error"
 
             for index, value in enumerate(values):
                 dm.stream.write(
@@ -716,7 +726,9 @@ def _SetupRecursive(
 
                         continue
 
-                    if all_configurations:
+                    if value.root == repository_root:
+                        configurations = explicit_configurations
+                    elif all_configurations:
                         configurations = []
                     else:
                         configurations = [
