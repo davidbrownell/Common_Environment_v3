@@ -25,7 +25,7 @@ then
     echo "This script bootstraps common library enlistment and setup."
     echo ""
     echo "    Usage:"
-    echo "        $0 <common code dir>"
+    echo "        $0 <common code dir> [/name=<custom environment name>]"
     echo ""
 
     should_continue=0
