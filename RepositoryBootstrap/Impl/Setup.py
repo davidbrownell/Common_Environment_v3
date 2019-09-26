@@ -393,6 +393,9 @@ def List(
     max_num_searches=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter(
         "Limit the number of directories searched when looking for dependencies; this value can be used to reduce the overall time it takes to search for dependencies that ultimately can't be found",
     ),
+    required_ancestor_dir=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter(
+        "When searching for dependencies, limit the search to directories that are descendants of this ancestor",
+    ),
 )
 @CommonEnvironmentImports.CommandLine.Constraints(
     repository_root=CommonEnvironmentImports.CommandLine.DirectoryTypeInfo(),
@@ -415,6 +418,9 @@ def List(
         min=1,
         arity="?",
     ),
+    required_ancestor_dir=CommonEnvironmentImports.CommandLine.DirectoryTypeInfo(
+        arity="*",
+    ),
     output_stream=None,
 )
 def Enlist(
@@ -426,11 +432,20 @@ def Enlist(
     configuration=None,
     search_depth=None,
     max_num_searches=None,
+    required_ancestor_dir=None,
     use_ascii=False,
     output_stream=sys.stdout,
     verbose=False,
 ):
     """Enlists in provided repositories"""
+
+    required_ancestor_dirs = required_ancestor_dir
+    del required_ancestor_dir
+
+    if repository_root not in required_ancestor_dirs:
+        required_ancestor_dirs.append(repository_root)
+    if repositories_root not in required_ancestor_dir:
+        required_ancestor_dirs.append(repositories_root)
 
     scm = _ScmParameterToScm(scm, repository_root)
 
@@ -539,7 +554,7 @@ def Enlist(
             verbose,
             search_depth=search_depth,
             max_num_searches=max_num_searches,
-            required_ancestor_dirs=[repository_root, repositories_root],
+            required_ancestor_dirs=required_ancestor_dirs,
             additional_repo_search_dirs=[repositories_root],
             use_ascii=use_ascii,
         )
