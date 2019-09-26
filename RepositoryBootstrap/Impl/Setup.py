@@ -444,7 +444,7 @@ def Enlist(
 
     if repository_root not in required_ancestor_dirs:
         required_ancestor_dirs.append(repository_root)
-    if repositories_root not in required_ancestor_dir:
+    if repositories_root not in required_ancestor_dirs:
         required_ancestor_dirs.append(repositories_root)
 
     scm = _ScmParameterToScm(scm, repository_root)
