@@ -726,10 +726,10 @@ def _SetupRecursive(
 
                         continue
 
-                    if value.root == repository_root:
-                        configurations = explicit_configurations
-                    elif all_configurations:
+                    if all_configurations:
                         configurations = []
+                    elif value.root == repository_root:
+                        configurations = explicit_configurations
                     else:
                         configurations = [
                             configuration
@@ -1560,7 +1560,7 @@ class _RepositoriesMap(OrderedDict):
                 )
 
         # The map now has every possible dependency, regardless of what configurations were specified.
-        # Walk the actual roots and configurations and remove any repo that cannot be accessed.
+        # Walk the actual roots and configurations and mark every repo that is used.
         visited = {}
 
         # ----------------------------------------------------------------------
@@ -1587,18 +1587,51 @@ class _RepositoriesMap(OrderedDict):
 
         # ----------------------------------------------------------------------
 
-        for root in [value for value in six.itervalues(self) if not value.dependents]:
-            assert root.configurations, root
+        roots = [value for value in six.itervalues(self) if not value.dependents]
 
-            for config_name in root.configurations:
+        for value in roots:
+            if value.root != repository_root:
+                continue
+
+            for config_name in value.configurations:
                 if (
-                    root.root == repository_root
-                    and supported_configurations
+                    supported_configurations
                     and config_name not in supported_configurations
                 ):
                     continue
 
-                Traverse(root, config_name)
+                Traverse(value, config_name)
+
+        # Now that each repo and configuration has been marked, remove those
+        # that are never used.
+
+        # ----------------------------------------------------------------------
+        def RemoveConfiguration(value, config_name):
+            assert config_name in value.dependencies
+            for dependency_id, dependency_config in value.dependencies[config_name]:
+                assert dependency_id in self, dependency_id
+                dependency_value = self[dependency_id]
+
+                assert dependency_config in dependency_value.dependents, dependency_config
+                for dependent_index, (dependent_id, dependent_config) in enumerate(
+                    dependency_value.dependents[dependency_config],
+                ):
+                    if dependent_id == value.Id and dependent_config == config_name:
+                        del dependency_value.dependents[dependency_config][
+                            dependent_index
+                        ]
+                        break
+
+                if not dependency_value.dependents[dependency_config]:
+                    RemoveConfiguration(dependency_value, dependency_config)
+
+            del value.dependencies[config_name]
+            value.configurations.remove(config_name)
+
+            if not value.configurations:
+                del self[value.Id]
+
+        # ----------------------------------------------------------------------
 
         # Remove values that were not visited
         for id in list(six.iterkeys(self)):
@@ -1606,21 +1639,50 @@ class _RepositoriesMap(OrderedDict):
                 del self[id]
                 continue
 
-            # Remove configurations that are not used
             if not supported_configurations:
                 continue
 
             value = self[id]
-            visited_configurations = visited[id]
+            if value.root == repository_root:
+                continue
 
             config_index = 0
             while config_index < len(value.configurations):
                 config_name = value.configurations[config_index]
 
-                if config_name not in visited_configurations:
+                delete_config = False
+
+                if config_name in value.dependents:
+                    dependent_index = 0
+                    while dependent_index < len(value.dependents[config_name]):
+                        dependent_id, dependent_configuration = value.dependents[
+                            config_name
+                        ][dependent_index]
+
+                        if (
+                            dependent_id not in visited
+                            or dependent_configuration not in visited[dependent_id]
+                        ):
+                            del value.dependents[config_name][dependent_index]
+                        else:
+                            dependent_index += 1
+
+                    if not value.dependents[config_name]:
+                        delete_config = True
+
+                if config_name not in visited[id]:
+                    delete_config = True
+
+                if delete_config:
                     del value.configurations[config_index]
+
+                    value.dependencies.pop(config_name, None)
+                    value.dependents.pop(config_name, None)
                 else:
                     config_index += 1
+
+            if not value.configurations:
+                del self[id]
 
         return self
 
