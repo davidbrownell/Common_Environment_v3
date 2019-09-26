@@ -14,10 +14,12 @@
 # ----------------------------------------------------------------------
 """Contains the GitSourceControlManagement object"""
 
+from contextlib import contextmanager
 import os
 import re
 import sys
 import textwrap
+import threading
 
 import six
 
@@ -72,15 +74,52 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
         strip=False,
         newline=False,
     ):
-        command = command.replace("git ", 'git -C "{}" '.format(repo_root))
+        # Determine if this version of git supports '-C'
+        execute_generator = getattr(cls, "_execute_generator", None)
+        if execute_generator is None:
+            _, output = Process.Execute('git -C "{}" --version'.format(repo_root))
 
-        if cls.Diagnostics:
-            sys.stdout.write("VERBOSE: {}\n".format(command))
+            if "Unknown option: -C" in output:
+                execute_generator_lock = threading.Lock()
 
-        result, content = Process.Execute(
-            command,
-            environment=os.environ,
-        )
+                # ----------------------------------------------------------------------
+                @contextmanager
+                def ExecuteGenerator(repo_root, command):
+                    with execute_generator_lock:
+                        prev_dir = os.getcwd()
+
+                        os.chdir(repo_root)
+
+                        try:
+                            yield command
+                        except:
+                            raise
+                        finally:
+                            os.chdir(prev_dir)
+
+                # ----------------------------------------------------------------------
+
+            else:
+                # ----------------------------------------------------------------------
+                @contextmanager
+                def ExecuteGenerator(repo_root, command):
+                    yield command.replace("git ", 'git -C "{}" '.format(repo_root))
+
+                # ----------------------------------------------------------------------
+
+            execute_generator = ExecuteGenerator
+
+            # Cache the value
+            setattr(cls, "_execute_generator", execute_generator)
+
+        with execute_generator(repo_root, command) as command:
+            if cls.Diagnostics:
+                sys.stdout.write("VERBOSE: {}\n".format(command))
+
+            result, content = Process.Execute(
+                command,
+                environment=os.environ,
+            )
 
         if strip:
             content = content.strip()
@@ -329,6 +368,49 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
     @override
     def SetBranch(cls, repo_root, branch_name):
         return cls.Execute(repo_root, 'git checkout "{}"'.format(branch_name))
+
+    # ----------------------------------------------------------------------
+    @classmethod
+    @override
+    def GetExecutePermission(cls, repo_root, filename):
+        result, output = cls.Execute(repo_root, 'git ls-files -s "{}"'.format(filename))
+        assert result == 0, (result, output)
+
+        # The first N chars are digits
+        output = output.strip()
+
+        index = 0
+        while index < len(output) and str.isdigit(output[index]):
+            index += 1
+
+        assert index != 0, output
+
+        digits = int(output[:index])
+
+        # The last 3 digits are the permissions
+        digits %= 1000
+
+        # The hundreds place is the permission
+        digits = int(digits / 100)
+
+        if digits == 6:
+            return False
+        if digits == 7:
+            return True
+
+        assert False, (digits, output)
+
+    # ----------------------------------------------------------------------
+    @classmethod
+    @override
+    def SetExecutePermission(cls, repo_root, filename, is_executable):
+        return cls.Execute(
+            repo_root,
+            'git update-index --chmod={sign}x "{filename}"'.format(
+                sign="+" if is_executable else "-",
+                filename=filename,
+            ),
+        )
 
     # ----------------------------------------------------------------------
     @classmethod

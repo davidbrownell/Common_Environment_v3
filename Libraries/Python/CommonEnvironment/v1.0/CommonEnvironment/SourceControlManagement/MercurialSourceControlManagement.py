@@ -303,6 +303,20 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
     # ----------------------------------------------------------------------
     @classmethod
     @override
+    def GetExecutePermission(cls, repo_root, filename):
+        # TODO
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    @classmethod
+    @override
+    def SetExecutePermission(cls, repo_root, filename, is_executable):
+        # TODO
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    @classmethod
+    @override
     def HasUntrackedWorkingChanges(cls, repo_root):
         result, output = cls.Execute(repo_root, "hg status")
 
@@ -816,8 +830,8 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
                 "Change not found ({branch}, {date})\n{errors}".format(
                     branch=branch,
                     date=date,
-                    errors="\n\n".join(["{}\n{}".format(k, v) for k, v in six.iteritems(errors)])
-                )
+                    errors="\n\n".join(["{}\n{}".format(k, v) for k, v in six.iteritems(errors)]),
+                ),
             )
 
         # ----------------------------------------------------------------------
