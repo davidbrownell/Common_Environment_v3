@@ -1,17 +1,17 @@
 #!/bin/bash
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Activate.sh
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-05-11 16:53:08
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-19.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 set +v                                      # Disable output
 
@@ -109,7 +109,7 @@ then
     echo ""
     echo "       [DEVELOPMENT_ENVIRONMENT_REPOSITORY is already defined as \"${DEVELOPMENT_ENVIRONMENT_REPOSITORY}\"]"
     echo ""
-    
+
     should_continue=0
 fi
 
@@ -121,7 +121,7 @@ then
     echo "ERROR: A mixin repository cannot be activated in isolation. Activate another repository before activating this one."
     echo ""
     echo ""
-    
+
     should_continue=0
 fi
 
@@ -141,11 +141,11 @@ then
             ${python_binary} -m RepositoryBootstrap.Impl.Activate ListConfigurations `pwd` command_line
             echo ""
             echo ""
-            
+
             should_continue=0
-            
+
         fi
-        
+
         if [[ "${DEVELOPMENT_ENVIRONMENT_REPOSITORY_CONFIGURATION}" != "" && "${DEVELOPMENT_ENVIRONMENT_REPOSITORY_CONFIGURATION}" != "$1" ]]
         then
             echo ""
@@ -153,10 +153,10 @@ then
             echo ""
             echo "       ["${DEVELOPMENT_ENVIRONMENT_REPOSITORY_CONFIGURATION}" != "$1"]"
             echo ""
-            
+
             should_continue=0
         fi
-    
+
         configuration=$1
         shift 1
     else
@@ -168,8 +168,8 @@ fi
 if [[ ${should_continue} == 1 ]]
 then
     temp_script_name=`mktemp`
-    rm ${temp_script_name}
-    
+    [[ ! -e ${temp_script_name} ]] || rm "${temp_script_name}"
+
     ${python_binary} -m RepositoryBootstrap.Impl.Activate Activate ${temp_script_name} "`pwd`" ${configuration} "$@"
     generation_error=$?
 
@@ -179,7 +179,7 @@ then
         source ${temp_script_name}
     fi
     execution_error=$?
-    
+
     if [[ ${generation_error} != 0 ]]
     then
         echo ""
@@ -187,9 +187,9 @@ then
         echo ""
         echo "       [${DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL}/RepositoryBootstrap/Impl/Activate.py failed]"
         echo ""
-        
+
         should_continue=0
-        
+
     elif [[ ${execution_error} != 0 ]]
     then
         echo ""
@@ -197,7 +197,7 @@ then
         echo ""
         echo "       [${temp_script_name} failed]"
         echo ""
-        
+
         should_continue=0
     fi
 fi
