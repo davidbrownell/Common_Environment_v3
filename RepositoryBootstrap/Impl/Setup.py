@@ -1636,13 +1636,20 @@ class _RepositoriesMap(OrderedDict):
         # Remove values that were not visited
         for id in list(six.iterkeys(self)):
             if id not in visited:
-                del self[id]
+                # Don't remove values for repos that weren't found
+                if self[id].root is not None:
+                    del self[id]
+
                 continue
 
             if not supported_configurations:
                 continue
 
             value = self[id]
+
+            if value.root is None:
+                continue
+
             if value.root == repository_root:
                 continue
 
