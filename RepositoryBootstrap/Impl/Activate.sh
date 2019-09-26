@@ -168,7 +168,7 @@ fi
 if [[ ${should_continue} == 1 ]]
 then
     temp_script_name=`mktemp`
-    [[ ! -e ${temp_script_name} ]] || rm "${temp_script_name}"
+    [[ ! -e ${temp_script_name} ]] || rm -f "${temp_script_name}"
 
     ${python_binary} -m RepositoryBootstrap.Impl.Activate Activate ${temp_script_name} "`pwd`" ${configuration} "$@"
     generation_error=$?
