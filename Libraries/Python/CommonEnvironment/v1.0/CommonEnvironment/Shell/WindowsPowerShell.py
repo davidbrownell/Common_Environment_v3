@@ -97,7 +97,7 @@ class WindowsPowerShell(WindowsShell):
         @classmethod
         @override
         def OnAugmentPath(cls, command, *args, **kwargs):
-            return cls.OnAugment(Augment("PATH", command.Values))
+            return cls.OnAugment(command)
 
         # ----------------------------------------------------------------------
         @staticmethod
@@ -116,29 +116,7 @@ class WindowsPowerShell(WindowsShell):
         @classmethod
         @override
         def OnAugment(cls, command, *args, **kwargs):
-            if not command.Values:
-                return None
-
-            if command.IsSpaceDelimitedString:
-                new_values = " ".join(command.Values)
-                sep = " "
-            else:
-                new_values = os.pathsep.join(command.Values)
-                sep = ";"
-
-            has_old_values = bool(os.getenv(command.Name))
-
-            if has_old_values:
-                new_values += sep
-                old_values = " + $env:{}".format(command.Name)
-            else:
-                old_values = ""
-
-            return '$env:{name}="{new_values}"{old_values}'.format(
-                name=command.Name,
-                new_values=new_values,
-                old_values=old_values,
-            )
+            raise Exception("Augmentation has not been implemented for PowerShell")
 
         # ----------------------------------------------------------------------
         @staticmethod

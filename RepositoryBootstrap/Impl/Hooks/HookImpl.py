@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  HookImpl.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-06-04 07:58:48
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-19.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Implements functionality common to all hooks"""
 
@@ -28,7 +28,7 @@ sys.path.pop(0)
 # ----------------------------------------------------------------------
 def Invoke(repo_root, output_stream, method, json_content, is_debug):
     fundamental_root = _GetFundamentalRepository()
-    
+
     # Imports here can be tricky
     try:
         sys.path.insert(0, fundamental_root)
@@ -79,7 +79,7 @@ def Invoke(repo_root, output_stream, method, json_content, is_debug):
         assert result == 0, output
 
         data = json.loads(output, object_pairs_hook=OrderedDict)
-    
+
         configurations = list(data.keys())
         if not configurations:
             configurations = [ None, ]
@@ -136,7 +136,7 @@ def Invoke(repo_root, output_stream, method, json_content, is_debug):
                                      CommonEnvironmentImports.CurrentShell.Commands.Raw('cd "{}"'.format(os.path.dirname(activation_script))),
                                      CommonEnvironmentImports.CurrentShell.Commands.Call("{} {} /fast".format(os.path.basename(activation_script), configuration if configuration else '')),
                                      CommonEnvironmentImports.CurrentShell.Commands.ExitOnError(-1),
-                                     CommonEnvironmentImports.CurrentShell.Commands.Augment("PYTHONPATH", fundamental_root, update_memory=False),
+                                     CommonEnvironmentImports.CurrentShell.Commands.Augment("PYTHONPATH", fundamental_root),
                                      CommonEnvironmentImports.CurrentShell.Commands.PushDirectory(repo_root),
                                      CommonEnvironmentImports.CurrentShell.Commands.Raw('python -m RepositoryBootstrap.Impl.Hooks.HookScript "{method}" "{sentinel}" "{json_filename}" "{result_filename}"{first}' \
                                                                                             .format( method=method,

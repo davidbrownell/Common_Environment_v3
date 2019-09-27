@@ -111,22 +111,9 @@ class SymbolicLink(object):
 class Set(object):
     """Sets an environment variable within a generated script"""
 
-    def __init__(
-        self,
-        name,
-        value_or_values,
-        update_memory=False,
-    ):
+    def __init__(self, name, value_or_values):
         self.Name                           = name
         self.Values                         = value_or_values if isinstance(value_or_values, list) else [value_or_values] if value_or_values is not None else None
-
-        if update_memory:
-            if self.Values is None:
-                os.environ.pop(self.Name, None)
-            else:
-                from CommonEnvironment.Shell.All import CurrentShell
-
-                os.environ[self.Name] = os.pathsep.join(self.Values)        # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
 
     # ----------------------------------------------------------------------
     def __repr__(self):
@@ -141,32 +128,16 @@ class Augment(object):
         self,
         name,
         value_or_values,
-        update_memory=True,                 # TODO: Remove this
         is_space_delimited_string=False,
+        append_values=False,
     ):
-        if is_space_delimited_string:
-            splitter = " "
-        else:
-            splitter = os.pathsep
-
-        original_values = [item.strip() for item in os.getenv(name, "").split(splitter) if item.strip()]
-        existing_values = set(original_values)
-
         if not isinstance(value_or_values, list):
             value_or_values = [value_or_values]
 
-        values = []
-
-        for value in value_or_values:
-            if value not in existing_values:
-                values.append(value)
-
         self.Name                           = name
-        self.Values                         = values
+        self.Values                         = value_or_values
         self.IsSpaceDelimitedString         = is_space_delimited_string
-
-        if update_memory:
-            os.environ[self.Name] = "{}{}{}".format(splitter.join(self.Values), splitter if self.Values and original_values else "", splitter.join(original_values))
+        self.AppendValues                   = append_values
 
     # ----------------------------------------------------------------------
     def __repr__(self):
@@ -177,16 +148,8 @@ class Augment(object):
 class Path(Set):
     """Adds items to the system path within a generated script"""
 
-    def __init__(
-        self,
-        value_or_values,
-        update_memory=False,
-    ):
-        super(Path, self).__init__(
-            "PATH",
-            value_or_values,
-            update_memory=update_memory,
-        )
+    def __init__(self, value_or_values):
+        super(Path, self).__init__("PATH", value_or_values)
 
     # ----------------------------------------------------------------------
     def __repr__(self):
@@ -197,16 +160,8 @@ class Path(Set):
 class AugmentPath(Augment):
     """Adds items to the system path within a generated script if they don't already exist"""
 
-    def __init__(
-        self,
-        value_or_values,
-        update_memory=False,
-    ):
-        super(AugmentPath, self).__init__(
-            "PATH",
-            value_or_values,
-            update_memory=update_memory,
-        )
+    def __init__(self, value_or_values):
+        super(AugmentPath, self).__init__("PATH", value_or_values)
 
     # ----------------------------------------------------------------------
     def __repr__(self):

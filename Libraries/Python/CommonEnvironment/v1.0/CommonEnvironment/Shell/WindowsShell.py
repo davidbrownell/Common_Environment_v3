@@ -17,6 +17,7 @@
 import os
 import sys
 import textwrap
+import uuid
 
 from collections import OrderedDict
 
@@ -139,7 +140,7 @@ class WindowsShell(Shell):
         @classmethod
         @override
         def OnAugmentPath(cls, command):
-            return cls.OnAugment(Augment("PATH", command.Values))
+            return cls.OnAugment(command)
 
         # ----------------------------------------------------------------------
         @staticmethod
@@ -148,31 +149,50 @@ class WindowsShell(Shell):
             if command.Values is None:
                 return "SET {}=".format(command.Name)
 
-            assert command.Values
-
             return "SET {}={}".format(command.Name, os.pathsep.join(command.Values)) # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
 
         # ----------------------------------------------------------------------
         @classmethod
         @override
         def OnAugment(cls, command):
-            if not command.Values:
-                return None
+            statements = []
 
             if command.IsSpaceDelimitedString:
-                new_values = " ".join(command.Values)
                 sep = " "
             else:
-                new_values = os.pathsep.join(command.Values)
-                sep = ";"
+                sep = os.pathsep
 
-            has_old_values = bool(os.getenv(command.Name))
+            if command.AppendValues:
+                add_statement_template = "%{name}%{sep}{value}"
+            else:
+                add_statement_template = "{value}{sep}%{name}%"
 
-            return "SET {name}={new_values}{old_values}".format(
-                name=command.Name,
-                new_values=new_values,
-                old_values="{}%{}%".format(sep, command.Name) if has_old_values else "",
-            )
+            statements = [
+                textwrap.dedent(
+                    """\
+                    IF "%{name}%"=="" goto set_{unique_id}
+                    IF "{sep}%{name}:{value}=%{sep}" NEQ "{sep}%{name}%{sep}" goto skip_{unique_id}
+
+                    :set_{unique_id}
+                    set {name}={add_statement}
+
+                    :skip_{unique_id}
+
+                    """,
+                ).format(
+                    name=command.Name,
+                    value=value,
+                    sep=sep,
+                    unique_id=str(uuid.uuid4()).replace("-", ""),
+                    add_statement=add_statement_template.format(
+                        name=command.Name,
+                        value=value,
+                        sep=sep,
+                    ),
+                ) for value in command.Values
+            ]
+
+            return "\n".join(statements)
 
         # ----------------------------------------------------------------------
         @staticmethod
