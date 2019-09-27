@@ -1,10 +1,10 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  WindowsPowerShell.py
-# |  
+# |
 # |  Michael Sharp <ms@MichaelGSharp.com>
 # |      2018-06-07 16:38:31
-# |  
+# |
 # ----------------------------------------------------------------------
 
 """Contains the WindowsPowerShell object."""
@@ -20,8 +20,8 @@ from CommonEnvironment.Shell.Commands import Augment, Set
 from CommonEnvironment.Shell.WindowsShell import WindowsShell
 
 # ----------------------------------------------------------------------
-_script_fullpath = CommonEnvironment.ThisFullpath()
-_script_dir, _script_name = os.path.split(_script_fullpath)
+_script_fullpath                            = CommonEnvironment.ThisFullpath()
+_script_dir, _script_name                   = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 # ----------------------------------------------------------------------
@@ -29,9 +29,9 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 class WindowsPowerShell(WindowsShell):
 
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Public Types
-    # |  
+    # |
     # ----------------------------------------------------------------------
 
     # Powershell will be used in Windows environment when this environment variable is set to "1"
@@ -55,16 +55,12 @@ class WindowsPowerShell(WindowsShell):
         def OnMessage(command, *args, **kwargs):
             output = []
 
-            for line in command.Value.split('\n'):
+            for line in command.Value.split("\n"):
                 if not line.strip():
                     output.append("Write-Host ''")
                 else:
-                    output.append("Write-Host '{}'".format(WindowsShell._ProcessEscapedChars( line,
-                                                                                              OrderedDict([ ( '`', '``' ),
-                                                                                                            ( "'", "`'" ),
-                                                                                                          ]),
-                                                                                            )))
-            return '; '.join(output)
+                    output.append("Write-Host '{}'".format(WindowsShell._ProcessEscapedChars(line, OrderedDict([("`", "``"), ("'", "`'")]))))
+            return "; ".join(output)
 
         # ----------------------------------------------------------------------
         @staticmethod
@@ -76,19 +72,20 @@ class WindowsPowerShell(WindowsShell):
         @staticmethod
         @override
         def OnSymbolicLink(command, *args, **kwargs):
-            d = { "link" : command.LinkFilename,
-                  "target" : command.Target,
-                }
+            d = {"link": command.LinkFilename, "target": command.Target}
 
             return textwrap.dedent(
                 """\
                 {remove}cmd /c mklink{dir_flag} "{link}" "{target}" > NULL
-                """).format( remove='' if not command.RemoveExisting else 'if exist "{link}" ({remove} "{link}")\r\n'.format( remove="rmdir" if command.IsDir else "del /Q",
-                                                                                                                              **d
-                                                                                                                            ),
-                             dir_flag=" /D /J" if command.IsDir else '',
-                             **d
-                           )
+                """,
+            ).format(
+                remove="" if not command.RemoveExisting else 'if exist "{link}" ({remove} "{link}")\r\n'.format(
+                    remove="rmdir" if command.IsDir else "del /Q",
+                    **d
+                ),
+                dir_flag=" /D /J" if command.IsDir else "",
+                **d
+            )
 
         # ----------------------------------------------------------------------
         @classmethod
@@ -107,11 +104,13 @@ class WindowsPowerShell(WindowsShell):
         @override
         def OnSet(command, *args, **kwargs):
             if command.Values is None:
-                return "if (Test-Path env:{name}) {{ Remove-Item env:{name} }}".format(name=command.Name)
+                return "if (Test-Path env:{name}) {{ Remove-Item env:{name} }}".format(
+                    name=command.Name,
+                )
 
             assert command.Values
 
-            return '$env:{}="{}"'.format(command.Name, os.pathsep.join(command.Values))  # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
+            return '$env:{}="{}"'.format(command.Name, os.pathsep.join(command.Values)) # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
 
         # ----------------------------------------------------------------------
         @classmethod
@@ -120,18 +119,27 @@ class WindowsPowerShell(WindowsShell):
             if not command.Values:
                 return None
 
-            current_values = set(WindowsShell.EnumEnvironmentVariable(command.Name))
-            
-            new_values = [ value.strip() for value in command.Values if value.strip() ]
-            new_values = [ value for value in new_values if value not in current_values ]
+            if command.IsSpaceDelimitedString:
+                new_values = " ".join(command.Values)
+                sep = " "
+            else:
+                new_values = os.pathsep.join(command.Values)
+                sep = ";"
 
-            if not new_values:
-                return None
+            has_old_values = bool(os.getenv(command.Name))
 
-            return '$env:{name}="{values};" + $env:{name}'.format( name=command.Name,
-                                                                   values=os.pathsep.join(command.Values),   # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
-                                                                 )
-            
+            if has_old_values:
+                new_values += sep
+                old_values = " + $env:{}".format(command.Name)
+            else:
+                old_values = ""
+
+            return '$env:{name}="{new_values}"{old_values}'.format(
+                name=command.Name,
+                new_values=new_values,
+                old_values=old_values,
+            )
+
         # ----------------------------------------------------------------------
         @staticmethod
         @override
@@ -141,10 +149,12 @@ class WindowsPowerShell(WindowsShell):
                 {success}
                 {error}
                 exit {return_code}
-                """).format( success="if ($?) { pause }" if command.PauseOnSuccess else '',
-                             error="if (-not $?) { pause }" if command.PauseOnError else '',
-                             return_code=command.ReturnCode or 0,
-                           )
+                """,
+            ).format(
+                success="if ($?) { pause }" if command.PauseOnSuccess else "",
+                error="if (-not $?) { pause }" if command.PauseOnError else "",
+                return_code=command.ReturnCode or 0,
+            )
 
         # ----------------------------------------------------------------------
         @staticmethod
@@ -152,9 +162,7 @@ class WindowsPowerShell(WindowsShell):
         def OnExitOnError(command, *args, **kwargs):
             variable_name = "$env:{}".format(command.VariableName) if command.VariableName else "$?"
 
-            return "if (-not {}){{ exit {}}}".format( variable_name,
-                                                      command.ReturnCode or variable_name,
-                                                    )
+            return "if (-not {}){{ exit {}}}".format(variable_name, command.ReturnCode or variable_name)
 
         # ----------------------------------------------------------------------
         @staticmethod
@@ -172,7 +180,7 @@ class WindowsPowerShell(WindowsShell):
         @staticmethod
         @override
         def OnPersistError(command, *args, **kwargs):
-            return '$env:{}=$?'.format(command.VariableName)
+            return "$env:{}=$?".format(command.VariableName)
 
         # ----------------------------------------------------------------------
         @staticmethod
@@ -186,18 +194,18 @@ class WindowsPowerShell(WindowsShell):
             return 'pushd "{}"'.format(directory)
 
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Public Properties
-    # |  
+    # |
     # ----------------------------------------------------------------------
     Name                                    = DerivedProperty("WindowsPowerShell")
     ScriptExtension                         = DerivedProperty(".ps1")
     AllArgumentsScriptVariable              = DerivedProperty("$args")
-    
+
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Public Methods
-    # |  
+    # |
     # ----------------------------------------------------------------------
     @staticmethod
     @override
@@ -212,8 +220,15 @@ class WindowsPowerShell(WindowsShell):
 
     # ----------------------------------------------------------------------
     @classmethod
-    def CreateScriptName(cls, name, filename_only=False):
-        filename = super(WindowsPowerShell, cls).CreateScriptName(name, filename_only=filename_only)
+    def CreateScriptName(
+        cls,
+        name,
+        filename_only=False,
+    ):
+        filename = super(WindowsPowerShell, cls).CreateScriptName(
+            name,
+            filename_only=filename_only,
+        )
         if filename_only:
             return filename
 
