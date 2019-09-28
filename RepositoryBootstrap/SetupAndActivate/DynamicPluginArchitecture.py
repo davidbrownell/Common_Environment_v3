@@ -113,6 +113,9 @@ def CreateRegistrationStatements(
             ),
         )
 
+        # Add this filename to the environment so that it can be used by other activation scripts
+        os.environ[environment_beacon_name] = source_filename
+
     elif os.path.isfile(source_filename):
         for line in [
             line.strip() for line in open(source_filename).readlines() if line.strip()
