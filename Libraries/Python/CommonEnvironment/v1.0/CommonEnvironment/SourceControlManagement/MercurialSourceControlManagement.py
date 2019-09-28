@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  MercurialSourceControlManagement.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-05-17 16:57:17
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-19.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Contains the MercurialSourceControlManagement object"""
 
@@ -46,52 +46,55 @@ from CommonEnvironment.TypeInfo.FundamentalTypes.DateTimeTypeInfo import DateTim
 from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import StringSerialization
 
 # ----------------------------------------------------------------------
-_script_fullpath = CommonEnvironment.ThisFullpath()
-_script_dir, _script_name = os.path.split(_script_fullpath)
+_script_fullpath                            = CommonEnvironment.ThisFullpath()
+_script_dir, _script_name                   = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
+
 
 @staticderived
 class MercurialSourceControlManagement(DistributedSourceControlManagement):
     """Specializations for Mercurial (aka Hg) [https://www.mercurial-scm.org/]"""
 
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Public Properties
-    # |  
+    # |
     # ----------------------------------------------------------------------
     Name                                    = DerivedProperty("Mercurial")
     DefaultBranch                           = DerivedProperty("default")
     Tip                                     = DerivedProperty("tip")
-    WorkingDirectories                      = DerivedProperty([ ".hg", ])
+    WorkingDirectories                      = DerivedProperty([".hg"])
     IgnoreFilename                          = DerivedProperty(".hgignore")
 
     # Diagnostics                             = True
 
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Public Methods
-    # |  
+    # |
     # ----------------------------------------------------------------------
     @classmethod
-    def Execute( cls, 
-                 repo_root, 
-                 command, 
-                 strip=False,
-                 newline=False,
-               ):
+    def Execute(
+        cls,
+        repo_root,
+        command,
+        strip=False,
+        newline=False,
+    ):
         command = command.replace("hg ", 'hg --cwd "{}" '.format(repo_root))
 
         if cls.Diagnostics:
             sys.stdout.write("VERBOSE: {}\n".format(command))
 
-        result, content = Process.Execute( command,
-                                           environment=os.environ,
-                                         )
+        result, content = Process.Execute(
+            command,
+            environment=os.environ,
+        )
 
         if strip:
             content = content.strip()
-        if newline and not content.endswith('\n'):
-            content += '\n'
+        if newline and not content.endswith("\n"):
+            content += "\n"
 
         return result, content
 
@@ -123,7 +126,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
 
             # Note that we are only caching positive results. This is to ensure
             # that we walk into repositories associated with subdirs when provided
-            # with a parent dir that isn't a repository itself (caching a failure 
+            # with a parent dir that isn't a repository itself (caching a failure
             # on a parent dir would prevent traversal into its children).
             if result:
                 cls._cached_is_active.add(repo_root)
@@ -146,28 +149,48 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
     # ----------------------------------------------------------------------
     @classmethod
     @override
-    def Clone(cls, uri, output_dir, branch=None):
+    def Clone(
+        cls,
+        uri,
+        output_dir,
+        branch=None,
+    ):
         if os.path.isdir(output_dir):
             raise Exception("The directory '{}' already exists and will not be overwritten.".format(output_dir))
 
         clone_path, clone_name = os.path.split(output_dir)
+        temp_clone_name = "{}.tmp".format(clone_name)
+
         FileSystem.MakeDirs(clone_path)
 
-        return cls.Execute(clone_path, 'hg clone{branch} "{uri}" "{name}"'.format( branch=' -b "{}"'.format(branch) if branch else '',
-                                                                                   uri=uri,
-                                                                                   name=clone_name,
-                                                                                 ))
+        result, content = cls.Execute(
+            clone_path,
+            'hg clone{branch} "{uri}" "{name}"'.format(
+                branch=' -b "{}"'.format(branch) if branch else "",
+                uri=uri,
+                name=clone_name,
+            ),
+        )
+
+        if result == 0:
+            os.rename(os.path.join(clone_path, temp_clone_name), os.path.join(clone_path, clone_name))
+
+        return result, content
 
     # ----------------------------------------------------------------------
     @classmethod
     @override
     def GetUniqueName(cls, repo_root):
-        result, output = cls.Execute(repo_root, "hg paths", newline=True)
+        result, output = cls.Execute(
+            repo_root,
+            "hg paths",
+            newline=True,
+        )
         assert result == 0, (result, output)
 
         regex = re.compile(r"{}\s*=\s*(?P<value>.+)".format(cls.DefaultBranch))
 
-        for line in output.split('\n'):
+        for line in output.split("\n"):
             match = regex.match(line)
             if match:
                 return match.group("value")
@@ -196,16 +219,17 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
             if repo_dir.startswith(k):
                 return k
 
-        result, output = cls.Execute( repo_dir,
-                                      "hg root",
-                                      strip=True,
-                                    )
+        result, output = cls.Execute(
+            repo_dir,
+            "hg root",
+            strip=True,
+        )
         assert result == 0, (result, output)
 
         cls._cached_roots.add(output)
 
         return output
-    
+
     # ----------------------------------------------------------------------
     @classmethod
     @override
@@ -215,20 +239,25 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
     # ----------------------------------------------------------------------
     @classmethod
     @override
-    def Clean(cls, repo_root, no_prompt=False):
-        if not no_prompt and not cls.AreYouSurePrompt(textwrap.dedent(
-            """\
-            This operation will revert any working changes.
+    def Clean(
+        cls,
+        repo_root,
+        no_prompt=False,
+    ):
+        if not no_prompt and not cls.AreYouSurePrompt(
+            textwrap.dedent(
+                """\
+                This operation will revert any working changes.
 
-            THIS INCLUDES THE FOLLOWING:
-                - Any working edits
-                - Any files that have been added
-            """)):
+                THIS INCLUDES THE FOLLOWING:
+                    - Any working edits
+                    - Any files that have been added
+                """,
+            ),
+        ):
             return 0, "<<Skipped>>"
 
-        commands = [ "hg update --clean",
-                     "hg purge",
-                   ]
+        commands = ["hg update --clean", "hg purge"]
 
         return cls.Execute(repo_root, " && ".join(commands))
 
@@ -274,11 +303,25 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
     # ----------------------------------------------------------------------
     @classmethod
     @override
+    def GetExecutePermission(cls, repo_root, filename):
+        # TODO
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    @classmethod
+    @override
+    def SetExecutePermission(cls, repo_root, filename, is_executable):
+        # TODO
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    @classmethod
+    @override
     def HasUntrackedWorkingChanges(cls, repo_root):
         result, output = cls.Execute(repo_root, "hg status")
 
-        for line in output.split('\n'):
-            if line.strip().startswith('?'):
+        for line in output.split("\n"):
+            if line.strip().startswith("?"):
                 return True
 
         return False
@@ -289,10 +332,10 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
     def HasWorkingChanges(cls, repo_root):
         result, output = cls.Execute(repo_root, "hg status")
 
-        for line in output.split('\n'):
+        for line in output.split("\n"):
             line = line.strip()
 
-            if line and not line.startswith('?'):
+            if line and not line.startswith("?"):
                 return True
 
         return False
@@ -301,13 +344,13 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
     @classmethod
     @override
     def GetWorkingChanges(cls, repo_root):
-        result, output = cls.Execute(repo_root, 'hg status')
+        result, output = cls.Execute(repo_root, "hg status")
         assert result == 0, (result, output)
 
         regex = re.compile(r"^(?P<type>\S+)\s+(?P<filename>.+)$")
-        
+
         results = []
-        for line in output.split('\n'):
+        for line in output.split("\n"):
             match = regex.match(line)
             if match:
                 results.append(os.path.join(repo_root, match.group("filename")))
@@ -321,16 +364,13 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
         result, output = cls.Execute(repo_root, 'hg log --rev "{}"'.format(change))
         assert result == 0, (result, output)
 
-        d = { "user" : None,
-              "date" : None,
-              "summary" : None,
-            }
+        d = {"user": None, "date": None, "summary": None}
 
-        for line in output.strip().split('\n'):
+        for line in output.strip().split("\n"):
             for key in six.iterkeys(d):
                 if line.startswith(key):
                     assert d[key] is None
-                    d[key] = line[len(key) + 1:].strip()
+                    d[key] = line[len(key) + 1 :].strip()
                     break
 
         for k, v in six.iteritems(d):
@@ -343,17 +383,28 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
     # ----------------------------------------------------------------------
     @classmethod
     @override
-    def Commit(cls, repo_root, description, username=None):
-        return cls.Execute( repo_root,
-                            'hg commit --message "{desc}"{user}'.format( desc=description.replace('"', '\\"'),
-                                                                         user=' --user "{}"'.format(username) if username else '',
-                                                                       ),
-                          )
+    def Commit(
+        cls,
+        repo_root,
+        description,
+        username=None,
+    ):
+        return cls.Execute(
+            repo_root,
+            'hg commit --message "{desc}"{user}'.format(
+                desc=description.replace('"', '\\"'),
+                user=' --user "{}"'.format(username) if username else "",
+            ),
+        )
 
     # ----------------------------------------------------------------------
     @classmethod
     @override
-    def Update(cls, repo_root, update_arg=None):
+    def Update(
+        cls,
+        repo_root,
+        update_arg=None,
+    ):
         return cls.Execute(repo_root, "hg update{}".format(cls._UpdateMergeArgToCommandLine(repo_root, update_arg)))
 
     # ----------------------------------------------------------------------
@@ -365,16 +416,21 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
     # ----------------------------------------------------------------------
     @classmethod
     @override
-    def GetChangesSinceLastMerge(cls, repo_root, dest_branch, source_merge_arg=None):
+    def GetChangesSinceLastMerge(
+        cls,
+        repo_root,
+        dest_branch,
+        source_merge_arg=None,
+    ):
         source_branch = None
         additional_filters = []
 
         # ----------------------------------------------------------------------
         def GetDateOperator(arg):
             if arg is None or arg:
-                return '>'
+                return ">"
 
-            return '<'
+            return "<"
 
         # ----------------------------------------------------------------------
 
@@ -387,15 +443,29 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
 
         elif isinstance(source_merge_arg, DateUpdateMergeArg):
             source_branch = cls.GetCurrentBranch(repo_root)
-            additional_filters.append("date('{}{}')".format( GetDateOperator(source_merge_arg.GreaterThan),
-                                                             StringSerialization.SerializeItem(DateTimeTypeInfo(), source_merge_arg.Date, microseconds=False),
-                                                           ))
+            additional_filters.append(
+                "date('{}{}')".format(
+                    GetDateOperator(source_merge_arg.GreaterThan),
+                    StringSerialization.SerializeItem(
+                        DateTimeTypeInfo(),
+                        source_merge_arg.Date,
+                        microseconds=False,
+                    ),
+                ),
+            )
 
         elif isinstance(source_merge_arg, BranchAndDateUpdateMergeArg):
             source_branch = source_merge_arg.Branch
-            additional_filters.append("date('{}{}')".format( GetDateOperator(source_merge_arg.GreaterThan),
-                                                             StringSerialization.SerializeItem(DateTimeTypeInfo(), source_merge_arg.Date, microseconds=False),
-                                                           ))
+            additional_filters.append(
+                "date('{}{}')".format(
+                    GetDateOperator(source_merge_arg.GreaterThan),
+                    StringSerialization.SerializeItem(
+                        DateTimeTypeInfo(),
+                        source_merge_arg.Date,
+                        microseconds=False,
+                    ),
+                ),
+            )
 
         elif isinstance(source_merge_arg, BranchUpdateMergeArg):
             source_branch = source_merge_arg.Branch
@@ -407,15 +477,15 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
         if additional_filters:
             filter += " and {}".format(" and ".join(additional_filters))
 
-        command_line = r'hg log --branch "{source_branch}" --rev "{filter}" --template "{{rev}}\n"' \
-                            .format( source_branch=source_branch,
-                                     filter=filter,
-                                   )
+        command_line = r'hg log --branch "{source_branch}" --rev "{filter}" --template "{{rev}}\n"'.format(
+            source_branch=source_branch,
+            filter=filter,
+        )
 
         result, output = cls.Execute(repo_root, command_line)
         assert result == 0, (result, output)
 
-        return [ line.strip() for line in output.split('\n') if line.strip() ]
+        return [line.strip() for line in output.split("\n") if line.strip()]
 
     # ----------------------------------------------------------------------
     @classmethod
@@ -424,21 +494,23 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
         command_line_template = "hg status"
 
         if change_or_changes_or_none:
-            changes = change_or_changes_or_none if isinstance(change_or_changes_or_none, list) else [ change_or_changes_or_none, ]
+            changes = change_or_changes_or_none if isinstance(change_or_changes_or_none, list) else [change_or_changes_or_none]
             command_line_template += ' --change "{change}"'
         else:
-            changes = [ None, ]
+            changes = [None]
 
         filenames = set()
 
         for change in changes:
-            command_line = command_line_template.format(change=change)
+            command_line = command_line_template.format(
+                change=change,
+            )
 
             result, output = cls.Execute(repo_root, command_line)
             assert result == 0, (result, output)
 
-            for line in [ line.strip() for line in output.split('\n') if line.strip() ]:
-                assert len(line) > 2 and line[1] == ' ' and line[2] != ' ', line
+            for line in [line.strip() for line in output.split("\n") if line.strip()]:
+                assert len(line) > 2 and line[1] == " " and line[2] != " ", line
 
                 filename = os.path.join(repo_root, line[2:])
                 if filename not in filenames:
@@ -459,9 +531,9 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
 
             assert False, (result, output)
 
-        regex = re.compile('^\s*(?P<change>\d+):\s?(?P<line>.*)$')
+        regex = re.compile("^\s*(?P<change>\d+):\s?(?P<line>.*)$")
 
-        for line in output.split('\n'):
+        for line in output.split("\n"):
             if not line:
                 continue
 
@@ -495,63 +567,77 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
     # ----------------------------------------------------------------------
     @classmethod
     @override
-    def CreatePatch( cls,
-                     repo_root, 
-                     output_filename,
-                     start_change=None,
-                     end_change=None,
-                   ):
+    def CreatePatch(
+        cls,
+        repo_root,
+        output_filename,
+        start_change=None,
+        end_change=None,
+    ):
         if not start_change or not end_change:
             command_line = 'hg diff --git > "{}"'.format(output_filename)
         else:
-            command_line = 'hg export --git --rev "{start}:{end}" > "{filename}"'.format( start=start_change,
-                                                                                          end=end_change,
-                                                                                          filename=output_filename,
-                                                                                        )
+            command_line = 'hg export --git --rev "{start}:{end}" > "{filename}"'.format(
+                start=start_change,
+                end=end_change,
+                filename=output_filename,
+            )
         return cls.Execute(repo_root, command_line)
 
     # ----------------------------------------------------------------------
     @classmethod
     @override
-    def ApplyPatch( cls, 
-                    repo_root,
-                    patch_filename,
-                    commit=False,
-                  ):
-        return cls.Execute(repo_root, 'hg import{commit} "{filename}"'.format( commit=" --no-commit" if not commit else '',
-                                                                               filename=patch_filename,
-                                                                             ))
-    
+    def ApplyPatch(
+        cls,
+        repo_root,
+        patch_filename,
+        commit=False,
+    ):
+        return cls.Execute(
+            repo_root,
+            'hg import{commit} "{filename}"'.format(
+                commit=" --no-commit" if not commit else "",
+                filename=patch_filename,
+            ),
+        )
+
     # ----------------------------------------------------------------------
     @classmethod
     @override
-    def Reset( cls,
-               repo_root, 
-               no_prompt=False, 
-               no_backup=False,
-             ):
-        if not no_prompt and not cls.AreYouSurePrompt(textwrap.dedent(
-            """\
-            This operation will revert your local repository to match the state of the remote repository.
+    def Reset(
+        cls,
+        repo_root,
+        no_prompt=False,
+        no_backup=False,
+    ):
+        if not no_prompt and not cls.AreYouSurePrompt(
+            textwrap.dedent(
+                """\
+                This operation will revert your local repository to match the state of the remote repository.
 
-            THIS INCLUDES THE FOLLOWING:
-                - Any working edits
-                - Any files that have been added
-                - Any committed changes that have not been pushed to the remote repository
-            """)):
-                return 0, ''
+                THIS INCLUDES THE FOLLOWING:
+                    - Any working edits
+                    - Any files that have been added
+                    - Any committed changes that have not been pushed to the remote repository
+                """,
+            ),
+        ):
+            return 0, ""
 
-        commands = [ 'hg update --clean',
-                     'hg purge',
-                     'hg strip{no_backup} "roots(outgoing())"'.format(no_backup=" --no-backup" if no_backup else ''),
-                   ]
+        commands = [
+            "hg update --clean",
+            "hg purge",
+            'hg strip{no_backup} "roots(outgoing())"'.format(
+                no_backup=" --no-backup" if no_backup else "",
+            ),
+        ]
 
         empty_revision_set_notice = "abort: empty revision set"
 
         result, output = cls.Execute(repo_root, " && ".join(commands))
         if result != 0 and empty_revision_set_notice in output:
             result = 0
-            output = output.replace(empty_revision_set_notice, '')
+            output = output.replace(empty_revision_set_notice, "")
 
         return result, "{}\n".format(output.strip())
 
@@ -580,7 +666,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
         result, output = cls.Execute(repo_root, r'hg outgoing --template "{}{{rev}}\n"'.format(output_prefix))
         assert result == 0 or (result == 1 and "no changes found" in output), (result, output)
 
-        return [ line[len(output_prefix):].strip() for line in output.split('\n') if line.startswith(output_prefix) ]
+        return [line[len(output_prefix) :].strip() for line in output.split("\n") if line.startswith(output_prefix)]
 
     # ----------------------------------------------------------------------
     @classmethod
@@ -602,18 +688,26 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
 
         changes = []
 
-        return [ line[len(output_prefix):].strip() for line in output.split('\n') if line.startswith(output_prefix) ]
+        return [line[len(output_prefix) :].strip() for line in output.split("\n") if line.startswith(output_prefix)]
 
     # ----------------------------------------------------------------------
     @classmethod
     @override
-    def Push(cls, repo_root, create_remote_branch=False):
-        return cls.Execute(repo_root, "hg push{}".format(" --new-branch" if create_remote_branch else ''))
+    def Push(
+        cls,
+        repo_root,
+        create_remote_branch=False,
+    ):
+        return cls.Execute(repo_root, "hg push{}".format(" --new-branch" if create_remote_branch else ""))
 
     # ----------------------------------------------------------------------
     @classmethod
     @override
-    def Pull(cls, repo_root, branch_or_branches=None):
+    def Pull(
+        cls,
+        repo_root,
+        branch_or_branches=None,
+    ):
         # In Mercurial, a pull gets all branches; no need to consider branch_or_branches
         result, output = cls.Execute(repo_root, "hg pull")
         if result != 0 and "no changes found" in output:
@@ -622,20 +716,25 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
         return result, output
 
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Private Methods
-    # |  
+    # |
     # ----------------------------------------------------------------------
     @classmethod
     @override
     def _AddFilesImpl(cls, repo_root, filenames):
-        return cls.Execute(repo_root, 'hg add {}'.format(' '.join([ '"{}"'.format(filename) for filename in filenames ])))
+        return cls.Execute(repo_root, "hg add {}".format(" ".join(['"{}"'.format(filename) for filename in filenames])))
 
     # ----------------------------------------------------------------------
     @classmethod
-    def _GetBranchAssociatedWithChange(cls, repo_root, change=None):
-        command_line = 'hg log {change} --template "{{branch}}"'.format( change="--rev {}".format(change) if change else "-l 1",
-                                                                       )
+    def _GetBranchAssociatedWithChange(
+        cls,
+        repo_root,
+        change=None,
+    ):
+        command_line = 'hg log {change} --template "{{branch}}"'.format(
+            change="--rev {}".format(change) if change else "-l 1",
+        )
 
         result, output = cls.Execute(repo_root, command_line)
         assert result == 0, (result, output)
@@ -647,7 +746,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
     def _UpdateMergeArgToCommandLine(cls, repo_root, arg):
         change = cls._UpdateMergeArgToString(repo_root, arg)
         if not change:
-            return ''
+            return ""
 
         if isinstance(change, six.string_types):
             return ' --rev "{}"'.format(change)
@@ -668,8 +767,12 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
             except ValueError:
                 pass
 
-            result, output = cls.Execute(repo_root, 'hg log --rev "{rev_name}" --template "{{rev}}"'.format( rev_name=change,
-                                                                                                           ))
+            result, output = cls.Execute(
+                repo_root,
+                'hg log --rev "{rev_name}" --template "{{rev}}"'.format(
+                    rev_name=change,
+                ),
+            )
             assert result == 0, (result, output)
 
             return output.strip()
@@ -687,9 +790,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
             else:
                 # ----------------------------------------------------------------------
                 def BranchGenerator():
-                    for branch in [ cls.GetCurrentBranch(repo_root),
-                                    cls.DefaultBranch,
-                                  ]:
+                    for branch in [cls.GetCurrentBranch(repo_root), cls.DefaultBranch]:
                         yield branch
 
                 # ----------------------------------------------------------------------
@@ -697,42 +798,72 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
             assert BranchGenerator
 
             if not operator:
-                operator = '<'
+                operator = "<"
             else:
-                operator = '>'
+                operator = ">"
 
             errors = OrderedDict()
 
             for branch in BranchGenerator():
-                command_line = '''hg log --branch "{branch}" --rev "sort(date('{operator}{date}'), -date)" --limit 1 --template "{{rev}}"''' \
-                                    .format( branch=branch,
-                                             operator=operator,
-                                             date=StringSerialization.SerializeItem(DateTimeTypeInfo(), date, microseconds=False),
-                                           )
+                command_line = '''hg log --branch "{branch}" --rev "sort(date('{operator}{date}'), -date)" --limit 1 --template "{{rev}}"'''.format(
+                    branch=branch,
+                    operator=operator,
+                    date=StringSerialization.SerializeItem(
+                        DateTimeTypeInfo(),
+                        date,
+                        microseconds=False,
+                    ),
+                )
 
-                result, output = cls.Execute(repo_root, command_line, strip=True)
+                result, output = cls.Execute(
+                    repo_root,
+                    command_line,
+                    strip=True,
+                )
 
                 if result == 0 and output:
                     return output
 
                 errors[command_line] = output
 
-            raise Exception("Change not found ({branch}, {date})\n{errors}".format( branch=branch,
-                                                                                    date=date,
-                                                                                    errors='\n\n'.join([ "{}\n{}".format(k, v) for k, v in six.iteritems(errors) ]),
-                                                                                  ))
+            raise Exception(
+                "Change not found ({branch}, {date})\n{errors}".format(
+                    branch=branch,
+                    date=date,
+                    errors="\n\n".join(["{}\n{}".format(k, v) for k, v in six.iteritems(errors)]),
+                ),
+            )
 
         # ----------------------------------------------------------------------
 
         if arg is None:
             arg = EmptyUpdateMergeArg()
 
-        dispatch_map = { EmptyUpdateMergeArg :                              lambda: "",
-                         ChangeUpdateMergeArg :                             lambda: NormalizeChange(arg.Change),
-                         DateUpdateMergeArg :                               lambda: DateAndBranch(arg.Date.replace(microsecond=0), None, arg.GreaterThan),
-                         BranchUpdateMergeArg :                             lambda: DateAndBranch(DateTimeTypeInfo.Create(microseconds=False), arg.Branch, None),
-                         BranchAndDateUpdateMergeArg :                      lambda: DateAndBranch(arg.Date.replace(microsecond=0), arg.Branch, arg.GreaterThan),
-                       }
+        dispatch_map = {
+            EmptyUpdateMergeArg: lambda: "",
+            ChangeUpdateMergeArg: lambda: NormalizeChange(arg.Change),
+            DateUpdateMergeArg: lambda: DateAndBranch(
+                arg.Date.replace(
+                    microsecond=0,
+                ),
+                None,
+                arg.GreaterThan,
+            ),
+            BranchUpdateMergeArg: lambda: DateAndBranch(
+                DateTimeTypeInfo.Create(
+                    microseconds=False,
+                ),
+                arg.Branch,
+                None,
+            ),
+            BranchAndDateUpdateMergeArg: lambda: DateAndBranch(
+                arg.Date.replace(
+                    microsecond=0,
+                ),
+                arg.Branch,
+                arg.GreaterThan,
+            ),
+        }
 
         assert type(arg) in dispatch_map, type(arg)
         return dispatch_map[type(arg)]()

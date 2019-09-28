@@ -1,23 +1,23 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  DynamicPluginArchitecture.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-05-21 22:14:27
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-19.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """
 Contains methods that help when creating dynamic plugin architectures across
 repository boundaries.
 
 Repositories often times have to modify how scripts in other repositories operate
-in a way that doesn't create a hard dependency from the base repository to the 
+in a way that doesn't create a hard dependency from the base repository to the
 extension (or plugin) repository.
 
 For example, Common_Environment defines a script called Tester, where the code is
@@ -41,8 +41,8 @@ from RepositoryBootstrap import Constants
 from RepositoryBootstrap.Impl import CommonEnvironmentImports
 
 # ----------------------------------------------------------------------
-_script_fullpath = CommonEnvironmentImports.CommonEnvironment.ThisFullpath()
-_script_dir, _script_name = os.path.split(_script_fullpath)
+_script_fullpath                            = CommonEnvironmentImports.CommonEnvironment.ThisFullpath()
+_script_dir, _script_name                   = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 # ----------------------------------------------------------------------
@@ -50,12 +50,13 @@ def EnumeratePlugins(environment_beacon_name):
     """Enumerates all plugins registered with the given name."""
     filename = os.getenv(environment_beacon_name)
     if not filename or not os.path.isfile(filename):
-        return 
+        return
 
-    lines = [ line.strip() for line in open(filename).readlines() ]
+    lines = [line.strip() for line in open(filename).readlines()]
 
-    for module_name in [ line for line in lines if line ]:
+    for module_name in [line for line in lines if line]:
         yield LoadModule(module_name)
+
 
 # ----------------------------------------------------------------------
 def LoadModule(filename):
@@ -72,11 +73,13 @@ def LoadModule(filename):
     with CommonEnvironmentImports.CallOnExit(lambda: sys.path.pop(0)):
         return importlib.import_module(name)
 
+
 # ----------------------------------------------------------------------
-def CreateRegistrationStatements( environment_beacon_name,
-                                  directory,
-                                  is_valid_func,        # def Func(fullpath, name, ext) -> Bool
-                                ):
+def CreateRegistrationStatements(
+    environment_beacon_name,
+    directory,
+    is_valid_func,                          # def Func(fullpath, name, ext) -> Bool
+):
     """Adds all valid files to a beacon in a given directory"""
 
     filenames = []
@@ -99,12 +102,21 @@ def CreateRegistrationStatements( environment_beacon_name,
 
     source_filename = os.getenv(environment_beacon_name)
     if not source_filename:
-        source_filename = CommonEnvironmentImports.CurrentShell.CreateTempFilename(".DPA{}".format(Constants.TEMPORARY_FILE_EXTENSION))
+        source_filename = CommonEnvironmentImports.CurrentShell.CreateTempFilename(
+            ".DPA{}".format(Constants.TEMPORARY_FILE_EXTENSION),
+        )
 
-        commands.append(CommonEnvironmentImports.CurrentShell.Commands.Set(environment_beacon_name, source_filename, update_memory=True))
+        commands.append(
+            CommonEnvironmentImports.CurrentShell.Commands.Set(
+                environment_beacon_name,
+                source_filename,
+            ),
+        )
 
     elif os.path.isfile(source_filename):
-        for line in [ line.strip() for line in open(source_filename).readlines() if line.strip() ]:
+        for line in [
+            line.strip() for line in open(source_filename).readlines() if line.strip()
+        ]:
             if os.path.isfile(line):
                 new_filenames.add(line)
 
@@ -112,7 +124,7 @@ def CreateRegistrationStatements( environment_beacon_name,
         if filename not in new_filenames:
             new_filenames.add(filename)
 
-    with open(source_filename, 'w') as f:
-        f.write("{}\n".format('\n'.join(sorted(new_filenames))))
+    with open(source_filename, "w") as f:
+        f.write("{}\n".format("\n".join(sorted(new_filenames))))
 
     return commands
