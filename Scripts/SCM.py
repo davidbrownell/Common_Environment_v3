@@ -1707,7 +1707,7 @@ def AllWorkingChangeStatus(
                 inflect.no("repository", len(changed_repos)),
                 "\n".join(
                     [
-                        "    - {} [{}]".format(directory, scm.Name)
+                        "    - {} ({})".format(directory, scm.Name)
                         for scm,
                         directory in changed_repos
                     ],
