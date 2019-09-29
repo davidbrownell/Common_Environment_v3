@@ -1707,7 +1707,7 @@ def AllWorkingChangeStatus(
                 inflect.no("repository", len(changed_repos)),
                 "\n".join(
                     [
-                        "    - {} ({})".format(directory, scm.Name)
+                        "    - {} [{}]".format(directory, scm.Name)
                         for scm,
                         directory in changed_repos
                     ],
@@ -2048,7 +2048,7 @@ def _WrapAll(
                     was=inflect.plural("was", len(processed_repositories)),
                     results="\n".join(
                         [
-                            "    - {} [{}]".format(key, processed_repositories[key])
+                            "    - {} ({})".format(key, processed_repositories[key])
                             for key in sorted(six.iterkeys(processed_repositories))
                         ],
                     ),
