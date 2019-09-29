@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  __init__.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-05-12 23:22:08
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-19.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Contains the SourceControlManagement and DistributedSourceControlManagement objects"""
 
@@ -42,9 +42,9 @@ class SourceControlManagement(Interface):
     """
 
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Public Properties
-    # |  
+    # |
     # ----------------------------------------------------------------------
     @abstractproperty
     def Name(self):
@@ -82,14 +82,14 @@ class SourceControlManagement(Interface):
     def IsDistributed(self):
         """Returns True if the system is a distributes source control system."""
         return False
-    
+
     # Set the True to enable additional diagnostics
     Diagnostics                             = False
 
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Public Methods
-    # |  
+    # |
     # ----------------------------------------------------------------------
     @staticmethod
     @abstractmethod
@@ -133,7 +133,7 @@ class SourceControlManagement(Interface):
         raise Exception("Abstract method")
 
     # ----------------------------------------------------------------------
-    @staticmethod 
+    @staticmethod
     @abstractmethod
     def GetRoot(repo_dir):
         """
@@ -141,7 +141,7 @@ class SourceControlManagement(Interface):
         using conventions specific to the SCM.
         """
         raise Exception("Abstract method")
-    
+
     # ----------------------------------------------------------------------
     @classmethod
     @extensionmethod
@@ -215,6 +215,20 @@ class SourceControlManagement(Interface):
     # ----------------------------------------------------------------------
     @staticmethod
     @abstractmethod
+    def GetExecutePermission(repo_root, filename):
+        """Returns True if the execute permission is set for the provided filename"""
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @abstractmethod
+    def SetExecutePermission(repo_root, filename, is_executable):
+        """Sets the execute permission for the given file"""
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @abstractmethod
     def HasUntrackedWorkingChanges(repo_root):
         """Returns True if there are changes to files that are not tracked in the local working directory."""
         raise Exception("Abstract method")
@@ -237,7 +251,7 @@ class SourceControlManagement(Interface):
     GetWorkingChangeStatusResult            = namedtuple( "GetWorkingChangeStatusResult",
                                                           [ "untracked",
                                                             "working",
-                                                            
+
                                                           ],
                                                         )
 
@@ -258,7 +272,7 @@ class SourceControlManagement(Interface):
     @abstractmethod
     def GetChangeInfo(repo_root, change):
         """
-        Returns a dictionary that contains information about a specific change. At the 
+        Returns a dictionary that contains information about a specific change. At the
         very least, the object will contain the attributes:
             - user
             - date
@@ -337,8 +351,8 @@ class SourceControlManagement(Interface):
     # ----------------------------------------------------------------------
     @staticmethod
     @abstractmethod
-    def GetChangesSinceLastMerge( repo_root, 
-                                  dest_branch, 
+    def GetChangesSinceLastMerge( repo_root,
+                                  dest_branch,
                                   source_merge_arg=None,
                                 ):
         """
@@ -371,7 +385,7 @@ class SourceControlManagement(Interface):
     # ----------------------------------------------------------------------
     @staticmethod
     @abstractmethod
-    def CreatePatch( repo_root, 
+    def CreatePatch( repo_root,
                      output_filename,
                      start_change=None,
                      end_change=None,
@@ -393,9 +407,9 @@ class SourceControlManagement(Interface):
         raise Exception("Abstract method")
 
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Protected Methods
-    # |  
+    # |
     # ----------------------------------------------------------------------
     @staticmethod
     def AreYouSurePrompt(prompt):
@@ -405,9 +419,9 @@ class SourceControlManagement(Interface):
         return result
 
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Private Methods
-    # |  
+    # |
     # ----------------------------------------------------------------------
     @staticmethod
     @abstractmethod
@@ -429,8 +443,8 @@ class DistributedSourceControlManagement(SourceControlManagement):
     # ----------------------------------------------------------------------
     @staticmethod
     @abstractmethod
-    def Reset( repo_root, 
-               no_prompt=False, 
+    def Reset( repo_root,
+               no_prompt=False,
                no_backup=False,
              ):
         """Resets the repo to the remote state, erasing any unpushed (but committed) changes."""
@@ -489,7 +503,7 @@ class DistributedSourceControlManagement(SourceControlManagement):
         override this method if it is possible to implement it in a more efficient
         manner.
         """
-        
+
         return cls.GetChangeStatusResult( cls.HasUntrackedWorkingChanges(repo_root),
                                           cls.HasWorkingChanges(repo_root),
                                           cls.HasLocalChanges(repo_root),

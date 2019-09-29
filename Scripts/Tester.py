@@ -1144,8 +1144,38 @@ def GenerateTestResults(
                     "{0}.{1:06d}.txt".format(log_name, iteration + 1),
                 )
 
-                with open(log_filename, "w") as f:
-                    f.write(content.replace("\r\n", "\n"))
+                content = content.replace("\r\n", "\n")
+
+                # Try different techniques to write a variety of stubborn content
+                try:
+                    with open(log_filename, "w") as f:
+                        f.write(content)
+                except UnicodeEncodeError:
+                    byte_content = None
+
+                    for encoding in ["utf-8", "utf-16", "utf-32"]:
+                        try:
+                            byte_content = content.encode(encoding)
+                            break
+                        except UnicodeEncodeError:
+                            pass
+
+                    if byte_content:
+                        with open(log_filename, "wb") as f:
+                            f.write(byte_content)
+                    else:
+                        # We don't have a good way to write this content to a file,
+                        # but don't want to lose it either.
+                        output_stream.write(
+                            "\n\nUnable to write the following content to a log file:\n\n",
+                        )
+                        output_stream.write(content)
+                        output_stream.write("\n\n")
+
+                        with open(log_filename, "w") as f:
+                            f.write(
+                                "The content could not be encoded and has been written to stdout.\n",
+                            )
 
                 return log_filename
 
@@ -1169,7 +1199,7 @@ def GenerateTestResults(
                     executor = next(
                         executor
                         for executor in TEST_EXECUTORS
-                        if executor.Name == "Standard"
+                        if executor.Name == "Standard",
                     )
 
                 execute_result = executor.Execute(
@@ -2535,7 +2565,7 @@ def _ExecuteImpl(
         and code_coverage_validator is None
     ):
         code_coverage_validator = next(
-            ccv for ccv in CODE_COVERAGE_VALIDATORS if ccv.Name == "Standard"
+            ccv for ccv in CODE_COVERAGE_VALIDATORS if ccv.Name == "Standard",
         )
         code_coverage_validator = code_coverage_validator
 
@@ -2670,7 +2700,7 @@ def _ExecuteTreeImpl(
         and code_coverage_validator is None
     ):
         code_coverage_validator = next(
-            ccv for ccv in CODE_COVERAGE_VALIDATORS if ccv.Name == "Standard"
+            ccv for ccv in CODE_COVERAGE_VALIDATORS if ccv.Name == "Standard",
         )
 
     with StreamDecorator.GenerateAnsiSequenceStream(

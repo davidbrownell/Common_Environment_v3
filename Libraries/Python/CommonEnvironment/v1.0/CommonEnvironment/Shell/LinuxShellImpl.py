@@ -26,9 +26,10 @@ from CommonEnvironment.Shell.Commands import Set, Augment, ExitOnError
 from CommonEnvironment.Shell.Commands.Visitor import Visitor
 
 # ----------------------------------------------------------------------
-_script_fullpath = CommonEnvironment.ThisFullpath()
-_script_dir, _script_name = os.path.split(_script_fullpath)
+_script_fullpath                            = CommonEnvironment.ThisFullpath()
+_script_dir, _script_name                   = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
+
 
 class LinuxShellImpl(Shell):
     """
@@ -61,16 +62,12 @@ class LinuxShellImpl(Shell):
         def OnMessage(command):
             output = []
 
-            for line in command.Value.split('\n'):
+            for line in command.Value.split("\n"):
                 if not line.strip():
                     output.append('echo ""')
                 else:
-                    output.append('echo "{}"'.format(LinuxShellImpl._ProcessEscapedChars( line,
-                                                                                          OrderedDict([ ( '$', r'\$' ),
-                                                                                                        ( '"', r'\"' ),
-                                                                                                      ]),
-                                                                                        )))
-            return ' && '.join(output)
+                    output.append('echo "{}"'.format(LinuxShellImpl._ProcessEscapedChars(line, OrderedDict([("$", r"\$"), ('"', r"\"")]))))
+            return " && ".join(output)
 
         # ----------------------------------------------------------------------
         @classmethod
@@ -99,12 +96,14 @@ class LinuxShellImpl(Shell):
             return textwrap.dedent(
                 """\
                 ln -{dir_flag}{force_flag}{relative_flag}s "{target}" "{link}"
-                """).format( dir_flag='d' if command.IsDir else '',
-                             force_flag='' if not command.RemoveExisting else 'f',
-                             relative_flag='' if not command.RelativePath else 'r',
-                             target=command.Target,
-                             link=command.LinkFilename,
-                           )
+                """,
+            ).format(
+                dir_flag="d" if command.IsDir else "",
+                force_flag="" if not command.RemoveExisting else "f",
+                relative_flag="" if not command.RelativePath else "r",
+                target=command.Target,
+                link=command.LinkFilename,
+            )
 
         # ----------------------------------------------------------------------
         @classmethod
@@ -116,7 +115,7 @@ class LinuxShellImpl(Shell):
         @classmethod
         @override
         def OnAugmentPath(cls, command):
-            return cls.OnAugment(Augment("PATH", command.Values))
+            return cls.OnAugment(command)
 
         # ----------------------------------------------------------------------
         @staticmethod
@@ -125,21 +124,40 @@ class LinuxShellImpl(Shell):
             if command.Values is None:
                 return "export {}=".format(command.Name)
 
-            assert command.Values
+            return "export {}={}".format(command.Name, os.pathsep.join(command.Values)) # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
 
-            return "export {}={}".format(command.Name, os.pathsep.join(command.Values))    # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
+            # If here, we don't have a complete list of items
 
         # ----------------------------------------------------------------------
         @staticmethod
         @override
         def OnAugment(command):
-            if not command.Values:
-                return None
+            statements = []
 
-            return "export {name}={values}:${name}".format(
-                name=command.Name,
-                values=os.pathsep.join(command.Values),
-            )
+            if command.IsSpaceDelimitedString:
+                sep = " "
+            else:
+                sep = os.pathsep
+
+            if command.AppendValues:
+                add_statement_template = "${{{name}}}{sep}{value}"
+            else:
+                add_statement_template = "{value}{sep}${{{name}}}"
+
+            statements = [
+                '''[[ "{sep}${{{name}}}{sep}" != *"{sep}{value}{sep}"* ]] && export {name}="{add_statement}"'''.format(
+                    name=command.Name,
+                    value=value,
+                    sep=sep,
+                    add_statement=add_statement_template.format(
+                        name=command.Name,
+                        value=value,
+                        sep=sep,
+                    ),
+                ) for value in command.Values
+            ]
+
+            return "\n".join(statements)
 
         # ----------------------------------------------------------------------
         @staticmethod
@@ -150,22 +168,26 @@ class LinuxShellImpl(Shell):
                 {success}
                 {error}
                 return {return_code}
-                """).format( success=textwrap.dedent(
-                                        """\
-                                        if [[ $? -eq 0 ]]
-                                        then
-                                            read -p "Press [Enter] to continue"
-                                        fi
-                                        """) if command.PauseOnSuccess else '',
-                             error=textwrap.dedent(
-                                        """\
-                                        if [[ $? -ne 0]]
-                                        then
-                                            read -p "Press [Enter] to continue"
-                                        fi
-                                        """) if command.PauseOnError else '',
-                             return_code=command.ReturnCode or 0,
-                           )
+                """,
+            ).format(
+                success=textwrap.dedent(
+                    """\
+                    if [[ $? -eq 0 ]]
+                    then
+                        read -p "Press [Enter] to continue"
+                    fi
+                    """,
+                ) if command.PauseOnSuccess else "",
+                error=textwrap.dedent(
+                    """\
+                    if [[ $? -ne 0]]
+                    then
+                        read -p "Press [Enter] to continue"
+                    fi
+                    """,
+                ) if command.PauseOnError else "",
+                return_code=command.ReturnCode or 0,
+            )
 
         # ----------------------------------------------------------------------
         @staticmethod
@@ -180,9 +202,8 @@ class LinuxShellImpl(Shell):
                 then
                     exit {}
                 fi
-                """).format( variable_name,
-                             command.ReturnCode or "$error_code",
-                           )
+                """,
+            ).format(variable_name, command.ReturnCode or "$error_code")
 
         # ----------------------------------------------------------------------
         @staticmethod
@@ -215,17 +236,19 @@ class LinuxShellImpl(Shell):
         @staticmethod
         @override
         def OnCopy(command):
-            return 'cp "{source}" "{dest}"'.format( source=command.Source,
-                                                    dest=command.Dest,
-                                                  )
+            return 'cp "{source}" "{dest}"'.format(
+                source=command.Source,
+                dest=command.Dest,
+            )
 
         # ----------------------------------------------------------------------
         @staticmethod
         @override
         def OnMove(command):
-            return 'mv "{source}" "{dest}"'.format( source=command.Source,
-                                                    dest=command.Dest,
-                                                  )
+            return 'mv "{source}" "{dest}"'.format(
+                source=command.Source,
+                dest=command.Dest,
+            )
 
         # ----------------------------------------------------------------------
         @staticmethod
@@ -240,7 +263,7 @@ class LinuxShellImpl(Shell):
             directory = command.Directory
 
             if directory is None:
-                directory = '''$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )'''
+                directory = """$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"""
 
             return 'pushd "{}" > /dev/null'.format(directory)
 
@@ -257,11 +280,11 @@ class LinuxShellImpl(Shell):
     # ----------------------------------------------------------------------
     CategoryName                            = DerivedProperty("Linux")
     ScriptExtension                         = DerivedProperty(".sh")
-    ExecutableExtension                     = DerivedProperty('')
-    CompressionExtensions                   = DerivedProperty([ ".tgz", ".tar", "gz", ])
+    ExecutableExtension                     = DerivedProperty("")
+    CompressionExtensions                   = DerivedProperty([".tgz", ".tar", "gz"])
     AllArgumentsScriptVariable              = DerivedProperty('"$@"')
     HasCaseSensitiveFileSystem              = DerivedProperty(True)
-    Architecture                            = DerivedProperty("x64")        # I don't know of a reliable, cross-distro way to detect architecture
+    Architecture                            = DerivedProperty("x64")                   # I don't know of a reliable, cross-distro way to detect architecture
     UserDirectory                           = DerivedProperty(os.path.expanduser("~"))
     TempDirectory                           = DerivedProperty("/tmp")
 
@@ -296,16 +319,15 @@ class LinuxShellImpl(Shell):
         filename_or_directory,
         recursive=True,
     ):
-        if ( hasattr(os, "geteuid") and
-             os.geteuid() == 0 and
-             not any(var for var in [ "SUDO_UID", "SUDO_GID", ] if var not in os.environ)
-           ):
-           os.system('chown {recursive} {user}:{group} "{input}"' \
-                        .format( recursive="--recursive" if recursive and os.path.isdir(filename_or_directory) else '',
-                                 user=os.environ["SUDO_UID"],
-                                 group=os.environ["SUDO_GID"],
-                                 input=filename_or_directory,
-                               ))
+        if hasattr(os, "geteuid") and os.geteuid() == 0 and not any(var for var in ["SUDO_UID", "SUDO_GID"] if var not in os.environ):
+            os.system(
+                'chown {recursive} {user}:{group} "{input}"'.format(
+                    recursive="--recursive" if recursive and os.path.isdir(filename_or_directory) else "",
+                    user=os.environ["SUDO_UID"],
+                    group=os.environ["SUDO_GID"],
+                    input=filename_or_directory,
+                ),
+            )
 
     # ----------------------------------------------------------------------
     # |
