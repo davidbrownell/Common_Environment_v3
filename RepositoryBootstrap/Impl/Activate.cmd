@@ -1,16 +1,16 @@
 @REM ----------------------------------------------------------------------
-@REM |  
+@REM |
 @REM |  Activate.cmd
-@REM |  
+@REM |
 @REM |  David Brownell <db@DavidBrownell.com>
 @REM |      2018-05-03 16:38:31
-@REM |  
+@REM |
 @REM ----------------------------------------------------------------------
-@REM |  
+@REM |
 @REM |  Copyright David Brownell 2018-19.
 @REM |  Distributed under the Boost Software License, Version 1.0.
 @REM |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-@REM |  
+@REM |
 @REM ----------------------------------------------------------------------
 @echo off
 
@@ -97,10 +97,10 @@ if "%_ACTIVATE_ENVIRONMENT_IS_CONFIGURABLE_REPOSITORY%" NEQ "0" (
         @echo.
         %_ACTIVATE_ENVIRONMENT_PYTHON_BINARY% -m RepositoryBootstrap.Impl.Activate ListConfigurations "%CD%" command_line
         @echo.
-    
+
         goto :ErrorExit
     )
-    
+
     if "%DEVELOPMENT_ENVIRONMENT_REPOSITORY_CONFIGURATION%" NEQ "" (
         if "%DEVELOPMENT_ENVIRONMENT_REPOSITORY_CONFIGURATION%" NEQ "%1" (
             @echo.
@@ -108,11 +108,11 @@ if "%_ACTIVATE_ENVIRONMENT_IS_CONFIGURABLE_REPOSITORY%" NEQ "0" (
             @echo.
             @echo        ["%DEVELOPMENT_ENVIRONMENT_REPOSITORY_CONFIGURATION%" != "%1"]
             @echo.
-        
+
             goto :ErrorExit
         )
     )
-    
+
     set _ACTIVATE_ENVIRONMENT_CLA=%*
     goto :AfterClaArgsSet
 )
@@ -157,7 +157,7 @@ if "%_ACTIVATE_ENVIRONMENT_SCRIPT_EXECUTION_ERROR_LEVEL%" NEQ "0" (
 )
 
 REM Cleanup
-del "%_ACTIVATE_ENVIRONMENT_TEMP_SCRIPT_NAME%
+del "%_ACTIVATE_ENVIRONMENT_TEMP_SCRIPT_NAME%"
 
 @echo                                                 ^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^v^^
 @echo                                                 ^<                                                                                           ^>

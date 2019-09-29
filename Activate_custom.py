@@ -24,8 +24,8 @@ import six
 import CommonEnvironment
 
 # ----------------------------------------------------------------------
-_script_fullpath = CommonEnvironment.ThisFullpath()
-_script_dir, _script_name = os.path.split(_script_fullpath)
+_script_fullpath                            = CommonEnvironment.ThisFullpath()
+_script_dir, _script_name                   = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
@@ -40,16 +40,17 @@ StringHelpers                               = CommonEnvironmentImports.StringHel
 del sys.path[0]
 
 # ----------------------------------------------------------------------
-def GetCustomActions( output_stream,
-                      configuration,
-                      version_specs,
-                      generated_dir,
-                      debug,
-                      verbose,
-                      fast,
-                      repositories,
-                      is_mixin_repo,
-                    ):
+def GetCustomActions(
+    output_stream,
+    configuration,
+    version_specs,
+    generated_dir,
+    debug,
+    verbose,
+    fast,
+    repositories,
+    is_mixin_repo,
+):
     """
     Returns an action or list of actions that should be invoked as part of the activation process.
 
@@ -64,58 +65,86 @@ def GetCustomActions( output_stream,
     Commands = CurrentShell.Commands
 
     if fast:
-        actions.append(Commands.Message("** FAST: Dynamic tester information has not been activated. ({}) **".format(_script_fullpath)))
+        actions.append(
+            Commands.Message(
+                "** FAST: Dynamic tester information has not been activated. ({}) **".format(
+                    _script_fullpath,
+                ),
+            ),
+        )
     else:
         # Reset any existing values
-        os.environ["DEVELOPMENT_ENVIRONMENT_COMPILERS"] = ''
-        os.environ["DEVELOPMENT_ENVIRONMENT_TEST_EXECUTORS"] = ''
-        os.environ["DEVELOPMENT_ENVIRONMENT_TEST_PARSERS"] = ''
-        os.environ["DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_VALIDATORS"] = ''
-        os.environ["DEVELOPMENT_ENVIRONMENT_TESTER_CONFIGURATIONS"] = ''
+        os.environ["DEVELOPMENT_ENVIRONMENT_COMPILERS"] = ""
+        os.environ["DEVELOPMENT_ENVIRONMENT_TEST_EXECUTORS"] = ""
+        os.environ["DEVELOPMENT_ENVIRONMENT_TEST_PARSERS"] = ""
+        os.environ["DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_VALIDATORS"] = ""
+        os.environ["DEVELOPMENT_ENVIRONMENT_TESTER_CONFIGURATIONS"] = ""
         os.environ["DEVELOPMENT_ENVIRONMENT_FORMATTERS"] = ""
 
-        actions += [ Commands.Set("DEVELOPMENT_ENVIRONMENT_COMPILERS", None),
-                     Commands.Set("DEVELOPMENT_ENVIRONMENT_TEST_EXECUTORS", None),
-                     Commands.Set("DEVELOPMENT_ENVIRONMENT_TEST_PARSERS", None),
-                     Commands.Set("DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_VALIDATORS", None),
-                     Commands.Set("DEVELOPMENT_ENVIRONMENT_TESTER_CONFIGURATIONS", None),
-                     Commands.Set("DEVELOPMENT_ENVIRONMENT_FORMATTERS", None),
-                   ]
+        actions += [
+            Commands.Set("DEVELOPMENT_ENVIRONMENT_COMPILERS", None),
+            Commands.Set("DEVELOPMENT_ENVIRONMENT_TEST_EXECUTORS", None),
+            Commands.Set("DEVELOPMENT_ENVIRONMENT_TEST_PARSERS", None),
+            Commands.Set("DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_VALIDATORS", None),
+            Commands.Set("DEVELOPMENT_ENVIRONMENT_TESTER_CONFIGURATIONS", None),
+            Commands.Set("DEVELOPMENT_ENVIRONMENT_FORMATTERS", None),
+        ]
 
-        actions += DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_COMPILERS",
-                                                                           os.path.join(_script_dir, "Scripts", "Compilers"),
-                                                                           lambda fullpath, name, ext: ext == ".py" and (name.endswith("Compiler") or name.endswith("CodeGenerator") or name.endswith("Verifier")),
-                                                                         )
+        actions += DynamicPluginArchitecture.CreateRegistrationStatements(
+            "DEVELOPMENT_ENVIRONMENT_COMPILERS",
+            os.path.join(_script_dir, "Scripts", "Compilers"),
+            lambda fullpath, name, ext: ext == ".py"
+            and (
+                name.endswith("Compiler")
+                or name.endswith("CodeGenerator")
+                or name.endswith("Verifier")
+            ),
+        )
 
-        actions += DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_TEST_EXECUTORS",
-                                                                           os.path.join(_script_dir, "Scripts", "TestExecutors"),
-                                                                           lambda fullpath, name, ext: ext == ".py" and name.endswith("TestExecutor"),
-                                                                         )
+        actions += DynamicPluginArchitecture.CreateRegistrationStatements(
+            "DEVELOPMENT_ENVIRONMENT_TEST_EXECUTORS",
+            os.path.join(_script_dir, "Scripts", "TestExecutors"),
+            lambda fullpath, name, ext: ext == ".py" and name.endswith("TestExecutor"),
+        )
 
-        actions += DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_TEST_PARSERS",
-                                                                           os.path.join(_script_dir, "Scripts", "TestParsers"),
-                                                                           lambda fullpath, name, ext: ext == ".py" and name.endswith("TestParser"),
-                                                                         )
+        actions += DynamicPluginArchitecture.CreateRegistrationStatements(
+            "DEVELOPMENT_ENVIRONMENT_TEST_PARSERS",
+            os.path.join(_script_dir, "Scripts", "TestParsers"),
+            lambda fullpath, name, ext: ext == ".py" and name.endswith("TestParser"),
+        )
 
-        actions += DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_VALIDATORS",
-                                                                           os.path.join(_script_dir, "Scripts", "CodeCoverageValidators"),
-                                                                           lambda fullpath, name, ext: ext == ".py" and name.endswith("CodeCoverageValidator"),
-                                                                         )
+        actions += DynamicPluginArchitecture.CreateRegistrationStatements(
+            "DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_VALIDATORS",
+            os.path.join(_script_dir, "Scripts", "CodeCoverageValidators"),
+            lambda fullpath, name, ext: ext == ".py"
+            and name.endswith("CodeCoverageValidator"),
+        )
 
-        actions += DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_FORMATTERS",
-                                                                           os.path.join(_script_dir, "src", "Formatter", "CommonEnvironment_Formatter", "Plugins"),
-                                                                           lambda fullpath, name, ext: ext == ".py" and name.endswith("Formatter"),
-                                                                         )
+        actions += DynamicPluginArchitecture.CreateRegistrationStatements(
+            "DEVELOPMENT_ENVIRONMENT_FORMATTERS",
+            os.path.join(
+                _script_dir,
+                "src",
+                "Formatter",
+                "CommonEnvironment_Formatter",
+                "Plugins",
+            ),
+            lambda fullpath, name, ext: ext == ".py" and name.endswith("Formatter"),
+        )
 
-    actions.append(Commands.Augment( "DEVELOPMENT_ENVIRONMENT_TESTER_CONFIGURATIONS",
-                                     [ "python-compiler-PyLint",
-                                       "python-test_parser-PyUnittest",
-                                       "python-coverage_executor-PyCoverage",
-                                     ],
-                                     update_memory=True,
-                                   ))
+    actions.append(
+        Commands.Augment(
+            "DEVELOPMENT_ENVIRONMENT_TESTER_CONFIGURATIONS",
+            [
+                "python-compiler-PyLint",
+                "python-test_parser-PyUnittest",
+                "python-coverage_executor-PyCoverage",
+            ],
+        ),
+    )
 
     return actions
+
 
 # ----------------------------------------------------------------------
 def GetCustomScriptExtractors():
@@ -128,34 +157,55 @@ def GetCustomScriptExtractors():
         if os.path.basename(script_filename) == "__init__.py":
             return
 
-        return [ Commands.EchoOff(),
-                 Commands.Execute('python "{}" {}'.format( script_filename,
-                                                           CurrentShell.AllArgumentsScriptVariable,
-                                                         )),
-               ]
+        return [
+            Commands.EchoOff(),
+            Commands.Execute(
+                'python "{}" {}'.format(
+                    script_filename,
+                    CurrentShell.AllArgumentsScriptVariable,
+                ),
+            ),
+        ]
 
     # ----------------------------------------------------------------------
     def PythonDocs(script_filename):
-        co = compile(open(script_filename, 'rb').read(), script_filename, "exec")
+        co = compile(open(script_filename, "rb").read(), script_filename, "exec")
 
-        if co and co.co_consts and isinstance(co.co_consts[0], six.string_types) and co.co_consts[0][0] != '_':
+        if (
+            co
+            and co.co_consts
+            and isinstance(co.co_consts[0], six.string_types)
+            and co.co_consts[0][0] != "_"
+        ):
             return StringHelpers.Wrap(co.co_consts[0], 100)
 
     # ----------------------------------------------------------------------
     def PowershellScriptWrapper(script_filename):
-        return [ Commands.EchoOff(),
-                 Commands.Execute('powershell -executionpolicy unrestricted "{}" {}'.format(script_filename, CurrentShell.AllArgumentsScriptVariable)),
-               ]
+        return [
+            Commands.EchoOff(),
+            Commands.Execute(
+                'powershell -executionpolicy unrestricted "{}" {}'.format(
+                    script_filename,
+                    CurrentShell.AllArgumentsScriptVariable,
+                ),
+            ),
+        ]
 
     # ----------------------------------------------------------------------
     def EnvironmentScriptWrapper(script_filename):
-        return [ Commands.EchoOff(),
-                 Commands.Execute('"{}" {}'.format(script_filename, CurrentShell.AllArgumentsScriptVariable)),
-               ]
+        return [
+            Commands.EchoOff(),
+            Commands.Execute(
+                '"{}" {}'.format(script_filename, CurrentShell.AllArgumentsScriptVariable),
+            ),
+        ]
 
     # ----------------------------------------------------------------------
 
-    return OrderedDict([ ( ".py", ( PythonWrapper, PythonDocs ) ),
-                         ( ".ps1", PowershellScriptWrapper ),
-                         ( CurrentShell.ScriptExtension, EnvironmentScriptWrapper ),
-                       ])
+    return OrderedDict(
+        [
+            (".py", (PythonWrapper, PythonDocs)),
+            (".ps1", PowershellScriptWrapper),
+            (CurrentShell.ScriptExtension, EnvironmentScriptWrapper),
+        ],
+    )

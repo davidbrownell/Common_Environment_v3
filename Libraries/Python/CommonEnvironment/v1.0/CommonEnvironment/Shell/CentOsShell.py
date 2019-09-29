@@ -17,7 +17,7 @@
 import os
 
 import CommonEnvironment
-from CommonEnvironment.Interface import staticderived, DerivedProperty
+from CommonEnvironment.Interface import staticderived, override, DerivedProperty
 from CommonEnvironment.Shell.LinuxShellImpl import LinuxShellImpl
 
 # ----------------------------------------------------------------------
@@ -33,3 +33,22 @@ class CentOsShell(LinuxShellImpl):
     """Shell for CentOS systems"""
 
     Name                                    = DerivedProperty("CentOS")
+
+    # ----------------------------------------------------------------------
+    @staticderived
+    @override
+    class CommandVisitor(LinuxShellImpl.CommandVisitor):
+        try:
+            import distro
+
+            if int(distro.major_version()) < 7:
+                # ----------------------------------------------------------------------
+                @classmethod
+                @override
+                def OnSymbolicLink(cls, command):
+                    # Older versions of CentOS do not support relative paths
+                    command.RelativePath = False
+
+                    return super(CentOsShell.CommandVisitor, cls).OnSymbolicLink(command)
+        except ImportError:
+            pass
