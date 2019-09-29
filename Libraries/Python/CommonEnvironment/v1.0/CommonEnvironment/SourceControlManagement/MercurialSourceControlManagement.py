@@ -80,16 +80,24 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
         command,
         strip=False,
         newline=False,
+        output_stream_or_functor=None,
     ):
         command = command.replace("hg ", 'hg --cwd "{}" '.format(repo_root))
 
         if cls.Diagnostics:
             sys.stdout.write("VERBOSE: {}\n".format(command))
 
-        result, content = Process.Execute(
+        result = Process.Execute(
             command,
+            output_stream_or_functor,
             environment=os.environ,
+            line_delimited_output=bool(output_stream_or_functor),
         )
+
+        if output_stream_or_functor:
+            return result
+
+        result, content = result
 
         if strip:
             content = content.strip()
@@ -304,15 +312,95 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
     @classmethod
     @override
     def GetExecutePermission(cls, repo_root, filename):
-        # TODO
-        raise Exception("Abstract method")
+        filename = FileSystem.TrimPath(filename, repo_root)
+        filename = filename.replace(os.path.sep, "/")
+
+        regex = re.compile(r"^(?P<hash>\S+)\s+(?P<permissions>\d+)\s+(?P<star>\*\s+)?(?P<filename>.+?)$")
+
+        nonlocals = CommonEnvironment.Nonlocals(
+            result=None,
+        )
+
+        # ----------------------------------------------------------------------
+        def OnOutput(line):
+            if nonlocals.result is not None:
+                return
+
+            match = regex.match(line)
+            assert match, line
+
+            this_filename = match.group("filename")
+
+            if filename == this_filename:
+                permissions = int(match.group("permissions"))
+                assert permissions < 1000, permissions
+
+                # The execute permission value is in the hundreds place
+                execute_permission = int(permissions / 100)
+
+                if execute_permission == 6:
+                    nonlocals.result = False
+                elif execute_permission == 7:
+                    nonlocals.result = True
+                else:
+                    assert False, (line, execute_permission)
+
+        # ----------------------------------------------------------------------
+
+        result = cls.Execute(
+            repo_root,
+            "hg manifest --debug",
+            output_stream_or_functor=OnOutput,
+        )
+
+        assert nonlocals.result is not None
+        return nonlocals.result
 
     # ----------------------------------------------------------------------
     @classmethod
     @override
-    def SetExecutePermission(cls, repo_root, filename, is_executable):
-        # TODO
-        raise Exception("Abstract method")
+    def SetExecutePermission(
+        cls,
+        repo_root,
+        filename,
+        is_executable,
+        commit_message=None,
+    ):
+        filename = FileSystem.TrimPath(filename, repo_root)
+        filename = filename.replace(os.path.sep, "/")
+
+        if is_executable:
+            old_mode = "644"
+            new_mode = "755"
+
+            if commit_message is None:
+                commit_message = "Added execute permission for '{}'".format(filename)
+        else:
+            old_mode = "755"
+            new_mode = "644"
+
+            if commit_message is None:
+                commit_message = "Removed execute permission for '{}'".format(filename)
+
+        temp_filename = CurrentShell.CreateTempFilename(".diff")
+
+        with open(temp_filename, "w") as f:
+            f.write(
+                textwrap.dedent(
+                    """\
+                    diff --git a/{filename} b/{filename}
+                    old mode 100{old_mode}
+                    new mode 100{new_mode}
+                    """,
+                ).format(
+                    filename=filename,
+                    old_mode=old_mode,
+                    new_mode=new_mode,
+                ),
+            )
+
+        with CallOnExit(lambda: FileSystem.RemoveFile(temp_filename)):
+            return Process.Execute('hg import --bypass -m "{}" "{}"'.format(commit_message, temp_filename))
 
     # ----------------------------------------------------------------------
     @classmethod
