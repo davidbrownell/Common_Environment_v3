@@ -168,12 +168,16 @@ class WindowsShell(Shell):
                 add_statement_template = "{value}{sep}%{name}%"
 
             statements = [
+                # The original code used batch "IF" statements to check if the string was empty or
+                # if the value was in the expanded value (by attempting to substitute values for the
+                # search string and determining if the modified string matched the original string).
+                # However, that technique ran into problems when the strings were large. This new technique
+                # is better able to handle large values.
                 textwrap.dedent(
                     """\
-                    IF "%{name}%"=="" goto set_{unique_id}
-                    IF "{sep}%{name}:{value}=%{sep}" NEQ "{sep}%{name}%{sep}" goto skip_{unique_id}
+                    echo "{sep}%{name}%{sep}" | findstr "{sep}{value}{sep}" >nul
+                    if %ERRORLEVEL% == 0 goto skip_{unique_id}
 
-                    :set_{unique_id}
                     set {name}={add_statement}
 
                     :skip_{unique_id}
