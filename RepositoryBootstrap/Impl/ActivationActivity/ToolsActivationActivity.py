@@ -23,8 +23,8 @@ from RepositoryBootstrap.Impl import CommonEnvironmentImports
 from RepositoryBootstrap.Impl.ActivationActivity import ActivationActivity
 
 # ----------------------------------------------------------------------
-_script_fullpath = CommonEnvironmentImports.CommonEnvironment.ThisFullpath()
-_script_dir, _script_name = os.path.split(_script_fullpath)
+_script_fullpath                            = CommonEnvironmentImports.CommonEnvironment.ThisFullpath()
+_script_dir, _script_name                   = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 inflect                                     = inflect_mod.engine()
@@ -51,26 +51,33 @@ class ToolsActivationActivity(ActivationActivity):
     # ----------------------------------------------------------------------
     @classmethod
     @CommonEnvironmentImports.Interface.override
-    def _CreateCommandsImpl( cls,
-                             output_stream,
-                             verbose_stream,
-                             configuration,
-                             repositories,
-                             version_specs,
-                             generated_dir,
-                           ):
+    def _CreateCommandsImpl(
+        cls,
+        output_stream,
+        verbose_stream,
+        configuration,
+        repositories,
+        version_specs,
+        generated_dir,
+    ):
         version_info = [] if not version_specs else version_specs.Tools
 
-        nonlocals = CommonEnvironmentImports.CommonEnvironment.Nonlocals(tools=0)
+        nonlocals = CommonEnvironmentImports.CommonEnvironment.Nonlocals(
+            tools=0,
+        )
 
         actions = []
         paths = []
 
         verbose_stream.write("Searching...")
-        with verbose_stream.DoneManager( done_suffix=lambda: "{} found".format(inflect.no("tool", nonlocals.tools)),
-                                       ) as dm:
+        with verbose_stream.DoneManager(
+            done_suffix=lambda: "{} found".format(inflect.no("tool", nonlocals.tools)),
+        ) as dm:
             for repository in repositories:
-                potential_tools_fullpath = os.path.join(repository.Root, Constants.TOOLS_SUBDIR)
+                potential_tools_fullpath = os.path.join(
+                    repository.Root,
+                    Constants.TOOLS_SUBDIR,
+                )
                 if not os.path.isdir(potential_tools_fullpath):
                     continue
 
@@ -79,7 +86,9 @@ class ToolsActivationActivity(ActivationActivity):
                     if not os.path.isdir(fullpath):
                         continue
 
-                    if os.path.exists(os.path.join(fullpath, IGNORE_AS_TOOL_DIR_FILENAME)):
+                    if os.path.exists(
+                        os.path.join(fullpath, IGNORE_AS_TOOL_DIR_FILENAME),
+                    ):
                         continue
 
                     try:
@@ -101,19 +110,29 @@ class ToolsActivationActivity(ActivationActivity):
                     nonlocals.tools += 1
 
                     # Look for an activation customization script here. If it exists, invoke that rather than our custom activities
-                    potential_activate_fullpath = os.path.join(fullpath, CommonEnvironmentImports.CurrentShell.CreateScriptName(Constants.ACTIVATE_ENVIRONMENT_NAME))
+                    potential_activate_fullpath = os.path.join(
+                        fullpath,
+                        CommonEnvironmentImports.CurrentShell.CreateScriptName(
+                            Constants.ACTIVATE_ENVIRONMENT_NAME,
+                        ),
+                    )
                     if os.path.isfile(potential_activate_fullpath):
-                        actions.append(CommonEnvironmentImports.CurrentShell.Commands.Call(potential_activate_fullpath))
+                        actions.append(
+                            CommonEnvironmentImports.CurrentShell.Commands.Call(
+                                potential_activate_fullpath,
+                            ),
+                        )
                         continue
 
                     # Add well-known suffixes to the path if they exist
                     existing_paths = []
 
-                    for potential_suffix in [ "bin",
-                                              "sbin",
-                                              os.path.join("usr", "bin"),
-                                              os.path.join("usr", "sbin"),
-                                            ]:
+                    for potential_suffix in [
+                        "bin",
+                        "sbin",
+                        os.path.join("usr", "bin"),
+                        os.path.join("usr", "sbin"),
+                    ]:
                         potential_path = os.path.join(fullpath, potential_suffix)
                         if os.path.isdir(potential_path):
                             existing_paths.append(potential_path)
@@ -124,10 +143,8 @@ class ToolsActivationActivity(ActivationActivity):
                     paths += existing_paths
 
         if paths:
-            # We want the most derived paths to appear before the more basic paths, so reverse
-            # this list.
-            paths.reverse()
-
-            actions.append(CommonEnvironmentImports.CurrentShell.Commands.AugmentPath(paths))
+            actions.append(
+                CommonEnvironmentImports.CurrentShell.Commands.AugmentPath(paths),
+            )
 
         return actions
