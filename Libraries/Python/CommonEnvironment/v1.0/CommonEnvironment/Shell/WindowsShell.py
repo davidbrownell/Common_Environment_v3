@@ -170,10 +170,9 @@ class WindowsShell(Shell):
             statements = [
                 textwrap.dedent(
                     """\
-                    IF "%{name}%"=="" goto set_{unique_id}
-                    IF "{sep}%{name}:{value}=%{sep}" NEQ "{sep}%{name}%{sep}" goto skip_{unique_id}
+                    echo "{sep}%{name}%{sep}" | findstr /C:"{sep}{value}{sep}" >nul
+                    if %ERRORLEVEL% == 0 goto skip_{unique_id}
 
-                    :set_{unique_id}
                     set {name}={add_statement}
 
                     :skip_{unique_id}
