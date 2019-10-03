@@ -181,6 +181,8 @@ def GetRepoMapFromSetup(
             self.Id                         = json_item["id"]
             self.Root                       = json_item["root"]
             self.CloneUri                   = json_item["clone_uri"]
+            self.Priority                   = json_item["priority"]
+            self.Configurations             = json_item["configurations"]
             self.Dependencies               = OrderedDict(
                 [
                     (None if k == "<None>" else k, [tuple(item) for item in v])
@@ -206,6 +208,7 @@ def GetRepoMapFromSetup(
 
 # ----------------------------------------------------------------------
 def GetPrioritizedRepositories():
+    """Returns the prioritized repositories for the currently activated environment"""
     from RepositoryBootstrap.Impl.ActivationData import ActivationData
 
     return ActivationData.Load(None, None, False).PrioritizedRepositories

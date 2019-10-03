@@ -316,34 +316,93 @@ def List(
                 output_stream.write(sink.getvalue())
                 return repo_map
 
-            output_stream.write(
-                json_mod.dumps(
-                    [
-                        {
-                            "name": value.Name,
-                            "id": value.Id,
-                            "root": value.root,
-                            "clone_uri": value.get_clone_uri_func(
-                                scm,
-                            ) if value.get_clone_uri_func else None,
-                            "dependents": OrderedDict(
-                                [
-                                    (k or "<None>", v)
-                                    for k,
-                                    v in six.iteritems(value.dependents)
-                                ],
-                            ),
-                            "dependencies": OrderedDict(
-                                [
-                                    (k or "<None>", v)
-                                    for k,
-                                    v in six.iteritems(value.dependencies)
-                                ],
-                            ),
-                        } for value in six.itervalues(repo_map)
-                    ],
-                ),
+            # Calculate the priorities of the items
+            for value in six.itervalues(repo_map):
+                value.priority = 0
+
+            # ----------------------------------------------------------------------
+            def Walk(repo_value, priority_modifier):
+                repo_value.priority += priority_modifier
+
+                for config_name in repo_value.dependencies:
+                    for dependency_id, _ in repo_value.dependencies[config_name]:
+                        Walk(repo_map[dependency_id], priority_modifier + 1)
+
+            # ----------------------------------------------------------------------
+
+            for value in six.itervalues(repo_map):
+                if value.dependents:
+                    continue
+
+                Walk(value, 1)
+
+            # Sort by priority
+            repo_ids = list(six.iterkeys(repo_map))
+            repo_ids.sort(
+                key=lambda id: (repo_map[id].priority, repo_map[id].Name),
+                reverse=True,
             )
+
+            # Create the output
+
+            # ----------------------------------------------------------------------
+            def SortRepoConfigList(l):
+                l = list(l)
+
+                l.sort(
+                    key=(
+                        lambda item: (
+                            repo_map[item[0]].priority,
+                            repo_map[item[0]].Name,
+                            item[1],
+                        )
+                    ),
+                    reverse=True,
+                )
+
+                return l
+
+            # ----------------------------------------------------------------------
+
+            output = []
+
+            for repo_id in repo_ids:
+                repo = repo_map[repo_id]
+
+                dependents = OrderedDict(
+                    [
+                        (k or "<None>", SortRepoConfigList(v))
+                        for k,
+                        v in six.iteritems(repo.dependents)
+                    ],
+                )
+
+                dependencies = OrderedDict(
+                    [
+                        (k or "<None>", SortRepoConfigList(v))
+                        for k,
+                        v in six.iteritems(repo.dependencies)
+                    ],
+                )
+
+                output.append(
+                    {
+                        "name": repo.Name,
+                        "id": repo.Id,
+                        "root": repo.root,
+                        "clone_uri": repo.get_clone_uri_func(
+                            scm,
+                        ) if repo.get_clone_uri_func else None,
+                        "priority": repo.priority,
+                        "configurations": repo.configurations,
+                        "dependents": dependents,
+                        "dependencies": dependencies,
+                    },
+                )
+
+            # Write the output
+            output_stream.write(json_mod.dumps(output))
+
             return 0
 
         # ----------------------------------------------------------------------
