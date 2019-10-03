@@ -1,21 +1,21 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  __init__.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-05-21 07:44:58
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-19.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """
 Provides functionality for files that implement on consume builder functionality.
 A builder is a file that is capable of building or cleaning one or more artifacts,
-where the mechanics associated with the implementation of that functionality is 
+where the mechanics associated with the implementation of that functionality is
 opaque to the user. When using build files, the means of invoking a build are the
 same regardless of what the build is actually doing.
 """
@@ -44,11 +44,11 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
 with CallOnExit(lambda: sys.path.pop(0)):
     from RepositoryBootstrap import Constants as RepositoryBootstrapConstants
-    
+
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Public Types
-# |  
+# |
 # ----------------------------------------------------------------------
 class Configuration(object):
     """Metadata about an individual build"""
@@ -56,7 +56,7 @@ class Configuration(object):
     # ----------------------------------------------------------------------
     # |  Public Types
 
-    # This is just an arbitrary number, chosen so that builds can be given 
+    # This is just an arbitrary number, chosen so that builds can be given
     # lower- and higher priority than this default value.
     DEFAULT_PRIORITY                        = 10000
 
@@ -99,7 +99,7 @@ class CompleteConfiguration(Configuration):
                      ):
         assert os.path.isfile(build_filename), build_filename
 
-        # Extract metadata auto-generated from the build file to create the 
+        # Extract metadata auto-generated from the build file to create the
         # configuration. Note that some portions of the metadata will be based
         # on the current dir, so switch to the root dir before extracting the
         # information to ensure that things work as expected.
@@ -125,13 +125,13 @@ class CompleteConfiguration(Configuration):
             result, output = Process.Execute('python "{}" Metadata'.format(build_filename))
             assert result == 0, (result, output)
 
-            match = RegularExpression.TemplateStringToRegex( cls._VIEW_METADATA_TEMPLATE, 
-                                                             optional_tags=[ "suggested_output_dir_location", 
+            match = RegularExpression.TemplateStringToRegex( cls._VIEW_METADATA_TEMPLATE,
+                                                             optional_tags=[ "suggested_output_dir_location",
                                                                            ],
                                                            ).match(output)
             if not match:
                 raise Exception("'{}' did not produce valid metadata results".format(build_filename))
-            
+
             # ----------------------------------------------------------------------
             def FromList(value):
                 value = match.group(value)
@@ -190,7 +190,7 @@ class CompleteConfiguration(Configuration):
                                                     required_dev_configurations=', '.join(self.RequiredDevelopmentConfigurations) if self.RequiredDevelopmentConfigurations else "None",
                                                     disable_if_dependency="True" if self.DisableIfDependencyEnvironment else "False",
                                                     configuration_required_on_clean="None" if not self.Configurations else "True" if self.ConfigurationRequiredOnClean else "False",
-                                                  ) 
+                                                  )
 
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
@@ -202,7 +202,7 @@ class CompleteConfiguration(Configuration):
 
         Requires Output Dir:                                    {requires_output_dir}
         Suggested Output Dir Location:                          {suggested_output_dir_location}
-        
+
         Available Configurations:                               {configurations}
         Available Commands:                                     {commands}
         Custom Commands:                                        {custom_commands}
@@ -214,9 +214,9 @@ class CompleteConfiguration(Configuration):
         """).lstrip()
 
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Public Methods
-# |  
+# |
 # ----------------------------------------------------------------------
 def Main( config,
           original_args=sys.argv,                       # <Dangerous default value> pylint: disable = W0102
@@ -287,7 +287,7 @@ def Main( config,
 
     # Execute
     stack_frame = inspect.stack()[-1]
-    
+
     current_dir = os.getcwd()
     os.chdir(os.path.dirname(os.path.abspath(stack_frame[1])))
 
@@ -305,7 +305,7 @@ def Main( config,
                 if len(original_args) >= 3:
                     output_dir = original_args[2]
 
-            if output_dir:
+            if output_dir and not output_dir.startswith(command_line_arg_prefix):
                 FileSystem.MakeDirs(output_dir)
 
         return CommandLine.Executor( args=original_args,
@@ -320,9 +320,9 @@ def Main( config,
                                            )
 
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Private Methods
-# |  
+# |
 # ----------------------------------------------------------------------
 def _RedirectEntryPoint_IsSupportedDevelopmentConfiguration(configurations):
     dev_configuration = os.getenv(RepositoryBootstrapConstants.DE_REPO_CONFIGURATION_NAME)

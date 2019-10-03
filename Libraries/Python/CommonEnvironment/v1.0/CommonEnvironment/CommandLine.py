@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  CommandLine.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-04-24 16:14:37
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-19.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Tools and utilities that automatically create command line parsers."""
 
@@ -33,18 +33,18 @@ from CommonEnvironment.Constraints import Constraints
 from CommonEnvironment import StringHelpers
 from CommonEnvironment.StreamDecorator import StreamDecorator
 from CommonEnvironment.TypeInfo import ValidationException
-from CommonEnvironment.TypeInfo.All import *                                # <Wildcard import> pylint: disable = W0401
+from CommonEnvironment.TypeInfo.All import *                                                                  # <Wildcard import> pylint: disable = W0401
 from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import StringSerialization
 
 # ----------------------------------------------------------------------
-_script_fullpath = CommonEnvironment.ThisFullpath()
-_script_dir, _script_name = os.path.split(_script_fullpath)
+_script_fullpath                            = CommonEnvironment.ThisFullpath()
+_script_dir, _script_name                   = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Public Types
-# |  
+# |
 # ----------------------------------------------------------------------
 
 # When this arg is provided, the tool will output debugging diagnostics
@@ -56,32 +56,28 @@ MAX_COLUMN_WIDTH                            = 190
 # The following methods can be optionally defined by the calling file
 # to customize output characteristics.
 CUSTOMIZATION_METHODS                       = [
-    # Overrides the displayed script name; the calling file's name
-    # will be used if not provided.
+    # Overrides the displayed script name; the calling file's name                                        # will be used if not provided.
     "CommandLineScriptName",                # def Func() -> string
-
-    # Overrides the script description; the calling file's docstring
-    # will be used if not provided.
+    # Overrides the script description; the calling file's docstring                                        # will be used if not provided.
     "CommandLineScritpDescription",         # def Func() -> string
-
-    # Content displayed after the description but before usage
-    # information; no prefix will be displayed if not provided.
+    # Content displayed after the description but before usage                                        # information; no prefix will be displayed if not provided.
     "CommandLineDocPrefix",                 # def Func() -> string
-
-    # Content displayed after usage information; no prefix will 
-    # be displayed if not provided.
+    # Content displayed after usage information; no prefix will                                        # be displayed if not provided.
     "CommandLineDocSuffix",                 # def Func() -> string
 ]
 
+
 class UsageException(Exception):
     """Exception whose contents will be displayed along with verbose help information."""
+
     pass
+
 
 # ----------------------------------------------------------------------
 @wrapt.decorator
 class EntryPoint(object):
     """
-    Decorates a method/function that should be made available on the 
+    Decorates a method/function that should be made available on the
     command line.
 
     @EntryPoint
@@ -94,12 +90,14 @@ class EntryPoint(object):
     # <Too few public methods> pylint: disable = R0903
     class Parameter(object):
         """Information about a parameter made available on the commend line."""
-        def __init__( self,
-                      description='',
-                      postprocess_func=None,            # def Func(value) -> new_value
-                      allow_duplicates=False,
-                      ignore=False,
-                    ):
+
+        def __init__(
+            self,
+            description="",
+            postprocess_func=None,          # def Func(value) -> new_value
+            allow_duplicates=False,
+            ignore=False,
+        ):
             self.Description                = description
             self.PostprocessFunc            = postprocess_func or (lambda value: value)
             self.AllowDuplicates            = allow_duplicates
@@ -111,10 +109,11 @@ class EntryPoint(object):
 
     # ----------------------------------------------------------------------
     # |  Public Methods
-    def __init__( self,
-                  _name_override=None,      # Prefixed with an underscore so it doesn't conflect with function parameters
-                  **parameters
-                ):
+    def __init__(
+        self,
+        _name_override=None,                # Prefixed with an underscore so it doesn't conflect with function parameters
+        **parameters
+    ):
         """
         Example:
 
@@ -136,6 +135,7 @@ class EntryPoint(object):
     def __repr__(self):
         return CommonEnvironment.ObjectReprImpl(self)
 
+
 # ----------------------------------------------------------------------
 class EntryPointInformation(object):
     """Information about an entry point calculated from the code."""
@@ -144,22 +144,23 @@ class EntryPointInformation(object):
     # |  Public Types
     class ParameterInfo(object):
         # <Too few public methods> pylint: disable = R0903
-        class NoDefault(object): 
+        class NoDefault(object):
             pass
 
         # ----------------------------------------------------------------------
-        def __init__( self,
-                      type_info,
-                      name,
-                      description,
-                      display_arity,
-                      postprocess_func,
-                      allow_duplicates,
-                      is_positional,
-                      is_required,
-                      is_switch,
-                      default_value,
-                    ):
+        def __init__(
+            self,
+            type_info,
+            name,
+            description,
+            display_arity,
+            postprocess_func,
+            allow_duplicates,
+            is_positional,
+            is_required,
+            is_switch,
+            default_value,
+        ):
             self.TypeInfo                   = type_info
             self.Name                       = name
             self.Description                = description
@@ -170,7 +171,7 @@ class EntryPointInformation(object):
             self.IsRequired                 = is_required
             self.IsSwitch                   = is_switch
             self.DefaultValue               = default_value
-            
+
             if self.DefaultValue is not self.NoDefault and self.TypeInfo.Arity.Min != 0:
                 raise Exception("Parameters with default values should have an optional arity ({})".format(self.Name))
 
@@ -218,10 +219,7 @@ class EntryPointInformation(object):
             if (constraints_decorator is None or not constraints_decorator.Preconditions) and len(arg_spec.args) != len(arg_spec.defaults or []):
                 raise Exception("'{}' must be associated with a Constraints decorator with preconditions".format(function.__name__))
 
-            return cls( function,
-                        entry_point_decorator,
-                        constraints_decorator,
-                      )
+            return cls(function, entry_point_decorator, constraints_decorator)
 
     # ----------------------------------------------------------------------
     @classmethod
@@ -239,28 +237,31 @@ class EntryPointInformation(object):
 
         # Sort by line number, as we want the functions displayed in the order in which
         # they were declared.
-        entry_points.sort(key=lambda x: six.get_function_code(x.Function).co_firstlineno)
+        entry_points.sort(
+            key=lambda x: six.get_function_code(x.Function).co_firstlineno,
+        )
 
         return entry_points
 
     # ----------------------------------------------------------------------
-    def __init__( self,
-                  function,
-                  entry_point_decorator,
-                  constraints_decorator,
-                ):
+    def __init__(self, function, entry_point_decorator, constraints_decorator):
         self.Function                       = function
         self.EntryPointDecorator            = entry_point_decorator
         self.ConstraintsDecorator           = constraints_decorator
         self.Name                           = self.EntryPointDecorator.NameOverride or function.__name__
-        
+
         # Process the description
-        description_lines = (function.__doc__ or '').split('\n')
+        description_lines = (function.__doc__ or "").split("\n")
 
         # ----------------------------------------------------------------------
         def IsWhitespace(value):
             for c in value:
-                if c not in [ ' ', '\r', '\n', '\t', ]:
+                if c not in [
+                    " ",
+                    "\r",
+                    "\n",
+                    "\t",
+                ]:
                     return False
 
             return True
@@ -273,13 +274,13 @@ class EntryPointInformation(object):
         while description_lines and IsWhitespace(description_lines[-1]):
             description_lines.pop()
 
-        self.Description                    = textwrap.dedent('\n'.join(description_lines))
+        self.Description                    = textwrap.dedent("\n".join(description_lines))
 
         # Populate the parameters
         parameters = []
 
         arg_spec = self._GetArgSpec(function)
-        
+
         args = arg_spec.args
         defaults = list(arg_spec.defaults or [])
 
@@ -295,9 +296,9 @@ class EntryPointInformation(object):
                 entry_point_decorator_names.remove(arg)
 
             # <Too many boolean expressions in if statement> pylint: disable = R0916
-            if ( (self.ConstraintsDecorator and arg in self.ConstraintsDecorator.Preconditions and self.ConstraintsDecorator.Preconditions[arg] is None) or
-                 (arg in self.EntryPointDecorator.Parameters and (entry_point_decorator.Parameters[arg] is None or entry_point_decorator.Parameters[arg].Ignore))
-               ):
+            if (self.ConstraintsDecorator and arg in self.ConstraintsDecorator.Preconditions and self.ConstraintsDecorator.Preconditions[arg] is None) or (
+                arg in self.EntryPointDecorator.Parameters and (entry_point_decorator.Parameters[arg] is None or entry_point_decorator.Parameters[arg].Ignore)
+            ):
                 if index < first_optional_arg_index:
                     raise Exception("'{}' in the function '{}' was explicitly ignored but does not have a default python value.".format(arg, self.Name))
 
@@ -308,9 +309,12 @@ class EntryPointInformation(object):
                 new_args.append(arg)
 
         if entry_point_decorator_names:
-            raise Exception("Parameter information was provided for parameters in the function '{}' that do not match existing definition ({}).".format( self.Name,
-                                                                                                                                                         ', '.join(entry_point_decorator_names),
-                                                                                                                                                       ))
+            raise Exception(
+                "Parameter information was provided for parameters in the function '{}' that do not match existing definition ({}).".format(
+                    self.Name,
+                    ", ".join(entry_point_decorator_names),
+                ),
+            )
 
         args = new_args
         first_optional_arg_index = len(args) - len(defaults)
@@ -318,11 +322,14 @@ class EntryPointInformation(object):
         # Populate all parameter information
         is_positional = True
 
-        all_types_tuple = tuple(ALL_FUNDAMENTAL_TYPES) + ( DictTypeInfo, AnyOfTypeInfo )
+        all_types_tuple = tuple(ALL_FUNDAMENTAL_TYPES) + (DictTypeInfo, AnyOfTypeInfo)
 
         for index, name in enumerate(args):
             if self.ConstraintsDecorator is None or (name not in self.ConstraintsDecorator.Preconditions and index >= first_optional_arg_index):
-                type_info = CreateFromPythonType(type(defaults[index - first_optional_arg_index]), arity='?')
+                type_info = CreateFromPythonType(
+                    type(defaults[index - first_optional_arg_index]),
+                    arity="?",
+                )
             else:
                 assert name in self.ConstraintsDecorator.Preconditions, (self.Name, name)
                 type_info = self.ConstraintsDecorator.Preconditions[name]
@@ -330,10 +337,7 @@ class EntryPointInformation(object):
             assert type_info, (self.Name, name)
 
             if not isinstance(type_info, all_types_tuple):
-                raise Exception("Only fundamental types are supported ({}, {}, {})".format( self.Name,
-                                                                                            name,
-                                                                                            type_info,
-                                                                                          ))
+                raise Exception("Only fundamental types are supported ({}, {}, {})".format(self.Name, name, type_info))
 
             if name in self.EntryPointDecorator.Parameters:
                 provided_info = self.EntryPointDecorator.Parameters[name]
@@ -343,48 +347,41 @@ class EntryPointInformation(object):
             # Calculate the dispay arity
             if isinstance(type_info, DictTypeInfo):
                 if not type_info.Arity.IsSingle and not type_info.Arity.IsOptional:
-                    raise Exception("Dictionaries must have an arity of 1 or ? ({}, {})".format( self.Name,
-                                                                                                 name,
-                                                                                               ))
+                    raise Exception("Dictionaries must have an arity of 1 or ? ({}, {})".format(self.Name, name))
 
                 for k, v in six.iteritems(type_info.Items):
                     if not isinstance(v, StringTypeInfo):
-                        raise Exception("Dictionary value types must be strings ({}, {}, {})".format( self.Name,
-                                                                                                      name,
-                                                                                                      k,
-                                                                                                    ))
+                        raise Exception("Dictionary value types must be strings ({}, {}, {})".format(self.Name, name, k))
 
-                display_arity = '*' if type_info.Arity.IsOptional or not is_positional else '+'
+                display_arity = "*" if type_info.Arity.IsOptional or not is_positional else "+"
 
             elif type_info.Arity.IsSingle:
-                display_arity = '1'
+                display_arity = "1"
             elif type_info.Arity.IsOptional:
-                display_arity = '?'
+                display_arity = "?"
             elif type_info.Arity.IsCollection:
-                display_arity = '*' if type_info.Arity.Min == 0 else '+'
+                display_arity = "*" if type_info.Arity.Min == 0 else "+"
             else:
-                raise Exception("Types must have an arity of '1', '?', '+', or '*' ({}, {})".format( self.Name,
-                                                                                                     name,
-                                                                                                   ))
+                raise Exception("Types must have an arity of '1', '?', '+', or '*' ({}, {})".format(self.Name, name))
 
             # Are we still looking at positional args?
-            if ( is_positional and
-                 (index >= first_optional_arg_index or display_arity != '1') and
-                 index != len(args) - 1
-               ):
+            if is_positional and (index >= first_optional_arg_index or display_arity != "1") and index != len(args) - 1:
                 is_positional = False
 
-            parameters.append(self.ParameterInfo( type_info,
-                                                  name,
-                                                  provided_info.Description,
-                                                  display_arity,
-                                                  provided_info.PostprocessFunc,
-                                                  provided_info.AllowDuplicates,
-                                                  is_positional,
-                                                  index < first_optional_arg_index,
-                                                  isinstance(type_info, BoolTypeInfo) and index >= first_optional_arg_index and defaults[index - first_optional_arg_index] is not None,
-                                                  defaults[index - first_optional_arg_index] if index >= first_optional_arg_index else self.ParameterInfo.NoDefault,
-                                                ))
+            parameters.append(
+                self.ParameterInfo(
+                    type_info,
+                    name,
+                    provided_info.Description,
+                    display_arity,
+                    provided_info.PostprocessFunc,
+                    provided_info.AllowDuplicates,
+                    is_positional,
+                    index < first_optional_arg_index,
+                    isinstance(type_info, BoolTypeInfo) and index >= first_optional_arg_index and defaults[index - first_optional_arg_index] is not None,
+                    defaults[index - first_optional_arg_index] if index >= first_optional_arg_index else self.ParameterInfo.NoDefault,
+                ),
+            )
 
         self.Parameters                     = parameters
 
@@ -402,8 +399,9 @@ class EntryPointInformation(object):
     def _GetArgSpec(function):
         if sys.version_info[0] == 2:
             return inspect.getargspec(function)         # <Using deprecated method> pylint: disable = W1505
-        
+
         return inspect.getfullargspec(function)
+
 
 # ----------------------------------------------------------------------
 class Executor(object):
@@ -411,19 +409,20 @@ class Executor(object):
 
     # ----------------------------------------------------------------------
     # <Too many arguments> pylint: disable = R0913
-    def __init__( self,
-                  args=sys.argv,
-                  command_line_arg_prefix='/',
-                  command_line_keyword_separator='=',
-                  command_line_dict_tag_value_separator=':',
-                  args_in_a_file_prefix='@',
-                  secondary_command_line_keyword_separator="_EQ_",          # Use if the standard keyword sep has special meaning within some environments and cannot be used in some cases
-                  script_name=None,
-                  script_description=None,
-                  script_description_prefix=None,
-                  script_description_suffix=None,
-                  entry_points=None,
-                ):
+    def __init__(
+        self,
+        args=sys.argv,
+        command_line_arg_prefix="/",
+        command_line_keyword_separator="=",
+        command_line_dict_tag_value_separator=":",
+        args_in_a_file_prefix="@",
+        secondary_command_line_keyword_separator="_EQ_",                    # Use if the standard keyword sep has special meaning within some environments and cannot be used in some cases
+        script_name=None,
+        script_description=None,
+        script_description_prefix=None,
+        script_description_suffix=None,
+        entry_points=None,
+    ):
         mod = sys.modules["__main__"]
 
         self.Args                                       = args
@@ -433,65 +432,77 @@ class Executor(object):
         self.ArgsInAFilePrefix                          = args_in_a_file_prefix
         self.SecondaryCommandLineKeywordSeparator       = secondary_command_line_keyword_separator
         self.ScriptName                                 = script_name or (mod.CommandLineScriptName() if hasattr(mod, "CommandLineScriptName") else os.path.basename(self.Args[0]))
-        self.ScriptDescription                          = script_description or (mod.CommandLineScriptDescription() if hasattr(mod, "CommandLineScriptDescription") else mod.__doc__) or ''
-        self.ScriptDescriptionPrefix                    = script_description_prefix or (mod.CommandLinePrefix() if hasattr(mod, "CommandLinePrefix") else '')
-        self.ScriptDescriptionSuffix                    = script_description_suffix or (mod.CommandLineSuffix() if hasattr(mod, "CommandLineSuffix") else '')
+        self.ScriptDescription                          = script_description or (mod.CommandLineScriptDescription() if hasattr(mod, "CommandLineScriptDescription") else mod.__doc__) or ""
+        self.ScriptDescriptionPrefix                    = script_description_prefix or (mod.CommandLinePrefix() if hasattr(mod, "CommandLinePrefix") else "")
+        self.ScriptDescriptionSuffix                    = script_description_suffix or (mod.CommandLineSuffix() if hasattr(mod, "CommandLineSuffix") else "")
         self.EntryPoints                                = entry_points or EntryPointInformation.FromModule(mod)
 
         if not self.EntryPoints:
             raise Exception("No entry points were provided or found")
 
-        self._keyword_regex = re.compile(textwrap.dedent(
-                                           r"""^(?#
+        self._keyword_regex                 = re.compile(
+            textwrap.dedent(
+                r"""^(?#
                                             Prefix:             )\s*{prefix}(?#
                                             Tag:                )(?P<tag>\S+?)(?#
                                             [optional begin]    )(?:(?#
                                                 Sep:            )\s*(?<!\\){separator}\s*(?#
                                                 Value:          )(?P<value>.+?)\s*(?#
                                             [optional end]      ))?(?#
-                                            )$""").format( prefix=re.escape(self.CommandLineArgPrefix),
-                                                           separator=re.escape(self.CommandLineKeywordSeparator),
-                                                         ))
+                                            )$""",
+            ).format(
+                prefix=re.escape(self.CommandLineArgPrefix),
+                separator=re.escape(self.CommandLineKeywordSeparator),
+            ),
+        )
 
-        self._dict_regex = re.compile(textwrap.dedent(
-                                           r"""^(?#
+        self._dict_regex                    = re.compile(
+            textwrap.dedent(
+                r"""^(?#
                                             Tag:                )\s*(?P<tag>.+?)(?#
                                             Sep:                )\s*(?<!\\){separator}\s*(?#
                                             Value:              )(?P<value>.+?)\s*(?#
-                                            )$""").format( separator=re.escape(self.CommandLineDictTagValueSeparator),
-                                                         ))
+                                            )$""",
+            ).format(
+                separator=re.escape(self.CommandLineDictTagValueSeparator),
+            ),
+        )
 
     # ----------------------------------------------------------------------
     def __repr__(self):
         return CommonEnvironment.ObjectReprImpl(self)
 
     # ----------------------------------------------------------------------
-    def Invoke( self,
-                output_stream=sys.stdout,
-                verbose=False,
-                print_results=False,
-                allow_exceptions=False,
-              ):
-        # Some command line processors do not allow the command line keyword separator in 
+    def Invoke(
+        self,
+        output_stream=sys.stdout,
+        verbose=False,
+        print_results=False,
+        allow_exceptions=False,
+    ):
+        # Some command line processors do not allow the command line keyword separator in
         # its natural form. Convert those placeholders if necessary.
-        arg_strings = [ arg.replace(self.SecondaryCommandLineKeywordSeparator, self.CommandLineKeywordSeparator) for arg in self.Args ]
-        
+        arg_strings = [arg.replace(self.SecondaryCommandLineKeywordSeparator, self.CommandLineKeywordSeparator) for arg in self.Args]
+
         debug_mode = False
         if len(arg_strings) > 1 and arg_strings[1].lower() == DEBUG_COMMAND_LINE_ARG:
             debug_mode = True
             del arg_strings[1]
 
         # Is there a request for verbose help?
-        if any(arg.startswith(self.CommandLineArgPrefix) and arg[len(self.CommandLineArgPrefix):].lower() in [ "?", "help", "h", ] for arg in arg_strings):
+        if any(arg.startswith(self.CommandLineArgPrefix) and arg[len(self.CommandLineArgPrefix) :].lower() in ["?", "help", "h"] for arg in arg_strings) or any(
+            arg == "--help" for arg in arg_strings
+        ):
             # Is the request for a specific method?
             if len(self.EntryPoints) > 1 and len(arg_strings) > 2:
                 potential_method_name = arg_strings[1]
             else:
                 potential_method_name = None
 
-            return self.Usage( verbose=True,
-                               potential_method_name=potential_method_name,
-                             )
+            return self.Usage(
+                verbose=True,
+                potential_method_name=potential_method_name,
+            )
 
         # Get the function to call
         if len(self.EntryPoints) == 1:
@@ -502,7 +513,9 @@ class Executor(object):
         else:
             # The first arg is the entry point name
             if len(arg_strings) < 2:
-                return self.Usage(verbose=verbose)
+                return self.Usage(
+                    verbose=verbose,
+                )
 
             name = arg_strings[1]
             name_lower = name.lower()
@@ -511,35 +524,40 @@ class Executor(object):
 
             entry_point = next((ep for ep in self.EntryPoints if ep.Name.lower() == name_lower), None)
             if entry_point is None:
-                return self.Usage( error="'{}' is not a valid command".format(name),
-                                   verbose=verbose,
-                                 )
+                return self.Usage(
+                    error="'{}' is not a valid command".format(name),
+                    verbose=verbose,
+                )
 
         assert entry_point
 
         if debug_mode:
-            output_stream.write(textwrap.dedent(
-                """\
-                DEBUG INFO:
-                {}
-                """).format('\n'.join([ str(parameter) for parameter in entry_point.Parameters ])))
+            output_stream.write(
+                textwrap.dedent(
+                    """\
+                    DEBUG INFO:
+                    {}
+                    """,
+                ).format("\n".join([str(parameter) for parameter in entry_point.Parameters])),
+            )
             return 1
 
         # Read the arguments from a file if necessary
         if len(arg_strings) == 1 and arg_strings[0].startswith(self.ArgsInAFilePrefix):
-            filename = os.path.join(os.getcwd(), arg_strings[0][len(self.ArgsInAFilePrefix):])
+            filename = os.path.join(os.getcwd(), arg_strings[0][len(self.ArgsInAFilePrefix) :])
 
             if not os.path.isfile(filename):
-                return self.Usage( error="'{}' is not a valid filename".format(filename),
-                                   verbose=verbose,
-                                 )
+                return self.Usage(
+                    error="'{}' is not a valid filename".format(filename),
+                    verbose=verbose,
+                )
 
             arg_strings = []
 
             with open(filename) as f:
                 for line in f.readlines():
                     line = line.strip()
-                    if not line or line.startswith('#'):
+                    if not line or line.startswith("#"):
                         continue
 
                     arg_strings.append(line)
@@ -551,40 +569,52 @@ class Executor(object):
             result = str(ex)
 
         if isinstance(result, six.string_types):
-            return self.Usage( error=result,
-                               verbose=verbose,
-                             )
+            return self.Usage(
+                error=result,
+                verbose=verbose,
+            )
 
         kwargs = result
-        
+
         if verbose:
-            output_stream.write(textwrap.dedent(
-                """\
+            output_stream.write(
+                textwrap.dedent(
+                    """\
 
-                INFO: Calling '{name}' was the arguments:
-                {args}
+                    INFO: Calling '{name}' was the arguments:
+                    {args}
 
-                """).format( name=entry_point.Name,
-                             args='\n'.join([ "    {k:<20}  {v}".format( k="{}:".format(k),
-                                                                         v=v,
-                                                                       )
-                                              for k, v in six.iteritems(kwargs)
-                                            ]),
-                           ))
+                    """,
+                ).format(
+                    name=entry_point.Name,
+                    args="\n".join(
+                        [
+                            "    {k:<20}  {v}".format(
+                                k="{}:".format(k),
+                                v=v,
+                            ) for k,
+                            v in six.iteritems(kwargs)
+                        ],
+                    ),
+                ),
+            )
 
         # Invoke the method
         try:
             result = entry_point(**kwargs)
-            
+
             if print_results:
                 if isinstance(result, types.GeneratorType):
-                    result = '\n'.join([ "{}) {}".format(index, str(item)) for index, item in enumerate(result) ])
+                    result = "\n".join(["{}) {}".format(index, str(item)) for index, item in enumerate(result)])
 
-                output_stream.write(textwrap.dedent(
-                    """\
-                    ** Result **
-                    {}
-                    """).format(result))
+                output_stream.write(
+                    textwrap.dedent(
+                        """\
+                        ** Result **
+                        {}
+                        """,
+                    ).format(result),
+                )
 
                 result = 0
 
@@ -592,17 +622,19 @@ class Executor(object):
                 result = 0
 
         except UsageException as ex:
-            result = self.Usage( error=str(ex),
-                                 verbose=verbose,
-                               )
+            result = self.Usage(
+                error=str(ex),
+                verbose=verbose,
+            )
 
         except ValidationException as ex:
-            if allow_exceptions: 
+            if allow_exceptions:
                 raise
-                
-            result = self.Usage( error=str(ex),
-                                 verbose=verbose,
-                               )
+
+            result = self.Usage(
+                error=str(ex),
+                verbose=verbose,
+            )
 
         except KeyboardInterrupt:
             result = -1
@@ -621,22 +653,30 @@ class Executor(object):
         return result
 
     # ----------------------------------------------------------------------
-    def Usage( self,
-               error=None,
-               error_stream=sys.stderr,
-               verbose=False,
-               potential_method_name=None,
-             ):
-        error_stream.write(textwrap.dedent(
-            """\
-            {desc}{prefix}
+    def Usage(
+        self,
+        error=None,
+        error_stream=sys.stderr,
+        verbose=False,
+        potential_method_name=None,
+    ):
+        error_stream.write(
+            textwrap.dedent(
+                """\
+                {desc}{prefix}
 
-                Usage:
-            """).format( desc=StringHelpers.Wrap(self.ScriptDescription, MAX_COLUMN_WIDTH),
-                         prefix='' if not self.ScriptDescriptionPrefix else "\n\n{}".format(self.ScriptDescriptionPrefix),
-                       ))
+                    Usage:
+                """,
+            ).format(
+                desc=StringHelpers.Wrap(self.ScriptDescription, MAX_COLUMN_WIDTH),
+                prefix="" if not self.ScriptDescriptionPrefix else "\n\n{}".format(self.ScriptDescriptionPrefix),
+            ),
+        )
 
-        indented_stream = StreamDecorator(error_stream, line_prefix="    ")
+        indented_stream = StreamDecorator(
+            error_stream,
+            line_prefix="    ",
+        )
 
         # Narrow the list down if help was requested for a single method
         entry_points = self.EntryPoints
@@ -646,7 +686,7 @@ class Executor(object):
 
             for entry_point in entry_points:
                 if entry_point.Name.lower() == potential_method_name:
-                    entry_points = [ entry_point, ]
+                    entry_points = [entry_point]
                     break
 
         # Display a single item or multiple items
@@ -655,21 +695,15 @@ class Executor(object):
 
             # Add the method name if necessary
             if len(self.EntryPoints) > 1:
-                if '\n' in standard:
-                    standard = "\n    {}{}".format( entry_points[0].Name,
-                                                    standard,
-                                                  )
+                if "\n" in standard:
+                    standard = "\n    {}{}".format(entry_points[0].Name, standard)
                 else:
-                    standard = "{} {}".format( entry_points[0].Name,
-                                               standard,
-                                             )
+                    standard = "{} {}".format(entry_points[0].Name, standard)
 
             if verbose:
                 standard = "{}\n\n{}".format(standard, verbose_desc)
 
-            indented_stream.write("    {} {}\n\n".format( self.ScriptName, 
-                                                          StringHelpers.LeftJustify(standard, 4),
-                                                        ))
+            indented_stream.write("    {} {}\n\n".format(self.ScriptName, StringHelpers.LeftJustify(standard, 4)))
         else:
             # ----------------------------------------------------------------------
             def FormatInlineFuncDesc(content):
@@ -682,21 +716,28 @@ class Executor(object):
 
             # ----------------------------------------------------------------------
 
-            indented_stream.write(textwrap.dedent(
-                """\
-                    {script_name} <command> [args]
+            indented_stream.write(
+                textwrap.dedent(
+                    """\
+                        {script_name} <command> [args]
 
-                Where '<command>' can be one of the following:
-                ----------------------------------------------
-                """).format( script_name=self.ScriptName,
-                           ))
+                    Where '<command>' can be one of the following:
+                    ----------------------------------------------
+                    """,
+                ).format(
+                    script_name=self.ScriptName,
+                ),
+            )
 
             for entry_point in entry_points:
-                indented_stream.write("    - {name:<30} {desc}\n".format( name=entry_point.Name,
-                                                                          desc=FormatInlineFuncDesc(entry_point.Description),
-                                                                        ))
+                indented_stream.write(
+                    "    - {name:<30} {desc}\n".format(
+                        name=entry_point.Name,
+                        desc=FormatInlineFuncDesc(entry_point.Description),
+                    ),
+                )
 
-            indented_stream.write('\n')
+            indented_stream.write("\n")
 
             for entry_point in entry_points:
                 intro = "When '<command>' is '{}':".format(entry_point.Name)
@@ -704,7 +745,7 @@ class Executor(object):
                 standard, verbose_desc = self._GenerateUsageInformation(entry_point)
 
                 # Insert the function name as an argument
-                if '\n' in standard:
+                if "\n" in standard:
                     multi_line_args = True
                     standard = "        {}{}".format(entry_point.Name, StringHelpers.LeftJustify(standard, 4))
                 else:
@@ -712,37 +753,50 @@ class Executor(object):
                     standard = "{} {}".format(entry_point.Name, standard)
 
                 if verbose:
-                    standard = "{}\n\n{}".format( standard,
-                                                  StringHelpers.LeftJustify(verbose_desc, 4, skip_first_line=False),
-                                                )
+                    standard = "{}\n\n{}".format(
+                        standard,
+                        StringHelpers.LeftJustify(
+                            verbose_desc,
+                            4,
+                            skip_first_line=False,
+                        ),
+                    )
 
-                indented_stream.write(textwrap.dedent(
-                    """\
-                    {intro}
-                    {sep}
-                        {script_name}{newline}{standard}
+                indented_stream.write(
+                    textwrap.dedent(
+                        """\
+                        {intro}
+                        {sep}
+                            {script_name}{newline}{standard}
 
-                    """).format( intro=intro,
-                                 sep='-' * len(intro),
-                                 script_name=self.ScriptName,
-                                 newline='\n' if multi_line_args else ' ',
-                                 standard=standard,
-                               ))
+                        """,
+                    ).format(
+                        intro=intro,
+                        sep="-" * len(intro),
+                        script_name=self.ScriptName,
+                        newline="\n" if multi_line_args else " ",
+                        standard=standard,
+                    )
+                )
 
         if self.ScriptDescriptionSuffix:
             error_stream.write("\n{}\n".format(self.ScriptDescriptionSuffix.rstrip()))
 
         if not verbose:
-            error_stream.write(textwrap.dedent(
-                """\
+            error_stream.write(
+                textwrap.dedent(
+                    """\
 
 
 
-                Run "{script_name} {prefix}?" for additional information.
+                    Run "{script_name} {prefix}?" for additional information.
 
-                """).format( script_name=self.ScriptName,
-                             prefix=self.CommandLineArgPrefix,
-                           ))
+                    """,
+                ).format(
+                    script_name=self.ScriptName,
+                    prefix=self.CommandLineArgPrefix,
+                ),
+            )
 
         if error:
             error = "\n\nERROR: {}\n".format(StringHelpers.LeftJustify(error, len("ERROR: ")))
@@ -750,13 +804,12 @@ class Executor(object):
             try:
                 import colorama
 
-                colorama.init(autoreset=True)
+                colorama.init(
+                    autoreset=True,
+                )
                 error_stream = sys.stderr
 
-                error_stream.write("{}{}{}".format( colorama.Fore.RED,
-                                                    colorama.Style.BRIGHT,
-                                                    error,
-                                                  ))
+                error_stream.write("{}{}{}".format(colorama.Fore.RED, colorama.Style.BRIGHT, error))
 
             except ImportError:
                 error_stream.write(error)
@@ -800,15 +853,12 @@ class Executor(object):
 
                         if tag not in this_dict:
                             if parameter.AllowDuplicates:
-                                this_dict[tag] = [ value, ]
+                                this_dict[tag] = [value]
                             else:
                                 this_dict[tag] = value
                         else:
                             if not parameter.AllowDuplicates:
-                                return "A value for '{}'s tag '{}' has already been provided ({})".format( parameter.Name,
-                                                                                                           tag,
-                                                                                                           this_dict[tag],
-                                                                                                         )
+                                return "A value for '{}'s tag '{}' has already been provided ({})".format(parameter.Name, tag, this_dict[tag])
 
                             this_dict[tag].append(value)
 
@@ -848,18 +898,16 @@ class Executor(object):
 
             # Continue as if the value wasn't provided if the parameter is optional and
             # the value is None.
-            if parameter.DisplayArity in [ '?', '*', ] and value is None:
+            if parameter.DisplayArity in ["?", "*"] and value is None:
                 return
 
-            if parameter.DisplayArity in [ '?', '1', ]:
+            if parameter.DisplayArity in ["?", "1"]:
                 if parameter.Name in argument_values:
-                    return "A value for '{}' has already been provided ({})".format( parameter.Name,
-                                                                                     argument_values[parameter.Name],
-                                                                                   )
+                    return "A value for '{}' has already been provided ({})".format(parameter.Name, argument_values[parameter.Name])
 
                 argument_values[parameter.Name] = value
 
-            elif parameter.DisplayArity in [ '*', '+', ]:
+            elif parameter.DisplayArity in ["*", "+"]:
                 argument_values.setdefault(parameter.Name, []).append(value)
 
             else:
@@ -870,9 +918,7 @@ class Executor(object):
         # ----------------------------------------------------------------------
         def ApplyPositionalArgument(parameter, arg):
             if parameter.IsSwitch:
-                if ( not arg.startswith(self.CommandLineArgPrefix) or 
-                     arg[len(self.CommandLineArgPrefix):].lower() != parameter.Name.lower()
-                   ):
+                if not arg.startswith(self.CommandLineArgPrefix) or arg[len(self.CommandLineArgPrefix) :].lower() != parameter.Name.lower():
                     return "'{}' is not a recognized command line argument".format(arg)
 
                 return ApplyImpl(parameter, None)
@@ -924,7 +970,7 @@ class Executor(object):
 
             arg_index += 1
 
-            if parameter.DisplayArity == '1':
+            if parameter.DisplayArity == "1":
                 param_index += 1
 
         # We have problems if there are still args to process
@@ -956,12 +1002,15 @@ class Executor(object):
 
     # ----------------------------------------------------------------------
     def _GenerateUsageInformation(self, entry_point):
-        cols = OrderedDict([ ( "Name", 30 ),
-                             ( "Type", 15 ),
-                             ( "Arity", 8 ),
-                             ( "Default", 20 ),
-                             ( "Description", 80 ),
-                           ])
+        cols = OrderedDict(
+            [
+                ("Name", 30),
+                ("Type", 15),
+                ("Arity", 8),
+                ("Default", 20),
+                ("Description", 80),
+            ],
+        )
         # Calculate the verbose template and the left padding associated with verbose
         # descriptions.
         col_padding = 2
@@ -975,9 +1024,9 @@ class Executor(object):
 
         # Remove the description size from the verbose offset
         verbose_desc_offset -= width
-        
+
         assert verbose_desc_offset < MAX_COLUMN_WIDTH, (verbose_desc_offset, MAX_COLUMN_WIDTH)
-        verbose_template = (col_padding * ' ').join(verbose_template)
+        verbose_template = (col_padding * " ").join(verbose_template)
 
         # Gather the command line and verbose parts
         command_line = []
@@ -985,7 +1034,7 @@ class Executor(object):
 
         if entry_point.Parameters:
             verbose.append(verbose_template.format(*six.iterkeys(cols)))
-            verbose.append(verbose_template.format(*[ '-' * col_width for col_width in six.itervalues(cols) ]))
+            verbose.append(verbose_template.format(*["-" * col_width for col_width in six.itervalues(cols)]))
 
             is_multi_line = len(entry_point.Parameters) > 4
 
@@ -993,35 +1042,25 @@ class Executor(object):
                 arg = parameter.Name
 
                 if parameter.IsSwitch:
-                    arg = "{}{}".format( self.CommandLineArgPrefix,
-                                         arg,
-                                       )
+                    arg = "{}{}".format(self.CommandLineArgPrefix, arg)
 
                 elif isinstance(parameter.TypeInfo, DictTypeInfo):
                     if not parameter.IsPositional:
-                        prefix = "{}{}{}".format( self.CommandLineArgPrefix,
-                                                  arg,
-                                                  self.CommandLineKeywordSeparator,
-                                                )
+                        prefix = "{}{}{}".format(self.CommandLineArgPrefix, arg, self.CommandLineKeywordSeparator)
                     else:
-                        prefix = ''
+                        prefix = ""
 
-                    arg = "{}<tag>{}<value>".format( prefix,
-                                                     self.CommandLineDictTagValueSeparator,
-                                                   )
+                    arg = "{}<tag>{}<value>".format(prefix, self.CommandLineDictTagValueSeparator)
 
                 elif not parameter.IsPositional:
-                    arg = "{}{}{}<value>".format( self.CommandLineArgPrefix,
-                                                  arg,
-                                                  self.CommandLineKeywordSeparator,
-                                                )
+                    arg = "{}{}{}<value>".format(self.CommandLineArgPrefix, arg, self.CommandLineKeywordSeparator)
 
                 if parameter.IsRequired:
                     arg = "<{}>".format(arg)
                 else:
                     arg = "[{}]".format(arg)
 
-                if parameter.DisplayArity in [ '*', '+', ]:
+                if parameter.DisplayArity in ["*", "+"]:
                     arg += parameter.DisplayArity
 
                 if is_multi_line:
@@ -1038,37 +1077,40 @@ class Executor(object):
                     else:
                         default_value = parameter.DefaultValue
                 else:
-                    default_value = ''
+                    default_value = ""
 
-                verbose.append(verbose_template.format( parameter.Name,
-                                                        "switch" if parameter.IsSwitch else "Dictionary" if isinstance(parameter.TypeInfo, DictTypeInfo) else parameter.TypeInfo.Desc,
-                                                        parameter.DisplayArity,
-                                                        str(default_value),
-                                                        StringHelpers.LeftJustify( StringHelpers.Wrap(parameter.Description, MAX_COLUMN_WIDTH - verbose_desc_offset),
-                                                                                   verbose_desc_offset,
-                                                                                 ).rstrip(),
-                                                      ))
+                verbose.append(
+                    verbose_template.format(
+                        parameter.Name,
+                        "switch" if parameter.IsSwitch else "Dictionary" if isinstance(parameter.TypeInfo, DictTypeInfo) else parameter.TypeInfo.Desc,
+                        parameter.DisplayArity,
+                        str(default_value),
+                        StringHelpers.LeftJustify(StringHelpers.Wrap(parameter.Description, MAX_COLUMN_WIDTH - verbose_desc_offset), verbose_desc_offset).rstrip(),
+                    ),
+                )
 
                 constraints = parameter.TypeInfo.ConstraintsDesc
                 if constraints:
                     verbose.append("        - {}".format(constraints))
 
-        return ''.join(command_line), '\n'.join(verbose)
+        return "".join(command_line), "\n".join(verbose)
+
 
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Public Methods
-# |  
+# |
 # ----------------------------------------------------------------------
-def Main( output_stream=sys.stdout,
-          verbose=False,
-          print_results=False,
-          allow_exceptions=False,
-          **executor_kwargs
-        ):
-    return Executor(**executor_kwargs) \
-                .Invoke( output_stream=output_stream,
-                         verbose=verbose,
-                         print_results=print_results,
-                         allow_exceptions=allow_exceptions,
-                       )
+def Main(
+    output_stream=sys.stdout,
+    verbose=False,
+    print_results=False,
+    allow_exceptions=False,
+    **executor_kwargs
+):
+    return Executor(**executor_kwargs).Invoke(
+        output_stream=output_stream,
+        verbose=verbose,
+        print_results=print_results,
+        allow_exceptions=allow_exceptions,
+    )

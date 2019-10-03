@@ -15,6 +15,7 @@
 """General purpose build executor."""
 
 import os
+import re
 import sys
 
 from collections import namedtuple
@@ -148,6 +149,13 @@ def Execute(
             with dm.stream.DoneManager(
                 suffix="\n",
             ) as mode_dm:
+                verbose_check_regex = re.compile(
+                    r"\s*Build.py\s+{mode}\s+(?P<content>.*?)\r?\n\r?\n".format(
+                        mode=mode,
+                    ),
+                    re.DOTALL | re.IGNORECASE | re.MULTILINE,
+                )
+
                 for build_index, (build_filename, config, configuration) in enumerate(
                     build_configurations,
                 ):
@@ -160,6 +168,28 @@ def Execute(
                         ),
                     )
                     with mode_dm.stream.DoneManager() as build_dm:
+                        this_verbose = verbose
+
+                        # Not all build files support verbose. If verbose has been requested,
+                        # parse the help information associated with this Build file to see
+                        # if the verbose flag should be provided.
+                        if this_verbose:
+                            _, output = Process.Execute(
+                                'python "{build_filename}" {mode} --help'.format(
+                                    build_filename=build_filename,
+                                    mode=mode,
+                                ),
+                            )
+
+                            output += "\n"
+                            match = verbose_check_regex.search(output)
+                            assert match, output
+
+                            # Look for a flag that looks like "verbose]". We don't check for
+                            # the prefix, as we don't know how it might be configured for this
+                            # particular build file.
+                            this_verbose = "verbose]" in match.group("content")
+
                         build_output_dir = os.path.join(
                             output_dir,
                             config.SuggestedOutputDirLocation,
@@ -167,7 +197,7 @@ def Execute(
                         )
                         FileSystem.MakeDirs(build_output_dir)
 
-                        command_line = 'python "{build_filename}" {mode}{configuration}{output_dir}'.format(
+                        command_line = 'python "{build_filename}" {mode}{configuration}{output_dir}{verbose}'.format(
                             build_filename=build_filename,
                             mode=mode,
                             configuration=' "{}"'.format(
@@ -176,6 +206,7 @@ def Execute(
                             output_dir=' "{}"'.format(
                                 build_output_dir,
                             ) if config.RequiresOutputDir else "",
+                            verbose=" /verbose" if this_verbose else "",
                         )
 
                         build_dm.result, output = Process.Execute(command_line)
