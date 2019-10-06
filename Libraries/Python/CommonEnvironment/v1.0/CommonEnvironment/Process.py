@@ -1,19 +1,20 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Process.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-05-04 18:57:15
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-19.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Contains methods useful when interacting with processes"""
 
+import contextlib
 import os
 import subprocess
 import sys
@@ -25,19 +26,21 @@ from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment.Shell.All import CurrentShell
 
 # ----------------------------------------------------------------------
-_script_fullpath = CommonEnvironment.ThisFullpath()
-_script_dir, _script_name = os.path.split(_script_fullpath)
+_script_fullpath                            = CommonEnvironment.ThisFullpath()
+_script_dir, _script_name                   = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 CONVERT_NEWLINES_DEFAULT                    = CurrentShell.CategoryName == "Windows"
 
-def Execute( command_line,
-             optional_output_stream_or_functor=None,    # def Func(content) -> Bool
-             convert_newlines=CONVERT_NEWLINES_DEFAULT, # Converts '\r\n' into '\n'
-             line_delimited_output=False,               # Buffer calls to the provided functor by lines
-             environment=None,                          # Environment vars to make available to the process
-             stdin=None,
-           ):
+
+def Execute(
+    command_line,
+    optional_output_stream_or_functor=None,             # def Func(content) -> Bool
+    convert_newlines=CONVERT_NEWLINES_DEFAULT,          # Converts '\r\n' into '\n'
+    line_delimited_output=False,                        # Buffer calls to the provided functor by lines
+    environment=None,                                   # Environment vars to make available to the process
+    stdin=None,
+):
     """
     Invokes the given command line.
 
@@ -49,9 +52,9 @@ def Execute( command_line,
 
     # Prepare the environment
 
-    # if not environment: 
+    # if not environment:
     #     environment = dict(os.environ)
-    # 
+    #
     # if "PYTHONIOENCODING" not in environment:
     #     environment["PYTHONIOENCODING"] = "UTF_8"
 
@@ -59,14 +62,14 @@ def Execute( command_line,
         # Keys and values must be strings, which can be a problem if the environment was extraced from unicode data
         for key in list(six.iterkeys(environment)):
             value = environment[key]
-        
-            if isinstance(key, unicode):                # <Undefined variable> pylint: disable = E0602
+
+            if isinstance(key, unicode):    # <Undefined variable> pylint: disable = E0602
                 del environment[key]
                 key = ConvertUnicodeToAsciiString(key)
-        
-            if isinstance(value, unicode):              # <Undefined variable> pylint: disable = E0602
+
+            if isinstance(value, unicode):  # <Undefined variable> pylint: disable = E0602
                 value = ConvertUnicodeToAsciiString(value)
-        
+
             environment[key] = value
 
     # Prepare the output
@@ -89,7 +92,7 @@ def Execute( command_line,
 
         # ----------------------------------------------------------------------
         def ConvertNewlines(content):
-            content = content.replace('\r\n', '\n')
+            content = content.replace("\r\n", "\n")
             return newlines_original_output(content)
 
         # ----------------------------------------------------------------------
@@ -103,10 +106,10 @@ def Execute( command_line,
 
         # ----------------------------------------------------------------------
         def OutputFunctor(content):
-            if '\n' in content:
-                assert content.endswith('\n'), content
+            if "\n" in content:
+                assert content.endswith("\n"), content
 
-                content = "{}{}".format(''.join(internal_content), content)
+                content = "{}{}".format("".join(internal_content), content)
                 internal_content[:] = []
 
                 return line_delimited_original_output(content)
@@ -119,7 +122,7 @@ def Execute( command_line,
         # ----------------------------------------------------------------------
         def Flush():
             if internal_content:
-                line_delimited_original_output(''.join(internal_content))
+                line_delimited_original_output("".join(internal_content))
                 internal_content[:] = []
 
         # ----------------------------------------------------------------------
@@ -134,62 +137,81 @@ def Execute( command_line,
         # ----------------------------------------------------------------------
 
     # Execute
-    result = subprocess.Popen( command_line,
-                               shell=True,
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.STDOUT,
-                               stdin=subprocess.PIPE,
-                               env=environment,
-                             )
-    
-    with CallOnExit(Flush):
-        if stdin is not None:
-            result.stdin.write(stdin.encode("utf-8"))
-            result.stdin.flush()
-            result.stdin.close()
+    with PopenProxy(
+        command_line,
+        shell=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        stdin=subprocess.PIPE,
+        env=environment,
+    ) as result:
+        with CallOnExit(Flush):
+            if stdin is not None:
+                result.stdin.write(stdin.encode("utf-8"))
+                result.stdin.flush()
+                result.stdin.close()
 
-        try:
-            ConsumeOutput(result.stdout, output)
-            result = result.wait() or 0
+            try:
+                ConsumeOutput(result.stdout, output)
+                result = result.wait() or 0
 
-        except IOError:
-            result = -1
+            except IOError:
+                result = -1
 
-    if sink is None:
-        return result
+        if sink is None:
+            return result
 
-    return result, sink.getvalue()
+        return result, sink.getvalue()
 
 # ----------------------------------------------------------------------
-def ConsumeOutput( input_stream,
-                   output_func,             # def Func(content) -> True to continue, False to quit
-                 ):
+def ConsumeOutput(
+    input_stream,
+    output_func,                            # def Func(content) -> True to continue, False to quit
+):
     """
     Reads chars from the provided stream, ensuring that escape sequences and multibyte chars are atomic.
     Returns the value provided by output_func.
     """
 
-    return _ConsumeOutputProcessor( input_stream, 
-                                    output_func,
-                                  ).Execute()
+    return _ConsumeOutputProcessor(input_stream, output_func).Execute()
 
 # ----------------------------------------------------------------------
 if sys.version_info[0] == 2:
     import unicodedata
-    
+
     # ----------------------------------------------------------------------
-    def ConvertUnicodeToAsciiString(item, errors="ignore"):
-        return unicodedata.normalize('NFKD', item).encode('ascii', errors)
+    def ConvertUnicodeToAsciiString(
+        item,
+        errors="ignore",
+    ):
+        return unicodedata.normalize("NFKD", item).encode("ascii", errors)
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
+if sys.version_info[0] == 2:
+    # ----------------------------------------------------------------------
+    @contextlib.contextmanager
+    def PopenProxy(*args, **kwargs):
+        yield subprocess.Popen(*args, **kwargs)
+
+
+else:
+    # ----------------------------------------------------------------------
+    @contextlib.contextmanager
+    def PopenProxy(*args, **kwargs):
+        with subprocess.Popen(*args, **kwargs) as result:
+            yield result
+
+
+# ----------------------------------------------------------------------
 class _ConsumeOutputProcessor(object):
     # ----------------------------------------------------------------------
-    def __init__( self, 
-                  input_stream, 
-                  output_func,              # def Func(content) -> True to continue, False to quit
-                ):
+    def __init__(
+        self,
+        input_stream,
+        output_func,                        # def Func(content) -> True to continue, False to quit
+    ):
         self._input_stream                  = input_stream
         self._output_func                   = output_func
 
@@ -222,10 +244,10 @@ class _ConsumeOutputProcessor(object):
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
-    _a                                      = ord('a')
-    _z                                      = ord('z')
-    _A                                      = ord('A')
-    _Z                                      = ord('Z')
+    _a                                      = ord("a")
+    _z                                      = ord("z")
+    _A                                      = ord("A")
+    _Z                                      = ord("Z")
 
     @classmethod
     def _IsAsciiLetter(cls, value):
@@ -234,7 +256,7 @@ class _ConsumeOutputProcessor(object):
     # ----------------------------------------------------------------------
     @staticmethod
     def _IsNewlineish(value):
-        return value in [ 10, 13, ]
+        return value in [10, 13]
 
     # ----------------------------------------------------------------------
     @staticmethod
@@ -249,10 +271,7 @@ class _ConsumeOutputProcessor(object):
 
         result = bytearray(value)
 
-        for codec in [ "utf-8",
-                       "utf-16",
-                       "utf-32",
-                     ]:
+        for codec in ["utf-8", "utf-16", "utf-32"]:
             try:
                 return result.decode(codec)
             except (UnicodeDecodeError, LookupError):
@@ -262,10 +281,13 @@ class _ConsumeOutputProcessor(object):
 
     # ----------------------------------------------------------------------
     if sys.version[0] == 2:
+
         @classmethod
         def _ToString(cls, value):
             return ConvertUnicodeToAsciiString(cls._ToStringImpl(value), "replace")
+
     else:
+
         @classmethod
         def _ToString(cls, value):
             return cls._ToStringImpl(value)
@@ -315,7 +337,7 @@ class _ConsumeOutputProcessor(object):
 
             return None
 
-        return [ value, ]
+        return [value]
 
     # ----------------------------------------------------------------------
     def _ProcessEscape(self, value):
@@ -335,7 +357,7 @@ class _ConsumeOutputProcessor(object):
     # ----------------------------------------------------------------------
     def _ProcessLineReset(self, value):
         assert self._character_buffer
-        
+
         if self._IsNewlineish(value):
             self._character_buffer.append(value)
             return None
