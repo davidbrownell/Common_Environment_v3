@@ -17,7 +17,7 @@
 import os
 
 import CommonEnvironment
-from CommonEnvironment.Interface import staticderived, DerivedProperty
+from CommonEnvironment.Interface import staticderived, override, DerivedProperty
 from CommonEnvironment.Shell.LinuxShellImpl import LinuxShellImpl
 
 # ----------------------------------------------------------------------
@@ -33,3 +33,20 @@ class MacOsShell(LinuxShellImpl):
     """Shell for MacOS systems"""
 
     Name                                    = DerivedProperty("Darwin")
+
+    # ----------------------------------------------------------------------
+    @staticderived
+    @override
+    class CommandVisitor(LinuxShellImpl.CommandVisitor):
+        # ----------------------------------------------------------------------
+        @classmethod
+        @override
+        def OnSymbolicLink(cls, command):
+            # Darwin doesn't support relative paths
+            command.RelativePath = False
+
+            return super(MacOsShell.CommandVisitor, cls).OnSymbolicLink(
+                command,
+                no_dir_flag=True,
+                no_reltive_flag=True,
+            )
