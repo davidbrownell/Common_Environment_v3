@@ -103,8 +103,8 @@ class LinuxShellImpl(Shell):
                 """,
             ).format(
                 force_flag="" if not command.RemoveExisting else "f",
-                dir_flag="d" if command.IsDir and not no_dir_flag else "",
-                relative_flag="" if not command.RelativePath and not no_relative_flag else "r",
+                dir_flag="d" if (command.IsDir and not no_dir_flag) else "",
+                relative_flag="r" if (command.RelativePath and not no_relative_flag) else "",
                 target=command.Target,
                 link=command.LinkFilename,
             )
