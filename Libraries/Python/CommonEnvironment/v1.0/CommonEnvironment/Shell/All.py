@@ -18,6 +18,7 @@ import os
 
 import CommonEnvironment
 from CommonEnvironment.Shell.CentOsShell import CentOsShell
+from CommonEnvironment.Shell.MacOsShell import MacOsShell
 from CommonEnvironment.Shell.UbuntuShell import UbuntuShell
 from CommonEnvironment.Shell.WindowsShell import WindowsShell
 from CommonEnvironment.Shell.WindowsPowerShell import WindowsPowerShell
@@ -33,10 +34,11 @@ _script_dir, _script_name                   = os.path.split(_script_fullpath)
 # |
 # ----------------------------------------------------------------------
 ALL_TYPES                                   = [
+    CentOsShell,
+    UbuntuShell,
+    MacOsShell,
     WindowsPowerShell,
     WindowsShell,
-    UbuntuShell,
-    CentOsShell,
 ]
 
 # ----------------------------------------------------------------------
