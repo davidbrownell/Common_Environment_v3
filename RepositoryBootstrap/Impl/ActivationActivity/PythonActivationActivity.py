@@ -79,7 +79,7 @@ class PythonActivationActivity(ActivationActivity):
             cls.BinSubdirs = None
             cls.BinExtension = ".exe"
 
-        elif CommonEnvironmentImports.CurrentShell.CategoryName == "Linux":
+        elif CommonEnvironmentImports.CurrentShell.CategoryName in ["Linux", "BSD"]:
             cls.LibrarySubdirs = ["lib", "python{python_version_short}", "site-packages"]
             cls.ScriptSubdirs = ["bin"]
 

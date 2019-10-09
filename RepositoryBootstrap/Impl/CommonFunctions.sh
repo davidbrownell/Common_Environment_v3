@@ -20,6 +20,25 @@ if [[ ${OSTYPE} == *darwin* ]]
 then
     export is_darwin=1
 
+    # Perform OS-specific bootstrap functionality
+    function bootstrap_func() {
+        echo "----------------------------------------------------------------------"
+        echo "|                                                                    |"
+        echo "|                    Bootstrapping for OSX                           |"
+        echo "|                                                                    |"
+        echo "----------------------------------------------------------------------"
+        
+        echo "----------------------------------------------------------------------"
+        echo "|  Processing coreutils"
+        [[ $(sudo -u ${SUDO_USER} brew list --versions coreutils) ]] || sudo -u ${SUDO_USER} brew install coreutils
+        echo
+
+        echo "----------------------------------------------------------------------"
+        echo "|  Processing p7zip"
+        [[ $(sudo -u ${SUDO_USER} brew list --versions p7zip) ]] || sudo -u ${SUDO_USER} brew install p7zip
+        echo
+    }
+
     # Proxy for `readlink`.
     #
     #   Args:
@@ -61,6 +80,10 @@ then
 
 else
     export is_darwin=0
+
+    function bootstrap_func() {
+        : # Nothing to do here
+    }
 
     # Proxy for `readlink`.
     #

@@ -29,8 +29,8 @@ from RepositoryBootstrap.Impl import CommonEnvironmentImports
 from RepositoryBootstrap.Impl import Utilities
 
 # ----------------------------------------------------------------------
-_script_fullpath = CommonEnvironmentImports.CommonEnvironment.ThisFullpath()
-_script_dir, _script_name = os.path.split(_script_fullpath)
+_script_fullpath                            = CommonEnvironmentImports.CommonEnvironment.ThisFullpath()
+_script_dir, _script_name                   = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 # ----------------------------------------------------------------------
@@ -79,48 +79,64 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
     # |
     # ----------------------------------------------------------------------
     @classmethod
-    def CreateCommands( cls,
-                        output_stream,
-                        verbose,
-                        configuration,
-                        repositories,
-                        version_specs,
-                        generated_dir,
-                        *args,
-                        **kwargs
-                      ):
+    def CreateCommands(
+        cls,
+        output_stream,
+        verbose,
+        configuration,
+        repositories,
+        version_specs,
+        generated_dir,
+        *args,
+        **kwargs
+    ):
         commands = []
 
         if cls.DelayExecute:
-            commands += cls._DelayExecute( cls,
-                                           configuration,
-                                           repositories,
-                                           version_specs,
-                                           generated_dir,
-                                         )
+            commands += cls._DelayExecute(
+                cls,
+                configuration,
+                repositories,
+                version_specs,
+                generated_dir,
+            )
 
             for command in commands:
-                if isinstance(command, CommonEnvironmentImports.CurrentShell.Commands.Message):
+                if isinstance(
+                    command,
+                    CommonEnvironmentImports.CurrentShell.Commands.Message,
+                ):
                     command.Value = "  {}".format(command.Value)
 
-            commands.insert(0, CommonEnvironmentImports.CurrentShell.Commands.Message("Delay invoking '{}'...".format(cls.Name)))
-            commands.append(CommonEnvironmentImports.CurrentShell.Commands.Message("DONE!"))
+            commands.insert(
+                0,
+                CommonEnvironmentImports.CurrentShell.Commands.Message(
+                    "Delay invoking '{}'...".format(cls.Name),
+                ),
+            )
+            commands.append(
+                CommonEnvironmentImports.CurrentShell.Commands.Message("DONE!"),
+            )
 
         else:
             output_stream.write("Activating '{}'...".format(cls.Name))
             output_stream.flush()
 
-            with output_stream.DoneManager( suffix='\n' if verbose else None,
-                                          ) as dm:
-                commands += cls._CreateCommandsImpl( dm.stream,
-                                                     CommonEnvironmentImports.StreamDecorator(dm.stream if verbose else None),
-                                                     configuration,
-                                                     repositories,
-                                                     version_specs,
-                                                     generated_dir,
-                                                     *args,
-                                                     **kwargs
-                                                   )
+            with output_stream.DoneManager(
+                suffix="\n" if verbose else None,
+            ) as dm:
+                commands += cls._CreateCommandsImpl(
+                    dm.stream,
+                    CommonEnvironmentImports.StreamDecorator(
+                        dm.stream if verbose else None,
+                    ),
+                    configuration,
+                    repositories,
+                    version_specs,
+                    generated_dir,
+                    *args,
+                    **kwargs
+                )
 
         return commands
 
@@ -138,25 +154,25 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
         for version_string in version_strings:
             original_version_string = version_string
 
-            for potential_prefix in [ "v", "r", ]:
+            for potential_prefix in ["v", "r"]:
                 if version_string.startswith(potential_prefix):
-                    version_string = version_string[len(potential_prefix):]
+                    version_string = version_string[len(potential_prefix) :]
                     break
 
             try:
                 # Remove leading zeros from version string values
                 parts = []
 
-                for part in version_string.split('.'):
+                for part in version_string.split("."):
                     assert part
 
-                    part = part.lstrip('0')
+                    part = part.lstrip("0")
                     if part:
                         parts.append(part)
                     else:
-                        parts.append('0')
+                        parts.append("0")
 
-                version = semantic_version.Version.coerce('.'.join(parts))
+                version = semantic_version.Version.coerce(".".join(parts))
 
                 lookup[version] = original_version_string
                 versions.append(version)
@@ -167,7 +183,9 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
         if not versions:
             return
 
-        versions.sort(reverse=True)
+        versions.sort(
+            reverse=True,
+        )
 
         for version in versions:
             yield lookup[version]
@@ -198,9 +216,15 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
 
         explicit_version = next((vi for vi in version_info if vi.Name == name), None)
         if explicit_version is not None:
-            versions = [ explicit_version.Version, ]
+            versions = [explicit_version.Version]
         else:
-            versions = cls.SortVersions([ item for item in os.listdir(fullpath) if os.path.isdir(os.path.join(fullpath, item)) ])
+            versions = cls.SortVersions(
+                [
+                    item
+                    for item in os.listdir(fullpath)
+                    if os.path.isdir(os.path.join(fullpath, item))
+                ],
+            )
 
         # Cache any exceptions associated with fullpath customization and only percolate them
         # if we don't find any other valid customization
@@ -229,16 +253,19 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
         return fullpath, version
 
     # ----------------------------------------------------------------------
-    _GetCustomizedFullpath_PotentialOSNames = None
+    _GetCustomizedFullpath_PotentialOSNames             = None
 
     @classmethod
     def GetCustomizedFullpath(cls, path):
         # Lazy init the set of potential os names
         if cls._GetCustomizedFullpath_PotentialOSNames is None:
-            potential_names = set([ Constants.AGNOSTIC_OS_NAME,
-                                    Constants.SRC_OS_NAME,
-                                    Constants.CUSTOMIZATIONS_OS_NAME,
-                                  ])
+            potential_names = set(
+                [
+                    Constants.AGNOSTIC_OS_NAME,
+                    Constants.SRC_OS_NAME,
+                    Constants.CUSTOMIZATIONS_OS_NAME,
+                ],
+            )
 
             for this_shell in CommonEnvironmentImports.Shell_ALL_TYPES:
                 potential_names.add(this_shell.Name)
@@ -271,7 +298,7 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
                 if not os.path.isdir(fullpath):
                     continue
 
-                if item in [ "x86", "x64", ]:
+                if item in ["x86", "x64"]:
                     found_one = True
                 else:
                     return False
@@ -287,29 +314,42 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
                 if CommonEnvironmentImports.CurrentShell.Name in subdirs:
                     path = os.path.join(path, CommonEnvironmentImports.CurrentShell.Name)
                 elif CommonEnvironmentImports.CurrentShell.CategoryName in subdirs:
-                    path = os.path.join(path, CommonEnvironmentImports.CurrentShell.CategoryName)
+                    path = os.path.join(
+                        path,
+                        CommonEnvironmentImports.CurrentShell.CategoryName,
+                    )
                 elif Constants.AGNOSTIC_OS_NAME in subdirs:
                     path = os.path.join(path, Constants.AGNOSTIC_OS_NAME)
                 else:
-                    potential_names = [ CommonEnvironmentImports.CurrentShell.Name, ]
-                    if CommonEnvironmentImports.CurrentShell.CategoryName != CommonEnvironmentImports.CurrentShell.Name:
-                        potential_names.append(CommonEnvironmentImports.CurrentShell.CategoryName)
+                    potential_names = [CommonEnvironmentImports.CurrentShell.Name]
+                    if (
+                        CommonEnvironmentImports.CurrentShell.CategoryName
+                        != CommonEnvironmentImports.CurrentShell.Name
+                    ):
+                        potential_names.append(
+                            CommonEnvironmentImports.CurrentShell.CategoryName,
+                        )
                     potential_names.append(Constants.AGNOSTIC_OS_NAME)
 
-                    raise Exception("OS names were found in '{}', but no customization was found for '{}'.\n    Is one of {} missing?.".format( path,
-                                                                                                                                                CommonEnvironmentImports.CurrentShell.Name,
-                                                                                                                                                ', '.join([ "'{}'".format(name) for name in potential_names ]),
-                                                                                                                                              ))
+                    raise Exception(
+                        "OS names were found in '{}'; is one of {} missing?.".format(
+                            path,
+                            ", ".join(["'{}'".format(name) for name in potential_names]),
+                        ),
+                    )
             elif IsArchitectureDir(path, subdirs):
                 if CommonEnvironmentImports.CurrentShell.Architecture in subdirs:
-                    path = os.path.join(path, CommonEnvironmentImports.CurrentShell.Architecture)
+                    path = os.path.join(
+                        path,
+                        CommonEnvironmentImports.CurrentShell.Architecture,
+                    )
                 else:
-                    raise Exception("OS architectures were found in '{}', but no customization was found for '{}'.\n    Is one of {} missing?.".format( path,
-                                                                                                                                                        CommonEnvironmentImports.CurrentShell.Architecture,
-                                                                                                                                                        ', '.join([ "'{}'".format(name) for name in [ "x86",
-                                                                                                                                                                                                      "x64",
-                                                                                                                                                                                                    ] ]),
-                                                                                                                                                      ))
+                    raise Exception(
+                        "OS architectures were found in '{}'; is one of {} missing?.".format(
+                            path,
+                            ", ".join(["'{}'".format(name) for name in ["x86", "x64"]]),
+                        ),
+                    )
             else:
                 break
 
@@ -321,11 +361,12 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
 
     # ----------------------------------------------------------------------
     @staticmethod
-    def CallCustomMethod( customization_filename,
-                          method_name,
-                          kwargs,
-                          as_list=True,
-                        ):
+    def CallCustomMethod(
+        customization_filename,
+        method_name,
+        kwargs,
+        as_list=True,
+    ):
         """
         Calls the specified method if it exists with the args that it expects.
         Ensure that the return value is None or a list of items.
@@ -340,7 +381,7 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
             result = method(kwargs)
 
             if as_list and not isinstance(result, list) and result is not None:
-                result = [ result, ]
+                result = [result]
 
             return result
 
@@ -377,14 +418,15 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
     # |
     # ----------------------------------------------------------------------
     @classmethod
-    def _GetLibraries( cls,
-                       output_stream,
-                       repositories,
-                       version_specs,
-                       generated_dir,
-                       library_version_dirs=None,  # { ( <potential_version_dir>, ... ) : <dir_to_use>, }
-                       ignore_conflicted_library_names=None,
-                     ):
+    def _GetLibraries(
+        cls,
+        output_stream,
+        repositories,
+        version_specs,
+        generated_dir,
+        library_version_dirs=None,                      # { ( <potential_version_dir>, ... ) : <dir_to_use>, }
+        ignore_conflicted_library_names=None,
+    ):
         """Returns all versioned libraries that should be activated."""
         library_version_dirs = library_version_dirs or {}
         ignore_conflicted_library_names = ignore_conflicted_library_names or []
@@ -396,41 +438,58 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
         errors = []
 
         for repository in repositories:
-            potential_library_dir = os.path.join(repository.Root, Constants.LIBRARIES_SUBDIR, cls.Name)
+            potential_library_dir = os.path.join(
+                repository.Root,
+                Constants.LIBRARIES_SUBDIR,
+                cls.Name,
+            )
             if not os.path.isdir(potential_library_dir):
                 continue
 
             for item in os.listdir(potential_library_dir):
                 if item in libraries:
                     if item not in ignore_conflicted_library_names:
-                        errors.append(textwrap.dedent(
-                            """\
-                            The library '{name}' has already been defined.
+                        errors.append(
+                            textwrap.dedent(
+                                """\
+                                The library '{name}' has already been defined.
 
-                                New:                {new_name}{new_config} <{new_id}> [{new_root}]
-                                Original:           {original_name}{original_config} <<{original_version}>> <{original_id}> [{original_root}]
+                                    New:                {new_name}{new_config} <{new_id}> [{new_root}]
+                                    Original:           {original_name}{original_config} <<{original_version}>> <{original_id}> [{original_root}]
 
-                            """).format( name=item,
-                                         new_name=repository.Name,
-                                         new_config=" ({})".format(repository.Configuration) if repository.Configuration else '',
-                                         new_id=repository.Id,
-                                         new_root=repository.Root,
-                                         original_name=libraries[item].Repository.Name,
-                                         original_config=" ({})".format(libraries[item].Repository.Configuration) if libraries[item].Repository.Configuration else '',
-                                         original_version=libraries[item].Version,
-                                         original_id=libraries[item].Repository.Id,
-                                         original_root=libraries[item].Repository.Root,
-                                       ))
+                                """,
+                            ).format(
+                                name=item,
+                                new_name=repository.Name,
+                                new_config=" ({})".format(
+                                    repository.Configuration,
+                                ) if repository.Configuration else "",
+                                new_id=repository.Id,
+                                new_root=repository.Root,
+                                original_name=libraries[item].Repository.Name,
+                                original_config=" ({})".format(
+                                    libraries[item].Repository.Configuration,
+                                ) if libraries[item].Repository.Configuration else "",
+                                original_version=libraries[item].Version,
+                                original_id=libraries[item].Repository.Id,
+                                original_root=libraries[item].Repository.Root,
+                            ),
+                        )
                     continue
 
                 fullpath = os.path.join(potential_library_dir, item)
 
                 # Drill down into the fullpath
-                nonlocals = CommonEnvironmentImports.CommonEnvironment.Nonlocals(version=None)
+                nonlocals = CommonEnvironmentImports.CommonEnvironment.Nonlocals(
+                    version=None,
+                )
 
                 # ----------------------------------------------------------------------
                 def InternalGetVersionedDirectoryEx(fullpath):
-                    fullpath, nonlocals.version = cls.GetVersionedDirectoryEx(version_info, fullpath)
+                    fullpath, nonlocals.version = cls.GetVersionedDirectoryEx(
+                        version_info,
+                        fullpath,
+                    )
                     return fullpath
 
                 # ----------------------------------------------------------------------
@@ -438,11 +497,17 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
                     while True:
                         prev_fullpath = fullpath
 
-                        dirs = [ item for item in os.listdir(fullpath) if os.path.isdir(os.path.join(fullpath, item)) ]
+                        dirs = [
+                            item
+                            for item in os.listdir(fullpath)
+                            if os.path.isdir(os.path.join(fullpath, item))
+                        ]
                         if not dirs:
                             break
 
-                        for library_versions, this_version in six.iteritems(library_version_dirs):
+                        for library_versions, this_version in six.iteritems(
+                            library_version_dirs,
+                        ):
                             applies = True
 
                             for directory in dirs:
@@ -454,10 +519,13 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
                                 continue
 
                             if this_version not in dirs:
-                                raise Exception("Library versions were found in '{}', but no customization was found for '{}' ({} found).".format( fullpath,
-                                                                                                                                                   this_version,
-                                                                                                                                                   ', '.join([ "'{}'".format(dir) for dir in dirs ]),
-                                                                                                                                                 ))
+                                raise Exception(
+                                    "Library versions were found in '{}', but no customization was found for '{}' ({} found).".format(
+                                        fullpath,
+                                        this_version,
+                                        ", ".join(["'{}'".format(dir) for dir in dirs]),
+                                    ),
+                                )
                             fullpath = os.path.join(fullpath, this_version)
                             break
 
@@ -469,34 +537,42 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
                 # ----------------------------------------------------------------------
 
                 try:
-                    for index, method in enumerate([ cls.GetCustomizedFullpath,
-                                                     AugmentLibraryDir,
-                                                     InternalGetVersionedDirectoryEx,
-                                                     cls.GetCustomizedFullpath,
-                                                     AugmentLibraryDir,
-                                                   ]):
+                    for index, method in enumerate(
+                        [
+                            cls.GetCustomizedFullpath,
+                            AugmentLibraryDir,
+                            InternalGetVersionedDirectoryEx,
+                            cls.GetCustomizedFullpath,
+                            AugmentLibraryDir,
+                        ],
+                    ):
                         fullpath = method(fullpath)
                         assert os.path.isdir(fullpath), (index, fullpath)
 
-                    libraries[item] = cls.LibraryInfo(repository, nonlocals.version, fullpath)
+                    libraries[item] = cls.LibraryInfo(
+                        repository,
+                        nonlocals.version,
+                        fullpath,
+                    )
 
                 except Exception as ex:
-                    output_stream.write("WARNING: {}\n".format(CommonEnvironmentImports.StringHelpers.LeftJustify( str(ex),
-                                                                                                                   len("WARNING: "),
-                                                                                                                 )))
+                    output_stream.write(
+                        "WARNING: {}\n".format(
+                            CommonEnvironmentImports.StringHelpers.LeftJustify(
+                                str(ex),
+                                len("WARNING: "),
+                            ),
+                        ),
+                    )
 
         if errors:
-            raise Exception(''.join(errors))
+            raise Exception("".join(errors))
 
         return libraries
 
     # ----------------------------------------------------------------------
     @classmethod
-    def _GetLibraryScripts( cls,
-                            output_stream,
-                            libraries,
-                            library_script_dir_name,
-                          ):
+    def _GetLibraryScripts(cls, output_stream, libraries, library_script_dir_name):
         """
         Returns unique scripts that should be activated.
         """
@@ -511,9 +587,14 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
             try:
                 potential_dir = cls.GetCustomizedFullpath(potential_dir)
             except Exception as ex:
-                output_stream.write("WARNING: {}\n".format(CommonEnvironmentImports.StringHelpers.LeftJustify( str(ex),
-                                                                                                               len("WARNING: "),
-                                                                                                             )))
+                output_stream.write(
+                    "WARNING: {}\n".format(
+                        CommonEnvironmentImports.StringHelpers.LeftJustify(
+                            str(ex),
+                            len("WARNING: "),
+                        ),
+                    ),
+                )
                 continue
 
             for item in os.listdir(potential_dir):
@@ -524,26 +605,27 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
                     def GenerateNewName(repository):
                         filename, ext = os.path.splitext(item)
 
-                        new_name = "{}.{}{}".format( filename,
-                                                     repository.Name,
-                                                     ext,
-                                                   )
+                        new_name = "{}.{}{}".format(filename, repository.Name, ext)
 
                         assert new_name not in scripts, new_name
 
-                        output_stream.write(textwrap.dedent(
-                            """\
-                            To avoid naming conflicts, the script '{}' has been renamed to '{}'.
-                                Repository Name:        {}
-                                Repository Id:          {}
-                                Repository Root:        {}
+                        output_stream.write(
+                            textwrap.dedent(
+                                """\
+                                To avoid naming conflicts, the script '{}' has been renamed to '{}'.
+                                    Repository Name:        {}
+                                    Repository Id:          {}
+                                    Repository Root:        {}
 
-                            """).format( item,
-                                         new_name,
-                                         repository.Name,
-                                         repository.Id,
-                                         repository.Root,
-                                       ))
+                                """,
+                            ).format(
+                                item,
+                                new_name,
+                                repository.Name,
+                                repository.Id,
+                                repository.Root,
+                            ),
+                        )
 
                         return new_name
 
@@ -555,9 +637,10 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
 
                     item_name = GenerateNewName(library_info.Repository)
 
-                scripts[item_name] = cls.ScriptInfo( library_info.Repository,
-                                                     os.path.join(potential_dir, item),
-                                                   )
+                scripts[item_name] = cls.ScriptInfo(
+                    library_info.Repository,
+                    os.path.join(potential_dir, item),
+                )
 
         return scripts
 
@@ -565,33 +648,53 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
     @classmethod
     def _WriteLibraryInfo(cls, generated_dir, libraries):
         # Text file
-        with open(os.path.join(generated_dir, "{}.txt".format(cls.Name)), 'w') as f:
-            col_sizes = [ 40, 15, 60, ]
+        with open(os.path.join(generated_dir, "{}.txt".format(cls.Name)), "w") as f:
+            col_sizes = [40, 15, 60]
 
-            template = "{{name:{0}}}  {{version:<{1}}}  {{fullpath:<{2}}}".format(*col_sizes)
+            template = "{{name:{0}}}  {{version:<{1}}}  {{fullpath:<{2}}}".format(
+                *col_sizes
+            )
 
-            f.write(textwrap.dedent(
-                """\
-                {}
-                {}
-                {}
-                """).format( template.format( name="Name",
-                                              version="Version",
-                                              fullpath="Fullpath",
-                                            ),
-                             template.format(**{ k : v for k, v in six.moves.zip( [ "name", "version", "fullpath", ],
-                                                                                  [ '-' * col_size for col_size in col_sizes ],
-                                                                                ) }),
-                             '\n'.join([ template.format( name=k,
-                                                          version=libraries[k].Version,
-                                                          fullpath=libraries[k].Fullpath,
-                                                        )
-                                         for k in sorted(six.iterkeys(libraries), key=str.lower)
-                                       ]),
-                           ))
+            f.write(
+                textwrap.dedent(
+                    """\
+                    {}
+                    {}
+                    {}
+                    """,
+                ).format(
+                    template.format(
+                        name="Name",
+                        version="Version",
+                        fullpath="Fullpath",
+                    ),
+                    template.format(
+                        **{
+                            k: v
+                            for k,
+                            v in six.moves.zip(
+                                ["name", "version", "fullpath"],
+                                ["-" * col_size for col_size in col_sizes],
+                            )
+                        }
+                    ),
+                    "\n".join(
+                        [
+                            template.format(
+                                name=k,
+                                version=libraries[k].Version,
+                                fullpath=libraries[k].Fullpath,
+                            ) for k in sorted(
+                                six.iterkeys(libraries),
+                                key=str.lower,
+                            )
+                        ],
+                    ),
+                )
+            )
 
         # Pickle file
-        with open(os.path.join(generated_dir, "{}.pickle".format(cls.Name)), 'wb') as f:
+        with open(os.path.join(generated_dir, "{}.pickle".format(cls.Name)), "wb") as f:
             pickle.dump(libraries, f)
 
     # ----------------------------------------------------------------------
@@ -601,14 +704,15 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
     # ----------------------------------------------------------------------
     @staticmethod
     @CommonEnvironmentImports.Interface.abstractmethod
-    def _CreateCommandsImpl( output_stream,
-                             verbose_stream,
-                             configuration,
-                             repositories,
-                             version_specs,
-                             generated_dir,
-                             *args,
-                             **kwargs
-                           ):
+    def _CreateCommandsImpl(
+        output_stream,
+        verbose_stream,
+        configuration,
+        repositories,
+        version_specs,
+        generated_dir,
+        *args,
+        **kwargs
+    ):
         """Returns commands returned to the activation script."""
         raise Exception("Abstract method")

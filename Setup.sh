@@ -38,6 +38,7 @@ fi
 pushd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )" > /dev/null
 
 source ./RepositoryBootstrap/Impl/CommonFunctions.sh
+bootstrap_func
 
 prev_development_environment_fundamental=${DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL}
 export DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=$(dirname "$(readlink_func "${BASH_SOURCE[0]}")")
