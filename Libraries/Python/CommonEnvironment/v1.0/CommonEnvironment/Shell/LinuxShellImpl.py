@@ -126,9 +126,15 @@ class LinuxShellImpl(Shell):
         @override
         def OnSet(command):
             if command.Values is None:
-                return "export {}=".format(command.Name)
+                return "unset {}".format(command.Name)
 
-            return "export {}={}".format(command.Name, os.pathsep.join(command.Values)) # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
+            values = os.pathsep.join(command.Values)
+            if values.startswith('"'):
+                values.pop(0)
+            if values.endswith('"'):
+                values.pop()
+
+            return 'export {}="{}"'.format(command.Name, values) # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
 
             # If here, we don't have a complete list of items
 
@@ -326,7 +332,8 @@ class LinuxShellImpl(Shell):
         if hasattr(os, "geteuid") and os.geteuid() == 0 and not any(var for var in ["SUDO_UID", "SUDO_GID"] if var not in os.environ):
             os.system(
                 'chown {recursive} {user}:{group} "{input}"'.format(
-                    recursive="--recursive" if recursive and os.path.isdir(filename_or_directory) else "",
+                    # '--recursive' is not available on all systems, so changing to '-R'
+                    recursive="-R" if recursive and os.path.isdir(filename_or_directory) else "",
                     user=os.environ["SUDO_UID"],
                     group=os.environ["SUDO_GID"],
                     input=filename_or_directory,

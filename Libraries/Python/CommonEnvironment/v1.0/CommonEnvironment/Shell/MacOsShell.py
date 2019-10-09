@@ -42,11 +42,9 @@ class MacOsShell(LinuxShellImpl):
         @classmethod
         @override
         def OnSymbolicLink(cls, command):
-            # Darwin doesn't support relative paths
-            command.RelativePath = False
-
+            # Darwin doesn't support the dir or relative flags
             return super(MacOsShell.CommandVisitor, cls).OnSymbolicLink(
                 command,
                 no_dir_flag=True,
-                no_reltive_flag=True,
+                no_relative_flag=True,
             )
