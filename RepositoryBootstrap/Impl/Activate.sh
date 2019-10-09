@@ -18,15 +18,26 @@ set +v                                      # Disable output
 # Note that we can't exit or return from this script, as it is invoked via a short cut at the
 # repo's root. Because of this, we use the ugly 'should_continue hack.
 should_continue=1
+
+this_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+source ${this_dir}/CommonFunctions.sh
+
+if [[ ${is_darwin} -eq 1 ]]
+then
+    os_name=BSD
+else
+    os_name=Linux
+fi
+
 previous_fundamental=${DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL}
 
 # Read data created during setup
-if [[ ${should_continue} == 1 && ! -e `pwd`/Generated/Linux/${DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME}/EnvironmentBootstrap.data ]]
+if [[ ${should_continue} == 1 && ! -e `pwd`/Generated/${os_name}/${DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME}/EnvironmentBootstrap.data ]]
 then
     echo ""
     echo "ERROR: It appears that Setup.sh has not been run for this repository. Please run Setup.sh and run this script again."
     echo ""
-    echo "       [`pwd`/Generated/Linux/${DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME}/EnvironmentBootstrap.data was not found]"
+    echo "       [`pwd`/Generated/${os_name}/${DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME}/EnvironmentBootstrap.data was not found]"
     echo ""
 
     should_continue=0
@@ -55,7 +66,7 @@ then
             is_configurable=${line#is_configurable=}
         fi
 
-    done < "`pwd`/Generated/Linux/${DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME}/EnvironmentBootstrap.data"
+    done < "`pwd`/Generated/${os_name}/${DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME}/EnvironmentBootstrap.data"
 fi
 
 source "${DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL}/RepositoryBootstrap/Impl/CommonFunctions.sh"
@@ -71,9 +82,9 @@ else
 
     for d in $(find v* -maxdepth 0 -type d);
     do
-        if [[ -e ${python_dir}/${d}/Linux/${DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME}/bin/python ]]
+        if [[ -e ${python_dir}/${d}/${os_name}/${DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME}/bin/python ]]
         then
-            python_binary=${python_dir}/${d}/Linux/${DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME}/bin/python
+            python_binary=${python_dir}/${d}/${os_name}/${DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME}/bin/python
         fi
     done
 
