@@ -15,6 +15,8 @@
 set -e                                      # Exit on error
 set +v                                      # Disable output
 
+source ${DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL}/RepositoryBootstrap/Impl/CommonFunctions.sh
+
 # The following environment variables must be set prior to invoking this bash file:
 #       - DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL
 export PYTHONPATH=${DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL}
@@ -30,12 +32,19 @@ then
 else
     # Create a temporary file that contains output produced by the python script. This lets us quickly bootstrap
     # to the python environment while still executing OS-specific commands.
-    temp_script_name=`mktemp`
+    temp_script_name=$(mktemp_func)
     
     set +e
 
     # Generate
-    /opt/CommonEnvironment/python/3.6.5/bin/python -m RepositoryBootstrap.Impl.Setup Setup "${temp_script_name}" "`pwd`" "$@"
+    if [[ ${is_darwin} ]]
+    then
+        _python_binary=python3
+    else
+        _python_binary=/opt/CommonEnvironment/python/3.6.5/bin/python
+    fi
+
+    ${_python_binary} -m RepositoryBootstrap.Impl.Setup Setup "${temp_script_name}" "`pwd`" "$@"
     generation_error=$?
     
     # Invoke

@@ -102,15 +102,40 @@ class PythonActivationActivity(ActivationActivity):
                                                       ],
                                         suffix='\n',
                                       ) as dm:
-            python_dir = os.path.join(_script_dir, "..", "..", "..", Constants.TOOLS_SUBDIR, cls.Name)
-            assert os.path.isdir(python_dir), python_dir
+            # Get the python version
+            if os.getenv("is_darwin"):
+                python_versions = OrderedDict()
 
-            python_versions = OrderedDict()
+                python_root = "/Library/Frameworks/Python.framework/Versions"
+                for dirname in os.listdir(python_root):
+                    if dirname == "Current":
+                        continue
 
-            for item in os.listdir(python_dir):
-                fullpath = os.path.join(python_dir, item)
-                if os.path.isdir(fullpath):
-                    python_versions[item] = fullpath
+                    python_versions[dirname] = os.path.join(python_root, dirname)
+                
+                # ----------------------------------------------------------------------
+                def PostprocessEnvironmentDir(fullpath):
+                    # Remove the environment and os names
+                    return os.path.dirname(os.path.dirname(fullpath))
+
+                # ----------------------------------------------------------------------
+            else:
+                python_dir = os.path.join(_script_dir, "..", "..", "..", Constants.TOOLS_SUBDIR, cls.Name)
+                assert os.path.isdir(python_dir), python_dir
+
+                python_versions = OrderedDict()
+
+                for item in os.listdir(python_dir):
+                    fullpath = os.path.join(python_dir, item)
+                    if os.path.isdir(fullpath):
+                        python_versions[item] = fullpath
+
+                # ----------------------------------------------------------------------
+                def PostprocessEnvironmentDir(fullpath):
+                    # Nothing to do here
+                    return fullpath
+
+                # ----------------------------------------------------------------------
 
             for index, (python_version, fullpath) in enumerate(six.iteritems(python_versions)):
                 dm.stream.write("Processing '{}' ({} of {})...".format( python_version,
@@ -120,6 +145,8 @@ class PythonActivationActivity(ActivationActivity):
                 with dm.stream.DoneManager( suffix='\n' if verbose else '',
                                           ) as this_dm:
                     fullpath = EnvironmentBootstrap.GetEnvironmentDir(fullpath)
+                    fullpath = PostprocessEnvironmentDir(fullpath)
+
                     assert os.path.isdir(fullpath), fullpath
 
                     # Get the script dir with its populated values
@@ -289,6 +316,12 @@ class PythonActivationActivity(ActivationActivity):
         if python_version.startswith('v'):
             python_version = python_version[1:]
 
+        if os.getenv("is_darwin"):
+            python_version_short = ".".join(python_version.split(".")[:2])
+            
+            tools_dir = os.path.join("/Library/Frameworks/Python.framework/Versions", python_version_short)
+            assert os.path.isdir(tools_dir), tools_dir
+            
         # Create a substitute dict that can be used to populate subdirs based on the python
         # version being used.
         sub_dict = cls._CreateSubDict(python_version)
@@ -429,6 +462,30 @@ class PythonActivationActivity(ActivationActivity):
                                                                                                               os.path.join(library_info.Fullpath, item),
                                                                                                               remove_existing=False,
                                                                                                             ))
+
+                if os.getenv("is_darwin"):
+                    # Because we didn't custom compile this python package, we need to take special measures to ensure
+                    # that the custom packages dir is part of the path by creating a `usercustomize.py` file. We can't
+                    # use `PYTHONPATH` here, as we need to make sure that these imports end up on the sys.path after the
+                    # standard python imports (anything in `PYTHONPATH` appears before those values).
+
+                    # The library_dest_dir has a lib dir that contins the python version, but the site.USER_SITE dir is
+                    # a direct descendant of the lib dir.
+                    actions.append(CommonEnvironmentImports.CurrentShell.Commands.Set("PYTHONUSERBASE", dest_dir))
+
+                    usercustomize_dir = os.path.join(dest_dir, "lib", "python", "site-packages")
+                    CommonEnvironmentImports.FileSystem.MakeDirs(usercustomize_dir)
+
+                    with open(os.path.join(usercustomize_dir, "usercustomize.py"), "w") as f:
+                        f.write(
+                            textwrap.dedent(
+                                """\
+                                import sys
+
+                                sys.path.append("{}")
+                                """,
+                            ).format(library_dest_dir)
+                        )
 
         if libraries:
             # Apply scripts

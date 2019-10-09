@@ -48,5 +48,5 @@ class MacOsShell(LinuxShellImpl):
             return super(MacOsShell.CommandVisitor, cls).OnSymbolicLink(
                 command,
                 no_dir_flag=True,
-                no_reltive_flag=True,
+                no_relative_flag=True,
             )
