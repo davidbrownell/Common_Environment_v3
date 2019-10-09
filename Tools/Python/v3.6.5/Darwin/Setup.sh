@@ -35,6 +35,11 @@ then
     ln_file_func "/Library/Frameworks/Python.framework/Versions/3.6/bin/python3" "/Library/Frameworks/Python.framework/Versions/3.6/bin/python"
 fi
 
+if [[ ! -e  "/Library/Frameworks/Python.framework/Versions/3.6/bin/pip" ]]
+then
+    ln_file_func "/Library/Frameworks/Python.framework/Versions/3.6/bin/pip3" "/Library/Frameworks/Python.framework/Versions/3.6/bin/pip"
+fi
+
 setup_python_binary=/Library/Frameworks/Python.framework/Versions/3.6/bin/python3
 
 popd > /dev/null                            # -dir

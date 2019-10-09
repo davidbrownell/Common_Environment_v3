@@ -45,14 +45,6 @@ fi
 source ${this_dir}/../../../Tools/Python/v2.7.14/${os_name}/Setup.sh "${DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME}"
 
 echo "Installing python dependencies for v2.7.14..."
-
-if [[ ${is_darwin} -eq 1 ]]
-then
-    # The old version of pip that ships with this version of python needs to be
-    # updated, as it doesn't have support for TLS 1.2.
-    ${setup_python_binary} ${this_dir}/../../../Tools/Python/v2.7.14/${os_name}/get-pip.py
-fi
-
 ${setup_python_binary} -m pip install --quiet --no-cache-dir --no-warn-script-location -r ${this_dir}/python_requirements.txt -r ${this_dir}/python_linux_requirements.txt
 echo "DONE!"
 
@@ -69,7 +61,7 @@ fi
 source ${this_dir}/../../../Tools/Python/v3.6.5/${os_name}/Setup.sh "${DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME}"
 
 echo "Installing python dependencies for v3.6.5..."
-${setup_python_binary} -m pip install --quiet --no-cache-dir  --no-warn-script-location -r ${this_dir}/python_requirements.txt -r ${this_dir}/python_linux_requirements.txt
+${setup_python_binary} -m pip install --quiet --no-cache-dir --no-warn-script-location -r ${this_dir}/python_requirements.txt -r ${this_dir}/python_linux_requirements.txt
 echo "DONE!"
 
 echo

@@ -30,9 +30,18 @@ then
     echo
 fi
 
+# The old version of pip that ships with this version of python needs to be
+# updated, as it doesn't have support for TLS 1.2.
+/Library/Frameworks/Python.framework/Versions/2.7/bin/python2 get-pip.py
+
 if [[ ! -e  "/Library/Frameworks/Python.framework/Versions/2.7/bin/python" ]]
 then
     ln_file_func "/Library/Frameworks/Python.framework/Versions/2.7/bin/python2" "/Library/Frameworks/Python.framework/Versions/2.7/bin/python"
+fi
+
+if [[ ! -e  "/Library/Frameworks/Python.framework/Versions/2.7/bin/pip" ]]
+then
+    ln_file_func "/Library/Frameworks/Python.framework/Versions/2.7/bin/pip2" "/Library/Frameworks/Python.framework/Versions/2.7/bin/pip"
 fi
 
 setup_python_binary=/Library/Frameworks/Python.framework/Versions/2.7/bin/python2

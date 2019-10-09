@@ -563,12 +563,16 @@ class PythonActivationActivity(ActivationActivity):
 
                     # The library_dest_dir has a lib dir that contins the python version, but the site.USER_SITE dir is
                     # a direct descendant of the lib dir.
-                    actions.append(
+                    actions += [
                         CommonEnvironmentImports.CurrentShell.Commands.Set(
                             "PYTHONUSERBASE",
                             dest_dir,
                         ),
-                    )
+                        CommonEnvironmentImports.CurrentShell.Commands.Set(
+                            "PIP_TARGET",
+                            library_dest_dir,
+                        )
+                    ]
 
                     usercustomize_dir = os.path.join(
                         dest_dir,
