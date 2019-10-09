@@ -34,6 +34,11 @@ class MacOsShell(LinuxShellImpl):
 
     Name                                    = DerivedProperty("Darwin")
 
+    # While Darwin is similar to Linux (especially when it comes to bash commonalities),
+    # it is different enough from a binary perspective to warrant a different category
+    # name).
+    CategoryName                            = DerivedProperty("BSD")
+
     # ----------------------------------------------------------------------
     @staticderived
     @override
