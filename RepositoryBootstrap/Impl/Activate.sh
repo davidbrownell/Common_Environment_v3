@@ -60,7 +60,7 @@ fi
 
 source "${DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL}/RepositoryBootstrap/Impl/CommonFunctions.sh"
 
-if [[ ${is_darwin} ]]
+if [[ ${is_darwin} -eq 1 ]]
 then
     # Get the most recent version of the binary
     python_binary=python3

@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Setup.sh
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-05-10 23:23:57
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-19.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 set -e                                      # Exit on error
 set +v                                      # Disable output
@@ -33,11 +33,11 @@ else
     # Create a temporary file that contains output produced by the python script. This lets us quickly bootstrap
     # to the python environment while still executing OS-specific commands.
     temp_script_name=$(mktemp_func)
-    
+
     set +e
 
     # Generate
-    if [[ ${is_darwin} ]]
+    if [[ ${is_darwin} -eq 1 ]]
     then
         _python_binary=python3
     else
@@ -46,7 +46,7 @@ else
 
     ${_python_binary} -m RepositoryBootstrap.Impl.Setup Setup "${temp_script_name}" "`pwd`" "$@"
     generation_error=$?
-    
+
     # Invoke
     if [[ -f ${temp_script_name} ]]
     then
@@ -54,21 +54,21 @@ else
         source ${temp_script_name}
         execution_error=$?
     fi
-    
+
     set -e
 
     # Process errors...
     if [[ ${generation_error} != 0 ]]
-    then 
+    then
         echo ""
         echo "ERROR: Errors were encountered and the repository has not been setup for development."
         echo ""
         echo "       [${DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL}\RepositoryBootstrap\Impl\Setup.py failed]"
         echo ""
-        
+
         exit -1
     fi
-    
+
     if [[ ${execution_error} != 0 ]]
     then
         echo ""
@@ -76,13 +76,13 @@ else
         echo ""
         echo "       [${temp_script_name} failed]"
         echo ""
-    
+
         exit -1
     fi
-    
+
     # Success
     rm ${temp_script_name}
-    
+
     echo "                    ^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^v^"
     echo "                    <                                                                                                                                                   >"
     echo "                    >   The repository has been setup for development. Please run Activate.sh within a new console window to begin development with this repository.    <"

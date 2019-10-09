@@ -25,7 +25,7 @@ source ${DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL}/RepositoryBootstrap/Impl/CommonFun
 
 this_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-if [[ ${is_darwin} ]]
+if [[ ${is_darwin} -eq 1 ]]
 then
     os_name=Darwin
 else
@@ -37,11 +37,16 @@ fi
 echo ""
 echo "------------------------  Python 2.7.14  -----------------------------"
 
+if [[ ! ${is_darwin} -eq 1 ]]
+then
+    source ${this_dir}/../../../Tools/openssl/v1.0.2o/Linux/Setup.sh "${DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME}"
+fi
+
 source ${this_dir}/../../../Tools/Python/v2.7.14/${os_name}/Setup.sh "${DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME}"
 
 echo "Installing python dependencies for v2.7.14..."
 
-if [[ ${is_darwin} ]]
+if [[ ${is_darwin} -eq 1 ]]
 then
     # The old version of pip that ships with this version of python needs to be
     # updated, as it doesn't have support for TLS 1.2.
@@ -55,6 +60,11 @@ echo "DONE!"
 # |  Python v3.6.5
 echo ""
 echo "------------------------  Python 3.6.5  ------------------------------"
+
+if [[ ! ${is_darwin} -eq 1 ]]
+then
+    source ${this_dir}/../../../Tools/openssl/v1.1.0h/Linux/Setup.sh "${DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME}"
+fi
 
 source ${this_dir}/../../../Tools/Python/v3.6.5/${os_name}/Setup.sh "${DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME}"
 

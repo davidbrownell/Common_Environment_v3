@@ -1,17 +1,17 @@
 #/bin/bash
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  setup.sh
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-05-10 18:51:47
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-19.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 set -e                                      # Exit on error
 
@@ -53,7 +53,7 @@ conf_file=$(echo $(pwd)/$1/bin/python2.7 | tr / - | cut -c 2-).conf
 
 if [[ ! -e /etc/ld.so.conf.d/${conf_file} ]]
 then
-    
+
 cat > /etc/ld.so.conf.d/${conf_file} << END
 /opt/CommonEnvironment/python/2.7.14/lib
 END
