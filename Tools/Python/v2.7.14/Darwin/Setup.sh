@@ -1,17 +1,17 @@
 #/bin/bash
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  setup.sh
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-05-10 18:51:47
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-19.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 set -e                                      # Exit on error
 
@@ -32,7 +32,7 @@ fi
 
 # The old version of pip that ships with this version of python needs to be
 # updated, as it doesn't have support for TLS 1.2.
-/Library/Frameworks/Python.framework/Versions/2.7/bin/python2 get-pip.py
+/Library/Frameworks/Python.framework/Versions/2.7/bin/python2 get-pip.py --no-warn-script-location
 
 if [[ ! -e  "/Library/Frameworks/Python.framework/Versions/2.7/bin/python" ]]
 then
