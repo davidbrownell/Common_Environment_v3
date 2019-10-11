@@ -47,8 +47,10 @@ class CentOsShell(LinuxShellImpl):
                 @override
                 def OnSymbolicLink(cls, command):
                     # Older versions of CentOS do not support relative paths
-                    command.RelativePath = False
+                    return super(CentOsShell.CommandVisitor, cls).OnSymbolicLink(
+                        command,
+                        no_relative_flag=True,
+                    )
 
-                    return super(CentOsShell.CommandVisitor, cls).OnSymbolicLink(command)
         except ImportError:
             pass
