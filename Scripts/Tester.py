@@ -1199,7 +1199,7 @@ def GenerateTestResults(
                     executor = next(
                         executor
                         for executor in TEST_EXECUTORS
-                        if executor.Name == "Standard",
+                        if executor.Name == "Standard"
                     )
 
                 execute_result = executor.Execute(
@@ -2565,7 +2565,7 @@ def _ExecuteImpl(
         and code_coverage_validator is None
     ):
         code_coverage_validator = next(
-            ccv for ccv in CODE_COVERAGE_VALIDATORS if ccv.Name == "Standard",
+            ccv for ccv in CODE_COVERAGE_VALIDATORS if ccv.Name == "Standard"
         )
         code_coverage_validator = code_coverage_validator
 
@@ -2700,7 +2700,7 @@ def _ExecuteTreeImpl(
         and code_coverage_validator is None
     ):
         code_coverage_validator = next(
-            ccv for ccv in CODE_COVERAGE_VALIDATORS if ccv.Name == "Standard",
+            ccv for ccv in CODE_COVERAGE_VALIDATORS if ccv.Name == "Standard"
         )
 
     with StreamDecorator.GenerateAnsiSequenceStream(
