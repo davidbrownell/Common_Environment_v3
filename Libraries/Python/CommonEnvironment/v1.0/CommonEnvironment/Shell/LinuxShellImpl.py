@@ -92,15 +92,19 @@ class LinuxShellImpl(Shell):
         # ----------------------------------------------------------------------
         @staticmethod
         @override
-        def OnSymbolicLink(command):
+        def OnSymbolicLink(
+            command,
+            no_dir_flag=False,
+            no_relative_flag=False,
+        ):
             return textwrap.dedent(
                 """\
-                ln -{dir_flag}{force_flag}{relative_flag}s "{target}" "{link}"
+                ln -{force_flag}{dir_flag}{relative_flag}s "{target}" "{link}"
                 """,
             ).format(
-                dir_flag="d" if command.IsDir else "",
                 force_flag="" if not command.RemoveExisting else "f",
-                relative_flag="" if not command.RelativePath else "r",
+                dir_flag="d" if (command.IsDir and not no_dir_flag) else "",
+                relative_flag="r" if (command.RelativePath and not no_relative_flag) else "",
                 target=command.Target,
                 link=command.LinkFilename,
             )
@@ -122,9 +126,15 @@ class LinuxShellImpl(Shell):
         @override
         def OnSet(command):
             if command.Values is None:
-                return "export {}=".format(command.Name)
+                return "unset {}".format(command.Name)
 
-            return "export {}={}".format(command.Name, os.pathsep.join(command.Values)) # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
+            values = os.pathsep.join(command.Values)
+            if values.startswith('"'):
+                values.pop(0)
+            if values.endswith('"'):
+                values.pop()
+
+            return 'export {}="{}"'.format(command.Name, values) # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
 
             # If here, we don't have a complete list of items
 
@@ -322,7 +332,8 @@ class LinuxShellImpl(Shell):
         if hasattr(os, "geteuid") and os.geteuid() == 0 and not any(var for var in ["SUDO_UID", "SUDO_GID"] if var not in os.environ):
             os.system(
                 'chown {recursive} {user}:{group} "{input}"'.format(
-                    recursive="--recursive" if recursive and os.path.isdir(filename_or_directory) else "",
+                    # '--recursive' is not available on all systems, so changing to '-R'
+                    recursive="-R" if recursive and os.path.isdir(filename_or_directory) else "",
                     user=os.environ["SUDO_UID"],
                     group=os.environ["SUDO_GID"],
                     input=filename_or_directory,

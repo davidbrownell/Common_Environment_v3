@@ -18,15 +18,26 @@ set +v                                      # Disable output
 # Note that we can't exit or return from this script, as it is invoked via a short cut at the
 # repo's root. Because of this, we use the ugly 'should_continue hack.
 should_continue=1
+
+this_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+source ${this_dir}/CommonFunctions.sh
+
+if [[ ${is_darwin} -eq 1 ]]
+then
+    os_name=BSD
+else
+    os_name=Linux
+fi
+
 previous_fundamental=${DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL}
 
 # Read data created during setup
-if [[ ${should_continue} == 1 && ! -e `pwd`/Generated/Linux/${DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME}/EnvironmentBootstrap.data ]]
+if [[ ${should_continue} == 1 && ! -e `pwd`/Generated/${os_name}/${DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME}/EnvironmentBootstrap.data ]]
 then
     echo ""
     echo "ERROR: It appears that Setup.sh has not been run for this repository. Please run Setup.sh and run this script again."
     echo ""
-    echo "       [`pwd`/Generated/Linux/${DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME}/EnvironmentBootstrap.data was not found]"
+    echo "       [`pwd`/Generated/${os_name}/${DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME}/EnvironmentBootstrap.data was not found]"
     echo ""
 
     should_continue=0
@@ -39,7 +50,14 @@ then
     do
         if [[ ${line} == fundamental_repo* ]]
         then
-            export DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=`readlink -f ${line#fundamental_repo=}`
+            # We don't have the fundamental repo location yet, so we can't load CommonFunctions.
+            # Instead, we need to look for darwin manually.
+            if [[ ${OSTYPE} == *darwin* ]]
+            then
+                export DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=$(greadlink -f ${line#fundamental_repo=})
+            else
+                export DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=$(readlink -f ${line#fundamental_repo=})
+            fi
         elif [[ ${line} == is_mixin_repo* ]]
         then
             is_mixin_repo=${line#is_mixin_repo=}
@@ -48,22 +66,30 @@ then
             is_configurable=${line#is_configurable=}
         fi
 
-    done < "`pwd`/Generated/Linux/${DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME}/EnvironmentBootstrap.data"
+    done < "`pwd`/Generated/${os_name}/${DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME}/EnvironmentBootstrap.data"
 fi
 
-# Find the python binary
-python_dir=${DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL}/Tools/Python
-pushd ${python_dir} > /dev/null                                             # +python_dir
+source "${DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL}/RepositoryBootstrap/Impl/CommonFunctions.sh"
 
-for d in $(find v* -maxdepth 0 -type d);
-do
-    if [[ -e ${python_dir}/${d}/Linux/${DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME}/bin/python ]]
-    then
-        python_binary=${python_dir}/${d}/Linux/${DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME}/bin/python
-    fi
-done
+if [[ ${is_darwin} -eq 1 ]]
+then
+    # Get the most recent version of the binary
+    python_binary=python3
+else
+    # Find the python binary
+    python_dir=${DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL}/Tools/Python
+    pushd ${python_dir} > /dev/null                                             # +python_dir
 
-popd > /dev/null                                                            # -python_dir
+    for d in $(find v* -maxdepth 0 -type d);
+    do
+        if [[ -e ${python_dir}/${d}/${os_name}/${DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME}/bin/python ]]
+        then
+            python_binary=${python_dir}/${d}/${os_name}/${DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME}/bin/python
+        fi
+    done
+
+    popd > /dev/null                                                            # -python_dir
+fi
 
 export PYTHONPATH=${DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL}
 
@@ -167,7 +193,7 @@ fi
 # Generate...
 if [[ ${should_continue} == 1 ]]
 then
-    temp_script_name=`mktemp`
+    temp_script_name=$(mktemp_func)
     [[ ! -e ${temp_script_name} ]] || rm -f "${temp_script_name}"
 
     ${python_binary} -m RepositoryBootstrap.Impl.Activate Activate ${temp_script_name} "`pwd`" ${configuration} "$@"

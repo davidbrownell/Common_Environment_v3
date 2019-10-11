@@ -64,4 +64,6 @@ fi
 echo "DONE!"
 echo ""
 
+setup_python_binary=$(pwd)/$1/bin/python3
+
 popd > /dev/null                            # -dir
