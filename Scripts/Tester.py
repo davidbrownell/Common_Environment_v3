@@ -818,7 +818,7 @@ def GenerateTestResults(
     test_parser,
     optional_test_executor,
     optional_code_coverage_validator,
-    execute_in_parallel,
+    execute_tests_in_parallel,
     iterations,
     debug_on_error,
     continue_iterations_on_error,
@@ -827,7 +827,7 @@ def GenerateTestResults(
     output_stream,
     verbose,
     no_status,
-    max_num_concurrent_tasks=multiprocessing.cpu_count(),
+    max_num_concurrent_tasks=None,
 ):
     assert test_items
     assert output_dir
@@ -835,6 +835,8 @@ def GenerateTestResults(
     assert test_parser
     assert iterations > 0, iterations
     assert output_stream
+
+    max_num_concurrent_tasks = max_num_concurrent_tasks or multiprocessing.cpu_count()
     assert max_num_concurrent_tasks > 0, max_num_concurrent_tasks
 
     # Check for congruent plugins
@@ -883,8 +885,8 @@ def GenerateTestResults(
     FileSystem.MakeDirs(output_dir)
 
     # Ensure that we only build the debug configuration with code coverage
-    if optional_test_executor:
-        execute_in_parallel = False
+    if optional_code_coverage_validator:
+        execute_tests_in_parallel = False
 
         if compiler.IsCompiler:
             debug_only = True
@@ -1322,7 +1324,7 @@ def GenerateTestResults(
 
         on_status_update("Waiting")
 
-        if not execute_in_parallel:
+        if not execute_tests_in_parallel:
             with working_data.execution_lock:
                 Invoke()
         else:
@@ -1435,7 +1437,7 @@ def GenerateTestResults(
                 this_dm.stream,
                 progress_bar=True,
                 display_errors=verbose,
-                num_concurrent_tasks=max_num_concurrent_tasks if execute_in_parallel else 1,
+                num_concurrent_tasks=max_num_concurrent_tasks if execute_tests_in_parallel else 1,
             )
 
     return [working_data.complete_result for working_data in working_data_items]
@@ -1479,8 +1481,11 @@ _output_dir_param_description                           = CommandLine.EntryPoint
 _test_type_param_description                            = CommandLine.EntryPoint.Parameter(
     "Test type that specifies the types of tests to process.",
 )
-_execute_in_parallel_param_description                  = CommandLine.EntryPoint.Parameter(
+_execute_tests_in_parallel_param_description            = CommandLine.EntryPoint.Parameter(
     "Execute tests in parallel.",
+)
+_single_threaded_param_description                      = CommandLine.EntryPoint.Parameter(
+    "Execute all build and test functionality in a single thread.",
 )
 _iterations_param_description                           = CommandLine.EntryPoint.Parameter(
     "Execute all tests N times.",
@@ -1543,7 +1548,8 @@ _code_coverage_validator_flag_param_description         = CommandLine.EntryPoint
     filename_or_dir=CommandLine.EntryPoint.Parameter("Filename or directory to test."),
     output_dir=_output_dir_param_description,
     test_type=_test_type_param_description,
-    execute_in_parallel=_execute_in_parallel_param_description,
+    execute_tests_in_parallel=_execute_tests_in_parallel_param_description,
+    single_threaded=_single_threaded_param_description,
     iterations=_iterations_param_description,
     debug_on_error=_debug_on_error_param_description,
     continue_iterations_on_error=_continue_iterations_on_error_param_description,
@@ -1567,7 +1573,7 @@ _code_coverage_validator_flag_param_description         = CommandLine.EntryPoint
     test_type=CommandLine.StringTypeInfo(
         arity="?",
     ),
-    execute_in_parallel=CommandLine.BoolTypeInfo(
+    execute_tests_in_parallel=CommandLine.BoolTypeInfo(
         arity="?",
     ),
     iterations=CommandLine.IntTypeInfo(
@@ -1581,7 +1587,8 @@ def Test(
     filename_or_dir,
     output_dir=None,
     test_type=None,
-    execute_in_parallel=None,
+    execute_tests_in_parallel=None,
+    single_threaded=False,
     iterations=1,
     debug_on_error=False,
     continue_iterations_on_error=False,
@@ -1603,9 +1610,11 @@ def Test(
         and configuration.Compiler.IsSupported(filename_or_dir)
     ):
         if quiet:
-            raise CommandLine.UsageException(
-                "'quiet' is only used when executing tests via a directory",
-            )
+            if os.path.isfile(filename_or_dir):
+                raise CommandLine.UsageException(
+                    "'quiet' is only used when executing tests via a directory",
+                )
+            quiet = False
 
         return _ExecuteImpl(
             filename_or_dir,
@@ -1613,7 +1622,7 @@ def Test(
             configuration.TestParser,
             configuration.OptionalCoverageExecutor if code_coverage else None,
             configuration.OptionalCodeCoverageValidator if code_coverage else None,
-            execute_in_parallel=execute_in_parallel,
+            execute_tests_in_parallel=execute_tests_in_parallel,
             iterations=iterations,
             debug_on_error=debug_on_error,
             continue_iterations_on_error=continue_iterations_on_error,
@@ -1623,6 +1632,7 @@ def Test(
             verbose=verbose,
             preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
             no_status=no_status,
+            max_num_concurrent_tasks=1 if single_threaded else None,
         )
 
     if test_type is None:
@@ -1643,7 +1653,7 @@ def Test(
         configuration.TestParser,
         configuration.OptionalCoverageExecutor if code_coverage else None,
         configuration.OptionalCodeCoverageValidator if code_coverage else None,
-        execute_in_parallel=execute_in_parallel,
+        execute_tests_in_parallel=execute_tests_in_parallel,
         iterations=iterations,
         debug_on_error=debug_on_error,
         continue_iterations_on_error=continue_iterations_on_error,
@@ -1654,6 +1664,7 @@ def Test(
         quiet=quiet,
         preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
         no_status=no_status,
+        max_num_concurrent_tasks=1 if single_threaded else None,
     )
 
 # ----------------------------------------------------------------------
@@ -1661,6 +1672,7 @@ def Test(
     filename_or_directory=CommandLine.EntryPoint.Parameter(
         "Filename or directory to test.",
     ),
+    single_threaded=_single_threaded_param_description,
     iterations=_iterations_param_description,
     debug_on_error=_debug_on_error_param_description,
     continue_iterations_on_error=_continue_iterations_on_error_param_description,
@@ -1683,6 +1695,7 @@ def Test(
 )
 def TestItem(
     filename_or_directory,
+    single_threaded=False,
     iterations=1,
     debug_on_error=False,
     continue_iterations_on_error=False,
@@ -1719,7 +1732,8 @@ def TestItem(
         filename_or_directory,
         output_dir=None,
         test_type=None,
-        execute_in_parallel=False,
+        execute_tests_in_parallel=False,
+        single_threaded=single_threaded,
         iterations=iterations,
         debug_on_error=debug_on_error,
         continue_iterations_on_error=continue_iterations_on_error,
@@ -1739,7 +1753,8 @@ def TestItem(
     input_dir=_input_dir_param_descripiton,
     output_dir=_output_dir_param_description,
     test_type=_test_type_param_description,
-    execute_in_parallel=_execute_in_parallel_param_description,
+    execute_tests_in_parallel=_execute_tests_in_parallel_param_description,
+    single_threaded=_single_threaded_param_description,
     iterations=_iterations_param_description,
     debug_on_error=_debug_on_error_param_description,
     continue_iterations_on_error=_continue_iterations_on_error_param_description,
@@ -1758,7 +1773,7 @@ def TestItem(
         ensure_exists=False,
     ),
     test_type=CommandLine.StringTypeInfo(),
-    execute_in_parallel=CommandLine.BoolTypeInfo(
+    execute_tests_in_parallel=CommandLine.BoolTypeInfo(
         arity="?",
     ),
     iterations=CommandLine.IntTypeInfo(
@@ -1772,7 +1787,8 @@ def TestType(
     input_dir,
     output_dir,
     test_type,
-    execute_in_parallel=None,
+    execute_tests_in_parallel=None,
+    single_threaded=False,
     iterations=1,
     debug_on_error=False,
     continue_iterations_on_error=False,
@@ -1792,7 +1808,8 @@ def TestType(
         input_dir,
         output_dir=output_dir,
         test_type=test_type,
-        execute_in_parallel=execute_in_parallel,
+        execute_tests_in_parallel=execute_tests_in_parallel,
+        single_threaded=single_threaded,
         iterations=iterations,
         debug_on_error=debug_on_error,
         continue_iterations_on_error=continue_iterations_on_error,
@@ -1811,7 +1828,8 @@ def TestType(
     input_dir=_input_dir_param_descripiton,
     output_dir=_output_dir_param_description,
     test_type=_test_type_param_description,
-    execute_in_parallel=_execute_in_parallel_param_description,
+    execute_tests_in_parallel=_execute_tests_in_parallel_param_description,
+    single_threaded=_single_threaded_param_description,
     iterations=_iterations_param_description,
     debug_on_error=_debug_on_error_param_description,
     continue_iterations_on_error=_continue_iterations_on_error_param_description,
@@ -1829,7 +1847,7 @@ def TestType(
         ensure_exists=False,
     ),
     test_type=CommandLine.StringTypeInfo(),
-    execute_in_parallel=CommandLine.BoolTypeInfo(
+    execute_tests_in_parallel=CommandLine.BoolTypeInfo(
         arity="?",
     ),
     iterations=CommandLine.IntTypeInfo(
@@ -1842,7 +1860,8 @@ def TestAll(
     input_dir,
     output_dir,
     test_type,
-    execute_in_parallel=None,
+    execute_tests_in_parallel=None,
+    single_threaded=False,
     iterations=1,
     debug_on_error=False,
     continue_iterations_on_error=False,
@@ -1884,7 +1903,8 @@ def TestAll(
                     input_dir,
                     output_dir,
                     test_type,
-                    execute_in_parallel=execute_in_parallel,
+                    execute_tests_in_parallel=execute_tests_in_parallel,
+                    single_threaded=single_threaded,
                     iterations=iterations,
                     debug_on_error=debug_on_error,
                     continue_iterations_on_error=continue_iterations_on_error,
@@ -2165,7 +2185,8 @@ def MatchAllTests(
     test_parser=_test_parser_param_description,
     test_executor=_test_executor_param_description,
     code_coverage_validator=_code_coverage_validator_param_description,
-    execute_in_parallel=_execute_in_parallel_param_description,
+    execute_tests_in_parallel=_execute_tests_in_parallel_param_description,
+    single_threaded=_single_threaded_param_description,
     iterations=_iterations_param_description,
     debug_on_error=_debug_on_error_param_description,
     continue_iterations_on_error=_continue_iterations_on_error_param_description,
@@ -2185,7 +2206,7 @@ def MatchAllTests(
     test_parser=_test_parser_type_info,
     test_executor=_test_executor_type_info,
     code_coverage_validator=_code_coverage_validator_type_info,
-    execute_in_parallel=CommandLine.BoolTypeInfo(
+    execute_tests_in_parallel=CommandLine.BoolTypeInfo(
         arity="?",
     ),
     iterations=CommandLine.IntTypeInfo(
@@ -2216,7 +2237,8 @@ def Execute(
     test_parser,
     test_executor=None,
     code_coverage_validator=None,
-    execute_in_parallel=None,
+    execute_tests_in_parallel=None,
+    single_threaded=False,
     iterations=1,
     debug_on_error=False,
     continue_iterations_on_error=False,
@@ -2262,7 +2284,7 @@ def Execute(
             code_coverage_validator_flag,
             allow_empty=True,
         ),
-        execute_in_parallel=execute_in_parallel,
+        execute_tests_in_parallel=execute_tests_in_parallel,
         iterations=iterations,
         debug_on_error=debug_on_error,
         continue_iterations_on_error=continue_iterations_on_error,
@@ -2272,6 +2294,7 @@ def Execute(
         verbose=verbose,
         preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
         no_status=no_status,
+        max_num_concurrent_tasks=1 if single_threaded else None,
     )
 
 # ----------------------------------------------------------------------
@@ -2283,7 +2306,8 @@ def Execute(
     test_parser=_test_parser_param_description,
     test_executor=_test_executor_param_description,
     code_coverage_validator=_code_coverage_validator_param_description,
-    execute_in_parallel=_execute_in_parallel_param_description,
+    execute_tests_in_parallel=_execute_tests_in_parallel_param_description,
+    single_threaded=_single_threaded_param_description,
     iterations=_iterations_param_description,
     debug_on_error=_debug_on_error_param_description,
     continue_iterations_on_error=_continue_iterations_on_error_param_description,
@@ -2308,7 +2332,7 @@ def Execute(
     test_parser=_test_parser_type_info,
     test_executor=_test_executor_type_info,
     code_coverage_validator=_code_coverage_validator_type_info,
-    execute_in_parallel=CommandLine.BoolTypeInfo(
+    execute_tests_in_parallel=CommandLine.BoolTypeInfo(
         arity="?",
     ),
     iterations=CommandLine.IntTypeInfo(
@@ -2341,7 +2365,8 @@ def ExecuteTree(
     test_parser,
     test_executor=None,
     code_coverage_validator=None,
-    execute_in_parallel=None,
+    execute_tests_in_parallel=None,
+    single_threaded=False,
     iterations=1,
     debug_on_error=False,
     continue_iterations_on_error=False,
@@ -2390,7 +2415,7 @@ def ExecuteTree(
             code_coverage_validator_flag,
             allow_empty=True,
         ),
-        execute_in_parallel=execute_in_parallel,
+        execute_tests_in_parallel=execute_tests_in_parallel,
         iterations=iterations,
         debug_on_error=debug_on_error,
         continue_iterations_on_error=continue_iterations_on_error,
@@ -2401,6 +2426,7 @@ def ExecuteTree(
         quiet=quiet,
         preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
         no_status=no_status,
+        max_num_concurrent_tasks=1 if single_threaded else None,
     )
 
 # ----------------------------------------------------------------------
@@ -2543,7 +2569,7 @@ def _ExecuteImpl(
     test_parser,
     test_executor,
     code_coverage_validator,
-    execute_in_parallel,
+    execute_tests_in_parallel,
     iterations,
     debug_on_error,
     continue_iterations_on_error,
@@ -2553,6 +2579,7 @@ def _ExecuteImpl(
     verbose,
     preserve_ansi_escape_sequences,
     no_status,
+    max_num_concurrent_tasks=None,
 ):
     if not compiler.IsSupported(filename_or_dir):
         raise CommandLine.UsageException(
@@ -2596,7 +2623,7 @@ def _ExecuteImpl(
             test_parser,
             test_executor,
             code_coverage_validator,
-            execute_in_parallel=execute_in_parallel,
+            execute_tests_in_parallel=execute_tests_in_parallel,
             iterations=iterations,
             debug_on_error=debug_on_error,
             continue_iterations_on_error=continue_iterations_on_error,
@@ -2605,6 +2632,7 @@ def _ExecuteImpl(
             output_stream=output_stream,
             verbose=verbose,
             no_status=no_status,
+            max_num_concurrent_tasks=max_num_concurrent_tasks,
         )
 
         if not complete_results:
@@ -2677,7 +2705,7 @@ def _ExecuteTreeImpl(
     test_parser,
     test_executor,
     code_coverage_validator,
-    execute_in_parallel,
+    execute_tests_in_parallel,
     iterations,
     debug_on_error,
     continue_iterations_on_error,
@@ -2688,6 +2716,7 @@ def _ExecuteTreeImpl(
     quiet,
     preserve_ansi_escape_sequences,
     no_status,
+    max_num_concurrent_tasks=None,
 ):
     if verbose and quiet:
         raise CommandLine.UsageException(
@@ -2733,14 +2762,14 @@ def _ExecuteTreeImpl(
             if not test_items:
                 return dm.result
 
-            if execute_in_parallel is None:
+            if execute_tests_in_parallel is None:
                 for tt in TEST_TYPES:
                     if tt.Name == test_type:
-                        execute_in_parallel = tt.ExecuteInParallel
+                        execute_tests_in_parallel = tt.ExecuteInParallel
                         break
 
-                if execute_in_parallel is None:
-                    execute_in_parallel = False
+                if execute_tests_in_parallel is None:
+                    execute_tests_in_parallel = False
 
             complete_results = GenerateTestResults(
                 test_items,
@@ -2749,7 +2778,7 @@ def _ExecuteTreeImpl(
                 test_parser,
                 test_executor,
                 code_coverage_validator,
-                execute_in_parallel=execute_in_parallel,
+                execute_tests_in_parallel=execute_tests_in_parallel,
                 iterations=iterations,
                 debug_on_error=debug_on_error,
                 continue_iterations_on_error=continue_iterations_on_error,
@@ -2758,6 +2787,7 @@ def _ExecuteTreeImpl(
                 output_stream=dm.stream,
                 verbose=verbose,
                 no_status=no_status,
+                max_num_concurrent_tasks=max_num_concurrent_tasks,
             )
             if not complete_results:
                 return 0
