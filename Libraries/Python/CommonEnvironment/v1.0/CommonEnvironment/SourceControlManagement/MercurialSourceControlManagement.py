@@ -176,7 +176,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
             'hg clone{branch} "{uri}" "{name}"'.format(
                 branch=' -b "{}"'.format(branch) if branch else "",
                 uri=uri,
-                name=clone_name,
+                name=temp_clone_name,
             ),
         )
 
@@ -955,3 +955,4 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
 
         assert type(arg) in dispatch_map, type(arg)
         return dispatch_map[type(arg)]()
+
