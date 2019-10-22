@@ -35,8 +35,8 @@ from CommonEnvironment.CompilerImpl import Verifier as VerifierMod
 from CommonEnvironment.TypeInfo.FundamentalTypes.FilenameTypeInfo import FilenameTypeInfo
 
 # ----------------------------------------------------------------------
-_script_fullpath = CommonEnvironment.ThisFullpath()
-_script_dir, _script_name = os.path.split(_script_fullpath)
+_script_fullpath                            = CommonEnvironment.ThisFullpath()
+_script_dir, _script_name                   = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 inflect                                     = inflect_mod.engine()
@@ -56,14 +56,22 @@ class Verifier(VerifierMod.Verifier):
     # |
     # ----------------------------------------------------------------------
     Name                                    = DerivedProperty("PyLint")
-    Description                             = DerivedProperty("Statically analyzes Python source code, reporting common mistakes and errors.")
-    InputTypeInfo                           = DerivedProperty(FilenameTypeInfo(validation_expression=r".+?\.py"))
+    Description                             = DerivedProperty(
+        "Statically analyzes Python source code, reporting common mistakes and errors.",
+    )
+    InputTypeInfo                           = DerivedProperty(
+        FilenameTypeInfo(
+            validation_expression=r".+?\.py",
+        ),
+    )
 
     DEFAULT_PASSING_SCORE                   = 9.0
 
     # Environment variable name of a custom PyLint configuration file. A default
     # configuration file will be used if this environment variable isn't defined.
-    CONFIGURATION_ENVIRONMENT_VAR_NAME      = "DEVELOPMENT_ENVIRONMENT_PYTHON_VERIFIER_CONFIGURATION"
+    CONFIGURATION_ENVIRONMENT_VAR_NAME      = (
+        "DEVELOPMENT_ENVIRONMENT_PYTHON_VERIFIER_CONFIGURATION"
+    )
 
     # ----------------------------------------------------------------------
     # |
@@ -86,10 +94,15 @@ class Verifier(VerifierMod.Verifier):
         if name == "__init__" and ext == ".py" and os.path.getsize(item_name) == 0:
             return None
 
-        return os.path.join(dirname, test_type_name, "{}_{}{}".format( name,
-                                                                       inflect.singular_noun(test_type_name) or test_type_name,
-                                                                       ext,
-                                                                     ))
+        return os.path.join(
+            dirname,
+            test_type_name,
+            "{}_{}{}".format(
+                name,
+                inflect.singular_noun(test_type_name) or test_type_name,
+                ext,
+            ),
+        )
 
     # ----------------------------------------------------------------------
     @staticmethod
@@ -97,9 +110,10 @@ class Verifier(VerifierMod.Verifier):
     def TestToItemName(test_filename):
         dirname, basename = os.path.split(test_filename)
 
-        match = re.match( r"^(?P<name>.+)_(?P<test_type>[^_\.]+Test)(?P<ext>\..+)$",
-                          basename,
-                        )
+        match = re.match(
+            r"^(?P<name>.+)_(?P<test_type>[^_\.]+Test)(?P<ext>\..+)$",
+            basename,
+        )
         if not match:
             raise Exception("'{}' is not a recognized test name".format(test_filename))
 
@@ -140,8 +154,7 @@ class Verifier(VerifierMod.Verifier):
     @classmethod
     @override
     def _GetOptionalMetadata(cls):
-        return [ ( "passing_score", None ),
-               ] + super(Verifier, cls)._GetOptionalMetadata()
+        return [("passing_score", None)] + super(Verifier, cls)._GetOptionalMetadata()
 
     # ----------------------------------------------------------------------
     @classmethod
@@ -158,13 +171,7 @@ class Verifier(VerifierMod.Verifier):
     # ----------------------------------------------------------------------
     @classmethod
     @override
-    def _InvokeImpl( cls,
-                     invoke_reason,
-                     context,
-                     status_stream,
-                     verbose_stream,
-                     verbose,
-                   ):
+    def _InvokeImpl(cls, invoke_reason, context, status_stream, verbose_stream, verbose):
         # If the file is being invoked as a test file, measure the file under test
         # rather than the test itself.
         filename = context["input"]
@@ -174,50 +181,58 @@ class Verifier(VerifierMod.Verifier):
         except:
             pass
 
-        assert os.path.isfile(filename), filename
+        if not os.path.isfile(filename):
+            return 0
 
         if os.path.basename(filename) == "__init__.py" and os.path.getsize(filename) == 0:
             return 0
 
         # Create the lint file
-        configuration_file = os.getenv(cls.CONFIGURATION_ENVIRONMENT_VAR_NAME) or os.path.join(_script_dir, "PythonVerifier.default_configuration")
+        configuration_file = os.getenv(
+            cls.CONFIGURATION_ENVIRONMENT_VAR_NAME,
+        ) or os.path.join(_script_dir, "PythonVerifier.default_configuration")
         assert os.path.isfile(configuration_file), configuration_file
 
         # Write the python script that invokes the linter
         temp_filename = CurrentShell.CreateTempFilename(".py")
-        with open(temp_filename, 'w') as f:
-            f.write(textwrap.dedent(
-                """\
-                import sys
+        with open(temp_filename, "w") as f:
+            f.write(
+                textwrap.dedent(
+                    """\
+                    import sys
 
-                from pylint import lint
+                    from pylint import lint
 
-                lint.Run([ r"--rcfile={config}",
-                           r"--msg-template={{path}}({{line}}): [{{msg_id}}] {{msg}}",
-                           r"{filename}",
-                         ])
-                """).format( config=configuration_file,
-                             filename=filename,
-                           ))
+                    lint.Run([ r"--rcfile={config}",
+                               r"--msg-template={{path}}({{line}}): [{{msg_id}}] {{msg}}",
+                               r"{filename}",
+                             ])
+                    """,
+                ).format(
+                    config=configuration_file,
+                    filename=filename,
+                ),
+            )
 
         with CallOnExit(lambda: FileSystem.RemoveFile(temp_filename)):
             # Run the generated file
             command_line = 'python "{}"'.format(temp_filename)
 
             sink = six.moves.StringIO()
-            output_stream = StreamDecorator([ sink, verbose_stream, ])
+            output_stream = StreamDecorator([sink, verbose_stream])
 
             regex_sink = six.moves.StringIO()
-            Process.Execute(command_line, StreamDecorator([ regex_sink, output_stream, ]))
+            Process.Execute(command_line, StreamDecorator([regex_sink, output_stream]))
             regex_sink = regex_sink.getvalue()
 
             result = 0
 
             # Extract the results
-            match = re.search( r"Your code has been rated at (?P<score>[-\d\.]+)/(?P<max>[\d\.]+)",
-                               regex_sink,
-                               re.MULTILINE,
-                             )
+            match = re.search(
+                r"Your code has been rated at (?P<score>[-\d\.]+)/(?P<max>[\d\.]+)",
+                regex_sink,
+                re.MULTILINE,
+            )
 
             if not match:
                 result = -1
@@ -234,16 +249,22 @@ class Verifier(VerifierMod.Verifier):
                 else:
                     passing_score = context["passing_score"]
 
-                output_stream.write(textwrap.dedent(
-                    """\
-                    Score:                  {score} (out of {max_score})
-                    Passing Score:          {passing_score}{explicit}
+                output_stream.write(
+                    textwrap.dedent(
+                        """\
+                        Score:                  {score} (out of {max_score})
+                        Passing Score:          {passing_score}{explicit}
 
-                    """).format( score=score,
-                                 max_score=max_score,
-                                 passing_score=passing_score,
-                                 explicit=" (explicitly provided)" if context["explicit_passing_score"] else '',
-                               ))
+                        """,
+                    ).format(
+                        score=score,
+                        max_score=max_score,
+                        passing_score=passing_score,
+                        explicit=" (explicitly provided)" if context[
+                            "explicit_passing_score"
+                        ] else "",
+                    ),
+                )
 
                 if passing_score is not None and score < passing_score:
                     result = -1
@@ -253,31 +274,45 @@ class Verifier(VerifierMod.Verifier):
 
             return result
 
+
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint
-@CommandLine.Constraints( input=CommandLine.FilenameTypeInfo(match_any=True, arity='+'),
-                          passing_score=CommandLine.FloatTypeInfo(min=0.0, max=10.0, arity='?'),
-                          output_stream=None,
-                        )
-def CommandLineVerify( input,                          # <Redefinig built-in type> pylint: disable = W0622
-            passing_score=None,
-            output_stream=sys.stdout,
-            verbose=False,
-          ):
+@CommandLine.Constraints(
+    input=CommandLine.FilenameTypeInfo(
+        match_any=True,
+        arity="+",
+    ),
+    passing_score=CommandLine.FloatTypeInfo(
+        min=0.0,
+        max=10.0,
+        arity="?",
+    ),
+    output_stream=None,
+)
+def CommandLineVerify(
+    input,                                  # <Redefinig built-in type> pylint: disable = W0622
+    passing_score=None,
+    output_stream=sys.stdout,
+    verbose=False,
+):
     """Verifies the given python input"""
 
-    inputs = input; del input
+    inputs = input
+    del input
 
-    return VerifierMod.CommandLineVerify( Verifier,
-                                          inputs,
-                                          StreamDecorator(output_stream),
-                                          verbose,
-                                          passing_score=passing_score,
-                                        )
+    return VerifierMod.CommandLineVerify(
+        Verifier,
+        inputs,
+        StreamDecorator(output_stream),
+        verbose,
+        passing_score=passing_score,
+    )
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 if __name__ == "__main__":
-    try: sys.exit(CommandLine.Main())
-    except KeyboardInterrupt: pass
+    try:
+        sys.exit(CommandLine.Main())
+    except KeyboardInterrupt:
+        pass

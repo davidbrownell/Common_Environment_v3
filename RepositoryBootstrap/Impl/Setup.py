@@ -510,93 +510,126 @@ def Enlist(
 
     nonlocals = CommonEnvironmentImports.CommonEnvironment.Nonlocals(
         should_continue=None,
+        previously_updated=set(),
     )
 
     # ----------------------------------------------------------------------
     def Callback(output_stream, repo_map):
         to_clone = []
+        to_update = []
         missing = []
 
         for value in six.itervalues(repo_map):
-            if value.root is None:
-                if value.get_clone_uri_func is not None:
-                    clone_uri = value.get_clone_uri_func(scm)
-                    if clone_uri is not None:
-                        try:
-                            clone_uri = clone_uri.format(**uri_dict)
-                        except KeyError as ex:
-                            output_stream.write(
-                                "\nERROR: The key {} is used in the clone uri '{}' (defined in '{}') and must be provided on the command line using the 'uri_dict' argument.\n".format(
-                                    str(ex),
-                                    clone_uri,
-                                    value.root,
-                                ),
-                            )
-                            return -1
+            if value.root is not None:
+                if value.root not in nonlocals.previously_updated:
+                    to_update.append(value)
 
-                        to_clone.append((value, clone_uri))
-                        continue
+                continue
 
-                missing.append(value)
-
-        if not to_clone:
-            if missing:
-                output_stream.write(
-                    textwrap.dedent(
-                        """\
-
-
-                        WARNING: Unable to clone these repositories:
-                        {}
-                        """,
-                    ).format(
-                        "\n".join(
-                            [
-                                "    - {} <{}>".format(value.Name, value.Id)
-                                for value in missing
-                            ],
-                        ),
-                    ),
-                )
-
-                return 1
-
-            output_stream.write("\n\nAll repositories were found.\n")
-            return 0
-
-        output_stream.write(
-            "\n\nCloning {}...".format(inflect.no("repository", len(to_clone))),
-        )
-        with output_stream.DoneManager() as dm:
-            for index, (value, clone_uri) in enumerate(to_clone):
-                dm.stream.write(
-                    "Processing '{}' ({} of {})...".format(
-                        value.Name,
-                        index + 1,
-                        len(to_clone),
-                    ),
-                )
-                with dm.stream.DoneManager() as clone_dm:
-                    dest_dir = os.path.join(
-                        repositories_root,
-                        value.Name.replace("_", os.path.sep),
-                    )
-                    if os.path.isdir(dest_dir):
-                        clone_dm.stream.write(
-                            "WARNING: The output dir '{}' already exists and will not be replaced by the repo '{}'.\n".format(
-                                dest_dir,
-                                value.Name,
+            if value.get_clone_uri_func is not None:
+                clone_uri = value.get_clone_uri_func(scm)
+                if clone_uri is not None:
+                    try:
+                        clone_uri = clone_uri.format(**uri_dict)
+                    except KeyError as ex:
+                        output_stream.write(
+                            "\nERROR: The key {} is used in the clone uri '{}' (defined in '{}') and must be provided on the command line using the 'uri_dict' argument.\n".format(
+                                str(ex),
+                                clone_uri,
+                                value.root,
                             ),
                         )
-                        clone_dm.result = 1
+                        return -1
 
-                        continue
+                    to_clone.append((value, clone_uri))
+                    continue
 
-                    clone_dm.result, output = scm.Clone(clone_uri, dest_dir)
-                    clone_dm.stream.write(output)
+            missing.append(value)
 
-        nonlocals.should_continue = dm.result == 0
-        return dm.result
+        if to_update:
+            output_stream.write(
+                "\n\nUpdating {}...".format(inflect.no("repository", len(to_update))),
+            )
+            with output_stream.DoneManager() as dm:
+                for index, value in enumerate(to_update):
+                    dm.stream.write(
+                        "Processing '{}' ({} of {})...".format(
+                            value.Name,
+                            index + 1,
+                            len(to_update),
+                        ),
+                    )
+                    with dm.stream.DoneManager() as update_dm:
+                        for func in [scm.Pull, scm.Update]:
+                            update_dm.result, output = func(value.root)
+                            update_dm.stream.write(output)
+
+                            if update_dm.result != 0:
+                                return update_dm.result
+
+                        nonlocals.previously_updated.add(value.root)
+
+                if dm.result != 0:
+                    return dm.result
+
+        if to_clone:
+            output_stream.write(
+                "\n\nCloning {}...".format(inflect.no("repository", len(to_clone))),
+            )
+            with output_stream.DoneManager() as dm:
+                for index, (value, clone_uri) in enumerate(to_clone):
+                    dm.stream.write(
+                        "Processing '{}' ({} of {})...".format(
+                            value.Name,
+                            index + 1,
+                            len(to_clone),
+                        ),
+                    )
+                    with dm.stream.DoneManager() as clone_dm:
+                        dest_dir = os.path.join(
+                            repositories_root,
+                            value.Name.replace("_", os.path.sep),
+                        )
+                        if os.path.isdir(dest_dir):
+                            clone_dm.stream.write(
+                                "WARNING: The output dir '{}' already exists and will not be replaced by the repo '{}'.\n".format(
+                                    dest_dir,
+                                    value.Name,
+                                ),
+                            )
+                            clone_dm.result = 1
+
+                            continue
+
+                        clone_dm.result, output = scm.Clone(clone_uri, dest_dir)
+                        clone_dm.stream.write(output)
+
+                        if clone_dm.result != 0:
+                            return clone_dm.result
+
+        if missing:
+            output_stream.write(
+                textwrap.dedent(
+                    """\
+
+
+                    WARNING: Unable to clone these repositories:
+                    {}
+                    """,
+                ).format(
+                    "\n".join(
+                        [
+                            "    - {} <{}>".format(value.Name, value.Id)
+                            for value in missing
+                        ],
+                    ),
+                ),
+            )
+
+            return 1
+
+        nonlocals.should_continue = bool(to_clone)
+        return 0
 
     # ----------------------------------------------------------------------
 
