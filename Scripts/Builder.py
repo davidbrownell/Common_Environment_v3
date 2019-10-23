@@ -21,6 +21,7 @@ import sys
 from collections import namedtuple
 
 import inflect as inflect_mod
+import six
 
 import CommonEnvironment
 from CommonEnvironment import CommandLine
@@ -50,7 +51,10 @@ STANDARD_CONFIGURATION_NAMES                = ["Debug", "Release"]
 
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint(
-    mode=CommandLine.EntryPoint.Parameter('Defaults to [ "clean", "build", ]'),
+    mode=CommandLine.EntryPoint.Parameter('Defaults to ["clean", "build"]'),
+    custom_build_args=CommandLine.EntryPoint.Parameter(
+        "Custom arguments passed to a specific build file during the 'build' mode; the key represents the path to the 'Build.py' file and the value represents the arguments to pass on the command line when invoking the file.",
+    ),
 )
 @CommandLine.Constraints(
     root_dir=CommandLine.DirectoryTypeInfo(),
@@ -59,6 +63,10 @@ STANDARD_CONFIGURATION_NAMES                = ["Debug", "Release"]
     ),
     mode=CommandLine.StringTypeInfo(
         arity="*",
+    ),
+    custom_build_args=CommandLine.DictTypeInfo(
+        require_exact_match=False,
+        arity="?",
     ),
     output_stream=None,
 )
@@ -70,6 +78,7 @@ def Execute(
     release_only=False,
     build_filename=BUILD_FILENAME,
     build_filename_ignore=BUILD_FILENAME_IGNORE,
+    custom_build_args=None,
     output_stream=sys.stdout,
     verbose=False,
 ):
@@ -86,6 +95,17 @@ def Execute(
         prefix="\nResults: ",
         suffix="\n",
     ) as dm:
+        # Process the custom build args
+        for original_key in list(six.iterkeys(custom_build_args)):
+            key = FileSystem.Normalize(original_key.replace("/", os.path.sep))
+
+            if os.path.split(key)[1] == "Build.py":
+                key = os.path.dirname(key)
+
+            if key != original_key:
+                custom_build_args[key] = custom_build_args[original_key]
+                del custom_build_args[original_key]
+
         build_infos = _GetBuildInfos(
             root_dir,
             dm.stream,
@@ -190,6 +210,21 @@ def Execute(
                             # particular build file.
                             this_verbose = "verbose]" in match.group("content")
 
+                        # Get the custom build args
+                        these_custom_build_args = None
+
+                        if mode == "build":
+                            build_dirname = os.path.dirname(build_filename)
+
+                            these_custom_build_args = custom_build_args.get(
+                                build_dirname,
+                                None,
+                            )
+                            if these_custom_build_args:
+                                these_custom_build_args = " {}".format(
+                                    these_custom_build_args,
+                                )
+
                         build_output_dir = os.path.join(
                             output_dir,
                             config.SuggestedOutputDirLocation,
@@ -197,7 +232,7 @@ def Execute(
                         )
                         FileSystem.MakeDirs(build_output_dir)
 
-                        command_line = 'python "{build_filename}" {mode}{configuration}{output_dir}{verbose}'.format(
+                        command_line = 'python "{build_filename}" {mode}{configuration}{output_dir}{verbose}{custom_build_args}'.format(
                             build_filename=build_filename,
                             mode=mode,
                             configuration=' "{}"'.format(
@@ -207,6 +242,7 @@ def Execute(
                                 build_output_dir,
                             ) if config.RequiresOutputDir else "",
                             verbose=" /verbose" if this_verbose else "",
+                            custom_build_args=these_custom_build_args or "",
                         )
 
                         build_dm.result, output = Process.Execute(command_line)
