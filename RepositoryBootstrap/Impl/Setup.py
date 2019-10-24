@@ -521,7 +521,10 @@ def Enlist(
 
         for value in six.itervalues(repo_map):
             if value.root is not None:
-                if value.root not in nonlocals.previously_updated:
+                if (
+                    value.root != repository_root
+                    and value.root not in nonlocals.previously_updated
+                ):
                     to_update.append(value)
 
                 continue
@@ -559,7 +562,9 @@ def Enlist(
                             len(to_update),
                         ),
                     )
-                    with dm.stream.DoneManager() as update_dm:
+                    with dm.stream.DoneManager(
+                        suffix="\n",
+                    ) as update_dm:
                         for func in [scm.Pull, scm.Update]:
                             update_dm.result, output = func(value.root)
                             update_dm.stream.write(output)
