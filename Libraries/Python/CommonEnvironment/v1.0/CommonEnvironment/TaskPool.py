@@ -338,7 +338,14 @@ def Execute( tasks,
                 if not optional_content:
                     return optional_content
 
-                return "    {}: {}".format(task.Name, optional_content)
+                result = "    {}: {}".format(task.Name, optional_content)
+                if len(result) > progress_bar_cols:
+                    to_remove = len(result) - progress_bar_cols + len("...")
+                    index = progress_bar_cols / 2
+
+                    result = "{}...{}".format(result[:index], result[index + to_remove:])
+                    
+                return result
 
             # ----------------------------------------------------------------------
             def PBWriteStatuses(statuses):
@@ -346,7 +353,7 @@ def Execute( tasks,
                     # Move down one line to compensate for the progress bar
                     output_stream.write("\033[1B") 
                     
-                    # Enesure that something is written (if nothing is written,
+                    # Ensure that something is written (if nothing is written,
                     # the call to move up a line that is invoked after WriteStatuses
                     # is complete will not work as expected.
                     output_stream.write(" \r")
