@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  TaskPool.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-05-23 19:48:29
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-19.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Tools that help when creating tasks that execute in parallel."""
 
@@ -42,9 +42,9 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 StreamDecorator.InitAnsiSequenceStreams()
 
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Public Types
-# |  
+# |
 # ----------------------------------------------------------------------
 class Task(object):
     """Work to be executed in parallel"""
@@ -79,9 +79,9 @@ class ExecuteException(Exception):
         self.Exceptions                     = exceptions
 
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Public Methods
-# |  
+# |
 # ----------------------------------------------------------------------
 def Transform( items,
                functor,                     # def Func(item) -> transformed item
@@ -263,7 +263,7 @@ def Execute( tasks,
 
         with ThreadPoolExecutor(min(num_concurrent_tasks, len(tasks))) as executor:
             futures += [ executor.submit(Func, task, index) for index, task in enumerate(tasks) ]
-            
+
             # We can't combine this loop with the comprehension above, as the
             # update status functor expects a fully constructed list of futures.
             for future, task in six.moves.zip(futures, tasks):
@@ -279,8 +279,8 @@ def Execute( tasks,
                 try:
                     future.result()
                 except Exception as ex:
-                    # An exception here is pretty significant error and likely something that 
-                    # happened outside the scope of the executed function. This code is here to 
+                    # An exception here is pretty significant error and likely something that
+                    # happened outside the scope of the executed function. This code is here to
                     # prevent a catastrophic failure within the TaskPool.
                     exceptions[index] = ex
 
@@ -338,21 +338,14 @@ def Execute( tasks,
                 if not optional_content:
                     return optional_content
 
-                result = "    {}: {}".format(task.Name, optional_content)
-                if len(result) > progress_bar_cols:
-                    to_remove = len(result) - progress_bar_cols + len("...")
-                    index = progress_bar_cols / 2
-
-                    result = "{}...{}".format(result[:index], result[index + to_remove:])
-                    
-                return result
+                return "    {}: {}".format(task.Name, optional_content)
 
             # ----------------------------------------------------------------------
             def PBWriteStatuses(statuses):
                 with pb_lock:
                     # Move down one line to compensate for the progress bar
-                    output_stream.write("\033[1B") 
-                    
+                    output_stream.write("\033[1B")
+
                     # Ensure that something is written (if nothing is written,
                     # the call to move up a line that is invoked after WriteStatuses
                     # is complete will not work as expected.
@@ -404,9 +397,9 @@ def Execute( tasks,
             """\
 
             # ----------------------------------------------------------------------
-            # |  
+            # |
             # |  {name} ({result}, {time})
-            # |  
+            # |
             # ----------------------------------------------------------------------
             {output}
 
@@ -454,9 +447,9 @@ def Execute( tasks,
     return result
 
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Private Types
-# |  
+# |
 # ----------------------------------------------------------------------
 class _InternalTask(Task):
     def __init__(self, task):
