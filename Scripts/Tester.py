@@ -824,6 +824,7 @@ def GenerateTestResults(
     continue_iterations_on_error,
     debug_only,
     release_only,
+    build_only,
     output_stream,
     verbose,
     no_status,
@@ -1113,6 +1114,9 @@ def GenerateTestResults(
             display_errors=verbose,
             num_concurrent_tasks=max_num_concurrent_tasks,
         )
+
+    if build_only:
+        return [working_data.complete_result for working_data in working_data_items]
 
     # ----------------------------------------------------------------------
     # |  Execute
@@ -1505,6 +1509,9 @@ _debug_only_param_description                           = CommandLine.EntryPoint
 _release_only_param_description                         = CommandLine.EntryPoint.Parameter(
     "Only build and execute release variants.",
 )
+_build_only_param_description                           = CommandLine.EntryPoint.Parameter(
+    "Build, but do not run tests; this can be helpful when ensuring that all tests can build with older toolsets.",
+)
 _verbose_param_description                              = CommandLine.EntryPoint.Parameter("Verbose output.")
 _quiet_param_description                                = CommandLine.EntryPoint.Parameter("Quiet output.")
 _preserve_ansi_escape_sequences_param_description       = CommandLine.EntryPoint.Parameter(
@@ -1556,6 +1563,7 @@ _code_coverage_validator_flag_param_description         = CommandLine.EntryPoint
     code_coverage=_code_coverage_param_description,
     debug_only=_debug_only_param_description,
     release_only=_release_only_param_description,
+    build_only=_build_only_param_description,
     verbose=_verbose_param_description,
     quiet=_quiet_param_description,
     preserve_ansi_escape_sequences=_preserve_ansi_escape_sequences_param_description,
@@ -1595,6 +1603,7 @@ def Test(
     code_coverage=False,
     debug_only=False,
     release_only=False,
+    build_only=False,
     output_stream=sys.stdout,
     verbose=False,
     quiet=False,
@@ -1628,6 +1637,7 @@ def Test(
             continue_iterations_on_error=continue_iterations_on_error,
             debug_only=debug_only,
             release_only=release_only,
+            build_only=build_only,
             output_stream=output_stream,
             verbose=verbose,
             preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
@@ -1659,6 +1669,7 @@ def Test(
         continue_iterations_on_error=continue_iterations_on_error,
         debug_only=debug_only,
         release_only=release_only,
+        build_only=build_only,
         output_stream=output_stream,
         verbose=verbose,
         quiet=quiet,
@@ -1679,6 +1690,7 @@ def Test(
     code_coverage=_code_coverage_param_description,
     debug_only=_debug_only_param_description,
     release_only=_release_only_param_description,
+    build_only=_build_only_param_description,
     verbose=_verbose_param_description,
     preserve_ansi_escape_sequences=_preserve_ansi_escape_sequences_param_description,
     no_status=_no_status_param_description,
@@ -1702,6 +1714,7 @@ def TestItem(
     code_coverage=False,
     debug_only=False,
     release_only=False,
+    build_only=False,
     output_stream=sys.stdout,
     verbose=False,
     preserve_ansi_escape_sequences=False,
@@ -1761,6 +1774,7 @@ def TestItem(
     code_coverage=_code_coverage_param_description,
     debug_only=_debug_only_param_description,
     release_only=_release_only_param_description,
+    build_only=_build_only_param_description,
     verbose=_verbose_param_description,
     quiet=_quiet_param_description,
     preserve_ansi_escape_sequences=_preserve_ansi_escape_sequences_param_description,
@@ -1795,6 +1809,7 @@ def TestType(
     code_coverage=False,
     debug_only=False,
     release_only=False,
+    build_only=False,
     output_stream=sys.stdout,
     verbose=False,
     quiet=False,
@@ -1836,6 +1851,7 @@ def TestType(
     code_coverage=_code_coverage_param_description,
     debug_only=_debug_only_param_description,
     release_only=_release_only_param_description,
+    build_only=_build_only_param_description,
     verbose=_verbose_param_description,
     quiet=_quiet_param_description,
     preserve_ansi_escape_sequences=_preserve_ansi_escape_sequences_param_description,
@@ -1868,6 +1884,7 @@ def TestAll(
     code_coverage=False,
     debug_only=False,
     release_only=False,
+    build_only=False,
     output_stream=sys.stdout,
     verbose=False,
     quiet=False,
@@ -2196,6 +2213,7 @@ def MatchAllTests(
     code_coverage_validator_flag=_code_coverage_validator_flag_param_description,
     debug_only=_debug_only_param_description,
     release_only=_release_only_param_description,
+    build_only=_build_only_param_description,
     verbose=_verbose_param_description,
     preserve_ansi_escape_sequences=_preserve_ansi_escape_sequences_param_description,
     no_status=_no_status_param_description,
@@ -2248,6 +2266,7 @@ def Execute(
     code_coverage_validator_flag=None,
     debug_only=False,
     release_only=False,
+    build_only=False,
     output_stream=sys.stdout,
     verbose=False,
     preserve_ansi_escape_sequences=False,
@@ -2290,6 +2309,7 @@ def Execute(
         continue_iterations_on_error=continue_iterations_on_error,
         debug_only=debug_only,
         release_only=release_only,
+        build_only=build_only,
         output_stream=output_stream,
         verbose=verbose,
         preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
@@ -2317,6 +2337,7 @@ def Execute(
     code_coverage_validator_flag=_code_coverage_validator_flag_param_description,
     debug_only=_debug_only_param_description,
     release_only=_release_only_param_description,
+    build_only=_build_only_param_description,
     verbose=_verbose_param_description,
     quiet=_quiet_param_description,
     preserve_ansi_escape_sequences=_preserve_ansi_escape_sequences_param_description,
@@ -2376,6 +2397,7 @@ def ExecuteTree(
     code_coverage_validator_flag=None,
     debug_only=False,
     release_only=False,
+    build_only=False,
     output_stream=sys.stdout,
     verbose=False,
     quiet=False,
@@ -2421,6 +2443,7 @@ def ExecuteTree(
         continue_iterations_on_error=continue_iterations_on_error,
         debug_only=debug_only,
         release_only=release_only,
+        build_only=build_only,
         output_stream=output_stream,
         verbose=verbose,
         quiet=quiet,
@@ -2575,6 +2598,7 @@ def _ExecuteImpl(
     continue_iterations_on_error,
     debug_only,
     release_only,
+    build_only,
     output_stream,
     verbose,
     preserve_ansi_escape_sequences,
@@ -2629,6 +2653,7 @@ def _ExecuteImpl(
             continue_iterations_on_error=continue_iterations_on_error,
             debug_only=debug_only,
             release_only=release_only,
+            build_only=build_only,
             output_stream=output_stream,
             verbose=verbose,
             no_status=no_status,
@@ -2711,6 +2736,7 @@ def _ExecuteTreeImpl(
     continue_iterations_on_error,
     debug_only,
     release_only,
+    build_only,
     output_stream,
     verbose,
     quiet,
@@ -2784,6 +2810,7 @@ def _ExecuteTreeImpl(
                 continue_iterations_on_error=continue_iterations_on_error,
                 debug_only=debug_only,
                 release_only=release_only,
+                build_only=build_only,
                 output_stream=dm.stream,
                 verbose=verbose,
                 no_status=no_status,
@@ -2848,12 +2875,13 @@ def _ExecuteTreeImpl(
                 Output(complete_result.Item, "Release", complete_result.release)
 
             dm.stream.write(
-                "\n{percentage:.02f}% - {total} built and run with {failures}.\n".format(
+                "\n{percentage:.02f}% - {total} built{run} with {failures}.\n".format(
                     percentage=0.0 if not nonlocals.tests else (
                         (float(nonlocals.tests) - nonlocals.failures) / nonlocals.tests
                     ) * 100,
                     total=inflect.no("test", nonlocals.tests),
                     failures=inflect.no("failure", nonlocals.failures),
+                    run="" if build_only else " and run",
                 )
             )
 
