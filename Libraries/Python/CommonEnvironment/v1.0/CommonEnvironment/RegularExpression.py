@@ -23,8 +23,8 @@ import six
 import CommonEnvironment
 
 # ----------------------------------------------------------------------
-_script_fullpath = CommonEnvironment.ThisFullpath()
-_script_dir, _script_name = os.path.split(_script_fullpath)
+_script_fullpath                            = CommonEnvironment.ThisFullpath()
+_script_dir, _script_name                   = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 # ----------------------------------------------------------------------
@@ -32,21 +32,26 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # |  Public Methods
 # |
 # ----------------------------------------------------------------------
-_TemplateStringToRegex_tag_regex                        = re.compile(textwrap.dedent(
-                                                               r"""(?#
+_TemplateStringToRegex_tag_regex            = re.compile(
+    textwrap.dedent(
+        r"""(?#
                                                                 LBracket:           )\{\s*(?#
                                                                 Tag:                )(?P<tag>.+?)(?#
                                                                 [optional begin]    )(?:(?#
                                                                     Delimiter:      )\:.*?(?#
                                                                 [optional end]      ))?(?#
                                                                 RBracket:           )\s*\}(?#
-                                                                )"""))
+                                                                )""",
+    ),
+)
 
-def TemplateStringToRegex( content,
-                           optional_tags=None,          # [set] Tags that do not require population
-                           as_string=False,             # If True, returns the regex string rather than regex object
-                           match_whole_string=True,
-                         ):
+
+def TemplateStringToRegex(
+    content,
+    optional_tags=None,                     # [set] Tags that do not require population
+    as_string=False,                        # If True, returns the regex string rather than regex object
+    match_whole_string=True,
+):
     """
     Converts a template string into a regular expression whose matches capture all
     template values.
@@ -60,11 +65,7 @@ def TemplateStringToRegex( content,
     # Replace newline chars with placeholders so they don't get escaped.
     newline_placeholder = "__<<!!??Newline??!!>>__"
 
-    content = re.sub( r"\r?\n",
-                      lambda match: newline_placeholder,
-                      content,
-                      re.DOTALL | re.MULTILINE,
-                    )
+    content = re.sub(r"\r?\n", lambda match: newline_placeholder, content, re.DOTALL | re.MULTILINE)
     output = []
     prev_index = 0
     found_tags = set()
@@ -79,21 +80,24 @@ def TemplateStringToRegex( content,
             output.append("(?P={})".format(tag))
         else:
             found_tags.add(tag)
-            output.append(r"(?P<{tag}>.{arity}?)".format( tag=tag,
-                                                          arity='*' if tag in optional_tags else '+',
-                                                        ))
+            output.append(
+                r"(?P<{tag}>.{arity}?)".format(
+                    tag=tag,
+                    arity="*" if tag in optional_tags else "+",
+                ),
+            )
 
         prev_index = match.end()
 
-    output.append(re.escape(content[prev_index :]))
+    output.append(re.escape(content[prev_index:]))
 
-    output = ''.join(output)
+    output = "".join(output)
 
     if match_whole_string:
         output = "^{}$".format(output)
 
     output = output.replace(re.escape(newline_placeholder), r"\r?\n")
-    output = output.replace(r"\ ", ' ')
+    output = output.replace(r"\ ", " ")
 
     if as_string:
         return output
@@ -104,24 +108,22 @@ def TemplateStringToRegex( content,
 def PythonToJavaScript(regex_string):
     """Converts from a python to JavaScript regular expression."""
 
-    for expr, sub in [ ( re.compile(r"\(\?#.+?\)", re.MULTILINE | re.DOTALL), lambda match: '' ),
-                       ( re.compile(r"\(\?P<.+?>", re.MULTILINE | re.DOTALL), lambda match: '(' ),
-                     ]:
+    for expr, sub in [(re.compile(r"\(\?#.+?\)", re.MULTILINE | re.DOTALL), lambda match: ""), (re.compile(r"\(\?P<.+?>", re.MULTILINE | re.DOTALL), lambda match: "(")]:
         regex_string = expr.sub(sub, regex_string)
 
     return regex_string
 
+
 # ----------------------------------------------------------------------
-def WildcardSearchToRegularExpression( value,
-                                       as_string=False,
-                                     ):
+def WildcardSearchToRegularExpression(
+    value,
+    as_string=False,
+):
     """Converts from a wildcard expression (supporting '*' and '?') to a regular expression)"""
 
     value = re.escape(value)
 
-    for source, dest in [ ( r"\*", ".*" ),
-                          ( r"\?", "." ),
-                        ]:
+    for source, dest in [(r"\*", ".*"), (r"\?", ".")]:
         value = value.replace(source, dest)
 
     value = "^{}$".format(value)
@@ -132,10 +134,11 @@ def WildcardSearchToRegularExpression( value,
     return re.compile(value)
 
 # ----------------------------------------------------------------------
-def Generate( regex_or_regex_string,
-              content,
-              leading_delimiter=False,
-            ):
+def Generate(
+    regex_or_regex_string,
+    content,
+    leading_delimiter=False,
+):
     """
     Handles some of the wonkiness associated with re.split by providing
     a consistent experience, regardless of the input and matches.
@@ -157,10 +160,10 @@ def Generate( regex_or_regex_string,
     if regex.groups:
         if len(results) == 1:
             # If here, there weren't any matches
-            yield { None : results[0] }
+            yield {None: results[0]}
             return
 
-        assert len(results) % (regex.groups + 1) in [ 0, 1 ], len(results)
+        assert len(results) % (regex.groups + 1) in [0, 1], len(results)
 
         if leading_delimiter:
             # If there is 1 extra element in the list of the results, that will be the
@@ -169,13 +172,13 @@ def Generate( regex_or_regex_string,
                 index_offset = 1
 
                 if results[0]:
-                    yield { None : results[0] }
+                    yield {None: results[0]}
 
             else:
                 index_offset = 0
 
             for index in six.moves.range(index_offset, len(results), regex.groups + 1):
-                result = { None : results[index + regex.groups], }
+                result = {None: results[index + regex.groups]}
 
                 for group_index, group_name in enumerate(six.iterkeys(regex.groupindex)):
                     result[group_name] = results[index + group_index]
@@ -183,7 +186,7 @@ def Generate( regex_or_regex_string,
                 yield result
         else:
             for index in six.moves.range(0, len(results), regex.groups + 1):
-                result = { None : results[index], }
+                result = {None: results[index]}
 
                 if index != len(results) - 1:
                     for group_index, group_name in enumerate(six.iterkeys(regex.groupindex)):
@@ -194,5 +197,11 @@ def Generate( regex_or_regex_string,
 
                 yield result
     else:
+        # If we have a string with just matches and no content,
+        # we can ignore the first result as it represents the content
+        # that comes before the first match (which will be nothing).
+        if results and all(not result for result in results):
+            results = results[1:]
+
         for result in results:
             yield result
