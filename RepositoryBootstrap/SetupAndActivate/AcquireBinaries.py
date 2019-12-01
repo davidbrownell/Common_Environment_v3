@@ -52,6 +52,79 @@ inflect                                     = inflect_mod.engine()
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint
 @CommandLine.Constraints(
+    uri=CommandLine.UriTypeInfo(),
+    output_filename=CommandLine.FilenameTypeInfo(
+        ensure_exists=False,
+    ),
+    expected_sha256=CommandLine.StringTypeInfo(
+        validation_expression="[A-Fa-f0-9]{64}",
+        arity="?",
+    ),
+    output_stream=None,
+)
+def Download(
+    uri,
+    output_filename,
+    expected_sha256=None,
+    output_stream=sys.stdout,
+):
+    uri = uri.ToString()
+    output_stream = StreamDecorator(output_stream)
+
+    with output_stream.SingleLineDoneManager("Downloading '{}'...".format(uri)) as dm:
+        temp_filename = CurrentShell.CreateTempFilename()
+
+        nonlocals = Nonlocals(
+            progress_bar=None,
+            current=0,
+        )
+
+        # ----------------------------------------------------------------------
+        def Callback(count, block_size, total_size):
+            if nonlocals.progress_bar is None:
+                nonlocals.progress_bar = tqdm.tqdm(
+                    total=total_size,
+                    desc="Downloading",
+                    unit=" bytes",
+                    file=dm.stream,
+                    mininterval=0.5,
+                    leave=False,
+                    ncols=120,
+                )
+            else:
+                assert count, block_size
+
+                current = min(count * block_size, total_size)
+                assert current >= nonlocals.current
+
+                nonlocals.progress_bar.update(current - nonlocals.current)
+                nonlocals.current = current
+
+        # ----------------------------------------------------------------------
+
+        six.moves.urllib.request.urlretrieve(
+            uri,
+            temp_filename,
+            reporthook=Callback,
+        )
+
+        if nonlocals.progress_bar is not None:
+            nonlocals.progress_bar.close()
+
+    if expected_sha256:
+        result = _CalculateHash(temp_filename, expected_sha256, output_stream)
+        if result != 0:
+            return result
+
+    FileSystem.MakeDirs(os.path.dirname(output_filename))
+    shutil.move(temp_filename, output_filename)
+
+    return 0
+
+
+# ----------------------------------------------------------------------
+@CommandLine.EntryPoint
+@CommandLine.Constraints(
     name=CommandLine.StringTypeInfo(),
     uri=CommandLine.UriTypeInfo(),
     output_dir=CommandLine.DirectoryTypeInfo(
@@ -130,80 +203,25 @@ def Install(
         else:
             uri = uri.ToString()
 
-            with dm.stream.SingleLineDoneManager(
-                "Downloading '{}'...".format(uri),
-            ) as download_dm:
-                nonlocals = Nonlocals(
-                    progress_bar=None,
-                    current=0,
-                )
+            filename = CurrentShell.CreateTempFilename(".zip")
+            FilenameCleanup = lambda: FileSystem.RemoveFile(filename)
 
-                # ----------------------------------------------------------------------
-                def Callback(count, block_size, total_size):
-                    if nonlocals.progress_bar is None:
-                        nonlocals.progress_bar = tqdm.tqdm(
-                            total=total_size,
-                            desc="Downloading",
-                            unit=" bytes",
-                            file=download_dm.stream,
-                            mininterval=0.5,
-                            leave=False,
-                            ncols=120,
-                        )
-                    else:
-                        assert count, block_size
+            dm.result = Download(
+                uri,
+                filename,
+                output_stream=dm.stream,
+            )
 
-                        current = min(count * block_size, total_size)
-                        assert current >= nonlocals.current
-
-                        nonlocals.progress_bar.update(current - nonlocals.current)
-                        nonlocals.current = current
-
-                # ----------------------------------------------------------------------
-
-                filename = CurrentShell.CreateTempFilename(".zip")
-                FilenameCleanup = lambda: FileSystem.RemoveFile(filename)
-
-                six.moves.urllib.request.urlretrieve(
-                    uri,
-                    filename,
-                    reporthook=Callback,
-                )
-
-                if nonlocals.progress_bar is not None:
-                    nonlocals.progress_bar.close()
-
-                if download_dm.result != 0:
-                    return download_dm.result
+            if dm.result != 0:
+                return dm.result
 
         with CallOnExit(FilenameCleanup):
-            if unique_id_is_hash:
-                dm.stream.write("Validating content...")
-                with dm.stream.DoneManager() as validate_dm:
-                    hash = hashlib.sha256()
-
-                    with open(filename, "rb") as f:
-                        while True:
-                            block = f.read(4096)
-                            if not block:
-                                break
-
-                            hash.update(block)
-
-                    hash = hash.hexdigest().lower()
-
-                    if hash != unique_id:
-                        validate_dm.stream.write(
-                            "ERROR: The hash values do not match (actual: {}, expected: {})\n".format(
-                                hash,
-                                unique_id,
-                            ),
-                        )
-                        validate_dm.result = -1
-
-                        return validate_dm.result
-
             assert os.path.isfile(filename), filename
+
+            if unique_id_is_hash:
+                dm.result = _CalculateHash(filename, unique_id, dm.stream)
+                if dm.result != 0:
+                    return dm.result
 
             temp_directory = "{}_tmp".format(output_dir)
 
@@ -399,6 +417,37 @@ def Verify(
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+def _CalculateHash(filename, sha256hash, output_stream):
+    output_stream.write("Validating content...")
+    with output_stream.DoneManager() as dm:
+        hash = hashlib.sha256()
+
+        with open(filename, "rb") as f:
+            while True:
+                block = f.read(4096)
+                if not block:
+                    break
+
+                hash.update(block)
+
+        hash = hash.hexdigest().lower()
+
+        sha256hash = sha256hash.lower()
+
+        if hash != sha256hash:
+            dm.stream.write(
+                "ERROR: The hash values do not match (actual: {}, expected: {})\n".format(
+                    hash,
+                    sha256hash,
+                ),
+            )
+
+            dm.result = -1
+
+        return dm.result
+
+
 # ----------------------------------------------------------------------
 def _CleanImpl(output_dir, original_filenames, output_stream):
     output_stream.write("Cleaning previous content...")
