@@ -2705,6 +2705,9 @@ def _ExecuteImpl(
                     )
 
                 for er in configuration_results.execute_results:
+                    if er is None:
+                        continue
+
                     if (verbose or er.TestResult != 0) and er.TestOutput is not None:
                         output_stream.write(
                             textwrap.dedent(
