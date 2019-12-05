@@ -1295,11 +1295,42 @@ def GenerateTestResults(
                     if execute_result.CoveragePercentage is None:
                         validation_result = -1
                         validation_min = None
+
+                    elif isinstance(compiler.InputTypeInfo, DirectoryTypeInfo):
+                        # If the compiler processes an entire directory at a time, process the results
+                        # individually to determine the final results.
+                        validation_result = None
+                        validation_min = None
+
+                        for (filename, (percentage, percentage_desc)) in six.iteritems(
+                            execute_result.CoveragePercentages,
+                        ):
+                            this_validation_result, this_validation_min = optional_code_coverage_validator.Validate(
+                                filename,
+                                percentage,
+                            )
+
+                            if validation_result is None:
+                                validation_result = this_validation_result
+                                validation_min = this_validation_min
+
+                            else:
+                                validation_result = (
+                                    this_validation_result
+                                    if this_validation_result < 0
+                                    else validation_result
+                                )
+                                assert this_validation_min == validation_min, (
+                                    this_validation_min,
+                                    validation_min,
+                                )
+
                     else:
                         validation_result, validation_min = optional_code_coverage_validator.Validate(
                             working_data.complete_result.Item,
                             execute_result.CoveragePercentage,
                         )
+
                 except:
                     validation_result = internal_exception_result_code
                     validation_min = None
