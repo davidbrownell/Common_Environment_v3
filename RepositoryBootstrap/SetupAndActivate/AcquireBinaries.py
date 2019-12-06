@@ -141,6 +141,7 @@ def Install(
     output_dir,
     unique_id=None,
     unique_id_is_hash=False,
+    no_output_dir_decoration=False,
     output_stream=sys.stdout,
 ):
     """Installs binaries to the specified output directory"""
@@ -150,7 +151,8 @@ def Install(
             "An unique id must be provided when 'unique_id_is_hash' is set.",
         )
 
-    output_dir = _AugmentOutputDir(output_dir)
+    if not no_output_dir_decoration:
+        output_dir = _AugmentOutputDir(output_dir)
 
     output_stream.write("Processing '{}'...".format(name))
     with StreamDecorator(output_stream).DoneManager(
