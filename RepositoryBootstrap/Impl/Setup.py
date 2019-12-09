@@ -1103,14 +1103,15 @@ def _SetupBootstrap(
         repository_roots = []
 
         for dependency in config_info.Dependencies:
-            assert dependency.RepositoryRoot is None or (
-                dependency.RepositoryId in repo_map
-                and repo_map[dependency.RepositoryId].root == dependency.RepositoryId
-            ), dependency.RepositoryRoot
             assert dependency.RepositoryId in repo_map, dependency.RepositoryId
 
-            dependency.RepositoryRoot = repo_map[dependency.RepositoryId].root
+            if dependency.RepositoryRoot is not None:
+                assert (
+                    dependency.RepositoryRoot == repo_map[dependency.RepositoryId].root
+                ), (dependency.RepositoryRoot, repo_map[dependency.RepositoryId].root)
+                continue
 
+            dependency.RepositoryRoot = repo_map[dependency.RepositoryId].root
             repository_roots.append(dependency.RepositoryRoot)
 
         config_info.Fingerprint = Utilities.CalculateFingerprint(
