@@ -1109,9 +1109,9 @@ def _SetupBootstrap(
                 assert (
                     dependency.RepositoryRoot == repo_map[dependency.RepositoryId].root
                 ), (dependency.RepositoryRoot, repo_map[dependency.RepositoryId].root)
-                continue
+            else:
+                dependency.RepositoryRoot = repo_map[dependency.RepositoryId].root
 
-            dependency.RepositoryRoot = repo_map[dependency.RepositoryId].root
             repository_roots.append(dependency.RepositoryRoot)
 
         config_info.Fingerprint = Utilities.CalculateFingerprint(
