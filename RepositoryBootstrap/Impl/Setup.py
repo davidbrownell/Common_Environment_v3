@@ -1103,10 +1103,14 @@ def _SetupBootstrap(
         repository_roots = []
 
         for dependency in config_info.Dependencies:
-            assert dependency.RepositoryRoot is None, dependency.RepositoryRoot
             assert dependency.RepositoryId in repo_map, dependency.RepositoryId
 
-            dependency.RepositoryRoot = repo_map[dependency.RepositoryId].root
+            if dependency.RepositoryRoot is not None:
+                assert (
+                    dependency.RepositoryRoot == repo_map[dependency.RepositoryId].root
+                ), (dependency.RepositoryRoot, repo_map[dependency.RepositoryId].root)
+            else:
+                dependency.RepositoryRoot = repo_map[dependency.RepositoryId].root
 
             repository_roots.append(dependency.RepositoryRoot)
 

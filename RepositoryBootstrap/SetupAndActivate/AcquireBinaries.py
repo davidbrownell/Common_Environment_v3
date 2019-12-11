@@ -200,11 +200,7 @@ def Install(
             filename = uri.ToFilename()
             FilenameCleanup = lambda: None
 
-            uri = uri.ToString()
-
         else:
-            uri = uri.ToString()
-
             filename = CurrentShell.CreateTempFilename(".zip")
             FilenameCleanup = lambda: FileSystem.RemoveFile(filename)
 
@@ -216,6 +212,8 @@ def Install(
 
             if dm.result != 0:
                 return dm.result
+
+        uri = uri.ToString()
 
         with CallOnExit(FilenameCleanup):
             assert os.path.isfile(filename), filename
