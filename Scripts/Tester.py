@@ -2739,6 +2739,25 @@ def _ExecuteImpl(
                     if er is None:
                         continue
 
+                    if (
+                        verbose or er.CoverageResult != 0
+                    ) and er.CoverageOutput is not None:
+                        output_stream.write(
+                            textwrap.dedent(
+                                """\
+                                {header}
+                                {filename}
+                                {header}
+                                {content}
+
+                                """,
+                            ).format(
+                                filename=er.CoverageOutput,
+                                header=len(er.CoverageOutput) * "=",
+                                content=open(er.CoverageOutput).read().strip(),
+                            )
+                        )
+
                     if (verbose or er.TestResult != 0) and er.TestOutput is not None:
                         output_stream.write(
                             textwrap.dedent(
