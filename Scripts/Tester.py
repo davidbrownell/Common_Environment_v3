@@ -1599,6 +1599,8 @@ _code_coverage_validator_flag_param_description         = CommandLine.EntryPoint
     quiet=_quiet_param_description,
     preserve_ansi_escape_sequences=_preserve_ansi_escape_sequences_param_description,
     no_status=_no_status_param_description,
+    code_coverage_validator=_code_coverage_validator_param_description,
+    code_coverage_validator_flag=_code_coverage_validator_flag_param_description,
 )
 @CommandLine.Constraints(
     configuration=_configuration_type_info,
@@ -1617,6 +1619,11 @@ _code_coverage_validator_flag_param_description         = CommandLine.EntryPoint
     ),
     iterations=CommandLine.IntTypeInfo(
         min=1,
+        arity="?",
+    ),
+    code_coverage_validator=_code_coverage_validator_type_info,
+    code_coverage_validator_flag=CommandLine.DictTypeInfo(
+        require_exact_match=False,
         arity="?",
     ),
     output_stream=None,
@@ -1640,10 +1647,35 @@ def Test(
     quiet=False,
     preserve_ansi_escape_sequences=False,
     no_status=False,
+    code_coverage_validator=None,
+    code_coverage_validator_flag=None,
 ):
     """Tests the given input"""
 
+    code_coverage_validator_flags = code_coverage_validator_flag
+    del code_coverage_validator_flag
+
     configuration = CONFIGURATIONS[configuration]
+
+    if code_coverage or code_coverage_validator or code_coverage_validator_flags:
+        code_coverage_executor = configuration.OptionalCoverageExecutor
+
+        code_coverage_validator = configuration.OptionalCodeCoverageValidator
+        if code_coverage_validator is None:
+            for index, ccv in enumerate(CODE_COVERAGE_VALIDATORS):
+                if ccv.Name == "Standard":
+                    code_coverage_validator = index
+                    break
+
+        code_coverage_validator = _GetFromCommandLineArg(
+            code_coverage_validator,
+            CODE_COVERAGE_VALIDATORS,
+            code_coverage_validator_flags,
+            allow_empty=True,
+        )
+
+    else:
+        code_coverage_executor = None
 
     if os.path.isfile(filename_or_dir) or (
         os.path.isdir(filename_or_dir)
@@ -1660,8 +1692,8 @@ def Test(
             filename_or_dir,
             configuration.Compiler,
             configuration.TestParser,
-            configuration.OptionalCoverageExecutor if code_coverage else None,
-            configuration.OptionalCodeCoverageValidator if code_coverage else None,
+            code_coverage_executor,
+            code_coverage_validator,
             execute_tests_in_parallel=execute_tests_in_parallel,
             iterations=iterations,
             debug_on_error=debug_on_error,
@@ -1692,8 +1724,8 @@ def Test(
         test_type,
         configuration.Compiler,
         configuration.TestParser,
-        configuration.OptionalCoverageExecutor if code_coverage else None,
-        configuration.OptionalCodeCoverageValidator if code_coverage else None,
+        code_coverage_executor,
+        code_coverage_validator,
         execute_tests_in_parallel=execute_tests_in_parallel,
         iterations=iterations,
         debug_on_error=debug_on_error,
@@ -1725,6 +1757,8 @@ def Test(
     verbose=_verbose_param_description,
     preserve_ansi_escape_sequences=_preserve_ansi_escape_sequences_param_description,
     no_status=_no_status_param_description,
+    code_coverage_validator=_code_coverage_validator_param_description,
+    code_coverage_validator_flag=_code_coverage_validator_flag_param_description,
 )
 @CommandLine.Constraints(
     filename_or_directory=CommandLine.FilenameTypeInfo(
@@ -1732,6 +1766,11 @@ def Test(
     ),
     iterations=CommandLine.IntTypeInfo(
         min=1,
+        arity="?",
+    ),
+    code_coverage_validator=_code_coverage_validator_type_info,
+    code_coverage_validator_flag=CommandLine.DictTypeInfo(
+        require_exact_match=False,
         arity="?",
     ),
     output_stream=None,
@@ -1750,6 +1789,8 @@ def TestItem(
     verbose=False,
     preserve_ansi_escape_sequences=False,
     no_status=False,
+    code_coverage_validator=None,
+    code_coverage_validator_flag=None,
 ):
     """Tests the given input file or directory (depending on the compiler invoked)"""
 
@@ -1790,6 +1831,8 @@ def TestItem(
         quiet=False,
         preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
         no_status=no_status,
+        code_coverage_validator=code_coverage_validator,
+        code_coverage_validator_flag=code_coverage_validator_flag,
     )
 
 # ----------------------------------------------------------------------
@@ -1811,6 +1854,8 @@ def TestItem(
     quiet=_quiet_param_description,
     preserve_ansi_escape_sequences=_preserve_ansi_escape_sequences_param_description,
     no_status=_no_status_param_description,
+    code_coverage_validator=_code_coverage_validator_param_description,
+    code_coverage_validator_flag=_code_coverage_validator_flag_param_description,
 )
 @CommandLine.Constraints(
     configuration=_configuration_type_info,
@@ -1824,6 +1869,11 @@ def TestItem(
     ),
     iterations=CommandLine.IntTypeInfo(
         min=1,
+        arity="?",
+    ),
+    code_coverage_validator=_code_coverage_validator_type_info,
+    code_coverage_validator_flag=CommandLine.DictTypeInfo(
+        require_exact_match=False,
         arity="?",
     ),
     output_stream=None,
@@ -1847,6 +1897,8 @@ def TestType(
     quiet=False,
     preserve_ansi_escape_sequences=False,
     no_status=False,
+    code_coverage_validator=None,
+    code_coverage_validator_flag=None,
 ):
     """Run tests for the test type with the specified configuration"""
 
@@ -1869,6 +1921,8 @@ def TestType(
         quiet=quiet,
         preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
         no_status=no_status,
+        code_coverage_validator=code_coverage_validator,
+        code_coverage_validator_flag=code_coverage_validator_flag,
     )
 
 # ----------------------------------------------------------------------
@@ -1889,6 +1943,8 @@ def TestType(
     quiet=_quiet_param_description,
     preserve_ansi_escape_sequences=_preserve_ansi_escape_sequences_param_description,
     no_status=_no_status_param_description,
+    code_coverage_validator=_code_coverage_validator_param_description,
+    code_coverage_validator_flag=_code_coverage_validator_flag_param_description,
 )
 @CommandLine.Constraints(
     input_dir=CommandLine.DirectoryTypeInfo(),
@@ -1901,6 +1957,11 @@ def TestType(
     ),
     iterations=CommandLine.IntTypeInfo(
         min=1,
+        arity="?",
+    ),
+    code_coverage_validator=_code_coverage_validator_type_info,
+    code_coverage_validator_flag=CommandLine.DictTypeInfo(
+        require_exact_match=False,
         arity="?",
     ),
     output_stream=None,
@@ -1923,6 +1984,8 @@ def TestAll(
     quiet=False,
     preserve_ansi_escape_sequences=False,
     no_status=False,
+    code_coverage_validator=None,
+    code_coverage_validator_flag=None,
 ):
     """Run tests for the test type with all configurations"""
 
@@ -1967,6 +2030,8 @@ def TestAll(
                     quiet=quiet,
                     preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
                     no_status=no_status,
+                    code_coverage_validator=code_coverage_validator,
+                    code_coverage_validator_flag=code_coverage_validator_flag,
                 )
 
         return dm.result
@@ -2602,7 +2667,7 @@ def _GetFromCommandLineArg(
     if allow_empty and arg is None:
         return None
 
-    assert arg
+    assert arg is not None
 
     try:
         arg = int(arg)
@@ -2613,6 +2678,43 @@ def _GetFromCommandLineArg(
         item = next(item for item in items if item.Name == arg)
 
     assert item
+
+    # The flags are read as strings from the command line, however the classes
+    # may be expecting different types. Try to make a best guess for each type.
+
+    # ----------------------------------------------------------------------
+    def ConvertString(value):
+        value_lower = value.lower()
+
+        # Bool
+        if value_lower in [
+            "true",
+            "false",
+            "yes",
+            "no",
+        ]:
+            return value_lower in ["true", "yes"]
+
+        # Float
+        if "." in value:
+            try:
+                return float(value)
+            except ValueError:
+                pass
+
+        # Integer
+        try:
+            return int(value)
+        except ValueError:
+            pass
+
+        # Keep the current value
+        return value
+
+    # ----------------------------------------------------------------------
+
+    for k, v in six.iteritems(flags):
+        flags[k] = ConvertString(v)
 
     # Parser/Compilers/etc are created via default constructors, so we have a concrete
     # instance here. Create a new instance with the provided flags. This is pretty
@@ -2738,6 +2840,25 @@ def _ExecuteImpl(
                 for er in configuration_results.execute_results:
                     if er is None:
                         continue
+
+                    if (
+                        verbose or er.CoverageResult != 0
+                    ) and er.CoverageOutput is not None:
+                        output_stream.write(
+                            textwrap.dedent(
+                                """\
+                                {header}
+                                {filename}
+                                {header}
+                                {content}
+
+                                """,
+                            ).format(
+                                filename=er.CoverageOutput,
+                                header=len(er.CoverageOutput) * "=",
+                                content=open(er.CoverageOutput).read().strip(),
+                            )
+                        )
 
                     if (verbose or er.TestResult != 0) and er.TestOutput is not None:
                         output_stream.write(
