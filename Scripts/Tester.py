@@ -2684,6 +2684,9 @@ def _GetFromCommandLineArg(
 
     # ----------------------------------------------------------------------
     def ConvertString(value):
+        if not isinstance(value, six.string_types):
+            return value
+
         value_lower = value.lower()
 
         # Bool
