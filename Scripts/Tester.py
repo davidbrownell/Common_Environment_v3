@@ -15,6 +15,7 @@
 """General purpose test executor."""
 
 import datetime
+import json
 import multiprocessing
 import os
 import re
@@ -316,7 +317,7 @@ class Results(object):
 
     # ----------------------------------------------------------------------
     # |  Public Types
-    TestParseResult                         = namedtuple("TestParseResult", ["Result", "Time"])
+    TestParseResult                         = namedtuple("TestParseResult", ["Result", "Time", "Benchmarks"])
 
     CoverageValidationResult                = namedtuple(
         "CoverageValidationResult",
@@ -403,6 +404,7 @@ class Results(object):
         test_parser,
         optional_test_executor,
         optional_code_coverage_validator,
+        include_benchmarks=False,
     ):
         # ----------------------------------------------------------------------
         def ResultToString(result):
@@ -526,7 +528,6 @@ class Results(object):
                             """\
                             Test Parse Result:                          {test_parse_result}
                             Test Parse Time:                            {test_parse_time}
-
                             """,
                         ).format(
                             test_parse_result=ResultToString(test_parse_result.Result),
@@ -536,6 +537,50 @@ class Results(object):
                         skip_first_line=False,
                     ),
                 )
+
+                if test_parse_result.Benchmarks and include_benchmarks:
+                    results.append("    Test Parse Benchmarks:\n")
+
+                    for benchmark_name, benchmarks in six.iteritems(
+                        test_parse_result.Benchmarks,
+                    ):
+                        results.append("        {}:\n".format(benchmark_name))
+
+                        for benchmark in benchmarks:
+                            results.append(
+                                StringHelpers.LeftJustify(
+                                    textwrap.dedent(
+                                        """\
+                                        {name} [{extractor}]
+                                            {source_filename} <{source_line}>
+                                                Iterations:             {iterations}
+                                                Samples:                {samples}
+
+                                                Mean:                   {mean} {units}
+                                                Min:                    {min} {units}
+                                                Max:                    {max} {units}
+                                                Standard Deviation:     {standard_deviation} {units}
+
+                                        """,
+                                    ).format(
+                                        name=benchmark.Name,
+                                        extractor=benchmark.Extractor,
+                                        source_filename=benchmark.SourceFilename,
+                                        source_line=benchmark.SourceLine,
+                                        iterations=benchmark.Iterations,
+                                        samples=benchmark.Samples,
+                                        mean=benchmark.Mean,
+                                        min=benchmark.Min,
+                                        max=benchmark.Max,
+                                        standard_deviation=benchmark.StandardDeviation,
+                                        units=benchmark.Units,
+                                    ),
+                                    12,
+                                    skip_first_line=False,
+                                ),
+                            )
+
+                results.append("\n")
 
             if execute_result and execute_result.CoverageResult is not None:
                 # ----------------------------------------------------------------------
@@ -703,6 +748,7 @@ class CompleteResult(object):
         test_parser,
         optional_test_executor,
         optional_code_coverage_validator,
+        include_benchmarks=False,
     ):
         header_length = max(180, len(self.Item) + 4)
 
@@ -731,6 +777,7 @@ class CompleteResult(object):
                     test_parser,
                     optional_test_executor,
                     optional_code_coverage_validator,
+                    include_benchmarks=include_benchmarks,
                 ),
                 4,
                 skip_first_line=False,
@@ -741,6 +788,7 @@ class CompleteResult(object):
                     test_parser,
                     optional_test_executor,
                     optional_code_coverage_validator,
+                    include_benchmarks=include_benchmarks,
                 ),
                 4,
                 skip_first_line=False,
@@ -981,6 +1029,9 @@ def GenerateTestResults(
 
     # ----------------------------------------------------------------------
     def BuildThreadProc(task_index, output_stream, on_status_update):
+        if no_status:
+            on_status_update = lambda value: None
+
         working_data = working_data_items[task_index % len(working_data_items)]
 
         if task_index >= len(working_data_items):
@@ -999,8 +1050,7 @@ def GenerateTestResults(
 
         try:
             # Create the compiler context
-            if not no_status:
-                on_status_update("Configuring")
+            on_status_update("Configuring")
 
             assert os.path.isdir(
                 configuration_results.compiler_context,
@@ -1020,12 +1070,10 @@ def GenerateTestResults(
                 configuration_results.compile_binary = None
                 return None
 
-            if not no_status:
-                on_status_update("Waiting")
+            on_status_update("Waiting")
 
             with working_data.execution_lock:
-                if not no_status:
-                    on_status_update("Building")
+                on_status_update("Building")
 
                 sink = six.moves.StringIO()
 
@@ -1187,85 +1235,93 @@ def GenerateTestResults(
 
             # ----------------------------------------------------------------------
 
-            # Run the test...
-            on_status_update("Testing")
+            with working_data.execution_lock:
+                # Run the test...
+                on_status_update("Testing")
 
-            execute_result = None
-            execute_start_time = time.time()
+                execute_result = None
+                execute_start_time = time.time()
 
-            try:
-                test_command_line = test_parser.CreateInvokeCommandLine(
-                    configuration_results.compiler_context,
-                    debug_on_error,
-                )
-
-                if optional_test_executor:
-                    executor = optional_test_executor
-                else:
-                    executor = next(
-                        executor
-                        for executor in TEST_EXECUTORS
-                        if executor.Name == "Standard"
+                try:
+                    test_command_line = test_parser.CreateInvokeCommandLine(
+                        configuration_results.compiler_context,
+                        debug_on_error,
                     )
 
-                execute_result = executor.Execute(
-                    on_status_update,
-                    compiler,
-                    configuration_results.compiler_context,
-                    test_command_line,
-                )
+                    if optional_test_executor:
+                        executor = optional_test_executor
+                    else:
+                        executor = next(
+                            executor
+                            for executor in TEST_EXECUTORS
+                            if executor.Name == "Standard"
+                        )
 
-                test_parser.RemoveTemporaryArtifacts(
-                    configuration_results.compiler_context,
-                )
-
-                if (
-                    execute_result.TestResult is not None
-                    and execute_result.TestResult != 0
-                ):
-                    output_stream.write(execute_result.TestOutput)
-
-            except:
-                execute_result = TestExecutorImpl.ExecuteResult(
-                    internal_exception_result_code,
-                    traceback.format_exc(),
-                    None,                   # Populate below
-                )
-                raise
-
-            finally:
-                assert execute_result
-
-                if execute_result.TestTime is None:
-                    execute_result.TestTime = str(
-                        datetime.timedelta(
-                            seconds=(time.time() - execute_start_time),
-                        ),
+                    execute_result = executor.Execute(
+                        on_status_update,
+                        compiler,
+                        configuration_results.compiler_context,
+                        test_command_line,
                     )
 
-                original_test_output = execute_result.TestOutput
+                    test_parser.RemoveTemporaryArtifacts(
+                        configuration_results.compiler_context,
+                    )
 
-                execute_result.TestOutput = WriteLog("test", execute_result.TestOutput)
-                execute_result.CoverageOutput = WriteLog(
-                    "executor",
-                    execute_result.CoverageOutput,
-                )
+                    if (
+                        execute_result.TestResult is not None
+                        and execute_result.TestResult != 0
+                    ):
+                        output_stream.write(execute_result.TestOutput)
 
-                configuration_results.execute_results[iteration] = execute_result
+                except:
+                    execute_result = TestExecutorImpl.ExecuteResult(
+                        internal_exception_result_code,
+                        traceback.format_exc(),
+                        None,               # Populate below
+                    )
+                    raise
 
-                if execute_result.TestResult != 0:
-                    configuration_results.has_errors = True
+                finally:
+                    assert execute_result
+
+                    if execute_result.TestTime is None:
+                        execute_result.TestTime = str(
+                            datetime.timedelta(
+                                seconds=(time.time() - execute_start_time),
+                            ),
+                        )
+
+                    original_test_output = execute_result.TestOutput
+
+                    execute_result.TestOutput = WriteLog(
+                        "test",
+                        execute_result.TestOutput,
+                    )
+                    execute_result.CoverageOutput = WriteLog(
+                        "executor",
+                        execute_result.CoverageOutput,
+                    )
+
+                    configuration_results.execute_results[iteration] = execute_result
+
+                    if execute_result.TestResult != 0:
+                        configuration_results.has_errors = True
 
             # Parse the results...
             on_status_update("Parsing")
 
             parse_start_time = time.time()
+            test_parse_benchmarks = []
 
             try:
                 if original_test_output is None:
                     test_parse_result = -1
                 else:
                     test_parse_result = test_parser.Parse(original_test_output)
+
+                    if isinstance(test_parse_result, tuple):
+                        test_parse_result, test_parse_benchmarks = test_parse_result
 
             except:
                 test_parse_result = internal_exception_result_code
@@ -1280,7 +1336,11 @@ def GenerateTestResults(
 
                 configuration_results.test_parse_results[
                     iteration
-                ] = Results.TestParseResult(test_parse_result, test_parse_time)
+                ] = Results.TestParseResult(
+                    test_parse_result,
+                    test_parse_time,
+                    test_parse_benchmarks,
+                )
 
                 if test_parse_result != 0:
                     configuration_results.has_errors = True
@@ -2812,6 +2872,7 @@ def _ExecuteImpl(
                 test_parser,
                 test_executor,
                 code_coverage_validator,
+                include_benchmarks=True,
             ),
         )
 
@@ -2982,6 +3043,58 @@ def _ExecuteTreeImpl(
 
             dm.stream.write("\n")
 
+            # Persist the benchmarks
+            benchmark_filename = os.path.join(output_dir, "benchmarks.json")
+
+            dm.stream.write("Creating '{}'...".format(benchmark_filename))
+            with dm.stream.DoneManager(
+                suffix="\n",
+            ):
+                benchmarks = OrderedDict()
+
+                for complete_result in complete_results:
+                    these_benchmarks = OrderedDict()
+
+                    for configuration in ["debug", "release"]:
+                        configuration_benchmarks = OrderedDict()
+
+                        for test_parse_result in getattr(
+                            complete_result,
+                            configuration,
+                        ).test_parse_results:
+                            if test_parse_result is None:
+                                continue
+
+                            if test_parse_result.Benchmarks:
+                                for k, v in six.iteritems(test_parse_result.Benchmarks):
+                                    if k not in configuration_benchmarks:
+                                        configuration_benchmarks[k] = []
+
+                                    configuration_benchmarks[k] += v
+
+                        if configuration_benchmarks:
+                            these_benchmarks[configuration] = configuration_benchmarks
+
+                    if these_benchmarks:
+                        key = FileSystem.TrimPath(complete_result.Item, input_dir)
+
+                        benchmarks[key] = these_benchmarks
+
+                with open(benchmark_filename, "w") as f:
+                    # ----------------------------------------------------------------------
+                    class JsonEncoder(json.JSONEncoder):
+                        def default(self, o):
+                            return getattr(o, "__dict__", o)
+
+                    # ----------------------------------------------------------------------
+
+                    json.dump(
+                        benchmarks,
+                        f,
+                        cls=JsonEncoder,
+                    )
+
+            # Display the results
             if not quiet:
                 for complete_result in complete_results:
                     dm.stream.write(
