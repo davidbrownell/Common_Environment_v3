@@ -15,6 +15,7 @@
 """General purpose test executor."""
 
 import datetime
+import json
 import multiprocessing
 import os
 import re
@@ -230,14 +231,14 @@ def _CreateConfigurations():
             textwrap.dedent(
                 # <Wrong hanging indentation> pylint: disable = C0330
                 r"""(?#
-                        )\s*"?(?#
-            Name        )(?P<name>.+?)(?#
-                        )\s*-\s*(?#
-            Type        )(?P<type>(?:compiler|test_parser|coverage_executor|coverage_validator))(?#
-                        )\s*-\s*(?#
-            Value       )(?P<value>[^"]+)(?#
-                        )"?\s*(?#
-            )""",
+                            )\s*"?(?#
+                 Name       )(?P<name>.+?)(?#
+                            )\s*-\s*(?#
+                 Type       )(?P<type>(?:compiler|test_parser|coverage_executor|coverage_validator))(?#
+                            )\s*-\s*(?#
+                 Value      )(?P<value>[^"]+)(?#
+                            )"?\s*(?#
+                 )""",
             ),
         )
 
@@ -298,6 +299,7 @@ def _CreateConfigurations():
                     GetFirstItem(item_map.get("coverage_executor", None)),
                     GetFirstItem(item_map.get("coverage_validator", None)),
                 )
+
     return configurations
 
 
@@ -316,7 +318,7 @@ class Results(object):
 
     # ----------------------------------------------------------------------
     # |  Public Types
-    TestParseResult                         = namedtuple("TestParseResult", ["Result", "Time"])
+    TestParseResult                         = namedtuple("TestParseResult", ["Result", "Time", "Benchmarks"])
 
     CoverageValidationResult                = namedtuple(
         "CoverageValidationResult",
@@ -403,6 +405,7 @@ class Results(object):
         test_parser,
         optional_test_executor,
         optional_code_coverage_validator,
+        include_benchmarks=False,
     ):
         # ----------------------------------------------------------------------
         def ResultToString(result):
@@ -526,7 +529,6 @@ class Results(object):
                             """\
                             Test Parse Result:                          {test_parse_result}
                             Test Parse Time:                            {test_parse_time}
-
                             """,
                         ).format(
                             test_parse_result=ResultToString(test_parse_result.Result),
@@ -536,6 +538,50 @@ class Results(object):
                         skip_first_line=False,
                     ),
                 )
+
+                if test_parse_result.Benchmarks and include_benchmarks:
+                    results.append("    Test Parse Benchmarks:\n")
+
+                    for benchmark_name, benchmarks in six.iteritems(
+                        test_parse_result.Benchmarks,
+                    ):
+                        results.append("        {}:\n".format(benchmark_name))
+
+                        for benchmark in benchmarks:
+                            results.append(
+                                StringHelpers.LeftJustify(
+                                    textwrap.dedent(
+                                        """\
+                                        {name} [{extractor}]
+                                            {source_filename} <{source_line}>
+                                                Iterations:             {iterations}
+                                                Samples:                {samples}
+
+                                                Mean:                   {mean} {units}
+                                                Min:                    {min} {units}
+                                                Max:                    {max} {units}
+                                                Standard Deviation:     {standard_deviation} {units}
+
+                                        """,
+                                    ).format(
+                                        name=benchmark.Name,
+                                        extractor=benchmark.Extractor,
+                                        source_filename=benchmark.SourceFilename,
+                                        source_line=benchmark.SourceLine,
+                                        iterations=benchmark.Iterations,
+                                        samples=benchmark.Samples,
+                                        mean=benchmark.Mean,
+                                        min=benchmark.Min,
+                                        max=benchmark.Max,
+                                        standard_deviation=benchmark.StandardDeviation,
+                                        units=benchmark.Units,
+                                    ),
+                                    12,
+                                    skip_first_line=False,
+                                ),
+                            )
+
+                results.append("\n")
 
             if execute_result and execute_result.CoverageResult is not None:
                 # ----------------------------------------------------------------------
@@ -703,6 +749,7 @@ class CompleteResult(object):
         test_parser,
         optional_test_executor,
         optional_code_coverage_validator,
+        include_benchmarks=False,
     ):
         header_length = max(180, len(self.Item) + 4)
 
@@ -731,6 +778,7 @@ class CompleteResult(object):
                     test_parser,
                     optional_test_executor,
                     optional_code_coverage_validator,
+                    include_benchmarks=include_benchmarks,
                 ),
                 4,
                 skip_first_line=False,
@@ -741,6 +789,7 @@ class CompleteResult(object):
                     test_parser,
                     optional_test_executor,
                     optional_code_coverage_validator,
+                    include_benchmarks=include_benchmarks,
                 ),
                 4,
                 skip_first_line=False,
@@ -981,6 +1030,9 @@ def GenerateTestResults(
 
     # ----------------------------------------------------------------------
     def BuildThreadProc(task_index, output_stream, on_status_update):
+        if no_status:
+            on_status_update = lambda value: None
+
         working_data = working_data_items[task_index % len(working_data_items)]
 
         if task_index >= len(working_data_items):
@@ -999,8 +1051,7 @@ def GenerateTestResults(
 
         try:
             # Create the compiler context
-            if not no_status:
-                on_status_update("Configuring")
+            on_status_update("Configuring")
 
             assert os.path.isdir(
                 configuration_results.compiler_context,
@@ -1020,12 +1071,10 @@ def GenerateTestResults(
                 configuration_results.compile_binary = None
                 return None
 
-            if not no_status:
-                on_status_update("Waiting")
+            on_status_update("Waiting")
 
             with working_data.execution_lock:
-                if not no_status:
-                    on_status_update("Building")
+                on_status_update("Building")
 
                 sink = six.moves.StringIO()
 
@@ -1137,8 +1186,11 @@ def GenerateTestResults(
         if no_status:
             on_status_update = lambda value: None
 
-        # ----------------------------------------------------------------------
-        def Invoke():
+        on_status_update("Waiting")
+
+        with working_data.execution_lock:
+            on_status_update("Testing")
+
             # ----------------------------------------------------------------------
             def WriteLog(log_name, content):
                 if content is None:
@@ -1188,8 +1240,6 @@ def GenerateTestResults(
             # ----------------------------------------------------------------------
 
             # Run the test...
-            on_status_update("Testing")
-
             execute_result = None
             execute_start_time = time.time()
 
@@ -1229,7 +1279,7 @@ def GenerateTestResults(
                 execute_result = TestExecutorImpl.ExecuteResult(
                     internal_exception_result_code,
                     traceback.format_exc(),
-                    None,                   # Populate below
+                    None,               # Populate below
                 )
                 raise
 
@@ -1245,7 +1295,10 @@ def GenerateTestResults(
 
                 original_test_output = execute_result.TestOutput
 
-                execute_result.TestOutput = WriteLog("test", execute_result.TestOutput)
+                execute_result.TestOutput = WriteLog(
+                    "test",
+                    execute_result.TestOutput,
+                )
                 execute_result.CoverageOutput = WriteLog(
                     "executor",
                     execute_result.CoverageOutput,
@@ -1256,114 +1309,112 @@ def GenerateTestResults(
                 if execute_result.TestResult != 0:
                     configuration_results.has_errors = True
 
-            # Parse the results...
-            on_status_update("Parsing")
+        # Parse the results...
+        on_status_update("Parsing")
 
-            parse_start_time = time.time()
+        parse_start_time = time.time()
+        test_parse_benchmarks = []
+
+        try:
+            if original_test_output is None:
+                test_parse_result = -1
+            else:
+                test_parse_result = test_parser.Parse(original_test_output)
+
+                if isinstance(test_parse_result, tuple):
+                    test_parse_result, test_parse_benchmarks = test_parse_result
+
+        except:
+            test_parse_result = internal_exception_result_code
+            raise
+
+        finally:
+            test_parse_time = str(
+                datetime.timedelta(
+                    seconds=(time.time() - parse_start_time),
+                ),
+            )
+
+            configuration_results.test_parse_results[
+                iteration
+            ] = Results.TestParseResult(
+                test_parse_result,
+                test_parse_time,
+                test_parse_benchmarks,
+            )
+
+            if test_parse_result != 0:
+                configuration_results.has_errors = True
+
+        # Validate code coverage metrics...
+        if optional_code_coverage_validator:
+            on_status_update("Validating Code Coverage")
+
+            validate_start_time = time.time()
 
             try:
-                if original_test_output is None:
-                    test_parse_result = -1
+                if execute_result.CoveragePercentage is None:
+                    validation_result = -1
+                    validation_min = None
+
+                elif isinstance(compiler.InputTypeInfo, DirectoryTypeInfo):
+                    # If the compiler processes an entire directory at a time, process the results
+                    # individually to determine the final results.
+                    validation_result = None
+                    validation_min = None
+
+                    for (filename, (percentage, percentage_desc)) in six.iteritems(
+                        execute_result.CoveragePercentages,
+                    ):
+                        this_validation_result, this_validation_min = optional_code_coverage_validator.Validate(
+                            filename,
+                            percentage,
+                        )
+
+                        if validation_result is None:
+                            validation_result = this_validation_result
+                            validation_min = this_validation_min
+
+                        else:
+                            validation_result = (
+                                this_validation_result
+                                if this_validation_result < 0
+                                else validation_result
+                            )
+                            assert this_validation_min == validation_min, (
+                                this_validation_min,
+                                validation_min,
+                            )
+
                 else:
-                    test_parse_result = test_parser.Parse(original_test_output)
+                    validation_result, validation_min = optional_code_coverage_validator.Validate(
+                        working_data.complete_result.Item,
+                        execute_result.CoveragePercentage,
+                    )
 
             except:
-                test_parse_result = internal_exception_result_code
+                validation_result = internal_exception_result_code
+                validation_min = None
+
                 raise
 
             finally:
-                test_parse_time = str(
+                validation_parse_time = str(
                     datetime.timedelta(
-                        seconds=(time.time() - parse_start_time),
+                        seconds=(time.time() - validate_start_time),
                     ),
                 )
 
-                configuration_results.test_parse_results[
+                configuration_results.coverage_validation_results[
                     iteration
-                ] = Results.TestParseResult(test_parse_result, test_parse_time)
+                ] = Results.CoverageValidationResult(
+                    validation_result,
+                    validation_parse_time,
+                    validation_min,
+                )
 
-                if test_parse_result != 0:
+                if validation_result != 0:
                     configuration_results.has_errors = True
-
-            # Validate code coverage metrics...
-            if optional_code_coverage_validator:
-                on_status_update("Validating Code Coverage")
-
-                validate_start_time = time.time()
-
-                try:
-                    if execute_result.CoveragePercentage is None:
-                        validation_result = -1
-                        validation_min = None
-
-                    elif isinstance(compiler.InputTypeInfo, DirectoryTypeInfo):
-                        # If the compiler processes an entire directory at a time, process the results
-                        # individually to determine the final results.
-                        validation_result = None
-                        validation_min = None
-
-                        for (filename, (percentage, percentage_desc)) in six.iteritems(
-                            execute_result.CoveragePercentages,
-                        ):
-                            this_validation_result, this_validation_min = optional_code_coverage_validator.Validate(
-                                filename,
-                                percentage,
-                            )
-
-                            if validation_result is None:
-                                validation_result = this_validation_result
-                                validation_min = this_validation_min
-
-                            else:
-                                validation_result = (
-                                    this_validation_result
-                                    if this_validation_result < 0
-                                    else validation_result
-                                )
-                                assert this_validation_min == validation_min, (
-                                    this_validation_min,
-                                    validation_min,
-                                )
-
-                    else:
-                        validation_result, validation_min = optional_code_coverage_validator.Validate(
-                            working_data.complete_result.Item,
-                            execute_result.CoveragePercentage,
-                        )
-
-                except:
-                    validation_result = internal_exception_result_code
-                    validation_min = None
-
-                    raise
-
-                finally:
-                    validation_parse_time = str(
-                        datetime.timedelta(
-                            seconds=(time.time() - validate_start_time),
-                        ),
-                    )
-
-                    configuration_results.coverage_validation_results[
-                        iteration
-                    ] = Results.CoverageValidationResult(
-                        validation_result,
-                        validation_parse_time,
-                        validation_min,
-                    )
-
-                    if validation_result != 0:
-                        configuration_results.has_errors = True
-
-        # ----------------------------------------------------------------------
-
-        on_status_update("Waiting")
-
-        if not execute_tests_in_parallel:
-            with working_data.execution_lock:
-                Invoke()
-        else:
-            Invoke()
 
     # ----------------------------------------------------------------------
 
@@ -2812,6 +2863,7 @@ def _ExecuteImpl(
                 test_parser,
                 test_executor,
                 code_coverage_validator,
+                include_benchmarks=True,
             ),
         )
 
@@ -2982,6 +3034,58 @@ def _ExecuteTreeImpl(
 
             dm.stream.write("\n")
 
+            # Persist the benchmarks
+            benchmark_filename = os.path.join(output_dir, "benchmarks.json")
+
+            dm.stream.write("Creating '{}'...".format(benchmark_filename))
+            with dm.stream.DoneManager(
+                suffix="\n",
+            ):
+                benchmarks = OrderedDict()
+
+                for complete_result in complete_results:
+                    these_benchmarks = OrderedDict()
+
+                    for configuration in ["debug", "release"]:
+                        configuration_benchmarks = OrderedDict()
+
+                        for test_parse_result in getattr(
+                            complete_result,
+                            configuration,
+                        ).test_parse_results:
+                            if test_parse_result is None:
+                                continue
+
+                            if test_parse_result.Benchmarks:
+                                for k, v in six.iteritems(test_parse_result.Benchmarks):
+                                    if k not in configuration_benchmarks:
+                                        configuration_benchmarks[k] = []
+
+                                    configuration_benchmarks[k] += v
+
+                        if configuration_benchmarks:
+                            these_benchmarks[configuration] = configuration_benchmarks
+
+                    if these_benchmarks:
+                        key = FileSystem.TrimPath(complete_result.Item, input_dir)
+
+                        benchmarks[key] = these_benchmarks
+
+                with open(benchmark_filename, "w") as f:
+                    # ----------------------------------------------------------------------
+                    class JsonEncoder(json.JSONEncoder):
+                        def default(self, o):
+                            return getattr(o, "__dict__", o)
+
+                    # ----------------------------------------------------------------------
+
+                    json.dump(
+                        benchmarks,
+                        f,
+                        cls=JsonEncoder,
+                    )
+
+            # Display the results
             if not quiet:
                 for complete_result in complete_results:
                     dm.stream.write(
