@@ -231,14 +231,14 @@ def _CreateConfigurations():
             textwrap.dedent(
                 # <Wrong hanging indentation> pylint: disable = C0330
                 r"""(?#
-                        )\s*"?(?#
-            Name        )(?P<name>.+?)(?#
-                        )\s*-\s*(?#
-            Type        )(?P<type>(?:compiler|test_parser|coverage_executor|coverage_validator))(?#
-                        )\s*-\s*(?#
-            Value       )(?P<value>[^"]+)(?#
-                        )"?\s*(?#
-            )""",
+                            )\s*"?(?#
+                 Name       )(?P<name>.+?)(?#
+                            )\s*-\s*(?#
+                 Type       )(?P<type>(?:compiler|test_parser|coverage_executor|coverage_validator))(?#
+                            )\s*-\s*(?#
+                 Value      )(?P<value>[^"]+)(?#
+                            )"?\s*(?#
+                 )""",
             ),
         )
 
@@ -299,6 +299,7 @@ def _CreateConfigurations():
                     GetFirstItem(item_map.get("coverage_executor", None)),
                     GetFirstItem(item_map.get("coverage_validator", None)),
                 )
+
     return configurations
 
 
@@ -1185,8 +1186,11 @@ def GenerateTestResults(
         if no_status:
             on_status_update = lambda value: None
 
-        # ----------------------------------------------------------------------
-        def Invoke():
+        on_status_update("Waiting")
+
+        with working_data.execution_lock:
+            on_status_update("Testing")
+
             # ----------------------------------------------------------------------
             def WriteLog(log_name, content):
                 if content is None:
@@ -1235,195 +1239,182 @@ def GenerateTestResults(
 
             # ----------------------------------------------------------------------
 
-            with working_data.execution_lock:
-                # Run the test...
-                on_status_update("Testing")
-
-                execute_result = None
-                execute_start_time = time.time()
-
-                try:
-                    test_command_line = test_parser.CreateInvokeCommandLine(
-                        configuration_results.compiler_context,
-                        debug_on_error,
-                    )
-
-                    if optional_test_executor:
-                        executor = optional_test_executor
-                    else:
-                        executor = next(
-                            executor
-                            for executor in TEST_EXECUTORS
-                            if executor.Name == "Standard"
-                        )
-
-                    execute_result = executor.Execute(
-                        on_status_update,
-                        compiler,
-                        configuration_results.compiler_context,
-                        test_command_line,
-                    )
-
-                    test_parser.RemoveTemporaryArtifacts(
-                        configuration_results.compiler_context,
-                    )
-
-                    if (
-                        execute_result.TestResult is not None
-                        and execute_result.TestResult != 0
-                    ):
-                        output_stream.write(execute_result.TestOutput)
-
-                except:
-                    execute_result = TestExecutorImpl.ExecuteResult(
-                        internal_exception_result_code,
-                        traceback.format_exc(),
-                        None,               # Populate below
-                    )
-                    raise
-
-                finally:
-                    assert execute_result
-
-                    if execute_result.TestTime is None:
-                        execute_result.TestTime = str(
-                            datetime.timedelta(
-                                seconds=(time.time() - execute_start_time),
-                            ),
-                        )
-
-                    original_test_output = execute_result.TestOutput
-
-                    execute_result.TestOutput = WriteLog(
-                        "test",
-                        execute_result.TestOutput,
-                    )
-                    execute_result.CoverageOutput = WriteLog(
-                        "executor",
-                        execute_result.CoverageOutput,
-                    )
-
-                    configuration_results.execute_results[iteration] = execute_result
-
-                    if execute_result.TestResult != 0:
-                        configuration_results.has_errors = True
-
-            # Parse the results...
-            on_status_update("Parsing")
-
-            parse_start_time = time.time()
-            test_parse_benchmarks = []
+            # Run the test...
+            execute_result = None
+            execute_start_time = time.time()
 
             try:
-                if original_test_output is None:
-                    test_parse_result = -1
-                else:
-                    test_parse_result = test_parser.Parse(original_test_output)
+                test_command_line = test_parser.CreateInvokeCommandLine(
+                    configuration_results.compiler_context,
+                    debug_on_error,
+                )
 
-                    if isinstance(test_parse_result, tuple):
-                        test_parse_result, test_parse_benchmarks = test_parse_result
+                if optional_test_executor:
+                    executor = optional_test_executor
+                else:
+                    executor = next(
+                        executor
+                        for executor in TEST_EXECUTORS
+                        if executor.Name == "Standard"
+                    )
+
+                execute_result = executor.Execute(
+                    on_status_update,
+                    compiler,
+                    configuration_results.compiler_context,
+                    test_command_line,
+                )
+
+                test_parser.RemoveTemporaryArtifacts(
+                    configuration_results.compiler_context,
+                )
+
+                if (
+                    execute_result.TestResult is not None
+                    and execute_result.TestResult != 0
+                ):
+                    output_stream.write(execute_result.TestOutput)
 
             except:
-                test_parse_result = internal_exception_result_code
+                execute_result = TestExecutorImpl.ExecuteResult(
+                    internal_exception_result_code,
+                    traceback.format_exc(),
+                    None,               # Populate below
+                )
                 raise
 
             finally:
-                test_parse_time = str(
-                    datetime.timedelta(
-                        seconds=(time.time() - parse_start_time),
-                    ),
-                )
+                assert execute_result
 
-                configuration_results.test_parse_results[
-                    iteration
-                ] = Results.TestParseResult(
-                    test_parse_result,
-                    test_parse_time,
-                    test_parse_benchmarks,
-                )
-
-                if test_parse_result != 0:
-                    configuration_results.has_errors = True
-
-            # Validate code coverage metrics...
-            if optional_code_coverage_validator:
-                on_status_update("Validating Code Coverage")
-
-                validate_start_time = time.time()
-
-                try:
-                    if execute_result.CoveragePercentage is None:
-                        validation_result = -1
-                        validation_min = None
-
-                    elif isinstance(compiler.InputTypeInfo, DirectoryTypeInfo):
-                        # If the compiler processes an entire directory at a time, process the results
-                        # individually to determine the final results.
-                        validation_result = None
-                        validation_min = None
-
-                        for (filename, (percentage, percentage_desc)) in six.iteritems(
-                            execute_result.CoveragePercentages,
-                        ):
-                            this_validation_result, this_validation_min = optional_code_coverage_validator.Validate(
-                                filename,
-                                percentage,
-                            )
-
-                            if validation_result is None:
-                                validation_result = this_validation_result
-                                validation_min = this_validation_min
-
-                            else:
-                                validation_result = (
-                                    this_validation_result
-                                    if this_validation_result < 0
-                                    else validation_result
-                                )
-                                assert this_validation_min == validation_min, (
-                                    this_validation_min,
-                                    validation_min,
-                                )
-
-                    else:
-                        validation_result, validation_min = optional_code_coverage_validator.Validate(
-                            working_data.complete_result.Item,
-                            execute_result.CoveragePercentage,
-                        )
-
-                except:
-                    validation_result = internal_exception_result_code
-                    validation_min = None
-
-                    raise
-
-                finally:
-                    validation_parse_time = str(
+                if execute_result.TestTime is None:
+                    execute_result.TestTime = str(
                         datetime.timedelta(
-                            seconds=(time.time() - validate_start_time),
+                            seconds=(time.time() - execute_start_time),
                         ),
                     )
 
-                    configuration_results.coverage_validation_results[
-                        iteration
-                    ] = Results.CoverageValidationResult(
-                        validation_result,
-                        validation_parse_time,
-                        validation_min,
+                original_test_output = execute_result.TestOutput
+
+                execute_result.TestOutput = WriteLog(
+                    "test",
+                    execute_result.TestOutput,
+                )
+                execute_result.CoverageOutput = WriteLog(
+                    "executor",
+                    execute_result.CoverageOutput,
+                )
+
+                configuration_results.execute_results[iteration] = execute_result
+
+                if execute_result.TestResult != 0:
+                    configuration_results.has_errors = True
+
+        # Parse the results...
+        on_status_update("Parsing")
+
+        parse_start_time = time.time()
+        test_parse_benchmarks = []
+
+        try:
+            if original_test_output is None:
+                test_parse_result = -1
+            else:
+                test_parse_result = test_parser.Parse(original_test_output)
+
+                if isinstance(test_parse_result, tuple):
+                    test_parse_result, test_parse_benchmarks = test_parse_result
+
+        except:
+            test_parse_result = internal_exception_result_code
+            raise
+
+        finally:
+            test_parse_time = str(
+                datetime.timedelta(
+                    seconds=(time.time() - parse_start_time),
+                ),
+            )
+
+            configuration_results.test_parse_results[
+                iteration
+            ] = Results.TestParseResult(
+                test_parse_result,
+                test_parse_time,
+                test_parse_benchmarks,
+            )
+
+            if test_parse_result != 0:
+                configuration_results.has_errors = True
+
+        # Validate code coverage metrics...
+        if optional_code_coverage_validator:
+            on_status_update("Validating Code Coverage")
+
+            validate_start_time = time.time()
+
+            try:
+                if execute_result.CoveragePercentage is None:
+                    validation_result = -1
+                    validation_min = None
+
+                elif isinstance(compiler.InputTypeInfo, DirectoryTypeInfo):
+                    # If the compiler processes an entire directory at a time, process the results
+                    # individually to determine the final results.
+                    validation_result = None
+                    validation_min = None
+
+                    for (filename, (percentage, percentage_desc)) in six.iteritems(
+                        execute_result.CoveragePercentages,
+                    ):
+                        this_validation_result, this_validation_min = optional_code_coverage_validator.Validate(
+                            filename,
+                            percentage,
+                        )
+
+                        if validation_result is None:
+                            validation_result = this_validation_result
+                            validation_min = this_validation_min
+
+                        else:
+                            validation_result = (
+                                this_validation_result
+                                if this_validation_result < 0
+                                else validation_result
+                            )
+                            assert this_validation_min == validation_min, (
+                                this_validation_min,
+                                validation_min,
+                            )
+
+                else:
+                    validation_result, validation_min = optional_code_coverage_validator.Validate(
+                        working_data.complete_result.Item,
+                        execute_result.CoveragePercentage,
                     )
 
-                    if validation_result != 0:
-                        configuration_results.has_errors = True
+            except:
+                validation_result = internal_exception_result_code
+                validation_min = None
 
-        # ----------------------------------------------------------------------
+                raise
 
-        on_status_update("Waiting")
+            finally:
+                validation_parse_time = str(
+                    datetime.timedelta(
+                        seconds=(time.time() - validate_start_time),
+                    ),
+                )
 
-        if not execute_tests_in_parallel:
-            with working_data.execution_lock:
-                Invoke()
-        else:
-            Invoke()
+                configuration_results.coverage_validation_results[
+                    iteration
+                ] = Results.CoverageValidationResult(
+                    validation_result,
+                    validation_parse_time,
+                    validation_min,
+                )
+
+                if validation_result != 0:
+                    configuration_results.has_errors = True
 
     # ----------------------------------------------------------------------
 
