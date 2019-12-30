@@ -24,7 +24,7 @@ from CommonEnvironment.CallOnExit import CallOnExit
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name                   = os.path.split(_script_fullpath)
-#  ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 if sys.version_info[0] == 2:
     black = None

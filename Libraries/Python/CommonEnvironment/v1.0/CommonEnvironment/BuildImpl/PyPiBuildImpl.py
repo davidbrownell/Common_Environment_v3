@@ -32,7 +32,7 @@ from CommonEnvironment.StreamDecorator import StreamDecorator
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name                   = os.path.split(_script_fullpath)
-#  ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 # ----------------------------------------------------------------------
 def CreateBuildFunc(script_dir):

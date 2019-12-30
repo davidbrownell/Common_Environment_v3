@@ -27,7 +27,7 @@ from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerializati
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name                   = os.path.split(_script_fullpath)
-#  ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 # ----------------------------------------------------------------------
 class XmlSerialization(StringSerialization):
