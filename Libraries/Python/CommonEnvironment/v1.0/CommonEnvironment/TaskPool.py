@@ -54,7 +54,12 @@ class Task(object):
         self,
         name,                               # Used when display status
         functor,                            # def Functor(<args>) -> None|str|(result, str)
-                                            ###           core_index          # Technically speaking, this isn't the core index but is sufficient to simulate thread local storage#           output_stream#           on_status_update    # def Func(content)                                    #           task_index
+                                            #
+                                            #   Where <args> can be:
+                                            #           core_index          # Technically speaking, this isn't the core index but is sufficient to simulate thread local storage
+                                            #           output_stream
+                                            #           on_status_update    # def Func(content)
+                                            #           task_index
     ):
         assert name
         assert functor
