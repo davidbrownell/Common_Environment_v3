@@ -26,7 +26,7 @@ from PythonFormatterImpl.Impl.BlackImports import python_symbols            # <U
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name                   = os.path.split(_script_fullpath)
-#  ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 # ----------------------------------------------------------------------
 @Interface.staticderived

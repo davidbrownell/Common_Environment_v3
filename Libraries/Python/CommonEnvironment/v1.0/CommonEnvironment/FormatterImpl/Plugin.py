@@ -23,7 +23,7 @@ from CommonEnvironment import Interface
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name                   = os.path.split(_script_fullpath)
-#  ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 # ----------------------------------------------------------------------
 # TODO: Remove this once it is no longer used in C++ formatter
@@ -39,13 +39,13 @@ class Plugin(Interface.Interface):
     def Name(self):
         """Name of the plugin"""
         raise Exception("Abstract property")
-    
+
     # ----------------------------------------------------------------------
     @Interface.abstractproperty
     def Priority(self):
         """Integer priority value; plugins with lower priorities are executed first"""
         raise Exception("Abstract property")
-    
+
     # ----------------------------------------------------------------------
     # |  Methods
     @staticmethod
