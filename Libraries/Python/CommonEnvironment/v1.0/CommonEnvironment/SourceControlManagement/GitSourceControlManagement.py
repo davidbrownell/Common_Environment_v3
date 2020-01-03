@@ -404,6 +404,9 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
     @classmethod
     @override
     def SetExecutePermission(cls, repo_root, filename, is_executable):
+        if cls.GetExecutePermission(repo_root, filename) == is_executable:
+            return 0, "Permissions have already been set"
+
         return cls.Execute(
             repo_root,
             'git update-index --chmod={sign}x "{filename}"'.format(

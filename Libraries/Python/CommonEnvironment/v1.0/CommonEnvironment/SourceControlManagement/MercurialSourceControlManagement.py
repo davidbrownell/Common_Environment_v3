@@ -366,6 +366,9 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
         is_executable,
         commit_message=None,
     ):
+        if cls.GetExecutePermission(repo_root, filename) == is_executable:
+            return 0, "Permissions have already been set"
+
         filename = FileSystem.TrimPath(filename, repo_root)
         filename = filename.replace(os.path.sep, "/")
 
@@ -955,4 +958,3 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
 
         assert type(arg) in dispatch_map, type(arg)
         return dispatch_map[type(arg)]()
-
