@@ -139,6 +139,9 @@ def GetCustomActions(
                 "python-compiler-PyLint",
                 "python-test_parser-PyUnittest",
                 "python-coverage_executor-PyCoverage",
+                "pytest-compiler-PyLint",
+                "pytest-test_parser-Pytest",
+                "pytest-coverage_executor-PyCoverage",
             ],
         ),
     )

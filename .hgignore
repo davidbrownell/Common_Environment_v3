@@ -19,7 +19,8 @@ Tools/openssl/*
 .coverage
 coverage.xml
 
-.vscode/*
+.vscode
+.pytest_cache
 
 Libraries/Python/CommonEnvironment/v1.0/CommonEnvironment.egg-info/*
 Libraries/Python/CommonEnvironment/v1.0/dist/*
