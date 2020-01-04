@@ -643,10 +643,15 @@ class Executor(object):
             if allow_exceptions:
                 raise
 
-            if not getattr(sys.exc_info()[1], "_DisplayedException", False):
+            ex = sys.exc_info()[1]
+
+            if not getattr(ex, "_DisplayedException", False):
                 import traceback
 
-                output_stream.write("ERROR: {}".format(StringHelpers.LeftJustify(traceback.format_exc(), len("ERROR: "))))
+                if not getattr(ex, "__suppress_context__", False):
+                    output_stream.write("ERROR: {}".format(StringHelpers.LeftJustify(traceback.format_exc(), len("ERROR: "))))
+                else:
+                    output_stream.write("ERROR: {}".format(StringHelpers.LeftJustify(str(ex), len("ERROR: "))))
 
             result = -1
 
