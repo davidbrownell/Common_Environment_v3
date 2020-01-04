@@ -258,11 +258,13 @@ def Execute(
             except:
                 task.result = -1
 
-                message = str(sys.exc_info()[1]).rstrip()
+                ex = sys.exc_info()[1]
+
+                message = str(ex).rstrip()
 
                 OnStatusUpdate("ERROR: {}".format(message))
 
-                if display_exception_callstack:
+                if display_exception_callstack and not getattr(ex, "__suppress_context__", False):
                     sink.write(traceback.format_exc())
                 else:
                     sink.write("{}\n".format(message))

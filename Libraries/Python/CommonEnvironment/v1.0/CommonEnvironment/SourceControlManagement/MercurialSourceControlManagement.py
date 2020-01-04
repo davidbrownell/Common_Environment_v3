@@ -403,7 +403,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
             )
 
         with CallOnExit(lambda: FileSystem.RemoveFile(temp_filename)):
-            return Process.Execute('hg import --bypass -m "{}" "{}"'.format(commit_message, temp_filename))
+            return Process.Execute('hg import --bypass -m "{}" "{}" && hg update'.format(commit_message, temp_filename))
 
     # ----------------------------------------------------------------------
     @classmethod
