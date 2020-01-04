@@ -134,6 +134,13 @@ class TestParserImpl(Interface):
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @extensionmethod
+    def IsSupportedTestItem(item):
+        """Returns True if the test parser is able to process this test item"""
+        return True
+
+    # ----------------------------------------------------------------------
+    @staticmethod
     @abstractmethod
     def Parse(test_data):
         """
