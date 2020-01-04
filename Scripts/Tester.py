@@ -2987,7 +2987,7 @@ def _ExecuteTreeImpl(
             dm.stream.write("Parsing '{}'...".format(input_dir))
             with dm.stream.DoneManager(
                 done_suffix=lambda: "{} found".format(
-                    inflect.no("test", len(test_items)),
+                    inflect.no("supported '{}' test".format(test_type), len(test_items)),
                 ),
                 suffix="\n",
             ) as this_dm:
