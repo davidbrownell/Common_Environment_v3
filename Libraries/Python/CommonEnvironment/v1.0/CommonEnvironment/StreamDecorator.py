@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  StreamDecorator.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-05-05 11:46:08
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-20.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 # """Contains the StreamDecorator object"""
 
@@ -39,9 +39,9 @@ class StreamDecorator(object):
     """Augments the provided stream with additional functionality."""
 
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Public Methods
-    # |  
+    # |
     # ----------------------------------------------------------------------
     @classmethod
     def AreAnsiSequenceStreamsInitialized(cls):
@@ -141,7 +141,7 @@ class StreamDecorator(object):
     # ----------------------------------------------------------------------
     def __init__( self,
                   stream_or_streams,                    # Can be None to suppress output
-                  line_prefix=None,                     # string or def Func(column_offset) -> string  
+                  line_prefix=None,                     # string or def Func(column_offset) -> string
                   line_suffix=None,                     # string or def Func(column_offset) -> string
                   prefix=None,                          # string or def Func(column_offset) -> string
                   suffix=None,                          # string or def Func(column_offset) -> string
@@ -188,7 +188,7 @@ class StreamDecorator(object):
         self._displayed_one_time_prefix     = False
         self._displayed_one_time_suffix     = False
         self._displayed_prefix              = False
-        
+
         self._column                        = 0
         self._wrote_content                 = False
 
@@ -268,7 +268,7 @@ class StreamDecorator(object):
         return self
 
     # ----------------------------------------------------------------------
-    def flush( self, 
+    def flush( self,
                force_suffix=False,
                force_newline=False,
              ):
@@ -291,7 +291,7 @@ class StreamDecorator(object):
 
                 self._displayed_prefix = False
                 self._wrote_content = False
-                
+
             for stream in self._streams:
                 stream.flush()
 
@@ -316,7 +316,7 @@ class StreamDecorator(object):
                      display_exception_callstacks=True, # Display exception callstack info
                      suppress_exceptions=False,         # Do not let exception propagate
 
-                     associated_stream=None,    
+                     associated_stream=None,
                      associated_streams=None,           # Streams that should be adjusted in conjunction with this stream. Most of the time, this is used
                                                         # to manage verbose streams that are aligned with status streams, where the status stream is self
                                                         # and the verbose stream content is interleaved with it.
@@ -324,31 +324,31 @@ class StreamDecorator(object):
                                                         # Example:
                                                         #     import sys
                                                         #
-                                                        #     from StringIO import StringIO 
+                                                        #     from StringIO import StringIO
                                                         #     from CommonEnvironment.StreamDecorator import StreamDecorator
                                                         #
                                                         #     sink = StringIO()
-                                                        #     
+                                                        #
                                                         #     verbose_stream = StreamDecorator(sink)
                                                         #     status_stream = StreamDecorator([ sys.stdout, verbose_stream, ])
-                                                        #     
+                                                        #
                                                         #     status_stream.write("0...")
                                                         #     with status_stream.DoneManager(associated_stream=verbose_stream) as ( dm1, verbose_stream1 ):
                                                         #         verbose_stream1.write("Verbose 0\n----")
-                                                        #     
+                                                        #
                                                         #         dm1.stream.write("1...")
                                                         #         with dm1.stream.DoneManager(associated_stream=verbose_stream1) as ( dm2, verbose_stream2 ):
                                                         #             verbose_stream2.write("Verbose 1\n----")
-                                                        #     
+                                                        #
                                                         #             dm2.stream.write("2...")
                                                         #             with dm2.stream.DoneManager(associated_stream=verbose_stream2) as ( dm3, verbose_stream3 ):
                                                         #                 verbose_stream3.write("Verbose 2\n----")
-                                                        #     
+                                                        #
                                                         #                 dm3.stream.write("3...")
                                                         #                 with dm3.stream.DoneManager(associated_stream=verbose_stream3) as ( dm4, verbose_stream4 ):
                                                         #                     verbose_stream4.write("Verbose 3\n----")
-                                                        #                     verbose_stream4.flush() 
-                                                        #     
+                                                        #                     verbose_stream4.flush()
+                                                        #
                                                         #     sys.stdout.write("\n**\n{}\n**\n".format(sink.getvalue()))
                    ):
         """Displays done information upon completion."""
@@ -390,7 +390,7 @@ class StreamDecorator(object):
         # ----------------------------------------------------------------------
         def Cleanup():
             assert info.result is not None
-            
+
             if display:
                 prefix = prefix_func()
                 suffix = suffix_func()
@@ -442,7 +442,7 @@ class StreamDecorator(object):
                 associated_streams = associated_streams or []
                 if associated_stream:
                     associated_streams.append(associated_stream)
-        
+
                 if not associated_streams:
                     yield info
                 else:
@@ -465,12 +465,12 @@ class StreamDecorator(object):
                 if display_exceptions:
                     ex = sys.exc_info()[1]
 
-                    if ( not getattr(ex, "_DisplayedException", False) and 
+                    if ( not getattr(ex, "_DisplayedException", False) and
                          not getattr(info.stream, "IsAssociatedStream", False)
                        ):
                         ex._DisplayedException = True
 
-                        if display_exception_callstacks:
+                        if display_exception_callstacks and not getattr(ex, "__suppress_context__", False):
                             import traceback
                             info.stream.write("ERROR: {}\n".format(StringHelpers.LeftJustify(traceback.format_exc(), len("ERROR: ")).rstrip()))
                         else:
@@ -488,18 +488,18 @@ class StreamDecorator(object):
                 # behavior on multicore machines (I have a hunch that virtualized machines
                 # contribute to the problem as well). More info at http://bytes.com/topic/python/answers/527849-time-clock-going-backwards.
                 # Regardless, asserting here is causing problems and this method is
-                # only used for scripts. If we encounter the scenario, populate with 
+                # only used for scripts. If we encounter the scenario, populate with
                 # bogus data.
                 if start_time > current_time:
                     # This is a total lie, but hopefully the value is unique enough to
                     # generate a double take. This is preferable to causing a long-
                     # running process to fail.
-                    current_time = start_time + (12 * 60 * 60) + (34 * 60) + 56         # 12:34:56      
-                
+                    current_time = start_time + (12 * 60 * 60) + (34 * 60) + 56         # 12:34:56
+
                 assert current_time >= start_time, (current_time, start_time)
 
                 nonlocals.time_delta = str(datetime.timedelta(seconds=current_time - start_time))
-            
+
     # ----------------------------------------------------------------------
     @contextmanager
     def SingleLineDoneManager( self,
@@ -509,7 +509,7 @@ class StreamDecorator(object):
                                **done_manager_kwargs
                              ):
         """
-        Useful when displaying a status message along with a progress bar (or 
+        Useful when displaying a status message along with a progress bar (or
         other content) that should disappear once the activity is complete.
 
         Output is only written via the following methods:
@@ -561,7 +561,7 @@ class StreamDecorator(object):
         # ----------------------------------------------------------------------
         def DonePrefix():
             ClearTempStatus()
-            
+
             if not nonlocals.reset_content:
                 # Don't eliminate any data that was displayed
                 return "DONE! "
@@ -595,7 +595,7 @@ class StreamDecorator(object):
                 nonlocals.dm_write_ref(message)
                 nonlocals.reset_content = False
 
-                if ( result is not None and 
+                if ( result is not None and
                      (dm.result in [ None, 0, ] or (dm.result > 0 and result < 0))
                    ):
                     dm.result = result
@@ -636,16 +636,16 @@ class StreamDecorator(object):
                 raise
 
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Private Data
-    # |  
+    # |
     # ----------------------------------------------------------------------
     _eol_regex                              = re.compile(r"(?P<eol>\r?\n)")
 
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Private Types
-    # |  
+    # |
     # ----------------------------------------------------------------------
     class _DoneManagerInfo(object):
 
@@ -676,4 +676,3 @@ class StreamDecorator(object):
             yield self
             for dm in Impl(self.stream):
                 yield dm
-        

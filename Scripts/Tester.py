@@ -807,6 +807,7 @@ def ExtractTestItems(
     test_subdir,
     compiler,
     verbose_stream=None,
+    optional_test_parser=None,
 ):
     assert os.path.isdir(input_dir), input_dir
     assert test_subdir
@@ -831,12 +832,19 @@ def ExtractTestItems(
             if os.path.exists(TEST_IGNORE_FILENAME_TEMPLATE.format(fullpath)):
                 continue
 
-            if compiler.IsSupported(fullpath) and compiler.IsSupportedTestItem(fullpath):
-                test_items.append(fullpath)
-            else:
+            if not compiler.IsSupported(fullpath) or not compiler.IsSupportedTestItem(fullpath):
                 verbose_stream.write(
                     "'{}' is not supported by the compiler.\n".format(fullpath),
                 )
+                continue
+
+            if optional_test_parser and not optional_test_parser.IsSupportedTestItem(fullpath):
+                verbose_stream.write(
+                    "'{}' is not supported by the test parser.\n".format(fullpath),
+                )
+                continue
+
+            test_items.append(fullpath)
 
     elif isinstance(compiler.InputTypeInfo, DirectoryTypeInfo):
         for root, _ in FileSystem.WalkDirs(
@@ -1848,7 +1856,11 @@ def TestItem(
     # ----------------------------------------------------------------------
     def GetConfiguration():
         for key, configuration in six.iteritems(CONFIGURATIONS):
-            if configuration.Compiler.IsSupported(filename_or_directory):
+            if (
+                configuration.Compiler.IsSupported(filename_or_directory)
+                and configuration.Compiler.IsSupportedTestItem(filename_or_directory)
+                and configuration.TestParser.IsSupportedTestItem(filename_or_directory)
+            ):
                 return key
 
         return None
@@ -1858,7 +1870,7 @@ def TestItem(
     configuration = GetConfiguration()
     if not configuration:
         raise CommandLine.UsageException(
-            "Unable to find a configuration with a compiler that supports the input '{}'".format(
+            "Unable to find a configuration with a compiler and test parser that supports the input '{}'".format(
                 filename_or_directory,
             ),
         )
@@ -2987,7 +2999,7 @@ def _ExecuteTreeImpl(
             dm.stream.write("Parsing '{}'...".format(input_dir))
             with dm.stream.DoneManager(
                 done_suffix=lambda: "{} found".format(
-                    inflect.no("test", len(test_items)),
+                    inflect.no("supported '{}' test".format(test_type), len(test_items)),
                 ),
                 suffix="\n",
             ) as this_dm:
@@ -2996,6 +3008,7 @@ def _ExecuteTreeImpl(
                     test_type,
                     compiler,
                     verbose_stream=StreamDecorator(this_dm.stream if verbose else None),
+                    optional_test_parser=test_parser,
                 )
 
             if not test_items:
