@@ -27,6 +27,7 @@ _script_fullpath = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
+# ----------------------------------------------------------------------
 class StandardSuite(unittest.TestCase):
 
     # ----------------------------------------------------------------------
@@ -48,6 +49,22 @@ class StandardSuite(unittest.TestCase):
         self.assertTrue(self.ti.IsValidItem("test"))
         self.assertFalse(self.ti.IsValidItem(9))
         self.assertFalse(self.ti.IsValidItem(""))
+
+
+# ----------------------------------------------------------------------
+class SimilarSuite(unittest.TestCase):
+    # ----------------------------------------------------------------------
+    def setUp(self):
+        self.ti = AnyOfTypeInfo([EnumTypeInfo(["one", "two", "three"]), EnumTypeInfo(["any"]), StringTypeInfo()])
+
+    # ----------------------------------------------------------------------
+    def test_Standard(self):
+        self.assertTrue(self.ti.IsValidItem("one"))
+        self.assertTrue(self.ti.IsValidItem("two"))
+        self.assertTrue(self.ti.IsValidItem("three"))
+        self.assertTrue(self.ti.IsValidItem("any"))
+        self.assertTrue(self.ti.IsValidItem("four"))
+
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
