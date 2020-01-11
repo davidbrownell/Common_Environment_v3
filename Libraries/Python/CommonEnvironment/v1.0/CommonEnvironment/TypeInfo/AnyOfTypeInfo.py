@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  AnyOfTypeInfo.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-04-22 18:36:55
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-20.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Contains the AnyOfTypeInfo object"""
 
@@ -70,20 +70,21 @@ class AnyOfTypeInfo(TypeInfo):
     # ----------------------------------------------------------------------
     # |  Public Methods
     def ExpectedType(self, item):
-        return bool(self._GetElementTypeInfo(item))
+        return any(self._GetElementTypeInfos(item))
 
     # ----------------------------------------------------------------------
     # |  Private Methods
-    def _GetElementTypeInfo(self, item):
+    def _GetElementTypeInfos(self, item):
         for eti in self.ElementTypeInfos:
             if eti.IsExpectedType(item):
-                return eti
+                yield eti
 
     # ----------------------------------------------------------------------
     @override
     def _ValidateItemNoThrowImpl(self, item, **custom_args):
-        eti = self._GetElementTypeInfo(item)
-        if eti is None:
-            return "'{}' is not a supported type".format(item)
+        for eti in self._GetElementTypeInfos(item):
+            result = eti.ValidateItemNoThrow(item, **custom_args)
+            if result is None:
+                return None
 
-        return eti.ValidateItemNoThrow(item, **custom_args)
+        return "'{}' is not a supported type".format(item)
