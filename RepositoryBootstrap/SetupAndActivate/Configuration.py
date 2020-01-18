@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Configuration.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-05-02 21:37:56
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-20.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Types used to customize repository setup and activation."""
 
@@ -31,6 +31,7 @@ class VersionInfo(object):
 
     # ----------------------------------------------------------------------
     def __init__(self, name, version):
+        """Set the version to `None` to prevent that tool or library from being included during activation"""
         self.Name                           = name
         self.Version                        = version
 
@@ -96,7 +97,7 @@ class Configuration(object):
     An example of different configurations with a repository could be
     "development" and "production" configurations, where the "development"
     configuration uses libraries and repositories useful while writing
-    code in the repository, while "production" only includes those 
+    code in the repository, while "production" only includes those
     dependencies that are necessary when running the code.
     """
 
