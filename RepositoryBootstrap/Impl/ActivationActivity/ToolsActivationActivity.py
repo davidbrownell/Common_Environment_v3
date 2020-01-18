@@ -61,6 +61,7 @@ class ToolsActivationActivity(ActivationActivity):
         generated_dir,
     ):
         version_info = [] if not version_specs else version_specs.Tools
+        version_info_lookup = {vi.Name : vi for vi in version_info}
 
         nonlocals = CommonEnvironmentImports.CommonEnvironment.Nonlocals(
             tools=0,
@@ -91,6 +92,11 @@ class ToolsActivationActivity(ActivationActivity):
                     ):
                         continue
 
+                    if item in version_info_lookup and version_info_lookup[item].Version is None:
+                        # Skip the activation of this tool
+                        dm.stream.write("'{}' has been explicitly disabled.\n".format(item))
+                        continue
+
                     try:
                         fullpath = cls.GetVersionedDirectory(version_info, fullpath)
                         assert os.path.isdir(fullpath), fullpath
@@ -101,9 +107,9 @@ class ToolsActivationActivity(ActivationActivity):
 
                     # If the tool is just there to prevent warnings, don't count it as an
                     # offical tool
-                    subdirs = os.listdir(fullpath)
+                    items = os.listdir(fullpath)
 
-                    if len(subdirs) == 1 and subdirs[0].lower() == "readme.txt":
+                    if len(items) == 1 and items[0].lower() == "readme.txt":
                         continue
 
                     # If here, we are looking at a valid tool

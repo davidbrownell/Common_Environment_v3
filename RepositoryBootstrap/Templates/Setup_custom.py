@@ -118,7 +118,10 @@ def GetDependencies():
                                                                                           # If necessary, you can override this behavior by specifying specific versions for tools that should be used when activating
                                                                                           # this repository with this configuration.
                     VersionSpecs(                                                         # Tools
-                        [VersionInfo("Some Tool", "v0.0.1")],
+                        [
+                            VersionInfo("Some Tool", "v0.0.1"),
+                            VersionInfo("The is a tool that I don't want activated", None),
+                        ],
                                                                                           # Libraries, organized by language
                         {"Python": [VersionInfo("Some Library", "v1.2.3")]},
                     ),
@@ -178,7 +181,7 @@ def GetCustomActions(debug, verbose, explicit_configurations):
     """
     Returns an action or list of actions that should be invoked as part of the setup process.
 
-    Actions are generic command line statements defined in 
+    Actions are generic command line statements defined in
     <Common_Environment>/Libraries/Python/CommonEnvironment/v1.0/CommonEnvironment/Shell/Commands/__init__.py
     that are converted into statements appropriate for the current scripting language (in most
     cases, this is Bash on Linux systems and Batch or PowerShell on Windows systems.
