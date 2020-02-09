@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  __init__.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-04-20 19:28:09
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-20.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Contains types and methods that are fundamental"""
 
@@ -26,9 +26,9 @@ from contextlib import contextmanager
 import six
 
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Public Types
-# |  
+# |
 # ----------------------------------------------------------------------
 class Nonlocals(object):
     """
@@ -51,9 +51,29 @@ class Nonlocals(object):
         self.__dict__.update(kwargs)
 
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Public Methods
-# |  
+# |
+# ----------------------------------------------------------------------
+def Get(
+    items,
+    functor,                                # def Func(item) -> bool
+    extractor=None,                         # def Func(item) -> Any
+):
+    """\
+    Returns an item in an iterable list if it matches the criteria encapsulated within functor.
+
+    This is similar to `next`, without the need to worry about `StopIteration` if no
+    matching items are found.
+    """
+
+    for item in items:
+        if functor(item):
+            return extractor(item) if extractor else item
+
+    return None
+
+
 # ----------------------------------------------------------------------
 def ThisFullpath():
     """Returns the filename of the caller, taking into account symlinks and frozen executables."""
@@ -62,7 +82,7 @@ def ThisFullpath():
         return sys.executable
 
     import inspect
-    
+
     if sys.version_info[0] == 2:
         frame = inspect.stack()[1][0]
         filename = inspect.getframeinfo(frame).filename
@@ -78,7 +98,7 @@ def ThisFullpath():
 
 # ----------------------------------------------------------------------
 # Data type used to short-circuit infinite loops when attempting to describe
-# object with circular dependencies. 
+# object with circular dependencies.
 _describe_stack                             = set()
 
 def Describe( item,                         # str, dict, iterable, obj
@@ -116,18 +136,20 @@ def Describe( item,                         # str, dict, iterable, obj
                 max_length = max(max_length, len(key))
 
             item_indentation_str = indentation_str + (' ' * (max_length + len(" : ")))
-            
+
             for index, (key, key_name) in enumerate(six.iteritems(keys)):
                 output_stream.write("{0}{1:<{2}} : ".format( indentation_str if index else '',
                                                              key_name,
                                                              max_length,
                                                            ))
-                
+
                 if key in kwargs:
                     result = kwargs[key](item[key])
-                    
+
                     if result is not None:
-                        output_stream.write("{}\n".format(result))
+                        output_stream.write("{}".format(result))
+
+                    output_stream.write("\n")
                 else:
                     Impl(item[key], item_indentation_str)
 
@@ -177,15 +199,15 @@ def Describe( item,                         # str, dict, iterable, obj
 
                 if not Display():
                     content = str(item).strip()
-                    
+
                     if "<class" not in content:
                         content += "{}{}".format( '\n' if content.count('\n') > 1 else ' ',
                                                   type(item),
                                                 )
-                    
+
                     if " object at " in content:
                         content += "\n\n{}".format(ObjectReprImpl(item))
-                    
+
                     output_stream.write("{}\n".format(('\n{}'.format(indentation_str)).join(content.split('\n'))))
 
         # ----------------------------------------------------------------------
@@ -207,11 +229,11 @@ def ObjectToDict(obj, include_id=True):
 
     keys = [ k for k in dir(obj) if not k.startswith("__") ]
     kvps += [ ( k, getattr(obj, k) ) for k in keys ]
-    
+
     return OrderedDict(kvps)
 
 # ----------------------------------------------------------------------
-def ObjectReprImpl( obj, 
+def ObjectReprImpl( obj,
                     include_methods=False,
                     include_private=False,
                     include_id=True,
@@ -224,13 +246,13 @@ def ObjectReprImpl( obj,
         def __repr__(self):
             return CommonEnvironment.ObjReprImpl(self)
     """
-    
+
     d = ObjectToDict(obj, include_id=include_id)
 
     # Displaying builtins prevents anything from being displayed after it
     if "f_builtins" in d:
         del d["f_builtins"]
-    
+
     for k, v in list(six.iteritems(d)):
         if callable(v):
             if include_methods:
@@ -238,15 +260,15 @@ def ObjectReprImpl( obj,
             else:
                 del d[k]
                 continue
-        
+
         if not include_private and k.startswith('_'):
             del d[k]
             continue
 
     sink = six.moves.StringIO()
 
-    Describe( d, 
-              sink, 
+    Describe( d,
+              sink,
               unique_id=(type(obj), id(obj)),
               **kwargs
             )
