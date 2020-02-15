@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  DictTypeInfo.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-04-28 19:50:09
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-20.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Contains the DictTypeInfo object"""
 
@@ -79,7 +79,7 @@ class DictTypeInfo(TypeInfo):
     # ----------------------------------------------------------------------
     @override
     def _ValidateItemNoThrowImpl( self,
-                                  item, 
+                                  item,
                                   recurse=True,
                                   require_exact_match=None,
                                   exclude=None,                             # set of names to exclude from the search
@@ -91,9 +91,9 @@ class DictTypeInfo(TypeInfo):
 
         attributes = { a for a in self._GetAttributes(item) if not a.startswith('_') }
 
-        for attribute_name, type_info in six.iteritems(self.Items):
+        for attribute_name, attribute_type_info in six.iteritems(self.Items):
             if attribute_name not in attributes:
-                if type_info.Arity.Min == 0:
+                if attribute_type_info.Arity.Min == 0:
                     continue
 
                 return "The required attribute '{}' was not found".format(attribute_name)
@@ -103,12 +103,14 @@ class DictTypeInfo(TypeInfo):
             if attribute_name in exclude:
                 continue
 
-            attribute_value = self._GetAttributeValue(item, attribute_name, type_info)
+            attribute_value = self._GetAttributeValue(item, attribute_name, attribute_type_info)
 
             if recurse:
-                result = type_info.ValidateNoThrow(attribute_value)
+                result = attribute_type_info.ValidateNoThrow(attribute_value)
+            elif require_exact_match:
+                result = attribute_type_info.ValidateArityNoThrow(attribute_value)
             else:
-                result = type_info.ValidateArityNoThrow(attribute_value)
+                result = None
 
             if result is not None:
                 return "The attribute '{}' is not valid - {}".format(attribute_name, result)
