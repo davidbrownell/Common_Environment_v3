@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  __init__.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-04-20 20:11:20
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-20.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Constructs used when defining types."""
 
@@ -32,9 +32,9 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 inflect                                     = inflect_mod.engine()
 
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Public Types
-# |  
+# |
 # ----------------------------------------------------------------------
 class ValidationException(Exception):
     """Exception thrown when an aspect of a type failed validation."""
@@ -218,15 +218,15 @@ class TypeInfo(Interface):
     """
 
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Public Properties
-    # |  
+    # |
     # ----------------------------------------------------------------------
     @abstractproperty
     def Desc(self):
         """
         A description of the type.
-        
+
         The resulting string may include instance-specific constraints, such
         as the minimum length of a string type.
         """
@@ -258,9 +258,9 @@ class TypeInfo(Interface):
         return False
 
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Public Methods
-    # |  
+    # |
     # ----------------------------------------------------------------------
     def __init__( self,
                   arity=None,                           # [optional] Arity object or string; default is Arity(1, 1)
@@ -286,7 +286,7 @@ class TypeInfo(Interface):
     # ----------------------------------------------------------------------
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
-        
+
     # ----------------------------------------------------------------------
     def IsExpectedType(self, item):
         """Returns True if the item is the expected Python type"""
@@ -299,7 +299,7 @@ class TypeInfo(Interface):
     def IsValid(self, item_or_items, **custom_args):
         """
         Returns True if the input is considered valid.
-        
+
         This method is aware of collections.
         """
         return self.ValidateNoThrow(item_or_items, **custom_args) is None
@@ -406,12 +406,9 @@ class TypeInfo(Interface):
 
             return None
 
-        if isinstance(item_or_items, (list, tuple)):
-            if self.Arity.Max == 1:
-                return "1 item was expected"
-
+        if isinstance(item_or_items, (dict, list, tuple)):
             if len(item_or_items) < self.Arity.Min:
-                return "At least {} {} expected ({} found)".format( inflect.no("item", self.Arity.Min), 
+                return "At least {} {} expected ({} found)".format( inflect.no("item", self.Arity.Min),
                                                                     inflect.plural_verb("was", self.Arity.Min),
                                                                     len(item_or_items),
                                                                   )
@@ -424,16 +421,16 @@ class TypeInfo(Interface):
         elif self.IsExpectedType(item_or_items):
             if self.Arity.IsCollection:
                 return "A collection was expected"
-        
+
         else:
             return "Invalid input"
 
         return None
 
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Protected Methods
-    # |  
+    # |
     # ----------------------------------------------------------------------
     def _GetExpectedTypeString(self):
         # ----------------------------------------------------------------------
@@ -451,9 +448,9 @@ class TypeInfo(Interface):
         return GetTypeName(self.ExpectedType)                                   # <Class '<name>' has no '<attr>' member> pylint: disable = E1103
 
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Private Methods
-    # |  
+    # |
     # ----------------------------------------------------------------------
     @staticmethod
     @abstractmethod
