@@ -54,12 +54,15 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
     # ----------------------------------------------------------------------
     Name                                    = DerivedProperty("Git")
     DefaultBranch                           = DerivedProperty("master")
+    ReleaseBranch                           = DerivedProperty("release_")
     Tip                                     = DerivedProperty("head")
     WorkingDirectories                      = DerivedProperty([".git"])
     IgnoreFilename                          = DerivedProperty(".gitignore")
 
     DetachedHeadPseudoBranchName            = "__DetachedHeadPseudoBranchName_{Index}_{BranchName}__"
     _DetachedHeadPseudoBranchName_regex     = RegularExpression.TemplateStringToRegex(DetachedHeadPseudoBranchName)
+
+    # Diagnostics                             = True
 
     # ----------------------------------------------------------------------
     # |

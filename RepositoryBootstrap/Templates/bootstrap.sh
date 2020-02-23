@@ -25,7 +25,7 @@ then
     echo "This script bootstraps common library enlistment and setup."
     echo ""
     echo "    Usage:"
-    echo "        $0 <common code dir> [/name=<custom environment name>]"
+    echo "        $0 <common code dir> [/name=<custom environment name>] [Optional Setup.sh args]*"
     echo ""
 
     should_continue=0
@@ -47,7 +47,7 @@ then
 
     if [[ ! -e "$1/Common/Environment" ]]
     then
-        git clone https://github.com/davidbrownell/Common_Environment_v3.git "$1/Common/Environment.tmp"
+        git clone -b release_ https://github.com/davidbrownell/Common_Environment_v3.git "$1/Common/Environment.tmp"
         mv "$1/Common/Environment.tmp" "$1/Common/Environment"
     fi
 
@@ -89,7 +89,7 @@ then
 #!/bin/bash
 set -e
 
-. "$1/Common/Environment/${activate_cmd}" python36
+source "$1/Common/Environment/${activate_cmd}" python36
 ${this_dir}/Setup.sh Enlist "$1" /recurse ${ARGS[@]}
 ${this_dir}/Setup.sh /recurse ${ARGS[@]}
 EOL
