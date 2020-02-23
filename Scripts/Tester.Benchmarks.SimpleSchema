@@ -1,0 +1,26 @@
+<locations as_dictionary=true key=location_name value=configurations *>:
+
+    [location_name string]
+    <configurations as_dictionary=true key=configuration_name value=executables +>:
+
+        [configuration_name string]
+        <executables as_dictionary=true key=executable_name value=values +>:
+
+            [executable_name string]
+            <values +>:
+
+                <Name string>
+                <Extractor string>
+
+                # Filenames are converted to relative paths, so this may not be a valid filename
+                # (which is why this is defined as a string rather than a filename).
+                <SourceFilename string>
+                <SourceLine int min=1>
+
+                <Min number min=0.0>
+                <Max number min=0.0>
+                <Mean number min=0.0>
+                <StandardDeviation number min=0.0>
+                <Samples int min=1>
+                <Units string>
+                <Iterations int min=1>
