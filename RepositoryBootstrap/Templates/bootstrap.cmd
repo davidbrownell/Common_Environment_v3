@@ -20,7 +20,7 @@ IF "%~1"=="" (
     echo This script bootstraps common library enlistment and setup.
     echo.
     echo     Usage:
-    echo         %0 ^<common code dir^> ["/name=<custom environment name>"]
+    echo         %0 ^<common code dir^> ["/name=<custom environment name>"] [Optional Setup.cmd args]*
     echo.
 
     exit /B -1
@@ -41,7 +41,7 @@ REM Bootstrap enlistment and setup of Common_Environment, and then invoke
 REM enlistment and setup once python is available.
 
 IF NOT EXIST "%_COMMON_CODE_DIR%\Common\Environment" (
-    git clone https://github.com/davidbrownell/Common_Environment_v3.git "%_COMMON_CODE_DIR%\Common\Environment.tmp"
+    git clone -b release_ https://github.com/davidbrownell/Common_Environment_v3.git "%_COMMON_CODE_DIR%\Common\Environment.tmp"
     if %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
 
     move "%_COMMON_CODE_DIR%\Common\Environment.tmp" "%_COMMON_CODE_DIR%\Common\Environment"

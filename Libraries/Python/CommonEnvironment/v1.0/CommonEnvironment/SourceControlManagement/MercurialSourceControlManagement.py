@@ -62,6 +62,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagement):
     # ----------------------------------------------------------------------
     Name                                    = DerivedProperty("Mercurial")
     DefaultBranch                           = DerivedProperty("default")
+    ReleaseBranch                           = DerivedProperty("release")
     Tip                                     = DerivedProperty("tip")
     WorkingDirectories                      = DerivedProperty([".hg"])
     IgnoreFilename                          = DerivedProperty(".hgignore")

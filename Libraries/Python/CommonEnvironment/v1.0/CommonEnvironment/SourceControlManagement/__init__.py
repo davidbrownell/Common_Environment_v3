@@ -59,6 +59,13 @@ class SourceControlManagement(Interface):
         raise Exception("Abstract property")
 
     @abstractproperty
+    def ReleaseBranch(self):
+        """
+        Name of the release branch for the system.
+        """
+        raise Exception("Abstract property")
+
+    @abstractproperty
     def Tip(self):
         """Name of the most recent checkin."""
         raise Exception("Abstract property")
