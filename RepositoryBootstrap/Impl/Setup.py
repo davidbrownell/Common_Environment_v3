@@ -469,6 +469,9 @@ def List(
     configuration=CommonEnvironmentImports.CommandLine.StringTypeInfo(
         arity="*",
     ),
+    branch=CommonEnvironmentImports.CommandLine.StringTypeInfo(
+        arity="?",
+    ),
     search_depth=CommonEnvironmentImports.CommandLine.IntTypeInfo(
         min=1,
         arity="?",
@@ -489,6 +492,7 @@ def Enlist(
     scm=None,
     uri_dict=None,
     configuration=None,
+    branch=None,
     search_depth=None,
     max_num_searches=None,
     required_ancestor_dir=None,
@@ -565,8 +569,11 @@ def Enlist(
                     with dm.stream.DoneManager(
                         suffix="\n",
                     ) as update_dm:
-                        for func in [scm.Pull, scm.Update]:
-                            update_dm.result, output = func(value.root)
+                        for func in [
+                            lambda: scm.Pull(value.root, branch_or_branches=branch or scm.ReleaseBranch),
+                            lambda: scm.Update(value.root, update_arg=CommonEnvironmentImports.SourceControlManagementUpdateMergeArgs.BranchUpdateMergeArg(branch or scm.ReleaseBranch)),
+                        ]:
+                            update_dm.result, output = func()
                             update_dm.stream.write(output)
 
                             if update_dm.result != 0:
@@ -606,7 +613,11 @@ def Enlist(
 
                             continue
 
-                        clone_dm.result, output = scm.Clone(clone_uri, dest_dir)
+                        clone_dm.result, output = scm.Clone(
+                            clone_uri,
+                            dest_dir,
+                            branch=branch or scm.ReleaseBranch,
+                        )
                         clone_dm.stream.write(output)
 
                         if clone_dm.result != 0:
