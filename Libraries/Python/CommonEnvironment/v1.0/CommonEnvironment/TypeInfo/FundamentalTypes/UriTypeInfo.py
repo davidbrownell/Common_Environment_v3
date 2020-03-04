@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  UriTypeInfo.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-04-23 12:19:59
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-20.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Contains the Uri and UriTypeInfo objects."""
 
@@ -36,7 +36,7 @@ class Uri(object):
         """Creates a Uri object from a string."""
 
         result = six.moves.urllib.parse.urlparse(value)
-        
+
         if not (result.scheme and (result.hostname or result.path)):
             raise Exception("'{}' is not a valid uri".format(value))
 
@@ -59,7 +59,7 @@ class Uri(object):
                   credentials=None,         # (username, password)
                   port=None,
                 ):
-        if not scheme:                      
+        if not scheme:
             raise Exception("'scheme' must be valid")
 
         if not host and (not path or path == "/"):
@@ -124,12 +124,12 @@ class Uri(object):
 
         filename = filename.replace('/', os.path.sep)
         filename = six.moves.urllib.parse.unquote(filename)
-        
+
         return filename
 
     # ----------------------------------------------------------------------
     def __eq__(self, other):
-        return self.__dict__ == other.__dict__
+        return self.__dict__ == getattr(other, "__dict__", None)
 
 # ----------------------------------------------------------------------
 @staticderived
