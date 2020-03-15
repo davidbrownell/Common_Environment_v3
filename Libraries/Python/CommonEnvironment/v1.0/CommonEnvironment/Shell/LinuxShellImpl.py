@@ -154,8 +154,13 @@ class LinuxShellImpl(Shell):
             else:
                 add_statement_template = "{value}{sep}${{{name}}}"
 
+            statement_template = 'export {name}="{add_statement}"'
+
+            if not command.SimpleFormat:
+                statement_template = '[[ "{sep}${{{name}}}{sep}" != *"{sep}{value}{sep}"* ]] && ' + statement_template
+
             statements = [
-                '''[[ "{sep}${{{name}}}{sep}" != *"{sep}{value}{sep}"* ]] && export {name}="{add_statement}"'''.format(
+                statement_template.format(
                     name=command.Name,
                     value=value,
                     sep=sep,

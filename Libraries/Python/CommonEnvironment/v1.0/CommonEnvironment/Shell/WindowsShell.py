@@ -167,18 +167,25 @@ class WindowsShell(Shell):
             else:
                 add_statement_template = "{value}{sep}%{name}%"
 
-            statements = [
-                textwrap.dedent(
+            statement_template = 'set {name}={add_statement}'
+
+            if not command.SimpleFormat:
+                statement_template = textwrap.dedent(
                     """\
-                    echo "{sep}%{name}%{sep}" | findstr /C:"{sep}{value}{sep}" >nul
-                    if %ERRORLEVEL% == 0 goto skip_{unique_id}
+                    echo "{{sep}}%{{name}}%{{sep}}" | findstr /C:"{{sep}}{{value}}{{sep}}" >nul
+                    if %ERRORLEVEL% == 0 goto skip_{{unique_id}}
 
-                    set {name}={add_statement}
+                    {statement_template}
 
-                    :skip_{unique_id}
+                    :skip_{{unique_id}}
 
                     """,
                 ).format(
+                    statement_template=statement_template,
+                )
+
+            statements = [
+                statement_template.format(
                     name=command.Name,
                     value=value,
                     sep=sep,
