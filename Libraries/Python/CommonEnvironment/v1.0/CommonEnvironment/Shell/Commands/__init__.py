@@ -130,6 +130,7 @@ class Augment(object):
         value_or_values,
         is_space_delimited_string=False,
         append_values=False,
+        simple_format=False,
     ):
         if not isinstance(value_or_values, list):
             value_or_values = [value_or_values]
@@ -138,6 +139,7 @@ class Augment(object):
         self.Values                         = value_or_values
         self.IsSpaceDelimitedString         = is_space_delimited_string
         self.AppendValues                   = append_values
+        self.SimpleFormat                   = simple_format
 
     # ----------------------------------------------------------------------
     def __repr__(self):
@@ -160,8 +162,18 @@ class Path(Set):
 class AugmentPath(Augment):
     """Adds items to the system path within a generated script if they don't already exist"""
 
-    def __init__(self, value_or_values):
-        super(AugmentPath, self).__init__("PATH", value_or_values)
+    def __init__(
+        self,
+        value_or_values,
+        append_values=False,
+        simple_format=False,
+    ):
+        super(AugmentPath, self).__init__(
+            "PATH",
+            value_or_values,
+            append_values=append_values,
+            simple_format=simple_format,
+        )
 
     # ----------------------------------------------------------------------
     def __repr__(self):
