@@ -96,6 +96,7 @@ def Activate( output_filename_or_stdout,
         # Load the activation data
         output_stream.write("\nLoading data...")
         with output_stream.DoneManager( suffix='\n',
+                                        display_exceptions=False,
                                       ):
             is_activated = bool(os.getenv(Constants.DE_REPO_ACTIVATED_FLAG))
 

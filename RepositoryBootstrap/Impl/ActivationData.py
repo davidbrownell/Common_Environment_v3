@@ -207,6 +207,7 @@ class ActivationData(object):
                     textwrap.dedent(
                         """\
                         The configuration '{config}' is not a valid configuration for the repository at '{root}'.
+
                         Valid configuration values are:
                         {configs}
                         """,
