@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Utilities.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-05-02 15:57:42
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-20.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Utilities used by multiple files within this module."""
 
@@ -44,7 +44,7 @@ def GenerateCommands( functor,              # def Func() -> []
     """
 
     assert functor
-    
+
     commands = []
 
     try:
@@ -61,7 +61,7 @@ def GenerateCommands( functor,              # def Func() -> []
     except Exception as ex:
         if is_debug:
             import traceback
-            
+
             error = traceback.format_exc()
         else:
             error = str(ex)
@@ -73,7 +73,7 @@ def GenerateCommands( functor,              # def Func() -> []
         result = -1
 
     if is_debug and commands:
-        commands = [ CommonEnvironmentImports.CurrentShell.Commands.Message("{}\n".format(CommonEnvironmentImports.StringHelpers.Prepend( "Debug: ", 
+        commands = [ CommonEnvironmentImports.CurrentShell.Commands.Message("{}\n".format(CommonEnvironmentImports.StringHelpers.Prepend( "Debug: ",
                                                                                                                                           CommonEnvironmentImports.CurrentShell.GenerateCommands(commands),
                                                                                                                                           skip_first_line=False,
                                                                                                                                         ))),
