@@ -19,8 +19,14 @@ set -x                                      # statements
 # Builds python code using docker.
 #
 #   Docker command:
-#       [Linux Host]     docker run -it --rm -v `pwd`/..:/local centos:6.8 bash /local/Python/build_linux.sh <2.7.14|3.6.5>
-#       [Windows Host]   docker run -it --rm -v %cd%\..:/local  centos:6.8 bash /local/Python/build_linux.sh <2.7.14|3.6.5>
+#
+#       Holy Build Box Image:
+#           [Linux Host]     docker run -it --rm -v `pwd`/..:/local phusion/holy-build-box-64 bash /local/Python/build_linux.sh <2.7.14|3.6.5>
+#           [Windows Host]   docker run -it --rm -v %cd%\..:/local  phusion/holy-build-box-64 bash /local/Python/build_linux.sh <2.7.14|3.6.5>
+#
+#       CentOS Image:
+#           [Linux Host]     docker run -it --rm -v `pwd`/..:/local centos:6.8 bash /local/Python/build_linux.sh <2.7.14|3.6.5>
+#           [Windows Host]   docker run -it --rm -v %cd%\..:/local  centos:6.8 bash /local/Python/build_linux.sh <2.7.14|3.6.5>
 
 if [[ "$1" == "2.7.14" ]]
 then
@@ -51,9 +57,15 @@ UpdateEnvironment()
     echo "# ----------------------------------------------------------------------"
     set -x
 
-    yum update -y
-    yum groupinstall -y 'Development Tools'
-    yum install -y bluez-libs-devel bzip2 bzip2-devel db4 db4-devel expat-devel gdbm gdbm-devel libpcap-devel ncurses-devel python-devel readline readline-devel sqlite-devel tk-devel xz-devel zlib-devel
+    if [[ -e /hbb_exe/activate-exec ]];
+    then
+        # Holy build box has all dependencies already installed
+        /hbb_exe/activate-exec
+    else
+        yum update -y
+        yum groupinstall -y 'Development Tools'
+        yum install -y bluez-libs-devel bzip2 bzip2-devel db4 db4-devel expat-devel gdbm gdbm-devel libpcap-devel ncurses-devel python-devel readline readline-devel sqlite-devel tk-devel xz-devel zlib-devel
+    fi
 }
 
 BuildOpenSSL()
@@ -67,8 +79,9 @@ BuildOpenSSL()
     set -x
 
     name=openssl-${OPENSSL_VERSION}
+    version_triple=${OPENSSL_VERSION%?}
 
-    curl https://www.openssl.org/source/${name}.tar.gz | gunzip -c | tar xf -
+    curl https://www.openssl.org/source/old/${version_triple}/${name}.tar.gz | gunzip -c | tar xf -
 
     pushd ${name} > /dev/null                                                       # +src dir
 
@@ -141,11 +154,13 @@ BuildPython()
 }
 
 [[ -d /src ]] || mkdir "/src"
-pushd /src > /dev/null
+pushd /src > /dev/null                      # +src
 
 UpdateEnvironment
 BuildOpenSSL
 BuildPython
+
+popd > /dev/null                            # -src
 
 set +x
 echo DONE!
