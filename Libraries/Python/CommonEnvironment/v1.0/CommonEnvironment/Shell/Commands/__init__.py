@@ -244,8 +244,13 @@ class EchoOff(object):
 class CommandPrompt(object):
     """Set the command prompt to a valid within a generated script"""
 
-    def __init__(self, prompt):
+    def __init__(
+        self,
+        prompt,
+        prefix=True,
+    ):
         self.Prompt                         = prompt
+        self.Prefix                         = prefix
 
     # ----------------------------------------------------------------------
     def __repr__(self):

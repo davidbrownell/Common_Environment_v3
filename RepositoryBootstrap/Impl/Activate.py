@@ -478,7 +478,10 @@ def _ActivatePrompt(repositories, configuration, is_mixin_repo, fast):
     if fast:
         prompt += " ** FAST **"
 
-    return CommonEnvironmentImports.CurrentShell.Commands.CommandPrompt(prompt)
+    return CommonEnvironmentImports.CurrentShell.Commands.CommandPrompt(
+        prompt,
+        prefix=True,
+    )
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
