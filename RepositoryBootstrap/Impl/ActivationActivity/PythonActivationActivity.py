@@ -561,7 +561,7 @@ class PythonActivationActivity(ActivationActivity):
                     # use `PYTHONPATH` here, as we need to make sure that these imports end up on the sys.path after the
                     # standard python imports (anything in `PYTHONPATH` appears before those values).
 
-                    # The library_dest_dir has a lib dir that contins the python version, but the site.USER_SITE dir is
+                    # The library_dest_dir has a lib dir that contains the python version, but the site.USER_SITE dir is
                     # a direct descendant of the lib dir.
                     actions += [
                         CommonEnvironmentImports.CurrentShell.Commands.Set(

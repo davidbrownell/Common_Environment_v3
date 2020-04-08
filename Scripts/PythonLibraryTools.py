@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  PythonLibraryTools.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-05-13 08:40:40
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-20.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Tools that help when installing, moving, and detecting changes with Python libraries."""
 
@@ -49,7 +49,7 @@ with CallOnExit(lambda: sys.path.pop(0)):
                                                                                      SCRIPTS_DIR_NAME, \
                                                                                      WRAPPERS_FILENAME, \
                                                                                      PythonActivationActivity \
-                                                                                     
+
 # <Missing function docstring> pylint: disable = C0111
 # <Too few public methods> pylint: disable = R0903
 # <Too many braches> pylint: disable = R0912
@@ -63,11 +63,11 @@ with CallOnExit(lambda: sys.path.pop(0)):
 def Display( output_stream=sys.stdout,
            ):
     """
-    Displays library modifications with the current python installation. 
-    
+    Displays library modifications with the current python installation.
+
     Use Move to prepare the libraries for checkin based on the currently activated repository."""
     new_content = _NewLibraryContent.Create(_EnvironmentSettings())
-    
+
     # ----------------------------------------------------------------------
     def Write(name, items, is_os_specific_func):
         cols = [ 40, 9, 120, ]
@@ -168,7 +168,7 @@ def Move( no_move=False,
                 else:
                     FileSystem.MakeDirs(dest_dir)
                     shutil.move(source_dir_or_filename, dest_dir)
-                
+
             # ----------------------------------------------------------------------
 
             move_func = Impl
@@ -186,7 +186,7 @@ def Move( no_move=False,
                 self.metadata_path                      = None
                 self.version                            = None
                 self.scripts                            = []
-                
+
         # ----------------------------------------------------------------------
 
         libraries = OrderedDict()
@@ -197,7 +197,7 @@ def Move( no_move=False,
                                   ) as this_dm:
             for library_path in new_content.Libraries:
                 basename = os.path.basename(library_path)
-                if ( not basename.endswith(".dist-info") and 
+                if ( not basename.endswith(".dist-info") and
                      not basename.endswith(".egg-info")
                    ):
                     libraries[basename] = PythonLibrary(library_path)
@@ -244,7 +244,7 @@ def Move( no_move=False,
 
                 if python_library is None:
                     this_dm.result = this_dm.result or 1
-                    this_dm.stream.write("WARNING: The library name '{}' was not found ({}).\n".format(potential_names[0], library_path)) 
+                    this_dm.stream.write("WARNING: The library name '{}' was not found ({}).\n".format(potential_names[0], library_path))
 
                     continue
 
@@ -393,23 +393,23 @@ def Move( no_move=False,
                         if library_name.endswith(".py"):
                             library_name = library_name[:-len(".py")]
 
-                        dest_dir = os.path.join( os.getenv("DEVELOPMENT_ENVIRONMENT_REPOSITORY"), 
-                                                 RepositoryBootstrapConstants.LIBRARIES_SUBDIR, 
-                                                 PythonActivationActivity.Name, 
-                                                 library_name, 
+                        dest_dir = os.path.join( os.getenv("DEVELOPMENT_ENVIRONMENT_REPOSITORY"),
+                                                 RepositoryBootstrapConstants.LIBRARIES_SUBDIR,
+                                                 PythonActivationActivity.Name,
+                                                 library_name,
                                                  "v{}".format(library_info.version),
                                                )
-                        
-                        prev_dest_is_os_specific = DestinationIsOSSpecific(dest_dir) 
+
+                        prev_dest_is_os_specific = DestinationIsOSSpecific(dest_dir)
                         dest_is_os_specific = new_content.HasOSSpecificLibraryExtensions(library_info.Fullpath) or prev_dest_is_os_specific
 
                         if dest_is_os_specific:
                             if os.path.isdir(dest_dir) and not prev_dest_is_os_specific:
                                 raise Exception(textwrap.dedent(
                                                     """\
-                                                    The existing directory '{}' is not specific to an operating system and python version, but the new content is. 
+                                                    The existing directory '{}' is not specific to an operating system and python version, but the new content is.
                                                     Please move the existing content to an operating system- and python version-specific directory and run this tool again.
-                                                    
+
                                                         Example: {}
                                                     """).format( dest_dir,
                                                                  os.path.join(dest_dir, CurrentShell.CategoryName, "<python2|python3>"),
@@ -439,9 +439,9 @@ def Move( no_move=False,
 
                         for script in library_info.scripts:
                             this_dm.stream.write(display_template.format("{} [Script]".format(os.path.basename(script)), scripts_dest_dir))
-                            
+
                             if not no_move:
-                                if PythonActivationActivity.NormalizeScript(script) == PythonActivationActivity.NormalizeScriptResult_Modified:
+                                if PythonActivationActivity.NormalizeScript(script) == PythonActivationActivity.NormalizeScriptResult.Modified:
                                     this_dm.stream.write("    ** The script '{}' was normalized.\n".format(script))
 
                             move_func(script, scripts_dest_dir)
@@ -538,8 +538,8 @@ def Install( lib_name,
         dm.stream.write("Reverting existing libraries...")
         with dm.stream.DoneManager( suffix='\n',
                                   ) as this_dm:
-            python_lib_dir = os.path.join( os.getenv(RepositoryBootstrapConstants.DE_REPO_GENERATED_NAME), 
-                                           PythonActivationActivity.Name, 
+            python_lib_dir = os.path.join( os.getenv(RepositoryBootstrapConstants.DE_REPO_GENERATED_NAME),
+                                           PythonActivationActivity.Name,
                                            _EnvironmentSettings().LibraryDir,
                                          )
             assert os.path.isdir(python_lib_dir), python_lib_dir
@@ -589,7 +589,7 @@ def Install( lib_name,
                     info_items = []
 
                     for item in six.iterkeys(library_items):
-                        if ( item.startswith(potential_library_name_lower) and 
+                        if ( item.startswith(potential_library_name_lower) and
                              (item.endswith(".dist-info") or item.endswith(".egg-info"))
                            ):
                             info_items.append(item)
@@ -636,7 +636,7 @@ def Normalize( script_filename_or_dir,
             with dm.stream.DoneManager( done_suffix=lambda: PythonActivationActivity.NormalizeScriptResultStrings[nonlocals.result.value],
                                       ):
                 nonlocals.result = PythonActivationActivity.NormalizeScript(script_filename)
-        
+
         return dm.result
 
 # ----------------------------------------------------------------------
@@ -688,15 +688,15 @@ class _NewLibraryContent(object):
 
             assert os.path.isdir(directory), directory
             is_bin_dir = PythonActivationActivity.BinSubdirs and directory.endswith(os.path.join(*PythonActivationActivity.BinSubdirs))
-            
+
             for item in os.listdir(directory):
                 if item in ignore_set:
                     continue
 
                 fullpath = os.path.join(directory, item)
                 if not CurrentShell.IsSymLink(fullpath):
-                    if ( CurrentShell.CategoryName == "Linux" and 
-                         is_bin_dir and 
+                    if ( CurrentShell.CategoryName == "Linux" and
+                         is_bin_dir and
                          item.startswith("python")
                        ):
                         continue
@@ -713,7 +713,7 @@ class _NewLibraryContent(object):
         # Ignore .pyc files (which may be here for python 2.7)
         new_libraries = [ item for item in new_libraries if not os.path.splitext(item)[1] == ".pyc" ]
 
-        # Get os-specific library extensions 
+        # Get os-specific library extensions
         os_specific_extensions = [ ".pyd", ".so", CurrentShell.ScriptExtension, ]
         if CurrentShell.ExecutableExtension:
             os_specific_extensions.append(CurrentShell.ExecutableExtension)
