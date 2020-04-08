@@ -236,7 +236,14 @@ class LinuxShellImpl(Shell):
         @staticmethod
         @override
         def OnCommandPrompt(command):
-            return r'PS1="({}) `id -nu`@`hostname -s`:\w$ "'.format(command.Prompt)
+            if command.Prefix:
+                return r'PS1="{}$PS1"'.format(
+                    "({}) ".format(command.Prompt) if command.Prompt else "",
+                )
+
+            return r'PS1=$PS1{}'.format(
+                " ({})".format(command.Prompt) if command.Prompt else "",
+            )
 
         # ----------------------------------------------------------------------
         @staticmethod

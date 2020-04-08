@@ -178,6 +178,7 @@ def Setup(
                 ),
                 _SetupCustom,
                 _SetupActivateScript,
+                _SetupDeactivateScript,
             ]
 
             if not no_hooks:
@@ -1231,6 +1232,68 @@ def _SetupActivateScript(
 
     CommonEnvironmentImports.CurrentShell.MakeFileExecutable(activation_filename)
     CommonEnvironmentImports.CurrentShell.UpdateOwnership(activation_filename)
+
+    return None
+
+
+# ----------------------------------------------------------------------
+# <Unused argument> pylint: disable = W0613
+def _SetupDeactivateScript(
+    output_stream,
+    repository_root,
+    customization_mod,
+    debug,
+    verbose,
+    explicit_configurations,
+):
+    environment_name = os.getenv(Constants.DE_ENVIRONMENT_NAME)
+    assert environment_name
+
+    # Create the commands
+    deactivate_script_name = CommonEnvironmentImports.CurrentShell.CreateScriptName(
+        Constants.DEACTIVATE_ENVIRONMENT_NAME,
+        filename_only=True,
+    )
+
+    implementation_script = os.path.join(_script_dir, deactivate_script_name)
+    assert os.path.isfile(implementation_script), implementation_script
+
+    commands = [
+        CommonEnvironmentImports.CurrentShell.Commands.EchoOff(),
+        CommonEnvironmentImports.CurrentShell.Commands.PushDirectory(None),
+        CommonEnvironmentImports.CurrentShell.Commands.Call(
+            "{} {}".format(
+                implementation_script,
+                CommonEnvironmentImports.CurrentShell.AllArgumentsScriptVariable,
+            ),
+            exit_on_error=False,
+        ),
+        CommonEnvironmentImports.CurrentShell.Commands.PersistError("_deactivate_error"),
+        CommonEnvironmentImports.CurrentShell.Commands.PopDirectory(),
+        CommonEnvironmentImports.CurrentShell.Commands.ExitOnError(
+            variable_name="_deactivate_error",
+            return_code=CommonEnvironmentImports.CurrentShell.DecorateEnvironmentVariable(
+                "_deactivate_error",
+            ),
+        ),
+    ]
+
+    # Write the local file
+    deactivate_name, deactivate_ext = os.path.splitext(deactivate_script_name)
+
+    deactivation_filename = os.path.join(
+        "{}{}{}".format(
+            deactivate_name,
+            ".{}".format(environment_name) if environment_name != Constants.DEFAULT_ENVIRONMENT_NAME else "",
+            deactivate_ext,
+        ),
+    )
+
+    with open(deactivation_filename, "w") as f:
+        f.write(CommonEnvironmentImports.CurrentShell.GenerateCommands(commands))
+
+    CommonEnvironmentImports.CurrentShell.MakeFileExecutable(deactivation_filename)
+    CommonEnvironmentImports.CurrentShell.UpdateOwnership(deactivation_filename)
 
     return None
 
