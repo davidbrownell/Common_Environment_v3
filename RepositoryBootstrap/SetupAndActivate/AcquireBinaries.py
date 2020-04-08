@@ -115,7 +115,7 @@ def Download(
                 )
 
                 break
-            except ssl.SSLError:
+            except (ssl.SSLError, six.moves.urllib.error.URLError):
                 if implemented_ssl_workaround:
                     raise
 
