@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  EnvironmentDiffs.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-06-02 22:19:34
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-20.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Displays changes made by an environment during activation."""
 
@@ -39,7 +39,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 def Before( decorate=False,
             output_stream=sys.stdout,
           ):
-    _Display(_GetOriginalEnvironment(), output_stream, decorate)
+    _Display(GetOriginalEnvironment(), output_stream, decorate)
     return 0
 
 # ----------------------------------------------------------------------
@@ -49,7 +49,7 @@ def Before( decorate=False,
 def After( decorate=False,
            output_stream=sys.stdout,
          ):
-    original_env = _GetOriginalEnvironment()
+    original_env = GetOriginalEnvironment()
 
     # Compare to the current environment
     this_env = dict(os.environ)
@@ -68,7 +68,7 @@ def After( decorate=False,
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
-def _GetOriginalEnvironment():
+def GetOriginalEnvironment():
     # Get the original environment
     generated_dir = os.getenv(Constants.DE_REPO_GENERATED_NAME)
     assert os.path.isdir(generated_dir), generated_dir
@@ -79,6 +79,8 @@ def _GetOriginalEnvironment():
     with open(original_environment_filename) as f:
         return json.load(f)
 
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 def _Display(content, output_stream, decorate):
     if not isinstance(content, six.string_types):
