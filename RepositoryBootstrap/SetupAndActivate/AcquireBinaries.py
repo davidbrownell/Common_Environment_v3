@@ -18,6 +18,7 @@ import hashlib
 import json
 import os
 import shutil
+import ssl
 import sys
 import textwrap
 
@@ -102,11 +103,28 @@ def Download(
 
         # ----------------------------------------------------------------------
 
-        six.moves.urllib.request.urlretrieve(
-            uri,
-            temp_filename,
-            reporthook=Callback,
-        )
+        # See the comments below for a description of this workaround
+        implemented_ssl_workaround = False
+
+        while True:
+            try:
+                six.moves.urllib.request.urlretrieve(
+                    uri,
+                    temp_filename,
+                    reporthook=Callback,
+                )
+
+                break
+            except ssl.SSLError:
+                if implemented_ssl_workaround:
+                    raise
+
+                # On older versions of Ubuntu (16.04), attempting to download content will fail SSL
+                # validation for some reason. The following workaround will disable SSL verification
+                # and allow installation to continue. For more information, visit
+                # https://stackoverflow.com/a/49174340.
+                ssl._create_default_https_context = ssl._create_unverified_context
+                implemented_ssl_workaround = True
 
         if nonlocals.progress_bar is not None:
             nonlocals.progress_bar.close()
