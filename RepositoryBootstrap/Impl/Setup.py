@@ -1260,7 +1260,7 @@ def _SetupDeactivateScript(
 
     commands = [
         CommonEnvironmentImports.CurrentShell.Commands.EchoOff(),
-        CommonEnvironmentImports.CurrentShell.Commands.PushDirectory(None),
+        CommonEnvironmentImports.CurrentShell.Commands.PushDirectory(os.path.realpath(os.path.join(_script_dir, "..", ".."))),
         CommonEnvironmentImports.CurrentShell.Commands.Call(
             "{} {}".format(
                 implementation_script,
