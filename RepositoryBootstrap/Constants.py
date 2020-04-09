@@ -23,6 +23,8 @@ SETUP_ENVIRONMENT_CUSTOMIZATION_FILENAME                = "{}_custom.py".format(
 ACTIVATE_ENVIRONMENT_NAME                               = "Activate"
 ACTIVATE_ENVIRONMENT_CUSTOMIZATION_FILENAME             = "{}_custom.py".format(ACTIVATE_ENVIRONMENT_NAME)
 
+DEACTIVATE_ENVIRONMENT_NAME                             = "Deactivate"
+
 DEFAULT_ENVIRONMENT_NAME                                = "DefaultEnv"
 DEFAULT_CONFIGURATION_NAME                              = "DefaultConfig"
 
