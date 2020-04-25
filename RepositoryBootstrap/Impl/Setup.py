@@ -92,8 +92,11 @@ _DEFAULT_SEARCH_DEPTH                       = 6
     required_ancestor_dir=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter(
         "When searching for dependencies, limit the search to directories that are descendants of this ancestor",
     ),
+    use_ascii=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter(
+        "Limit output to ascii characters only; this helps when invoking the functionality from another script (used with '/recurse')",
+    ),
     all_configurations=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter(
-        "Setup all configurations, not just the ones used by this repository and those that it depends upon  (used with '/recurse')",
+        "Setup all configurations for all repositories; if not specified, a repository will only be setup for those configurations that are required by this repository and its descendants (used with '/recurse')",
     ),
     no_hooks=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter(
         "Do not setup SCM hooks",
@@ -167,6 +170,11 @@ def Setup(
 
             args += [use_ascii, all_configurations]
         else:
+            if use_ascii:
+                raise Exception("'/use_ascii' should only be used with '/recurse'")
+            if all_configurations:
+                raise Exception("'/all_configurations' should only be used with '/recurse'")
+
             # If here, setup this specific repo
             activities += [
                 lambda *args, **kwargs: _SetupBootstrap(
