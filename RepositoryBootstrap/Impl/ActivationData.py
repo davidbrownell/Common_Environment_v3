@@ -165,10 +165,6 @@ class ActivationData(object):
 
                 repositories[repo.Id] = bootstrap_info
 
-                recurse = True
-            else:
-                recurse = False
-
             bootstrap_info = repositories[repo.Id]
             bootstrap_info.priority_modifier += priority_modifier
 
@@ -361,18 +357,17 @@ class ActivationData(object):
                             )
 
             # Process this repository's dependencies
-            if recurse:
-                for dependency_info in bootstrap_info.Configurations[
-                    repo.Configuration
-                ].Dependencies:
-                    Walk(
-                        repo,
-                        Repository.Create(
-                            dependency_info.RepositoryRoot,
-                            dependency_info.Configuration,
-                        ),
-                        priority_modifier + 1,
-                    )
+            for dependency_info in bootstrap_info.Configurations[
+                repo.Configuration
+            ].Dependencies:
+                Walk(
+                    repo,
+                    Repository.Create(
+                        dependency_info.RepositoryRoot,
+                        dependency_info.Configuration,
+                    ),
+                    priority_modifier + 1,
+                )
 
         # ----------------------------------------------------------------------
 
