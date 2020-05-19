@@ -21,6 +21,9 @@ set -x                                      # statements
 #   Docker command:
 #
 #       Holy Build Box Image:
+#           Note that not all python libraries will be built with this configuration
+#           (bc2, _sqlite3, etc.).
+#
 #           [Linux Host]     docker run -it --rm -v `pwd`/..:/local phusion/holy-build-box-64 bash /local/Python/build_linux.sh <2.7.14|3.6.5>
 #           [Windows Host]   docker run -it --rm -v %cd%\..:/local  phusion/holy-build-box-64 bash /local/Python/build_linux.sh <2.7.14|3.6.5>
 #
