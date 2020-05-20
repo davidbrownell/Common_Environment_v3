@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  EnvironmentBootstrap.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-05-03 15:30:58
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-20.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Contains the EnvironmentBootstrap object."""
 
@@ -50,7 +50,7 @@ class EnvironmentBootstrap(object):
         path = os.path.join(*prefix_values)
 
         if not (
-            path.endswith(CommonEnvironmentImports.CurrentShell.CategoryName) 
+            path.endswith(CommonEnvironmentImports.CurrentShell.CategoryName)
             or path.endswith(CommonEnvironmentImports.CurrentShell.Name)
         ):
             path = os.path.join(path, CommonEnvironmentImports.CurrentShell.CategoryName)
@@ -95,7 +95,7 @@ class EnvironmentBootstrap(object):
         )
         if not os.path.isfile(filename):
             raise Exception("'{}' does not exist; please setup this repository".format(filename))
-        
+
         with open(filename) as f:
             data = json.load(f)
 
@@ -128,6 +128,7 @@ class EnvironmentBootstrap(object):
                 libraries[k] = [ Configuration.VersionInfo(vi["Name"], vi["Version"]) for vi in version_infos ]
 
             # Get the IgnoreConflictedLibraryNames
+            ignore_conflicted_repository_names = config_info.get("IgnoreConflictedRepositoryNames", [])
             ignore_conflicted_library_names = config_info.get("IgnoreConflictedLibraryNames", [])
 
             # Update the fingerprint
@@ -139,11 +140,12 @@ class EnvironmentBootstrap(object):
                 if new_key not in fingerprint:
                     fingerprint[new_key] = fingerprint[old_key]
                     del fingerprint[old_key]
-            
+
             # Create the config info
             configurations[config_name] = Configuration.Configuration( config_info["Description"],
                                                                        dependencies,
                                                                        Configuration.VersionSpecs(tools, libraries),
+                                                                       ignore_conflicted_repository_names=ignore_conflicted_repository_names or None,
                                                                        ignore_conflicted_library_names=ignore_conflicted_library_names or None,
                                                                      )
             configurations[config_name].Fingerprint = fingerprint
@@ -157,7 +159,7 @@ class EnvironmentBootstrap(object):
                     is_configurable,
                     configurations,
                   )
-    
+
     # ----------------------------------------------------------------------
     def __init__( self,
                   fundamental_repo,
@@ -175,13 +177,13 @@ class EnvironmentBootstrap(object):
     # ----------------------------------------------------------------------
     def Save(self, repo_root):
         fundamental_repo = CommonEnvironmentImports.FileSystem.GetRelativePath(repo_root, self.FundamentalRepo).replace(os.path.sep, '/')
-        
+
         configurations = copy.deepcopy(self.Configurations)
-        
+
         for config_info in six.itervalues(configurations):
             for dependency in config_info.Dependencies:
                 dependency.RepositoryRoot = CommonEnvironmentImports.FileSystem.GetRelativePath(repo_root, dependency.RepositoryRoot).replace(os.path.sep, '/')
-                
+
             for old_key in  list(six.iterkeys(config_info.Fingerprint)):
                 new_key = old_key.replace(os.path.sep, '/')
                 if new_key not in config_info.Fingerprint:

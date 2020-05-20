@@ -152,6 +152,7 @@ class ActivationData(object):
         tool_version_info = []
         library_version_info = {}
         version_info_lookup = {}
+        ignore_conflicted_repository_names = []
         ignore_conflicted_library_names = []
 
         # ----------------------------------------------------------------------
@@ -175,12 +176,11 @@ class ActivationData(object):
                 and len(bootstrap_info.Configurations) == 1
                 and None in bootstrap_info.Configurations
             ):
-                assert (
-                    not ignore_conflicted_library_names
-                ), ignore_conflicted_library_names
-                ignore_conflicted_library_names.extend(
-                    bootstrap_info.Configurations[None].IgnoreConflictedLibraryNames or [],
-                )
+                assert not ignore_conflicted_repository_names, ignore_conflicted_repository_names
+                assert not ignore_conflicted_library_names, ignore_conflicted_library_names
+
+                ignore_conflicted_repository_names.extend(bootstrap_info.Configurations[None].IgnoreConflictedRepositoryNames or [])
+                ignore_conflicted_library_names.extend(bootstrap_info.Configurations[None].IgnoreConflictedLibraryNames or [])
 
             # Ensure that the configuration name is valid
             if bootstrap_info.IsConfigurable and not repo.Configuration:
@@ -249,7 +249,7 @@ class ActivationData(object):
                 )
 
             # Check for consistent configurations
-            if repo.Configuration != bootstrap_info.Repo.Configuration:
+            if repo.Configuration != bootstrap_info.Repo.Configuration and repo.Name not in ignore_conflicted_repository_names:
                 raise Exception(
                     textwrap.dedent(
                         """\
