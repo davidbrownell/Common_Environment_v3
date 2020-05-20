@@ -106,19 +106,27 @@ class Configuration(object):
                   description,
                   dependencies=None,
                   version_specs=None,
+                  ignore_conflicted_repository_names=None,
                   ignore_conflicted_library_names=None,
                 ):
+        # `ignore_conflicted_repository_names` is a list of names of repositories that have configuration conflicts
+        # that can be safely ignored. In the vast majority of cases, two repositories with different configurations
+        # is considered a configuration error. However, in some cases (such as with bootstrap repos that don't
+        # actually use the activated repositories), these conflicts can be ignored. In those scenarios, the first
+        # configuration encountered will always be the configuration what is activated within the environment.
+
         # `ignore_conflicted_library_names` is a list of names of libraries that have conflicts that can be safely ignored.
         # In the vast majority of cases, two repos providing or requiring different versions of the same library is
         # a configuration error. However, in some cases (such as with bootstrap repos that don't actually use the
         # library), these conflicts can be ignored. In those scenarios, the first version encountered will always
         # be the version used within the activated environment.
 
-        self.Description                    = description
-        self.Dependencies                   = dependencies or []
-        self.VersionSpecs                   = version_specs or VersionSpecs([], {})
-        self.IgnoreConflictedLibraryNames   = ignore_conflicted_library_names
-        self.Fingerprint                    = None      # Populated during setup
+        self.Description                                = description
+        self.Dependencies                               = dependencies or []
+        self.VersionSpecs                               = version_specs or VersionSpecs([], {})
+        self.IgnoreConflictedRepositoryNames            = ignore_conflicted_repository_names
+        self.IgnoreConflictedLibraryNames               = ignore_conflicted_library_names
+        self.Fingerprint                                = None      # Populated during setup
 
     # ----------------------------------------------------------------------
     def __repr__(self):
