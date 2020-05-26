@@ -47,9 +47,6 @@ class Repository(object):
         repo_root,
         configuration=None,
     ):
-        if CommonEnvironmentImports.CurrentShell.IsSymLink(repo_root):
-            repo_root = CommonEnvironmentImports.CurrentShell.ResolveSymLink(repo_root)
-
         repo_name, repo_guid = RepositoryBootstrap.GetRepositoryInfo(repo_root)
 
         return cls(
