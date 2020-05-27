@@ -230,7 +230,11 @@ def Setup(
                     **kwargs
                 ),
                 _SetupCustom,
-                _SetupActivateScript,
+                lambda *args, **kwargs: _SetupActivateScript(
+                    *args,
+                    enforce_short_names=enforce_short_names,
+                    **kwargs
+                ),
                 _SetupDeactivateScript,
             ]
 
@@ -1229,6 +1233,7 @@ def _SetupActivateScript(
     debug,
     verbose,
     explicit_configurations,
+    enforce_short_names,
 ):
     environment_name = os.getenv(Constants.DE_ENVIRONMENT_NAME)
     assert environment_name
@@ -1236,10 +1241,11 @@ def _SetupActivateScript(
     # Make the short filename the working directory if it exists
     push_directory_args = [None]
 
-    alias_filename = os.path.join(repository_root, Constants.SHORT_FILENAME_ALIAS_FILENAME)
-    if os.path.isfile(alias_filename):
-        with open(alias_filename) as f:
-            push_directory_args = [f.read().strip()]
+    if enforce_short_names:
+        alias_filename = os.path.join(repository_root, Constants.SHORT_FILENAME_ALIAS_FILENAME)
+        if os.path.isfile(alias_filename):
+            with open(alias_filename) as f:
+                push_directory_args = [f.read().strip()]
 
     # Create the commands
     activate_script_name = CommonEnvironmentImports.CurrentShell.CreateScriptName(
@@ -1265,7 +1271,14 @@ def _SetupActivateScript(
             exit_on_error=False,
         ),
         CommonEnvironmentImports.CurrentShell.Commands.PersistError("_activate_error"),
-        CommonEnvironmentImports.CurrentShell.Commands.PopDirectory(),
+    ]
+
+    if not enforce_short_names:
+        commands += [
+            CommonEnvironmentImports.CurrentShell.Commands.PopDirectory(),
+        ]
+
+    commands += [
         CommonEnvironmentImports.CurrentShell.Commands.ExitOnError(
             variable_name="_activate_error",
             return_code=CommonEnvironmentImports.CurrentShell.DecorateEnvironmentVariable(
