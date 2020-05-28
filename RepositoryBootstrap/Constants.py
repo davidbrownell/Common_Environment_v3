@@ -72,7 +72,6 @@ HOOK_ENVIRONMENT_PULL_METHOD_NAME                       = "OnPulled"
 
 # ----------------------------------------------------------------------
 REPOSITORY_ID_FILENAME                                  = "__RepositoryId__"
-SHORT_FILENAME_ALIAS_FILENAME                           = "__ShortFilenameAlias__"
 
 REPOSITORY_ID_CONTENT_TEMPLATE                          = textwrap.dedent(
     """\
