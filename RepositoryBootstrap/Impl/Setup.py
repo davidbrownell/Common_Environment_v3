@@ -101,9 +101,6 @@ _DEFAULT_SEARCH_DEPTH                       = 6
     no_hooks=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter(
         "Do not setup SCM hooks",
     ),
-    enforce_short_names=CommonEnvironmentImports.CommandLine.EntryPoint.Parameter(
-        "To work around short file names on Windows, create symbolic links to the repository to ensure that filenames are always a shorter length, regardless of their actual name",
-    ),
 )
 @CommonEnvironmentImports.CommandLine.Constraints(
     output_filename_or_stdout=CommonEnvironmentImports.CommandLine.StringTypeInfo(),
@@ -137,7 +134,6 @@ def Setup(
     use_ascii=False,
     all_configurations=False,
     no_hooks=False,
-    enforce_short_names=False,
     output_stream=sys.stdout,
 ):
     """Perform setup activities for this repository"""
@@ -152,47 +148,6 @@ def Setup(
         verbose = True
 
     output_stream = CommonEnvironmentImports.StreamDecorator(output_stream)
-
-    if enforce_short_names:
-        if CommonEnvironmentImports.CurrentShell.CategoryName != "Windows":
-            raise CommonEnvironmentImports.CommandLine.UsageException("'enforce_short_names' is an option that is only available on Windows")
-
-        alias_filename = os.path.join(repository_root, Constants.SHORT_FILENAME_ALIAS_FILENAME)
-
-        # Create the alias name (if necessary)
-        if not os.path.isfile(alias_filename):
-            import uuid
-
-            with open(alias_filename, "w") as f:
-                f.write(
-                    "{}{}{}".format(
-                        os.path.splitdrive(repository_root)[0],
-                        os.path.sep,
-                        str(uuid.uuid4()).replace("-", "").upper(),
-                    ),
-                )
-
-        with open(alias_filename) as f:
-            alias_filename = f.read().strip()
-
-        # Create the symlink (if necessary)
-        if not os.path.isdir(alias_filename):
-            sink = six.moves.StringIO()
-
-            result = CommonEnvironmentImports.CurrentShell.ExecuteCommands(
-                CommonEnvironmentImports.CurrentShell.Commands.SymbolicLink(
-                    alias_filename,
-                    repository_root,
-                    is_dir=True,
-                ),
-                output_stream=sink,
-            )
-
-            if result != 0:
-                raise Exception("Unable to create the symbolic link '{}': {}".format(alias_filename, sink.getvalue()))
-
-        # Update the repository root
-        repository_root = alias_filename
 
     customization_mod = _GetCustomizationMod(repository_root)
 
@@ -230,11 +185,7 @@ def Setup(
                     **kwargs
                 ),
                 _SetupCustom,
-                lambda *args, **kwargs: _SetupActivateScript(
-                    *args,
-                    enforce_short_names=enforce_short_names,
-                    **kwargs
-                ),
+                _SetupActivateScript,
                 _SetupDeactivateScript,
             ]
 
@@ -1233,19 +1184,9 @@ def _SetupActivateScript(
     debug,
     verbose,
     explicit_configurations,
-    enforce_short_names,
 ):
     environment_name = os.getenv(Constants.DE_ENVIRONMENT_NAME)
     assert environment_name
-
-    # Make the short filename the working directory if it exists
-    push_directory_args = [None]
-
-    if enforce_short_names:
-        alias_filename = os.path.join(repository_root, Constants.SHORT_FILENAME_ALIAS_FILENAME)
-        if os.path.isfile(alias_filename):
-            with open(alias_filename) as f:
-                push_directory_args = [f.read().strip()]
 
     # Create the commands
     activate_script_name = CommonEnvironmentImports.CurrentShell.CreateScriptName(
@@ -1262,7 +1203,7 @@ def _SetupActivateScript(
             Constants.DE_ENVIRONMENT_NAME,
             environment_name,
         ),
-        CommonEnvironmentImports.CurrentShell.Commands.PushDirectory(*push_directory_args),
+        CommonEnvironmentImports.CurrentShell.Commands.PushDirectory(None),
         CommonEnvironmentImports.CurrentShell.Commands.Call(
             "{} {}".format(
                 implementation_script,
@@ -1271,14 +1212,7 @@ def _SetupActivateScript(
             exit_on_error=False,
         ),
         CommonEnvironmentImports.CurrentShell.Commands.PersistError("_activate_error"),
-    ]
-
-    if not enforce_short_names:
-        commands += [
-            CommonEnvironmentImports.CurrentShell.Commands.PopDirectory(),
-        ]
-
-    commands += [
+        CommonEnvironmentImports.CurrentShell.Commands.PopDirectory(),
         CommonEnvironmentImports.CurrentShell.Commands.ExitOnError(
             variable_name="_activate_error",
             return_code=CommonEnvironmentImports.CurrentShell.DecorateEnvironmentVariable(
