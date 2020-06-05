@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  All.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-05-17 16:39:18
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-20.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """All items from this module"""
 
@@ -30,18 +30,18 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Public Types
-# |  
+# |
 # ----------------------------------------------------------------------
 ALL_TYPES                                   = [ GitSourceControlManagement,
                                                 MercurialSourceControlManagement,
                                               ]
 
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Public Methods
-# |  
+# |
 # ----------------------------------------------------------------------
 def GetSCM(repo_root, raise_on_error=True):
     """Returns the SCM that is active for the provided repo."""
@@ -72,7 +72,7 @@ def GetSCM(repo_root, raise_on_error=True):
                    ))
 
 # ----------------------------------------------------------------------
-def GetAnySCM( path, 
+def GetAnySCM( path,
                raise_on_error=True,
                by_repository_id=False,      # If True, will use much faster search heuristics
              ):
@@ -110,13 +110,16 @@ def GetAnySCM( path,
 
             root = potential_root
 
+    if not raise_on_error:
+        return None
+
     raise Exception("No SCMs are active for '{}' or its ancestors.".format(path))
 
 # ----------------------------------------------------------------------
 def EnumSCMs(path):
     """
     Enumerates all SCMs that are active in the provided path or its descendants.
-    
+
     Yields (scm, repo_root)
     """
 
