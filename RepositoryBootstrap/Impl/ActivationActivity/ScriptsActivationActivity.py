@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  ScriptsActivationActivity.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-05-06 23:07:10
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-20.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Contains the ScriptsActivationActivity object."""
 
@@ -41,17 +41,17 @@ IGNORE_AS_TOOL_DIR_FILENAME                 = "IgnoreAsTool"
 class ScriptsActivationActivity(ActivationActivity):
 
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Public Properties
-    # |  
+    # |
     # ----------------------------------------------------------------------
     Name                                    = CommonEnvironmentImports.Interface.DerivedProperty("Scripts")
     DelayExecute                            = CommonEnvironmentImports.Interface.DerivedProperty(False)
 
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Private Methods
-    # |  
+    # |
     # ----------------------------------------------------------------------
     @classmethod
     @CommonEnvironmentImports.Interface.override
@@ -96,7 +96,7 @@ class ScriptsActivationActivity(ActivationActivity):
 
         # ----------------------------------------------------------------------
 
-        
+
         dest_dir = os.path.join(generated_dir, cls.Name)
 
         verbose_stream.write("Cleaning previous content...")
@@ -187,7 +187,7 @@ class ScriptsActivationActivity(ActivationActivity):
             verbose_stream.write("Searching for content...")
             with verbose_stream.DoneManager( done_suffix=lambda: "{} found".format(inflect.no("script", len(script_infos))),
                                            ):
-                
+
                 for repository in repositories:
                     for dir_generator in dir_generators:
                         # Generator values can be:
@@ -219,6 +219,8 @@ class ScriptsActivationActivity(ActivationActivity):
                                     for item in CommonEnvironmentImports.FileSystem.WalkFiles( result.Dir,
                                                                                                traverse_exclude_dir_names=[ lambda name: name.lower().endswith("impl"),
                                                                                                                           ],
+                                                                                               exclude_file_base_names=[ lambda name: name.lower().endswith("plugin"),
+                                                                                                                       ],
                                                                                              ):
                                         yield item
 
@@ -253,8 +255,8 @@ class ScriptsActivationActivity(ActivationActivity):
                 with verbose_stream.DoneManager( done_suffix=lambda: "{} written".format(inflect.no("wrapper", len(wrappers))),
                                                ) as dm:
                     # We have a list of script files and the functions used to extract information
-                    # from them. Files were extracted based on repositories ordered from the lowest 
-                    # to highest level. However, it is likely that the user will want to use scripts 
+                    # from them. Files were extracted based on repositories ordered from the lowest
+                    # to highest level. However, it is likely that the user will want to use scripts
                     # from high-level repositories more often than lower-level ones when names collide.
                     # Reverse the order of the higher-level scripts get the standard name while conflicts
                     # in lower-level libraries are renamed.
@@ -362,28 +364,28 @@ class ScriptsActivationActivity(ActivationActivity):
                                 """\
                                 Shell wrappers have been created for all the recognized files contained within the directory
                                 '{script_dir}' across all repositories. For a complete list of these wrappers, run:
-                
+
                                 {script_name}
                                 """).format( script_dir=cls.Name,
                                              script_name=os.path.basename(filename),
                                            ).rstrip().split('\n')
-                
+
                     max_length = max(*[ len(line) for line in lines ])
                     centered_template = "|  {{:^{}}}  |".format(max_length)
-                
+
                     output_stream.write(textwrap.dedent(
                         """\
-                        
+
                         {line}
                         |  {whitespace}  |
                         {content}
                         |  {whitespace}  |
                         {line}
-                
+
                         """).format( line='-' * (max_length + 6),
                                      whitespace=' ' * max_length,
                                      content='\n'.join([ centered_template.format(line) for line in lines ]),
                                    ))
-                        
+
         return [ CommonEnvironmentImports.CurrentShell.Commands.AugmentPath(dest_dir),
                ]
