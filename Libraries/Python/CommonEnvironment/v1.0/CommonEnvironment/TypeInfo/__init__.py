@@ -406,8 +406,8 @@ class TypeInfo(Interface):
 
             return None
 
-        if isinstance(item_or_items, (dict, list, tuple)):
-            if self.Arity.Max == 1 and not isinstance(item_or_items, dict):
+        if isinstance(item_or_items, (list, tuple)):
+            if self.Arity.Max == 1:
                 return "1 item was expected"
 
             if len(item_or_items) < self.Arity.Min:
