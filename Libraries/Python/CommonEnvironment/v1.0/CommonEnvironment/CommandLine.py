@@ -344,7 +344,7 @@ class EntryPointInformation(object):
             else:
                 provided_info = EntryPoint.Parameter()
 
-            # Calculate the dispay arity
+            # Calculate the display arity
             if isinstance(type_info, DictTypeInfo):
                 if not type_info.Arity.IsSingle and not type_info.Arity.IsOptional:
                     raise Exception("Dictionaries must have an arity of 1 or ? ({}, {})".format(self.Name, name))
