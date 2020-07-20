@@ -345,6 +345,18 @@ class CompilerImpl(Interface):
         return contexts[0]
 
     # ----------------------------------------------------------------------
+    @staticmethod
+    @extensionmethod
+    def ExecuteExclusively(context):
+        """\
+        Return True if this compiler should be executed exclusively (no other compilers
+        should by active while the compiler is compiling this context.
+        """
+
+        # By default, compilers can be invoked in parallel
+        return False
+
+    # ----------------------------------------------------------------------
     @classmethod
     def Clean(cls, context, optional_output_stream):
         """
