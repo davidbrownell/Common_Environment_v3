@@ -66,7 +66,7 @@ STANDARD_CONFIGURATION_NAMES                = ["Debug", "Release"]
     ),
     custom_build_args=CommandLine.DictTypeInfo(
         require_exact_match=False,
-        arity="?",
+        arity="*",
     ),
     output_stream=None,
 )

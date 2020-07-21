@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Constraints.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-04-23 15:35:30
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-20.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Contains the Constraints decorator."""
 
@@ -46,14 +46,14 @@ class Constraints(object):
                       bar=StringTypeInfo(min_length=2),
                     )
         def Func(foo, bar):
-            # If here..., 
+            # If here...,
             #   - foo is an integer between 10 and 20
             #   - bar is a string with at least 2 characters
     """
 
     # ----------------------------------------------------------------------
     def __init__( self,
-                  postcondition=None,       
+                  postcondition=None,
                   postconditions=None,
                   **precondition_type_infos
                 ):
@@ -104,7 +104,7 @@ class Constraints(object):
                             these_kwargs["min_length"] = 0
 
                         self.Preconditions[arg] = CreateFundamentalFromPythonType(type(default_value), **these_kwargs)
-                
+
                 # Capture all errors
                 errors = []
 
@@ -136,7 +136,7 @@ class Constraints(object):
                         kwargs[arg] = default_value
 
                         # Default parameter values in python arg string in that it is better
-                        # to provide a None value in the function signature rather than an empty 
+                        # to provide a None value in the function signature rather than an empty
                         # list when the arity is '*', as that empty list may be modified within
                         # the function itself. However, parameter validation requires an empty list
                         # rather than None. Handle that wonkiness here by providing the actual value.
@@ -144,10 +144,10 @@ class Constraints(object):
                              arg in self.Preconditions and
                              self.Preconditions[arg] is not None
                            ):
-                            if self.Preconditions[arg].Arity.IsCollection:
-                                kwargs[arg] = []
-                            elif isinstance(self.Preconditions[arg], DictTypeInfo):
+                            if isinstance(self.Preconditions[arg], DictTypeInfo):
                                 kwargs[arg] = {}
+                            elif self.Preconditions[arg].Arity.IsCollection:
+                                kwargs[arg] = []
 
                 return kwargs
 
