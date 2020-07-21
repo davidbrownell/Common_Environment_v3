@@ -346,9 +346,8 @@ class EntryPointInformation(object):
 
             # Calculate the display arity
             if isinstance(type_info, DictTypeInfo):
-                # TODO: Restore this code once changes have made it through the system
-                # if not type_info.Arity.IsCollection:
-                #     raise Exception("Dictionaries must have an arity of '+', '*', or a specific number of items ({}, {})".format(self.Name, name))
+                if not type_info.Arity.IsCollection:
+                    raise Exception("Dictionaries must have an arity of '+', '*', or a specific number of items ({}, {})".format(self.Name, name))
 
                 for k, v in six.iteritems(type_info.Items):
                     if not isinstance(v, StringTypeInfo):
