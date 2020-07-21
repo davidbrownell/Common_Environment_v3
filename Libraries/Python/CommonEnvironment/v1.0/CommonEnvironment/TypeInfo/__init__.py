@@ -369,10 +369,16 @@ class TypeInfo(Interface):
         if result is not None:
             return result
 
-        for item in item_or_items:
-            result = self.ValidateItemNoThrow(item, **custom_args)
+        if isinstance(item_or_items, dict):
+            result = self.ValidateItemNoThrow(item_or_items, **custom_args)
             if result is not None:
                 return result
+
+        else:
+            for item in item_or_items:
+                result = self.ValidateItemNoThrow(item, **custom_args)
+                if result is not None:
+                    return result
 
         return None
 

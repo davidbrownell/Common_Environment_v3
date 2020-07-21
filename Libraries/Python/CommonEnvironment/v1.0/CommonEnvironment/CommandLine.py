@@ -344,10 +344,10 @@ class EntryPointInformation(object):
             else:
                 provided_info = EntryPoint.Parameter()
 
-            # Calculate the dispay arity
+            # Calculate the display arity
             if isinstance(type_info, DictTypeInfo):
-                if not type_info.Arity.IsSingle and not type_info.Arity.IsOptional:
-                    raise Exception("Dictionaries must have an arity of 1 or ? ({}, {})".format(self.Name, name))
+                if not type_info.Arity.IsCollection:
+                    raise Exception("Dictionaries must have an arity of '+', '*', or a specific number of items ({}, {})".format(self.Name, name))
 
                 for k, v in six.iteritems(type_info.Items):
                     if not isinstance(v, StringTypeInfo):
@@ -989,7 +989,7 @@ class Executor(object):
 
             if isinstance(parameter.TypeInfo, DictTypeInfo):
                 if parameter.Name in argument_values:
-                    result = parameter.TypeInfo.ValidateNoThrow(argument_values[parameter.Name])
+                    result = parameter.TypeInfo.ValidateItemNoThrow(argument_values[parameter.Name])
                     if result is not None:
                         return "'{}' is not in a valid state - {}".format(parameter.Name, result)
 

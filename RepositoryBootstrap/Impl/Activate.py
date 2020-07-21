@@ -59,7 +59,7 @@ inflect                                     = inflect_mod.engine()
 @CommonEnvironmentImports.CommandLine.Constraints( output_filename_or_stdout=CommonEnvironmentImports.CommandLine.StringTypeInfo(),
                                                    repository_root=CommonEnvironmentImports.CommandLine.DirectoryTypeInfo(),
                                                    configuration=CommonEnvironmentImports.CommandLine.StringTypeInfo(),
-                                                   version_spec=CommonEnvironmentImports.CommandLine.DictTypeInfo(require_exact_match=False, arity='?'),
+                                                   version_spec=CommonEnvironmentImports.CommandLine.DictTypeInfo(require_exact_match=False, arity='*'),
                                                    mixin=CommonEnvironmentImports.CommandLine.DirectoryTypeInfo(arity='*'),
                                                    output_stream=None,
                                                  )
