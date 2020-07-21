@@ -369,10 +369,16 @@ class TypeInfo(Interface):
         if result is not None:
             return result
 
-        for item in item_or_items:
-            result = self.ValidateItemNoThrow(item, **custom_args)
+        if isinstance(item_or_items, dict):
+            result = self.ValidateItemNoThrow(item_or_items, **custom_args)
             if result is not None:
                 return result
+
+        else:
+            for item in item_or_items:
+                result = self.ValidateItemNoThrow(item, **custom_args)
+                if result is not None:
+                    return result
 
         return None
 
@@ -406,8 +412,8 @@ class TypeInfo(Interface):
 
             return None
 
-        if isinstance(item_or_items, (list, tuple)):
-            if self.Arity.Max == 1:
+        if isinstance(item_or_items, (dict, list, tuple)):
+            if self.Arity.Max == 1 and not isinstance(item_or_items, dict):
                 return "1 item was expected"
 
             if len(item_or_items) < self.Arity.Min:

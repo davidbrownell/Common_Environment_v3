@@ -1741,7 +1741,7 @@ _code_coverage_validator_flag_param_description         = CommandLine.EntryPoint
     code_coverage_validator=_code_coverage_validator_type_info,
     code_coverage_validator_flag=CommandLine.DictTypeInfo(
         require_exact_match=False,
-        arity="?",
+        arity="*",
     ),
     output_stream=None,
 )
@@ -1888,7 +1888,7 @@ def Test(
     code_coverage_validator=_code_coverage_validator_type_info,
     code_coverage_validator_flag=CommandLine.DictTypeInfo(
         require_exact_match=False,
-        arity="?",
+        arity="*",
     ),
     output_stream=None,
 )
@@ -1995,7 +1995,7 @@ def TestItem(
     code_coverage_validator=_code_coverage_validator_type_info,
     code_coverage_validator_flag=CommandLine.DictTypeInfo(
         require_exact_match=False,
-        arity="?",
+        arity="*",
     ),
     output_stream=None,
 )
@@ -2083,7 +2083,7 @@ def TestType(
     code_coverage_validator=_code_coverage_validator_type_info,
     code_coverage_validator_flag=CommandLine.DictTypeInfo(
         require_exact_match=False,
-        arity="?",
+        arity="*",
     ),
     output_stream=None,
 )
@@ -2171,7 +2171,7 @@ def TestAll(
     compiler=_compiler_type_info,
     compiler_flag=CommandLine.DictTypeInfo(
         require_exact_match=False,
-        arity="?",
+        arity="*",
     ),
     output_stream=None,
 )
@@ -2453,19 +2453,19 @@ def MatchAllTests(
     ),
     compiler_flag=CommandLine.DictTypeInfo(
         require_exact_match=False,
-        arity="?",
+        arity="*",
     ),
     test_parser_flag=CommandLine.DictTypeInfo(
         require_exact_match=False,
-        arity="?",
+        arity="*",
     ),
     test_executor_flag=CommandLine.DictTypeInfo(
         require_exact_match=False,
-        arity="?",
+        arity="*",
     ),
     code_coverage_validator_flag=CommandLine.DictTypeInfo(
         require_exact_match=False,
-        arity="?",
+        arity="*",
     ),
     output_stream=None,
 )
@@ -2582,19 +2582,19 @@ def Execute(
     ),
     compiler_flag=CommandLine.DictTypeInfo(
         require_exact_match=False,
-        arity="?",
+        arity="*",
     ),
     test_parser_flag=CommandLine.DictTypeInfo(
         require_exact_match=False,
-        arity="?",
+        arity="*",
     ),
     test_executor_flag=CommandLine.DictTypeInfo(
         require_exact_match=False,
-        arity="?",
+        arity="*",
     ),
     code_coverage_validator_flag=CommandLine.DictTypeInfo(
         require_exact_match=False,
-        arity="?",
+        arity="*",
     ),
     output_stream=None,
 )

@@ -134,7 +134,7 @@ _formatter_type_info                        = CommandLine.EnumTypeInfo(
     formatter=_formatter_type_info,
     plugin_arg=CommandLine.DictTypeInfo(
         require_exact_match=False,
-        arity="?",
+        arity="*",
     ),
     output_stream=None,
 )
