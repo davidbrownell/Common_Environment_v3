@@ -76,6 +76,55 @@ inflect                                     = inflect_mod.engine()
 TEST_IGNORE_FILENAME_TEMPLATE               = "{}-ignore"
 
 # ----------------------------------------------------------------------
+if sys.version_info[0] == 2:
+    # The 'readerwriterlock' python library is only available for python3.
+    # This is actually OK, as the only compiler that should ever be used
+    # in activated python2 environments is the python compiler (which can
+    # be invoked in parallel). Create a stub, noop interface here so that
+    # the code can be consistent between python2 and python3.
+    class RWLock(object):
+        # ----------------------------------------------------------------------
+        @staticmethod
+        def gen_wlock():
+            raise Exception(
+                textwrap.dedent(
+                    """\
+                    A write lock should be acquired in python2. Check the compiler
+                    method 'ExecuteExclusively' to investigate why this might be
+                    happening.
+
+                    The only compiler expected to be invoked in python2 is the
+                    python compiler.
+                    """,
+                ),
+            )
+
+        # ----------------------------------------------------------------------
+        @classmethod
+        def gen_rlock(cls):
+            return cls._Lock()
+
+        # ----------------------------------------------------------------------
+        # ----------------------------------------------------------------------
+        # ----------------------------------------------------------------------
+        class _Lock(object):
+            # ----------------------------------------------------------------------
+            @staticmethod
+            def acquire():
+                pass
+
+            # ----------------------------------------------------------------------
+            @staticmethod
+            def release():
+                pass
+
+else:
+    from readerwriterlock import rwlock
+
+    RWLock = rwlock.RWLockWrite
+
+
+# ----------------------------------------------------------------------
 def _LoadCompilerFromModule(mod):
     for potential_name in ["Compiler", "CodeGenerator", "Verifier"]:
         result = getattr(mod, potential_name, None)
@@ -1036,6 +1085,8 @@ def GenerateTestResults(
     )
     build_failures_lock = threading.Lock()
 
+    build_mutex = RWLock()
+
     # ----------------------------------------------------------------------
     def BuildThreadProc(task_index, output_stream, on_status_update):
         if no_status:
@@ -1081,39 +1132,46 @@ def GenerateTestResults(
 
             on_status_update("Waiting")
 
-            with working_data.execution_lock:
-                on_status_update("Building")
+            if compiler.ExecuteExclusively(configuration_results.compiler_context):
+                build_lock = build_mutex.gen_wlock()
+            else:
+                build_lock = build_mutex.gen_rlock()
 
-                sink = six.moves.StringIO()
+            build_lock.acquire()
+            with CallOnExit(build_lock.release):
+                with working_data.execution_lock:
+                    on_status_update("Building")
 
-                if compiler.IsCompiler:
-                    compile_result = compiler.Compile(
-                        configuration_results.compiler_context,
-                        sink,
-                        verbose=verbose,
-                    )
-                    compiler.RemoveTemporaryArtifacts(
-                        configuration_results.compiler_context,
-                    )
-                elif compiler.IsCodeGenerator:
-                    compile_result = compiler.Generate(
-                        configuration_results.compiler_context,
-                        sink,
-                        verbose=verbose,
-                    )
-                elif compiler.IsVerifier:
-                    compile_result = compiler.Verify(
-                        configuration_results.compiler_context,
-                        sink,
-                        verbose=verbose,
-                    )
-                else:
-                    assert False, compiler.Name
+                    sink = six.moves.StringIO()
 
-                compile_output = sink.getvalue()
+                    if compiler.IsCompiler:
+                        compile_result = compiler.Compile(
+                            configuration_results.compiler_context,
+                            sink,
+                            verbose=verbose,
+                        )
+                        compiler.RemoveTemporaryArtifacts(
+                            configuration_results.compiler_context,
+                        )
+                    elif compiler.IsCodeGenerator:
+                        compile_result = compiler.Generate(
+                            configuration_results.compiler_context,
+                            sink,
+                            verbose=verbose,
+                        )
+                    elif compiler.IsVerifier:
+                        compile_result = compiler.Verify(
+                            configuration_results.compiler_context,
+                            sink,
+                            verbose=verbose,
+                        )
+                    else:
+                        assert False, compiler.Name
 
-                if compile_result != 0:
-                    output_stream.write(compile_output)
+                    compile_output = sink.getvalue()
+
+                    if compile_result != 0:
+                        output_stream.write(compile_output)
 
         except:
             compile_result = internal_exception_result_code
@@ -1683,7 +1741,7 @@ _code_coverage_validator_flag_param_description         = CommandLine.EntryPoint
     code_coverage_validator=_code_coverage_validator_type_info,
     code_coverage_validator_flag=CommandLine.DictTypeInfo(
         require_exact_match=False,
-        arity="?",
+        arity="*",
     ),
     output_stream=None,
 )
@@ -1830,7 +1888,7 @@ def Test(
     code_coverage_validator=_code_coverage_validator_type_info,
     code_coverage_validator_flag=CommandLine.DictTypeInfo(
         require_exact_match=False,
-        arity="?",
+        arity="*",
     ),
     output_stream=None,
 )
@@ -1937,7 +1995,7 @@ def TestItem(
     code_coverage_validator=_code_coverage_validator_type_info,
     code_coverage_validator_flag=CommandLine.DictTypeInfo(
         require_exact_match=False,
-        arity="?",
+        arity="*",
     ),
     output_stream=None,
 )
@@ -2025,7 +2083,7 @@ def TestType(
     code_coverage_validator=_code_coverage_validator_type_info,
     code_coverage_validator_flag=CommandLine.DictTypeInfo(
         require_exact_match=False,
-        arity="?",
+        arity="*",
     ),
     output_stream=None,
 )
@@ -2113,7 +2171,7 @@ def TestAll(
     compiler=_compiler_type_info,
     compiler_flag=CommandLine.DictTypeInfo(
         require_exact_match=False,
-        arity="?",
+        arity="*",
     ),
     output_stream=None,
 )
@@ -2395,19 +2453,19 @@ def MatchAllTests(
     ),
     compiler_flag=CommandLine.DictTypeInfo(
         require_exact_match=False,
-        arity="?",
+        arity="*",
     ),
     test_parser_flag=CommandLine.DictTypeInfo(
         require_exact_match=False,
-        arity="?",
+        arity="*",
     ),
     test_executor_flag=CommandLine.DictTypeInfo(
         require_exact_match=False,
-        arity="?",
+        arity="*",
     ),
     code_coverage_validator_flag=CommandLine.DictTypeInfo(
         require_exact_match=False,
-        arity="?",
+        arity="*",
     ),
     output_stream=None,
 )
@@ -2524,19 +2582,19 @@ def Execute(
     ),
     compiler_flag=CommandLine.DictTypeInfo(
         require_exact_match=False,
-        arity="?",
+        arity="*",
     ),
     test_parser_flag=CommandLine.DictTypeInfo(
         require_exact_match=False,
-        arity="?",
+        arity="*",
     ),
     test_executor_flag=CommandLine.DictTypeInfo(
         require_exact_match=False,
-        arity="?",
+        arity="*",
     ),
     code_coverage_validator_flag=CommandLine.DictTypeInfo(
         require_exact_match=False,
-        arity="?",
+        arity="*",
     ),
     output_stream=None,
 )

@@ -473,7 +473,7 @@ def List(
     scm=_ScmConstraint,
     uri_dict=CommonEnvironmentImports.CommandLine.DictTypeInfo(
         require_exact_match=False,
-        arity="?",
+        arity="*",
     ),
     configuration=CommonEnvironmentImports.CommandLine.StringTypeInfo(
         arity="*",
