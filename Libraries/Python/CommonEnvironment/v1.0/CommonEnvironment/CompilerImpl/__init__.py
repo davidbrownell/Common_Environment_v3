@@ -403,7 +403,7 @@ class CompilerImpl(Interface):
                     indentation = 8
 
                 verbose_stream = StreamDecorator( dm.stream,
-                                                  prefix=StringHelpers.LeftJustify( textwrap.dedent(
+                                                  one_time_prefix=StringHelpers.LeftJustify( textwrap.dedent(
                                                                                         """\
 
                                                                                         ========================================
