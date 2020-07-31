@@ -1,18 +1,18 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  PythonCodeVisitor.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-07-15 13:55:00
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-20.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
-"""Contains the PythonCodeSerialization object"""
+"""Contains the PythonCodeVisitor object"""
 
 import os
 
@@ -86,7 +86,7 @@ class PythonCodeVisitor(Visitor):
         # ----------------------------------------------------------------------
         def ToList(values):
             return "[ {}]".format(''.join([ "'{}', ".format(value) for value in values ]))
-        
+
         # ----------------------------------------------------------------------
 
         args = [ ToList(type_info.Values), ]
@@ -116,7 +116,7 @@ class PythonCodeVisitor(Visitor):
         args.append(cls._ArityString(type_info.Arity))
 
         return "FilenameTypeInfo({})".format(', '.join([ arg for arg in args if arg ]))
-        
+
     # ----------------------------------------------------------------------
     @classmethod
     @override
@@ -213,25 +213,25 @@ class PythonCodeVisitor(Visitor):
     @override
     def OnClass(cls, type_info):
         return cls._OnDictLikeImpl(type_info)
-        
+
     # ----------------------------------------------------------------------
     @classmethod
     @override
     def OnMethod(cls, type_info):
         return "MethodTypeInfo({})".format(cls._ArityString(type_info.Arity))
-        
+
     # ----------------------------------------------------------------------
     @classmethod
     @override
     def OnClassMethod(cls, type_info):
         return "ClassMethodTypeInfo({})".format(cls._ArityString(type_info.Arity))
-        
+
     # ----------------------------------------------------------------------
     @classmethod
     @override
     def OnStaticMethod(cls, type_info):
         return "StaticMethodTypeInfo({})".format(cls._ArityString(type_info.Arity))
-        
+
     # ----------------------------------------------------------------------
     @classmethod
     @override
@@ -243,7 +243,7 @@ class PythonCodeVisitor(Visitor):
     @override
     def OnGeneric(cls, type_info):
         return "GenericTypeInfo({})".format(cls._ArityString(type_info.Arity))
-        
+
     # ----------------------------------------------------------------------
     @classmethod
     @override
@@ -256,7 +256,7 @@ class PythonCodeVisitor(Visitor):
                ]
 
         return "ListTypeInfo({})".format(', '.join([ arg for arg in args if arg ]))
-        
+
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
@@ -264,16 +264,16 @@ class PythonCodeVisitor(Visitor):
     def _ArityString(arity):
         if arity.IsOptional:
             return "arity=Arity.FromString('?')"
-        
+
         if arity.IsOneOrMore:
             return "arity=Arity.FromString('+')"
-        
+
         if arity.IsZeroOrMore:
             return "arity=Arity.FromString('*')"
-        
+
         if arity.Min == arity.Max == 1:
             return ''
-        
+
         return "arity=Arity({},{})".format( arity.Min,
                                             arity.Max or "None",
                                           )
@@ -282,7 +282,7 @@ class PythonCodeVisitor(Visitor):
     @classmethod
     def _OnDictLikeImpl(cls, type_info):
         # Dict-like structures may be recursive, which complicates how we persist and create the items.
-        # This code will enumerate through the type and create the child if it hasn't been seen yet or 
+        # This code will enumerate through the type and create the child if it hasn't been seen yet or
         # has been seen and is complete. If it has been seen but is not yet complete (this is the recursive
         # scenario), we create a bread crumb that can be used to assemble the complete type at runtime.
         from CommonEnvironment.TypeInfo.DictTypeInfo import DictTypeInfo
@@ -294,7 +294,7 @@ class PythonCodeVisitor(Visitor):
         # ----------------------------------------------------------------------
         def Impl(ti):
             lookup_key = id(ti)
-            
+
             if lookup_key in type_infos:
                 index, content = type_infos[lookup_key]
 
@@ -353,10 +353,10 @@ class PythonCodeVisitor(Visitor):
                     if found_one:
                         nonlocals.recursive = True
                         kwargs["element_type_infos_code"] = element_type_infos_code
-            
+
                 content = cls.Accept(ti, **kwargs)
 
-            type_infos[lookup_key][1] = content 
+            type_infos[lookup_key][1] = content
             return type_infos[lookup_key][1]
 
         # ----------------------------------------------------------------------
@@ -387,11 +387,11 @@ def LoadTypeInfo(type_info):
                     ti.Items[k] = type_infos[v]
                 else:
                     Impl(v)
-        
+
         elif hasattr(ti, "ElementTypeInfo"):
             if isinstance(ti.ElementTypeInfo, int):
                 ti.ElementTypeInfo = type_infos[ti.ElementTypeInfo]
-        
+
         elif hasattr(ti, "ElementTypeInfos"):
             for eti_index, eti in enumerate(ti.ElementTypeInfos):
                 if isinstance(eti, int):
