@@ -562,35 +562,55 @@ class _DeserializationVisitor(Visitor):
     @classmethod
     @override
     def OnDateTime(cls, type_info, item, custom_kwargs, regex_match, regex_index):
+        # ISO Format
         if regex_index == 0:
-            # ISO Format
-            item, time_format_string = cls._GetTimeExpr(item)
-
-            has_timezone = True
+            # Remove the timezone
             groupdict = regex_match.groupdict()
 
-            for attribute_name in [ "tz_hour", "tz_minute", ]:
-                if groupdict.get(attribute_name, None) is None:
-                    has_timezone = False
-                    break
+            timezone_string = groupdict.get("tz_utc", None)
+            is_utc = False
 
-            if has_timezone:
-                # Remove the ':' char between timezone hours and minutes (if it exists)
-                if item[-3] == ":":
-                    item = "{}{}".format(item[:-3], item[-2:])
+            if timezone_string is not None:
+                assert item.endswith(timezone_string), (item, timezone_string)
+                item = item[:-len(timezone_string)]
+
+                # We will manually apply the utc timezone info below, so clear
+                # time timezone_string value so we don't try to extract it from
+                # the incoming item.
+                timezone_string = None
+                is_utc = True
+
             else:
-                if groupdict.get("tz_utc", None):
-                    assert item.endswith('Z'), item
-                    item = item[:-1]
+                tz_sign = groupdict.get("tz_sign", None)
+                if tz_sign is not None:
+                    tz_sign_index = item.rfind(tz_sign)
+                    assert tz_sign_index != -1
 
-            return datetime.datetime.strptime(
+                    timezone_string = item[tz_sign_index:]
+                    timezone_string = timezone_string.replace(":", "")
+
+                    item = item[:tz_sign_index]
+
+            item, time_format_string = cls._GetTimeExpr(item)
+
+            if timezone_string:
+                item += timezone_string
+
+            result = datetime.datetime.strptime(
                 item,
                 "%Y-%m-%d{sep}{time_format_string}{time_zone}".format(
                     sep='T' if 'T' in item else ' ',
                     time_format_string=time_format_string,
-                    time_zone="" if not has_timezone else "%z",
+                    time_zone="" if not timezone_string else "%z",
                 ),
             )
+
+            if is_utc:
+                result = result.replace(
+                    tzinfo=datetime.timezone.utc,
+                )
+
+            return result
 
         assert regex_index in [ 1, 2, ], regex_index
 
