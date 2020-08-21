@@ -237,13 +237,22 @@ class DeserializationSuite(unittest.TestCase):
     def test_DateTime(self):
         self.assertEqual(StringSerialization.DeserializeItem(DateTimeTypeInfo(), "2018-04-28 10:05:00"), datetime.datetime(year=2018, month=4, day=28, hour=10, minute=5, second=0))
         self.assertEqual(StringSerialization.DeserializeItem(DateTimeTypeInfo(), "2018-04-28T10:05:00"), datetime.datetime(year=2018, month=4, day=28, hour=10, minute=5, second=0))
-        self.assertEqual(StringSerialization.DeserializeItem(DateTimeTypeInfo(), "2018-04-28T10:05:00-07:00"), datetime.datetime(year=2018, month=4, day=28, hour=10, minute=5, second=0, tzinfo=datetime.timezone(datetime.timedelta(hours=-7))))
-        self.assertEqual(StringSerialization.DeserializeItem(DateTimeTypeInfo(), "2018-04-28T10:05:00-0700"), datetime.datetime(year=2018, month=4, day=28, hour=10, minute=5, second=0, tzinfo=datetime.timezone(datetime.timedelta(hours=-7))))
         self.assertEqual(StringSerialization.DeserializeItem(DateTimeTypeInfo(), "1528171793"), datetime.datetime(2018, 6, 5, 4, 9, 53))
         self.assertEqual(StringSerialization.DeserializeItem(DateTimeTypeInfo(), "@1528171793 -0700"), datetime.datetime(2018, 6, 5, 11, 9, 53))
         self.assertEqual(StringSerialization.DeserializeItem(DateTimeTypeInfo(), "@1528171793 +0700"), datetime.datetime(2018, 6, 4, 21, 9, 53))
         self.assertEqual(StringSerialization.DeserializeItem(DateTimeTypeInfo(), "@1528171793 0700"), datetime.datetime(2018, 6, 4, 21, 9, 53))
         self.assertEqual(StringSerialization.DeserializeItem(DateTimeTypeInfo(), "1528171793.0"), datetime.datetime(2018, 6, 5, 4, 9, 53))
+
+        # python2 doesn't support deserialization with time zones
+        if sys.version_info[0] == 2:
+            self.assertRaises(
+                ValueError,                 # "'z' is a bad directive in format.+",
+                lambda: StringSerialization.DeserializeItem(DateTimeTypeInfo(), "2018-04-28T10:05:00-0700"),
+            )
+
+        else:
+            self.assertEqual(StringSerialization.DeserializeItem(DateTimeTypeInfo(), "2018-04-28T10:05:00-0700"), datetime.datetime(year=2018, month=4, day=28, hour=10, minute=5, second=0, tzinfo=datetime.timezone(datetime.timedelta(hours=-7))))
+            self.assertEqual(StringSerialization.DeserializeItem(DateTimeTypeInfo(), "2018-04-28T10:05:00-07:00"), datetime.datetime(year=2018, month=4, day=28, hour=10, minute=5, second=0, tzinfo=datetime.timezone(datetime.timedelta(hours=-7))))
 
         self.assertRaises(ValidationException, lambda: StringSerialization.DeserializeItem(DateTimeTypeInfo(), "not a valid datetime"))
 
