@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  StringSerialization_UnitTest.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-04-26 22:06:18
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-20.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 # """Unit test for StringSerialization.py"""
 
@@ -34,7 +34,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 
 # ----------------------------------------------------------------------
 class RegularExpressionVisitorSuite(unittest.TestCase):
-    
+
     # ----------------------------------------------------------------------
     def test_Standard(self):
         # ----------------------------------------------------------------------
@@ -43,7 +43,7 @@ class RegularExpressionVisitorSuite(unittest.TestCase):
                 to_match = [ to_match, ]
 
             regex_string = method()[regex_index]
-            
+
             if isinstance(regex_string, tuple):
                 regex_string, regex_options = regex_string
             else:
@@ -156,7 +156,7 @@ class SerializationSuite(unittest.TestCase):
         self.assertEqual(StringSerialization.SerializeItem(DurationTypeInfo(), datetime.timedelta(days=1, hours=2, microseconds=3456)), "1.02:00:00.003456")
 
         self.assertRaises(ValidationException, lambda: StringSerialization.SerializeItem(DurationTypeInfo(), "this is not a valid duration"))
-        
+
     # ----------------------------------------------------------------------
     def test_Enum(self):
         self.assertEqual(StringSerialization.SerializeItem(EnumTypeInfo([ "one", "two", ]), "one"), "one")
@@ -237,12 +237,14 @@ class DeserializationSuite(unittest.TestCase):
     def test_DateTime(self):
         self.assertEqual(StringSerialization.DeserializeItem(DateTimeTypeInfo(), "2018-04-28 10:05:00"), datetime.datetime(year=2018, month=4, day=28, hour=10, minute=5, second=0))
         self.assertEqual(StringSerialization.DeserializeItem(DateTimeTypeInfo(), "2018-04-28T10:05:00"), datetime.datetime(year=2018, month=4, day=28, hour=10, minute=5, second=0))
+        self.assertEqual(StringSerialization.DeserializeItem(DateTimeTypeInfo(), "2018-04-28T10:05:00-07:00"), datetime.datetime(year=2018, month=4, day=28, hour=10, minute=5, second=0, tzinfo=datetime.timezone(datetime.timedelta(hours=-7))))
+        self.assertEqual(StringSerialization.DeserializeItem(DateTimeTypeInfo(), "2018-04-28T10:05:00-0700"), datetime.datetime(year=2018, month=4, day=28, hour=10, minute=5, second=0, tzinfo=datetime.timezone(datetime.timedelta(hours=-7))))
         self.assertEqual(StringSerialization.DeserializeItem(DateTimeTypeInfo(), "1528171793"), datetime.datetime(2018, 6, 5, 4, 9, 53))
         self.assertEqual(StringSerialization.DeserializeItem(DateTimeTypeInfo(), "@1528171793 -0700"), datetime.datetime(2018, 6, 5, 11, 9, 53))
         self.assertEqual(StringSerialization.DeserializeItem(DateTimeTypeInfo(), "@1528171793 +0700"), datetime.datetime(2018, 6, 4, 21, 9, 53))
         self.assertEqual(StringSerialization.DeserializeItem(DateTimeTypeInfo(), "@1528171793 0700"), datetime.datetime(2018, 6, 4, 21, 9, 53))
         self.assertEqual(StringSerialization.DeserializeItem(DateTimeTypeInfo(), "1528171793.0"), datetime.datetime(2018, 6, 5, 4, 9, 53))
-        
+
         self.assertRaises(ValidationException, lambda: StringSerialization.DeserializeItem(DateTimeTypeInfo(), "not a valid datetime"))
 
     # ----------------------------------------------------------------------
@@ -275,7 +277,7 @@ class DeserializationSuite(unittest.TestCase):
         self.assertEqual(StringSerialization.DeserializeItem(DurationTypeInfo(), "1:02:03:04.5"), datetime.timedelta(days=1, hours=2, minutes=3, seconds=4, microseconds=5))
         self.assertEqual(StringSerialization.DeserializeItem(DurationTypeInfo(), "02:03:04.5"), datetime.timedelta(hours=2, minutes=3, seconds=4, microseconds=5))
         self.assertEqual(StringSerialization.DeserializeItem(DurationTypeInfo(), "P2DT3M21S"), datetime.timedelta(days=2, minutes=3, seconds=21))
-        
+
         self.assertRaises(ValidationException, lambda: StringSerialization.DeserializeItem(DurationTypeInfo(), "not a valid duration"))
 
     # ----------------------------------------------------------------------
@@ -323,7 +325,7 @@ class DeserializationSuite(unittest.TestCase):
     # ----------------------------------------------------------------------
     def test_String(self):
         self.assertEqual(StringSerialization.DeserializeItem(StringTypeInfo(), "foo"), "foo")
-        
+
         self.assertRaises(ValidationException, lambda: StringSerialization.DeserializeItem(StringTypeInfo(), ""))
         self.assertRaises(ValidationException, lambda: StringSerialization.DeserializeItem(StringTypeInfo(min_length=2), "1"))
         self.assertRaises(ValidationException, lambda: StringSerialization.DeserializeItem(StringTypeInfo(max_length=2), "123"))
@@ -333,7 +335,7 @@ class DeserializationSuite(unittest.TestCase):
     def test_Time(self):
         self.assertEqual(StringSerialization.DeserializeItem(TimeTypeInfo(), "10:15:01"), datetime.time(hour=10, minute=15, second=1))
         self.assertEqual(StringSerialization.DeserializeItem(TimeTypeInfo(), "10:15:01.678"), datetime.time(hour=10, minute=15, second=1, microsecond=678000))
-        
+
         self.assertRaises(ValidationException, lambda: StringSerialization.DeserializeItem(TimeTypeInfo(), "not a valid time"))
         self.assertRaises(ValidationException, lambda: StringSerialization.DeserializeItem(TimeTypeInfo(), "10:15:01+10:30"))
         self.assertRaises(ValidationException, lambda: StringSerialization.DeserializeItem(TimeTypeInfo(), "10:15:01-03:13"))
