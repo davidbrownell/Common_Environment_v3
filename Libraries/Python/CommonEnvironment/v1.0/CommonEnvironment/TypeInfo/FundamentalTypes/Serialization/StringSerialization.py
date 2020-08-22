@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  StringSerialization.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-04-24 21:43:02
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-20.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Contains the RegularExpressionVisitor and StringSerialization objects."""
 
@@ -113,7 +113,7 @@ class RegularExpressionVisitor(Visitor):
                         }
                  for index, expr in enumerate([ # YYYY-MM-DD
                                                 r"(?P<year%(suffix)s>[0-9]{4})%(sep)s(?P<month%(suffix)s>0?[1-9]|1[0-2])%(sep)s(?P<day%(suffix)s>[0-2][0-9]|3[0-1])",
-                                                
+
                                                 # MM-DD-YYYY
                                                 r"(?P<month%(suffix)s>0?[1-9]|1[0-2])%(sep)s(?P<day%(suffix)s>[0-2][0-9]|3[0-1])%(sep)s(?P<year%(suffix)s>[0-9]{4})",
 
@@ -215,7 +215,7 @@ class RegularExpressionVisitor(Visitor):
             value = 10
 
             while True:
-                if ( (type_info.Min is None or type_info.Min > -value) and 
+                if ( (type_info.Min is None or type_info.Min > -value) and
                      (type_info.Max is None or type_info.Max < value)
                    ):
                     break
@@ -243,7 +243,7 @@ class RegularExpressionVisitor(Visitor):
             return [ ".+", ]
 
         assert type_info.MinLength is not None
-        
+
         if type_info.MaxLength is None:
             return [ ".{%d}.*" % type_info.MinLength, ]
 
@@ -259,7 +259,7 @@ class RegularExpressionVisitor(Visitor):
     @override
     def OnTime(type_info):
         return [ textwrap.dedent(
-                   r"""(?# 
+                   r"""(?#
                     Hour                        )(?P<hour>[0-1][0-9]|2[0-3]):(?#
                     Minute                      )(?P<minute>[0-5][0-9]):(?#
                     Second                      )(?P<second>[0-5][0-9])(?#
@@ -283,7 +283,7 @@ class StringSerialization(Serialization):
     @staticmethod
     @override
     def _SerializeItemImpl(type_info, item, **custom_kwargs):
-        
+
         # custom_kwargs:
         #
         #   type_info type          Key             Value       Default             Desc
@@ -296,7 +296,7 @@ class StringSerialization(Serialization):
         #       - DateTypeInfo
         #       - DurationTypeInfo
         #       - GuidTypeInfo
-        
+
         if type_info.Arity.IsOptional and item is None:
             return "None"
 
@@ -306,7 +306,7 @@ class StringSerialization(Serialization):
     @staticmethod
     @override
     def _DeserializeItemImpl(type_info, item, **custom_kwargs):
-        
+
         # custom_kwargs:
         #
         #   type_info type          Key         Value       Default             Desc
@@ -347,7 +347,7 @@ class StringSerialization(Serialization):
 # ----------------------------------------------------------------------
 @staticderived
 class _SerializationVisitor(Visitor):
-    
+
     # ----------------------------------------------------------------------
     @staticmethod
     @override
@@ -365,11 +365,11 @@ class _SerializationVisitor(Visitor):
 
         if regex_index == 0:
             return item.isoformat(sep=custom_kwargs.get("sep", ' '))
-        
+
         elif regex_index == 1:
             # Enhanced Unix timestamp
             return "@{} 00:00".format(time.mktime(item.timetuple()))
-        
+
         elif regex_index == 2:
             # Unix timestamp
             return str(time.mktime(item.timetuple()))
@@ -509,7 +509,7 @@ class _SerializationVisitor(Visitor):
         if regex_index == 0:
             # {XXXXXXXX-XXXX...}
             return "{{{}}}".format(item)
-           
+
         elif regex_index == 1:
             # XXXXXXXX-XXXX...
             return item
@@ -562,28 +562,55 @@ class _DeserializationVisitor(Visitor):
     @classmethod
     @override
     def OnDateTime(cls, type_info, item, custom_kwargs, regex_match, regex_index):
+        # ISO Format
         if regex_index == 0:
-            # ISO Format
-            item, time_format_string = cls._GetTimeExpr(item)
-            
-            has_timezone = True
+            # Remove the timezone
             groupdict = regex_match.groupdict()
-            
-            for attribute_name in [ "tz_hour", "tz_minute", ]:
-                if groupdict.get(attribute_name, None) is None:
-                    has_timezone = False
-                    break
-            
-            if not has_timezone:
-                if groupdict.get("tz_utc", None):
-                    assert item.endswith('Z'), item
-                    item = item[:-1]
-            
-            return datetime.datetime.strptime( item,
-                                               "%Y-%m-%d{sep}{time_format_string}".format( sep='T' if 'T' in item else ' ',
-                                                                                           time_format_string=time_format_string,
-                                                                                         ),
-                                             )
+
+            timezone_string = groupdict.get("tz_utc", None)
+            is_utc = False
+
+            if timezone_string is not None:
+                assert item.endswith(timezone_string), (item, timezone_string)
+                item = item[:-len(timezone_string)]
+
+                # We will manually apply the utc timezone info below, so clear
+                # time timezone_string value so we don't try to extract it from
+                # the incoming item.
+                timezone_string = None
+                is_utc = True
+
+            else:
+                tz_sign = groupdict.get("tz_sign", None)
+                if tz_sign is not None:
+                    tz_sign_index = item.rfind(tz_sign)
+                    assert tz_sign_index != -1
+
+                    timezone_string = item[tz_sign_index:]
+                    timezone_string = timezone_string.replace(":", "")
+
+                    item = item[:tz_sign_index]
+
+            item, time_format_string = cls._GetTimeExpr(item)
+
+            if timezone_string:
+                item += timezone_string
+
+            result = datetime.datetime.strptime(
+                item,
+                "%Y-%m-%d{sep}{time_format_string}{time_zone}".format(
+                    sep='T' if 'T' in item else ' ',
+                    time_format_string=time_format_string,
+                    time_zone="" if not timezone_string else "%z",
+                ),
+            )
+
+            if is_utc:
+                result = result.replace(
+                    tzinfo=datetime.timezone.utc,
+                )
+
+            return result
 
         assert regex_index in [ 1, 2, ], regex_index
 
