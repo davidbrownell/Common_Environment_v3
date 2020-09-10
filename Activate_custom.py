@@ -16,6 +16,7 @@
 
 import os
 import sys
+import textwrap
 
 from collections import OrderedDict
 
@@ -131,6 +132,141 @@ def GetCustomActions(
             ),
             lambda fullpath, name, ext: ext == ".py" and name.endswith("Formatter"),
         )
+
+        # Check to see if developer mode is enabled on Windows
+        if CommonEnvironmentImports.CurrentShell.CategoryName == "Windows":
+            import winreg
+
+            try:
+                hkey = winreg.OpenKey(
+                    winreg.HKEY_LOCAL_MACHINE,
+                    r"SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock",
+                )
+                with CommonEnvironmentImports.CallOnExit(lambda: winreg.CloseKey(hkey)):
+                    value = winreg.QueryValueEx(hkey, "AllowDevelopmentWithoutDevLicense")[0]
+
+                    if value != 1:
+                        actions.append(
+                            Commands.Message(
+                                "\n".join(
+                                    [
+                                        "        {}".format(line) for line in textwrap.dedent(
+                                            """\
+
+                                            # ----------------------------------------------------------------------
+                                            # ----------------------------------------------------------------------
+
+                                            WARNING:
+
+                                            Windows Developer Mode is not enabled; this is a requirement for the setup process
+                                            as Developer Mode allows for the creation of symbolic links without admin privileges.
+
+                                            To enable Developer Mode in Windows:
+
+                                                1) Launch 'Developer settings'
+                                                2) Select 'Developer mode'
+
+                                            # ----------------------------------------------------------------------
+                                            # ----------------------------------------------------------------------
+
+                                            """,
+                                        ).split("\n")
+                                    ]
+                                ),
+                            ),
+                        )
+            except FileNotFoundError:
+                # This key isn't available on all versions of Windows
+                pass
+
+        # Check to see if long paths are enabled on Windows
+        try:
+            # Python imports can begin to break down if long paths aren't enabled
+            hkey = winreg.OpenKey(
+                winreg.HKEY_LOCAL_MACHINE,
+                r"SYSTEM\ControlSet001\Control\FileSystem",
+            )
+            with CommonEnvironmentImports.CallOnExit(lambda: winreg.CloseKey(hkey)):
+                value = winreg.QueryValueEx(hkey, "LongPathsEnabled")[0]
+
+                if value != 1:
+                    actions.append(
+                        Commands.Message(
+                            "\n".join(
+                                [
+                                    "        {}".format(line) for line in textwrap.dedent(
+                                        """\
+
+                                        # ----------------------------------------------------------------------
+                                        # ----------------------------------------------------------------------
+
+                                        WARNING:
+
+                                        Long path support is not enabled. While this isn't a requirement
+                                        for running on Windows, it could present problems with
+                                        python imports in deeply nested directory hierarchies.
+
+                                        To enable long path support in Windows:
+
+                                            1) Launch 'regedit'
+                                            2) Navigate to 'HKEY_LOCAL_MACHINE\\SYSTEM\\ControlSet001\\Control\\FileSystem'
+                                            3) Edit the value 'LongPathsEnabled'
+                                            4) Set the value to 1
+
+                                        # ----------------------------------------------------------------------
+                                        # ----------------------------------------------------------------------
+
+                                        """,
+                                    ).split("\n")
+                                ]
+                            ),
+                        ),
+                    )
+
+        except FileNotFoundError:
+            # This key isn't available on all versions of Windows
+            pass
+
+    # Check to see if git is installed and if its settings are set to the best defaults
+    if "usage: git" in CommonEnvironmentImports.Process.Execute("git")[1] != -1:
+        result, git_output = CommonEnvironmentImports.Process.Execute(
+            "git config --get core.autocrlf",
+        )
+
+        git_output = git_output.strip()
+
+        assert result == 0, git_output
+
+        if git_output != "false":
+            actions.append(
+                Commands.Message(
+                    "\n".join(
+                        [
+                            "        {}".format(line) for line in textwrap.dedent(
+                                """\
+
+                                # ----------------------------------------------------------------------
+                                # ----------------------------------------------------------------------
+
+                                WARNING:
+
+                                Git is configured to modify line endings on checkin and/or checkout.
+                                While this was the recommended setting in the past, it presents problems
+                                when editing code on both Windows and Linux using modern editors.
+
+                                It is recommended that you change this setting to not modify line endings:
+
+                                    1) 'git config --global core.autocrlf false`
+
+                                # ----------------------------------------------------------------------
+                                # ----------------------------------------------------------------------
+
+                                """,
+                            ).split("\n")
+                        ]
+                    ),
+                ),
+            )
 
     actions.append(
         Commands.Augment(
