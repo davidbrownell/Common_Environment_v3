@@ -15,9 +15,11 @@
 """Contains the AnyOfTypeInfo object"""
 
 import os
+import textwrap
 
 import CommonEnvironment
 from CommonEnvironment.Interface import override
+from CommonEnvironment import StringHelpers
 from CommonEnvironment.TypeInfo import TypeInfo
 
 # ----------------------------------------------------------------------
@@ -82,9 +84,25 @@ class AnyOfTypeInfo(TypeInfo):
     # ----------------------------------------------------------------------
     @override
     def _ValidateItemNoThrowImpl(self, item, **custom_args):
+        results = []
+
         for eti in self._GetElementTypeInfos(item):
             result = eti.ValidateItemNoThrow(item, **custom_args)
             if result is None:
                 return None
 
-        return "'{}' is not a supported type".format(item)
+            results.append(result)
+
+        return textwrap.dedent(
+            """\
+            '{}' is not a supported type.
+
+                {}
+            """,
+        ).format(
+            item,
+            StringHelpers.LeftJustify(
+                "\n".join(["- {}".format(result) for result in results]),
+                4,
+            ).rstrip(),
+        )
