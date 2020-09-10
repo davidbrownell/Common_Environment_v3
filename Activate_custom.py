@@ -235,9 +235,7 @@ def GetCustomActions(
 
         git_output = git_output.strip()
 
-        assert result == 0, git_output
-
-        if git_output != "false":
+        if result != 0 or git_output != "false":
             actions.append(
                 Commands.Message(
                     "\n".join(
