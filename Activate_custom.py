@@ -179,53 +179,53 @@ def GetCustomActions(
                 # This key isn't available on all versions of Windows
                 pass
 
-        # Check to see if long paths are enabled on Windows
-        try:
-            # Python imports can begin to break down if long paths aren't enabled
-            hkey = winreg.OpenKey(
-                winreg.HKEY_LOCAL_MACHINE,
-                r"SYSTEM\ControlSet001\Control\FileSystem",
-            )
-            with CommonEnvironmentImports.CallOnExit(lambda: winreg.CloseKey(hkey)):
-                value = winreg.QueryValueEx(hkey, "LongPathsEnabled")[0]
+            # Check to see if long paths are enabled on Windows
+            try:
+                # Python imports can begin to break down if long paths aren't enabled
+                hkey = winreg.OpenKey(
+                    winreg.HKEY_LOCAL_MACHINE,
+                    r"SYSTEM\ControlSet001\Control\FileSystem",
+                )
+                with CommonEnvironmentImports.CallOnExit(lambda: winreg.CloseKey(hkey)):
+                    value = winreg.QueryValueEx(hkey, "LongPathsEnabled")[0]
 
-                if value != 1:
-                    actions.append(
-                        Commands.Message(
-                            "\n".join(
-                                [
-                                    "        {}".format(line) for line in textwrap.dedent(
-                                        """\
+                    if value != 1:
+                        actions.append(
+                            Commands.Message(
+                                "\n".join(
+                                    [
+                                        "        {}".format(line) for line in textwrap.dedent(
+                                            """\
 
-                                        # ----------------------------------------------------------------------
-                                        # ----------------------------------------------------------------------
+                                            # ----------------------------------------------------------------------
+                                            # ----------------------------------------------------------------------
 
-                                        WARNING:
+                                            WARNING:
 
-                                        Long path support is not enabled. While this isn't a requirement
-                                        for running on Windows, it could present problems with
-                                        python imports in deeply nested directory hierarchies.
+                                            Long path support is not enabled. While this isn't a requirement
+                                            for running on Windows, it could present problems with
+                                            python imports in deeply nested directory hierarchies.
 
-                                        To enable long path support in Windows:
+                                            To enable long path support in Windows:
 
-                                            1) Launch 'regedit'
-                                            2) Navigate to 'HKEY_LOCAL_MACHINE\\SYSTEM\\ControlSet001\\Control\\FileSystem'
-                                            3) Edit the value 'LongPathsEnabled'
-                                            4) Set the value to 1
+                                                1) Launch 'regedit'
+                                                2) Navigate to 'HKEY_LOCAL_MACHINE\\SYSTEM\\ControlSet001\\Control\\FileSystem'
+                                                3) Edit the value 'LongPathsEnabled'
+                                                4) Set the value to 1
 
-                                        # ----------------------------------------------------------------------
-                                        # ----------------------------------------------------------------------
+                                            # ----------------------------------------------------------------------
+                                            # ----------------------------------------------------------------------
 
-                                        """,
-                                    ).split("\n")
-                                ]
+                                            """,
+                                        ).split("\n")
+                                    ]
+                                ),
                             ),
-                        ),
-                    )
+                        )
 
-        except FileNotFoundError:
-            # This key isn't available on all versions of Windows
-            pass
+            except FileNotFoundError:
+                # This key isn't available on all versions of Windows
+                pass
 
     # Check to see if git is installed and if its settings are set to the best defaults
     if "usage: git" in CommonEnvironmentImports.Process.Execute("git")[1] != -1:
