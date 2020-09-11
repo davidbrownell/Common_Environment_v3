@@ -162,7 +162,7 @@ def Setup(
             configurations,
         ]
 
-        activities = [_SetupOperatingSystem]
+        activities = []
 
         if recurse:
             # If here, invoke setup on this repo and all of its dependencies
@@ -683,118 +683,6 @@ def Enlist(
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
-# ----------------------------------------------------------------------
-def _SetupOperatingSystem(output_stream, *args, **kwargs):
-    if CommonEnvironmentImports.CurrentShell.CategoryName == "Windows":
-        import winreg
-
-        # Check to see if developer mode is enabled on Windows
-        output_stream.write("Verifying developer mode on Windows...")
-        with output_stream.DoneManager() as this_dm:
-            try:
-                hkey = winreg.OpenKey(
-                    winreg.HKEY_LOCAL_MACHINE,
-                    r"SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock",
-                )
-                with CommonEnvironmentImports.CallOnExit(lambda: winreg.CloseKey(hkey)):
-                    value = winreg.QueryValueEx(
-                        hkey,
-                        "AllowDevelopmentWithoutDevLicense",
-                    )[0]
-
-                    if value != 1:
-                        raise Exception(
-                            textwrap.dedent(
-                                """\
-
-                                Windows Developer Mode is not enabled; this is a requirement for the setup process
-                                as Developer Mode allows for the creation of symbolic links without admin privileges.
-
-                                To enable Developer Mode in Windows:
-
-                                    1) Launch 'Developer settings'
-                                    2) Select 'Developer mode'
-
-                                """,
-                            ),
-                        )
-            except FileNotFoundError:
-                # This key isn't available on all versions of Windows
-                pass
-
-        # Check to see if long paths are enabled on Windows
-        output_stream.write("Verifying long path support on Windows...")
-        with output_stream.DoneManager() as this_dm:
-            try:
-                # Python imports can begin to break down if long paths aren't enabled
-                hkey = winreg.OpenKey(
-                    winreg.HKEY_LOCAL_MACHINE,
-                    r"SYSTEM\ControlSet001\Control\FileSystem",
-                )
-                with CommonEnvironmentImports.CallOnExit(lambda: winreg.CloseKey(hkey)):
-                    value = winreg.QueryValueEx(hkey, "LongPathsEnabled")[0]
-
-                    if value != 1:
-                        this_dm.stream.write(
-                            textwrap.dedent(
-                                """\
-
-
-                                WARNING: Long path support is not enabled. While this isn't a requirement
-                                         for running on Windows, it could present problems with
-                                         python imports in deeply nested directory hierarchies.
-
-                                         To enable long path support in Windows:
-
-                                            1) Launch 'regedit'
-                                            2) Navigate to 'HKEY_LOCAL_MACHINE\\SYSTEM\\ControlSet001\\Control\\FileSystem'
-                                            3) Edit the value 'LongPathsEnabled'
-                                            4) Set the value to 1
-
-
-                                """,
-                            ),
-                        )
-
-            except FileNotFoundError:
-                # This key isn't available on all versions of Windows
-                pass
-
-        # Check to see if git is installed and if its settings are set to the best defaults
-        if "usage: git" in CommonEnvironmentImports.Process.Execute("git")[1] != -1:
-            output_stream.write("Verifying git settings on Windows...")
-            with output_stream.DoneManager() as this_dm:
-                this_dm.result, git_output = CommonEnvironmentImports.Process.Execute(
-                    "git config --get core.autocrlf",
-                )
-
-                if this_dm.result != 0:
-                    this_dm.stream.write(git_output)
-                    assert False, this_dm.result
-
-                git_output = git_output.strip()
-
-                if git_output != "false":
-                    this_dm.stream.write(
-                        textwrap.dedent(
-                            """\
-
-
-                            WARNING: Git is configured to modify line endings on checkin and/or checkout.
-                                     While this was the recommended setting in the past, it presents problems
-                                     when running on Windows and the Windows Subsystem for Linux.
-
-                                     It is recommended that you change this setting to not modify line endings:
-
-                                        1) 'git config --global core.autocrlf false`
-
-                            """,
-                        ),
-                    )
-
-        output_stream.write("\n")
-
-
 # ----------------------------------------------------------------------
 def _SetupRecursive(
     output_stream,
