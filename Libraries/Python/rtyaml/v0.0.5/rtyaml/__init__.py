@@ -142,20 +142,20 @@ def do_load(stream, load_func):
 
     return obj
 
-def dump(data, stream=None):
-    return do_dump(data, stream, yaml.dump)
+def dump(data, stream=None, *args, **kwargs):
+    return do_dump(data, stream, yaml.dump, *args, **kwargs)
 
-def dump_all(data, stream=None):
-    return do_dump(data, stream, yaml.dump_all)
+def dump_all(data, stream=None, *args, **kwargs):
+    return do_dump(data, stream, yaml.dump_all, *args, **kwargs)
 
-def do_dump(data, stream, dump_func):
+def do_dump(data, stream, dump_func, *args, **kwargs):
     # If we pulled in an initial comment block when reading the stream, write
     # it back out at the start of the stream.
     if hasattr(data, '__initial_comment_block'):
         stream.write(data.__initial_comment_block)
 
     # Write the object to the stream.
-    return dump_func(data, stream, default_flow_style=False, allow_unicode=True, Dumper=Dumper)
+    return dump_func(data, stream, default_flow_style=False, allow_unicode=True, Dumper=Dumper, *args, **kwargs)
 
 def pprint(data):
     yaml.dump(data, sys.stdout, default_flow_style=False, allow_unicode=True)
