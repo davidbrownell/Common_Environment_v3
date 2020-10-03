@@ -91,7 +91,7 @@ class AnyOfTypeInfo(TypeInfo):
             if result is None:
                 return None
 
-            results.append(result)
+            results.append((eti.__class__.__name__, result))
 
         return textwrap.dedent(
             """\
@@ -102,7 +102,7 @@ class AnyOfTypeInfo(TypeInfo):
         ).format(
             item,
             StringHelpers.LeftJustify(
-                "\n".join(["- {}".format(result) for result in results]),
+                "\n".join(["- {}: {}".format(class_name, result) for class_name, result in results]),
                 4,
             ).rstrip(),
         )
