@@ -346,16 +346,11 @@ class EntryPointInformation(object):
 
             # Calculate the display arity
             if isinstance(type_info, DictTypeInfo):
-                if not type_info.Arity.IsCollection:
-                    raise Exception("Dictionaries must have an arity of '+', '*', or a specific number of items ({}, {})".format(self.Name, name))
-
                 for k, v in six.iteritems(type_info.Items):
                     if not isinstance(v, StringTypeInfo):
                         raise Exception("Dictionary value types must be strings ({}, {}, {})".format(self.Name, name, k))
 
-                display_arity = "*" if type_info.Arity.IsOptional or not is_positional else "+"
-
-            elif type_info.Arity.IsSingle:
+            if type_info.Arity.IsSingle:
                 display_arity = "1"
             elif type_info.Arity.IsOptional:
                 display_arity = "?"
