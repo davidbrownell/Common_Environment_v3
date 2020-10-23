@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  ClassTypeInfo_UnitTest.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-04-28 20:25:18
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-20.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Unit test for ClassTypeInfo.py"""
 
@@ -36,7 +36,7 @@ class Object(object):
     @staticmethod
     def StaticMethod(): pass
 
-    
+
 # ----------------------------------------------------------------------
 class MethodSuite(unittest.TestCase):
     # ----------------------------------------------------------------------
@@ -84,10 +84,10 @@ class ClassTypeInfoSuite(unittest.TestCase):
 
         if sys.version[0] == '2':
             # Python2 returns items in alpha order
-            self.assertEqual(ti.ConstraintsDesc, "Value must contain the attributes 'ClassMethod' <Class Method>, 'StaticMethod' <Static Method>, 'Method' <Method>")
+            self.assertEqual(ti.ConstraintsDesc, "Value may contain the attributes 'ClassMethod' <Class Method>, 'StaticMethod' <Static Method>, 'Method' <Method>")
         else:
             # Python3 returns item in declared order
-            self.assertEqual(ti.ConstraintsDesc, "Value must contain the attributes 'Method' <Method>, 'ClassMethod' <Class Method>, 'StaticMethod' <Static Method>")
+            self.assertEqual(ti.ConstraintsDesc, "Value may contain the attributes 'Method' <Method>, 'ClassMethod' <Class Method>, 'StaticMethod' <Static Method>")
 
         self.assertTrue(ti.ExpectedTypeIsCallable)
         self.assertTrue(ti.IsExpectedType(Object))

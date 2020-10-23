@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  DictTypeInfo_UnitTest.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-04-28 20:08:29
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-20.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Unit test for DictTypeInfo.py"""
 
@@ -36,7 +36,7 @@ class StandardSuite(unittest.TestCase):
     def test_Standard(self):
         self.assertEqual(self.ti.Desc, "Dictionary")
         self.assertEqual(self.ti.ExpectedType, dict)
-        self.assertEqual(self.ti.ConstraintsDesc, "Value must contain the attributes 'a' <Integer>, 'b' <String>")
+        self.assertEqual(self.ti.ConstraintsDesc, "Value may contain the attributes 'a' <Integer>, 'b' <String>")
         DictTypeInfo() # Empty is OK when require_exact_match is False or not set
         self.assertRaises(Exception, lambda: DictTypeInfo(require_exact_match=True))
 
