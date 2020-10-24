@@ -20,9 +20,11 @@ import inflect as inflect_mod
 import six
 
 import CommonEnvironment
-from CommonEnvironment.Interface import Interface, \
-                                        abstractmethod, \
-                                        abstractproperty
+from CommonEnvironment.Interface import (
+    Interface,
+    abstractmethod,
+    abstractproperty,
+)
 
 # ----------------------------------------------------------------------
 _script_fullpath = CommonEnvironment.ThisFullpath()
@@ -414,7 +416,7 @@ class TypeInfo(Interface):
 
         if isinstance(item_or_items, (dict, list, tuple)):
             if self.Arity.Max == 1 and not isinstance(item_or_items, dict):
-                return "1 item was expected"
+                return "Only 1 item was expected"
 
             if len(item_or_items) < self.Arity.Min:
                 return "At least {} {} expected ({} found)".format( inflect.no("item", self.Arity.Min),

@@ -74,7 +74,15 @@ class DictTypeInfo(TypeInfo):
         if not self.Items:
             return ''
 
-        return "Value must contain the attributes {}".format( ', '.join([ "'{}' <{}>".format(k, v.Desc) for k, v in six.iteritems(self.Items) ]))
+        if self.RequireExactMatchDefault:
+            requirement_text = "must"
+        else:
+            requirement_text = "may"
+
+        return "Value {} contain the attributes {}".format(
+            requirement_text,
+            ', '.join([ "'{}' <{}>".format(k, v.Desc) for k, v in six.iteritems(self.Items) ]),
+        )
 
     # ----------------------------------------------------------------------
     @override
