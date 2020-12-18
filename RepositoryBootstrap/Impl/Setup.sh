@@ -19,7 +19,7 @@ source ${DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL}/RepositoryBootstrap/Impl/CommonFun
 
 if [[ ${is_darwin} -eq 1 ]]
 then
-    _python_binary=python3
+    _python_binary=/Library/Frameworks/Python.framework/Versions/3.6/bin/python3
 else
     _python_binary=/opt/CommonEnvironment/python/3.6.5/bin/python
 fi
