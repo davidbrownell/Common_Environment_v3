@@ -141,8 +141,15 @@ class PythonActivationActivity(ActivationActivity):
 
                 for item in os.listdir(python_dir):
                     fullpath = os.path.join(python_dir, item)
-                    if os.path.isdir(fullpath):
-                        python_versions[item] = fullpath
+                    if not os.path.isdir(fullpath):
+                        continue
+
+                    # Ensure that python exists for this os
+                    os_fullpath = EnvironmentBootstrap.GetEnvironmentDir(fullpath)
+                    if not os.path.isdir(os_fullpath):
+                        continue
+
+                    python_versions[item] = fullpath
 
                 # ----------------------------------------------------------------------
                 def PostprocessEnvironmentDir(fullpath):

@@ -247,7 +247,7 @@ while True:
 
         fundamental_repo                    = GetFundamentalRepository()
 
-        python_root                         = os.path.join(fundamental_repo, "Tools", "Python", "v2.7.14")
+        python_root                         = os.path.join(fundamental_repo, "Tools", "Python", "v3.6.5")
         assert os.path.isdir(python_root), python_root
 
         import platform
@@ -267,7 +267,7 @@ while True:
                 binary_dir,
                 "..",
                 "lib",
-                "python2.7",
+                "python3.6",
                 "site-packages",
             )
         else:
