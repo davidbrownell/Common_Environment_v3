@@ -71,14 +71,24 @@ fi
 
 source "${DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL}/RepositoryBootstrap/Impl/CommonFunctions.sh"
 
+# Find the most recent version of the python binary
 if [[ ${is_darwin} -eq 1 ]]
 then
-    # Get the most recent version of the binary
-    python_binary=python3
+    python_dir=/Library/Frameworks/Python.framework/Versions
+    pushd ${python_dir} > /dev/null                                         # +python_dir
+
+    for d in $(find * -maxdepth 0 -type d);
+    do
+        if [[ -e ${python_dir}/${d}/bin/python ]]
+        then
+            python_binary=${python_dir}/${d}/bin/python
+        fi
+    done
+
+    popd > /dev/null                                                        # -python_dir
 else
-    # Find the python binary
     python_dir=${DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL}/Tools/Python
-    pushd ${python_dir} > /dev/null                                             # +python_dir
+    pushd ${python_dir} > /dev/null                                         # +python_dir
 
     for d in $(find v* -maxdepth 0 -type d);
     do
@@ -88,7 +98,7 @@ else
         fi
     done
 
-    popd > /dev/null                                                            # -python_dir
+    popd > /dev/null                                                        # -python_dir
 fi
 
 export PYTHONPATH=${DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL}
