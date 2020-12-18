@@ -34,19 +34,24 @@ fi
 
 # ----------------------------------------------------------------------
 # |  Python v2.7.14
-echo ""
-echo "------------------------  Python 2.7.14  -----------------------------"
 
-if [[ ! ${is_darwin} -eq 1 ]]
+# Python 2.7 does not exist on all platforms
+if [[ -e ${this_dir}/../../../Tools/Python/v2.7.14/${os_name} ]]
 then
-    source ${this_dir}/../../../Tools/openssl/v1.0.2o/Linux/Setup.sh "${DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME}"
+    echo ""
+    echo "------------------------  Python 2.7.14  -----------------------------"
+
+    if [[ ! ${is_darwin} -eq 1 ]]
+    then
+        source ${this_dir}/../../../Tools/openssl/v1.0.2o/Linux/Setup.sh "${DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME}"
+    fi
+
+    source ${this_dir}/../../../Tools/Python/v2.7.14/${os_name}/Setup.sh "${DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME}"
+
+    echo "Installing python dependencies for v2.7.14..."
+    ${setup_python_binary} -m pip install --quiet --no-warn-script-location --no-cache-dir -r ${this_dir}/python_requirements.txt -r ${this_dir}/python_linux_requirements.txt
+    echo "DONE!"
 fi
-
-source ${this_dir}/../../../Tools/Python/v2.7.14/${os_name}/Setup.sh "${DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME}"
-
-echo "Installing python dependencies for v2.7.14..."
-${setup_python_binary} -m pip install --quiet --no-warn-script-location --no-cache-dir -r ${this_dir}/python_requirements.txt -r ${this_dir}/python_linux_requirements.txt
-echo "DONE!"
 
 # ----------------------------------------------------------------------
 # |  Python v3.6.5
