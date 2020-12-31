@@ -177,7 +177,7 @@ class ScriptsActivationActivity(ActivationActivity):
                     extractors[k] = ExtractorInfo( repository,
                                                    v[0],
                                                    v[1] if len(v) > 1 else lambda x: '',
-                                                   v[2] if len(v) > 2 else lambda x: x,
+                                                   v[2] if len(v) > 2 else lambda filename: os.path.splitext(os.path.basename(filename))[0],
                                                  )
 
         # Get the scrpts
@@ -268,7 +268,7 @@ class ScriptsActivationActivity(ActivationActivity):
                             continue
 
                         # Create an unique name for the wrapper
-                        base_name = script_info.Extractor.ScriptNameDecoratorFunc(os.path.splitext(os.path.basename(script_info.Filename))[0])
+                        base_name = script_info.Extractor.ScriptNameDecoratorFunc(script_info.Filename)
 
                         conflicts = []
 

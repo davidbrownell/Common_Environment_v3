@@ -291,8 +291,19 @@ def GetCustomScriptExtractors():
 
     # ----------------------------------------------------------------------
     def PythonWrapper(script_filename):
-        if os.path.basename(script_filename) == "__init__.py":
+        dirname, basename = os.path.split(script_filename)
+
+        if basename == "__init__.py":
             return
+
+        if basename == "__main__.py":
+            # Invoke the dir
+            script_filename = dirname
+        else:
+            # Don't invoke anything in a directory that has a main file
+            potential_main_name = os.path.join(dirname, "__main__.py")
+            if os.path.isfile(potential_main_name):
+                return
 
         return [
             Commands.EchoOff(),
@@ -315,6 +326,16 @@ def GetCustomScriptExtractors():
             and co.co_consts[0][0] != "_"
         ):
             return StringHelpers.Wrap(co.co_consts[0], 100)
+
+    # ----------------------------------------------------------------------
+    def PythonScriptNameDecorator(script_filename):
+        dirname, basename = os.path.split(script_filename)
+        basename = os.path.splitext(basename)[0]
+
+        if basename == "__main__":
+            basename = os.path.split(dirname)[1]
+
+        return basename
 
     # ----------------------------------------------------------------------
     def PowershellScriptWrapper(script_filename):
@@ -341,7 +362,7 @@ def GetCustomScriptExtractors():
 
     return OrderedDict(
         [
-            (".py", (PythonWrapper, PythonDocs)),
+            (".py", (PythonWrapper, PythonDocs, PythonScriptNameDecorator)),
             (".ps1", PowershellScriptWrapper),
             (CurrentShell.ScriptExtension, EnvironmentScriptWrapper),
         ],
