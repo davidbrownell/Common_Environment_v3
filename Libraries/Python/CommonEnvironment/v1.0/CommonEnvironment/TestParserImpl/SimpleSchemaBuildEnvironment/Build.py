@@ -46,7 +46,7 @@ def Build(
         prefix="\nResults: ",
         suffix="\n",
     ) as dm:
-        schema_filename = os.path.realpath(os.path.join(_script_dir, "..", "..", "..", "..", "..", "..", "..", "Scripts", "Tester.Benchmarks.SimpleSchema"))
+        schema_filename = os.path.realpath(os.path.join(_script_dir, "..", "..", "..", "..", "..", "..", "..", "Scripts", "Tester", "Benchmarks.SimpleSchema"))
         assert os.path.isfile(schema_filename), schema_filename
 
         command_line = '{script} Generate PythonJson Tester_Benchmarks "{output_dir}" "/input={input}"{force}{verbose}'.format(
