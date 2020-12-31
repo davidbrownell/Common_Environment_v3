@@ -80,7 +80,6 @@ def GetCustomActions(
         os.environ["DEVELOPMENT_ENVIRONMENT_TEST_PARSERS"] = ""
         os.environ["DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_VALIDATORS"] = ""
         os.environ["DEVELOPMENT_ENVIRONMENT_TESTER_CONFIGURATIONS"] = ""
-        os.environ["DEVELOPMENT_ENVIRONMENT_FORMATTERS"] = ""
 
         actions += [
             Commands.Set("DEVELOPMENT_ENVIRONMENT_COMPILERS", None),
@@ -88,7 +87,6 @@ def GetCustomActions(
             Commands.Set("DEVELOPMENT_ENVIRONMENT_TEST_PARSERS", None),
             Commands.Set("DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_VALIDATORS", None),
             Commands.Set("DEVELOPMENT_ENVIRONMENT_TESTER_CONFIGURATIONS", None),
-            Commands.Set("DEVELOPMENT_ENVIRONMENT_FORMATTERS", None),
         ]
 
         actions += DynamicPluginArchitecture.CreateRegistrationStatements(
@@ -119,18 +117,6 @@ def GetCustomActions(
             os.path.join(_script_dir, "Scripts", "CodeCoverageValidators"),
             lambda fullpath, name, ext: ext == ".py"
             and name.endswith("CodeCoverageValidator"),
-        )
-
-        actions += DynamicPluginArchitecture.CreateRegistrationStatements(
-            "DEVELOPMENT_ENVIRONMENT_FORMATTERS",
-            os.path.join(
-                _script_dir,
-                "src",
-                "Formatter",
-                "CommonEnvironment_Formatter",
-                "Plugins",
-            ),
-            lambda fullpath, name, ext: ext == ".py" and name.endswith("Formatter"),
         )
 
         # Check to see if developer mode is enabled on Windows
