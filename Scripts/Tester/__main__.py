@@ -14,43 +14,31 @@
 # ----------------------------------------------------------------------
 """General purpose test executor."""
 
-import datetime
 import json
-import multiprocessing
 import os
 import re
 import sys
 import textwrap
-import threading
-import time
-import traceback
 
-from collections import OrderedDict, namedtuple
+from collections import OrderedDict
 
 import colorama
 import six
-import inflect as inflect_mod
 
 import CommonEnvironment
-from CommonEnvironment import Nonlocals, ObjectReprImpl
+from CommonEnvironment import Nonlocals
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CommandLine
 from CommonEnvironment import FileSystem
 from CommonEnvironment.Shell.All import CurrentShell
 from CommonEnvironment import StringHelpers
 from CommonEnvironment.StreamDecorator import StreamDecorator
-from CommonEnvironment import TaskPool
-from CommonEnvironment.TestExecutorImpl import TestExecutorImpl
 from CommonEnvironment.TestTypeMetadata import TEST_TYPES
 
 from CommonEnvironment.TypeInfo.FundamentalTypes.DirectoryTypeInfo import (
     DirectoryTypeInfo,
 )
-from CommonEnvironment.TypeInfo.FundamentalTypes.DurationTypeInfo import DurationTypeInfo
 from CommonEnvironment.TypeInfo.FundamentalTypes.FilenameTypeInfo import FilenameTypeInfo
-from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import (
-    StringSerialization,
-)
 
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()
@@ -62,66 +50,19 @@ sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
 with CallOnExit(lambda: sys.path.pop(0)):
     from RepositoryBootstrap.SetupAndActivate import DynamicPluginArchitecture as DPA
 
+from RunTests import CreateRunTestsFunc, inflect
+
 # ----------------------------------------------------------------------
 # <Too many lines in module> pylint: disable = C0302
 
 _TEMP_DIR_OVERRIDE_ENVIRONMENT_NAME         = "DEVELOPMENT_ENVIRONMENT_TESTER_TEMP_DIRECTORY"
 
 StreamDecorator.InitAnsiSequenceStreams()
-inflect                                     = inflect_mod.engine()
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 TEST_IGNORE_FILENAME_TEMPLATE               = "{}-ignore"
-
-# ----------------------------------------------------------------------
-if sys.version_info[0] == 2:
-    # The 'readerwriterlock' python library is only available for python3.
-    # This is actually OK, as the only compiler that should ever be used
-    # in activated python2 environments is the python compiler (which can
-    # be invoked in parallel). Create a stub, noop interface here so that
-    # the code can be consistent between python2 and python3.
-    class RWLock(object):
-        # ----------------------------------------------------------------------
-        @staticmethod
-        def gen_wlock():
-            raise Exception(
-                textwrap.dedent(
-                    """\
-                    A write lock should be acquired in python2. Check the compiler
-                    method 'ExecuteExclusively' to investigate why this might be
-                    happening.
-
-                    The only compiler expected to be invoked in python2 is the
-                    python compiler.
-                    """,
-                ),
-            )
-
-        # ----------------------------------------------------------------------
-        @classmethod
-        def gen_rlock(cls):
-            return cls._Lock()
-
-        # ----------------------------------------------------------------------
-        # ----------------------------------------------------------------------
-        # ----------------------------------------------------------------------
-        class _Lock(object):
-            # ----------------------------------------------------------------------
-            @staticmethod
-            def acquire():
-                pass
-
-            # ----------------------------------------------------------------------
-            @staticmethod
-            def release():
-                pass
-
-else:
-    from readerwriterlock import rwlock
-
-    RWLock = rwlock.RWLockWrite
 
 
 # ----------------------------------------------------------------------
@@ -357,494 +298,6 @@ def _CreateConfigurations():
 CONFIGURATIONS                              = _CreateConfigurations()
 del _CreateConfigurations
 
-# ----------------------------------------------------------------------
-# |
-# |  Public Types
-# |
-# ----------------------------------------------------------------------
-class Results(object):
-    """Results for executing a single test"""
-
-    # ----------------------------------------------------------------------
-    # |  Public Types
-    TestParseResult                         = namedtuple("TestParseResult", ["Result", "Time", "Benchmarks"])
-
-    CoverageValidationResult                = namedtuple(
-        "CoverageValidationResult",
-        ["Result", "Time", "Min"],
-    )
-
-    # ----------------------------------------------------------------------
-    def __init__(self):
-        self.compiler_context               = None
-
-        self.compile_binary                 = None
-        self.compile_result                 = None
-        self.compile_log                    = None
-        self.compile_time                   = None
-
-        self.has_errors                     = False
-
-        self.execute_results                = []        # TestExecutorImpl.ExecuteResult
-        self.test_parse_results             = []        # TestParseResult
-        self.coverage_validation_results    = []        # CoverageValidationResult
-
-    # ----------------------------------------------------------------------
-    def __repr__(self):
-        return ObjectReprImpl(self)
-
-    # ----------------------------------------------------------------------
-    def ResultCode(self):
-        if self.compile_result is None or self.compile_result < 0:
-            return self.compile_result
-
-        nonlocals = Nonlocals(
-            result=self.compile_result,
-        )
-
-        # ----------------------------------------------------------------------
-        def ApplyResult(result):
-            if result is not None:
-                if result < 0:
-                    nonlocals.result = result
-                    return False
-
-                if nonlocals.result in [None, 0]:
-                    nonlocals.result = result
-
-            return True
-
-        # ----------------------------------------------------------------------
-
-        for execute_result, test_parse_result, coverage_validation_result in zip(
-            self.execute_results,
-            self.test_parse_results,
-            self.coverage_validation_results,
-        ):
-            if execute_result is not None:
-                should_continue = True
-
-                for item_result in [
-                    execute_result.TestResult,
-                    execute_result.CoverageResult,
-                ]:
-                    if not ApplyResult(item_result):
-                        should_continue = False
-                        break
-
-                if not should_continue:
-                    break
-
-            if test_parse_result is not None and not ApplyResult(
-                test_parse_result.Result,
-            ):
-                break
-
-            if coverage_validation_result is not None and not ApplyResult(
-                coverage_validation_result.Result,
-            ):
-                break
-
-        return nonlocals.result
-
-    # ----------------------------------------------------------------------
-    def ToString(
-        self,
-        compiler,
-        test_parser,
-        optional_test_executor,
-        optional_code_coverage_validator,
-        include_benchmarks=False,
-    ):
-        # ----------------------------------------------------------------------
-        def ResultToString(result):
-            if result is None:
-                result = "{}N/A".format(colorama.Style.DIM)
-            elif result == 0:
-                result = "{}{}Succeeded".format(
-                    colorama.Fore.GREEN,
-                    colorama.Style.BRIGHT,
-                )
-            elif result < 0:
-                result = "{}{}Failed ({})".format(
-                    colorama.Fore.RED,
-                    colorama.Style.BRIGHT,
-                    result,
-                )
-            elif result > 0:
-                result = "{}{}Unknown ({})".format(
-                    colorama.Fore.YELLOW,
-                    colorama.Style.BRIGHT,
-                    result,
-                )
-            else:
-                assert False, result
-
-            return "{}{}".format(result, colorama.Style.RESET_ALL)
-
-        # ----------------------------------------------------------------------
-
-        results = [
-            "{color_push}{compiler}{test_parser}{executor}{validator}{color_pop}\n\n".format(
-                color_push="{}{}".format(colorama.Fore.WHITE, colorama.Style.BRIGHT),
-                color_pop=colorama.Style.RESET_ALL,
-                compiler="Compiler:                                       {}\n".format(
-                    compiler.Name,
-                ),
-                test_parser="Test Parser:                                    {}\n".format(
-                    test_parser.Name,
-                ),
-                executor="Test Executor:                                  {}\n".format(
-                    optional_test_executor.Name,
-                ) if optional_test_executor else "",
-                validator="Code Coverage Validator:                        {}\n".format(
-                    optional_code_coverage_validator.Name,
-                ) if optional_code_coverage_validator else "",
-            ),
-        ]
-
-        result_code = self.ResultCode()
-        if result_code is None:
-            return "Result:                                         {}\n".format(
-                ResultToString(result_code),
-            )
-
-        results.append(
-            textwrap.dedent(
-                """\
-                Result:                                         {result_code}
-
-                Compile Result:                                 {compile_result}
-                Compile Binary:                                 {compile_binary}
-                Compile Log Filename:                           {compile_log}
-                Compile Time:                                   {compile_time}
-
-                """,
-            ).format(
-                result_code=ResultToString(result_code),
-                compile_result=ResultToString(self.compile_result),
-                compile_binary=self.compile_binary or "N/A",
-                compile_log=self.compile_log or "N/A",
-                compile_time=self.compile_time or "N/A",
-            ),
-        )
-
-        for (
-            index,
-            (execute_result, test_parse_result, coverage_validation_result),
-        ) in enumerate(
-            zip(
-                self.execute_results,
-                self.test_parse_results,
-                self.coverage_validation_results,
-            ),
-        ):
-            if (
-                not execute_result
-                and not test_parse_result
-                and not coverage_validation_result
-            ):
-                continue
-
-            header = "Iteration #{}".format(index + 1)
-            results.append("{}\n{}\n".format(header, "-" * len(header)))
-
-            if execute_result:
-                results.append(
-                    StringHelpers.LeftJustify(
-                        textwrap.dedent(
-                            # <Wrong hanging indentation> pylint: disable = C0330
-                            """\
-                                Test Execution Result:                      {test_result}
-                                Test Execution Log Filename:                {test_log}
-                                Test Execution Time:                        {test_time}
-
-                            """,
-                        ).format(
-                            test_result=ResultToString(execute_result.TestResult),
-                            test_log=execute_result.TestOutput,
-                            test_time=execute_result.TestTime,
-                        ),
-                        4,
-                        skip_first_line=False,
-                    ),
-                )
-
-            if test_parse_result:
-                results.append(
-                    StringHelpers.LeftJustify(
-                        textwrap.dedent(
-                            # <Wrong hanging indentation> pylint: disable = C0330
-                            """\
-                            Test Parse Result:                          {test_parse_result}
-                            Test Parse Time:                            {test_parse_time}
-                            """,
-                        ).format(
-                            test_parse_result=ResultToString(test_parse_result.Result),
-                            test_parse_time=test_parse_result.Time,
-                        ),
-                        4,
-                        skip_first_line=False,
-                    ),
-                )
-
-                if test_parse_result.Benchmarks and include_benchmarks:
-                    results.append("    Test Parse Benchmarks:\n")
-
-                    for benchmark_name, benchmarks in six.iteritems(
-                        test_parse_result.Benchmarks,
-                    ):
-                        results.append("        {}:\n".format(benchmark_name))
-
-                        for benchmark in benchmarks:
-                            results.append(
-                                StringHelpers.LeftJustify(
-                                    textwrap.dedent(
-                                        """\
-                                        {name} [{extractor}]
-                                            {source_filename} <{source_line}>
-                                                Iterations:             {iterations}
-                                                Samples:                {samples}
-
-                                                Mean:                   {mean} {units}
-                                                Min:                    {min} {units}
-                                                Max:                    {max} {units}
-                                                Standard Deviation:     {standard_deviation} {units}
-
-                                        """,
-                                    ).format(
-                                        name=benchmark.Name,
-                                        extractor=benchmark.Extractor,
-                                        source_filename=benchmark.SourceFilename,
-                                        source_line=benchmark.SourceLine,
-                                        iterations=benchmark.Iterations,
-                                        samples=benchmark.Samples,
-                                        mean=benchmark.Mean,
-                                        min=benchmark.Min,
-                                        max=benchmark.Max,
-                                        standard_deviation=benchmark.StandardDeviation,
-                                        units=benchmark.Units,
-                                    ),
-                                    12,
-                                    skip_first_line=False,
-                                ),
-                            )
-
-                results.append("\n")
-
-            if execute_result and execute_result.CoverageResult is not None:
-                # ----------------------------------------------------------------------
-                def GetPercentageInfo():
-                    if execute_result.CoveragePercentages is None:
-                        return "N/A"
-
-                    output = []
-
-                    display_template = "        - [{value:<7}] {name:<30}{suffix}"
-
-                    for name, percentage_info in six.iteritems(
-                        execute_result.CoveragePercentages,
-                    ):
-                        if isinstance(percentage_info, tuple):
-                            percentage, suffix = percentage_info
-                        else:
-                            percentage = percentage_info
-                            suffix = None
-
-                        output.append(
-                            display_template.format(
-                                value="{0:0.2f}%".format(percentage),
-                                name=name,
-                                suffix="" if not suffix else " ({})".format(suffix),
-                            ),
-                        )
-
-                    return "\n{}".format("\n".join(output))
-
-                # ----------------------------------------------------------------------
-
-                results.append(
-                    StringHelpers.LeftJustify(
-                        textwrap.dedent(
-                            # <Wrong hanging indentation> pylint: disable = C0330
-                            """\
-                            Code Coverage Result:                       {result}
-                            Code Coverage Log Filename:                 {log}
-                            Code Coverage Execution Time:               {time}
-                            Code Coverage Data Filename:                {data}
-                            Code Coverage Percentage:                   {percentage}
-                            Code Coverage Percentages:                  {percentages}
-
-                            """,
-                        ).format(
-                            result=ResultToString(execute_result.CoverageResult),
-                            log=execute_result.CoverageOutput or "N/A",
-                            time=execute_result.CoverageTime or "N/A",
-                            data=execute_result.CoverageDataFilename or "N/A",
-                            percentage="{0:0.2f}%".format(
-                                execute_result.CoveragePercentage,
-                            ) if execute_result.CoveragePercentage is not None else "N/A",
-                            percentages=GetPercentageInfo(),
-                        ),
-                        4,
-                        skip_first_line=False,
-                    ),
-                )
-
-            if coverage_validation_result:
-                results.append(
-                    StringHelpers.LeftJustify(
-                        textwrap.dedent(
-                            # <Wrong hanging indentation> pylint: disable = C0330
-                            """\
-                            Code Coverage Validation Result:            {result}
-                            Code Coverage Validation Time:              {time}
-                            Code Coverage Minimum Percentage:           {min}
-
-                            """,
-                        ).format(
-                            result=ResultToString(coverage_validation_result.Result),
-                            time=coverage_validation_result.Time,
-                            min="N/A" if coverage_validation_result.Min is None else "{}%".format(
-                                coverage_validation_result.Min,
-                            ),
-                        ),
-                        4,
-                        skip_first_line=False,
-                    ),
-                )
-        return "".join(results)
-
-    # ----------------------------------------------------------------------
-    def TotalTime(self):
-        dti = DurationTypeInfo()
-
-        total_time = datetime.timedelta(
-            seconds=0,
-        )
-
-        get_duration = lambda duration: StringSerialization.DeserializeItem(
-            dti,
-            duration,
-        ) if duration is not None else datetime.timedelta(
-            seconds=0,
-        )
-
-        total_time += get_duration(self.compile_time)
-
-        # ----------------------------------------------------------------------
-        def Average(items, attr_name):
-            num_items = 0
-            total_time = datetime.timedelta(
-                seconds=0,
-            )
-
-            for item in items:
-                value = getattr(item, attr_name, None)
-                if value is not None:
-                    num_items += 1
-                    total_time += get_duration(value)
-
-            if num_items == 0:
-                return total_time
-
-            return total_time / num_items
-
-        # ----------------------------------------------------------------------
-
-        total_time += Average(self.execute_results, "TestTime")
-        total_time += Average(self.execute_results, "CoverageTime")
-        total_time += Average(self.test_parse_results, "Time")
-        total_time += Average(self.coverage_validation_results, "Time")
-
-        return StringSerialization.SerializeItem(dti, total_time)
-
-
-# ----------------------------------------------------------------------
-class CompleteResult(object):
-    """Results for both debug and release builds"""
-
-    # ----------------------------------------------------------------------
-    def __init__(self, item):
-        self.Item                           = item
-        self.debug                          = Results()
-        self.release                        = Results()
-
-    # ----------------------------------------------------------------------
-    def __repr__(self):
-        return ObjectReprImpl(self)
-
-    # ----------------------------------------------------------------------
-    def ResultCode(self):
-        result = None
-
-        for results in [self.debug, self.release]:
-            this_result = results.ResultCode()
-            if this_result is None:
-                continue
-
-            if this_result < 0:
-                result = this_result
-                break
-            elif result in [None, 0]:
-                result = this_result
-
-        return result
-
-    # ----------------------------------------------------------------------
-    def ToString(
-        self,
-        compiler,
-        test_parser,
-        optional_test_executor,
-        optional_code_coverage_validator,
-        include_benchmarks=False,
-    ):
-        header_length = max(180, len(self.Item) + 4)
-
-        return textwrap.dedent(
-            """\
-            {color_push}{header}
-            |{item:^{item_length}}|
-            {header}{color_pop}
-
-            {color_push}DEBUG:{color_pop}
-            {debug}
-
-            {color_push}RELEASE:{color_pop}
-            {release}
-
-            """,
-        ).format(
-            color_push="{}{}".format(colorama.Fore.WHITE, colorama.Style.BRIGHT),
-            color_pop=colorama.Style.RESET_ALL,
-            header="=" * header_length,
-            item=self.Item,
-            item_length=header_length - 2,
-            debug="N/A" if not self.debug else StringHelpers.LeftJustify(
-                self.debug.ToString(
-                    compiler,
-                    test_parser,
-                    optional_test_executor,
-                    optional_code_coverage_validator,
-                    include_benchmarks=include_benchmarks,
-                ),
-                4,
-                skip_first_line=False,
-            ).rstrip(),
-            release="N/A" if not self.release else StringHelpers.LeftJustify(
-                self.release.ToString(
-                    compiler,
-                    test_parser,
-                    optional_test_executor,
-                    optional_code_coverage_validator,
-                    include_benchmarks=include_benchmarks,
-                ),
-                4,
-                skip_first_line=False,
-            ).rstrip(),
-        )
-
 
 # ----------------------------------------------------------------------
 # |
@@ -916,683 +369,6 @@ def ExtractTestItems(
 
     return test_items
 
-# ----------------------------------------------------------------------
-def GenerateTestResults(
-    test_items,
-    output_dir,
-    compiler,
-    test_parser,
-    optional_test_executor,
-    optional_code_coverage_validator,
-    execute_tests_in_parallel,
-    iterations,
-    debug_on_error,
-    continue_iterations_on_error,
-    debug_only,
-    release_only,
-    build_only,
-    output_stream,
-    verbose,
-    no_status,
-    max_num_concurrent_tasks=None,
-):
-    assert test_items
-    assert output_dir
-    assert compiler
-    assert test_parser
-    assert iterations > 0, iterations
-    assert output_stream
-
-    max_num_concurrent_tasks = max_num_concurrent_tasks or multiprocessing.cpu_count()
-    assert max_num_concurrent_tasks > 0, max_num_concurrent_tasks
-
-    # Check for congruent plugins
-    result = compiler.ValidateEnvironment()
-    if result:
-        output_stream.write(
-            "ERROR: The current environment is not supported by the compiler '{}': {}.\n".format(
-                compiler.Name,
-                result,
-            ),
-        )
-        return None
-
-    if not test_parser.IsSupportedCompiler(compiler):
-        raise Exception(
-            "The test parser '{}' does not support the compiler '{}'.".format(
-                test_parser.Name,
-                compiler.Name,
-            ),
-        )
-
-    if optional_test_executor:
-        result = optional_test_executor.ValidateEnvironment()
-        if result:
-            output_stream.write(
-                "ERROR: The current environment is not supported by the test executor '{}': {}.\n".format(
-                    optional_test_executor.Name,
-                    result,
-                ),
-            )
-            return None
-
-        if not optional_test_executor.IsSupportedCompiler(compiler):
-            raise Exception(
-                "The test executor '{}' does not support the compiler '{}'.".format(
-                    optional_test_executor.Name,
-                    compiler.Name,
-                ),
-            )
-
-    if optional_code_coverage_validator and not optional_test_executor:
-        raise Exception(
-            "A code coverage validator cannot be used without a test executor",
-        )
-
-    FileSystem.MakeDirs(output_dir)
-
-    # Ensure that we only build the debug configuration with code coverage
-    if optional_code_coverage_validator:
-        execute_tests_in_parallel = False
-
-        if compiler.IsCompiler:
-            debug_only = True
-            release_only = False
-
-    internal_exception_result_code = 54321
-
-    # ----------------------------------------------------------------------
-    # |  Prepare the working data
-    WorkingData = namedtuple(
-        "ResultsWorkingData",
-        ["complete_result", "output_dir", "execution_lock"],
-    )
-
-    working_data_items = []
-
-    if len(test_items) == 1:
-        common_prefix = FileSystem.GetCommonPath(
-            test_items[0],
-            os.path.abspath(os.getcwd()),
-        )
-    else:
-        common_prefix = FileSystem.GetCommonPath(*test_items)
-
-    for test_item in test_items:
-        if not compiler.IsSupported(test_item):
-            continue
-
-        # The base name used for all output for this particular test is based on the name of
-        # the test itself.
-        output_name = FileSystem.TrimPath(test_item, common_prefix)
-
-        for bad_char in [
-            "\\",
-            "/",
-            ":",
-            "*",
-            "?",
-            '"',
-            "<",
-            ">",
-            "|",
-        ]:
-            output_name = output_name.replace(bad_char, "_")
-
-        working_data_items.append(
-            WorkingData(
-                CompleteResult(test_item),
-                os.path.join(output_dir, output_name),
-                threading.Lock(),
-            ),
-        )
-
-    # ----------------------------------------------------------------------
-    # |  Build
-
-    # Prepare the context
-    for working_data in working_data_items:
-        # ----------------------------------------------------------------------
-        def PopulateResults(results, configuration):
-            output_dir = os.path.join(working_data.output_dir, configuration)
-
-            FileSystem.RemoveTree(output_dir)
-            FileSystem.MakeDirs(output_dir)
-
-            if compiler.IsVerifier:
-                results.compiler_binary = working_data.complete_result.Item
-            else:
-                results.compiler_binary = os.path.join(output_dir, "test")
-
-                ext = getattr(compiler, "BinaryExtension", None)
-                if ext:
-                    results.compiler_binary += ext
-
-            results.compile_log = os.path.join(output_dir, "compile.txt")
-            results.compiler_context = output_dir
-
-        # ----------------------------------------------------------------------
-
-        if not release_only or not compiler.IsCompiler:
-            PopulateResults(working_data.complete_result.debug, "Debug")
-
-        if not debug_only and compiler.IsCompiler:
-            PopulateResults(working_data.complete_result.release, "Release")
-
-    # Execute the build in parallel
-    nonlocals = Nonlocals(
-        build_failures=0,
-    )
-    build_failures_lock = threading.Lock()
-
-    build_mutex = RWLock()
-
-    # ----------------------------------------------------------------------
-    def BuildThreadProc(task_index, output_stream, on_status_update):
-        if no_status:
-            on_status_update = lambda value: None
-
-        working_data = working_data_items[task_index % len(working_data_items)]
-
-        if task_index >= len(working_data_items):
-            configuration_results = working_data.complete_result.release
-            is_debug = False
-        else:
-            configuration_results = working_data.complete_result.debug
-            is_debug = True
-
-        if configuration_results.compiler_context is None:
-            return 0
-
-        compile_result = None
-        compile_output = ""
-        start_time = time.time()
-
-        try:
-            # Create the compiler context
-            on_status_update("Configuring")
-
-            assert os.path.isdir(
-                configuration_results.compiler_context,
-            ), configuration_results.compiler_context
-
-            configuration_results.compiler_context = compiler.GetContextItem(
-                working_data.complete_result.Item,
-                six.moves.StringIO(),
-                is_debug=is_debug,
-                is_profile=bool(optional_test_executor),
-                output_filename=configuration_results.compile_binary,
-                output_dir=configuration_results.compiler_context,
-                force=True,
-            )
-
-            if configuration_results.compiler_context is None:
-                configuration_results.compile_binary = None
-                return None
-
-            on_status_update("Waiting")
-
-            if compiler.ExecuteExclusively(configuration_results.compiler_context):
-                build_lock = build_mutex.gen_wlock()
-            else:
-                build_lock = build_mutex.gen_rlock()
-
-            build_lock.acquire()
-            with CallOnExit(build_lock.release):
-                with working_data.execution_lock:
-                    on_status_update("Building")
-
-                    sink = six.moves.StringIO()
-
-                    if compiler.IsCompiler:
-                        compile_result = compiler.Compile(
-                            configuration_results.compiler_context,
-                            sink,
-                            verbose=verbose,
-                        )
-                        compiler.RemoveTemporaryArtifacts(
-                            configuration_results.compiler_context,
-                        )
-                    elif compiler.IsCodeGenerator:
-                        compile_result = compiler.Generate(
-                            configuration_results.compiler_context,
-                            sink,
-                            verbose=verbose,
-                        )
-                    elif compiler.IsVerifier:
-                        compile_result = compiler.Verify(
-                            configuration_results.compiler_context,
-                            sink,
-                            verbose=verbose,
-                        )
-                    else:
-                        assert False, compiler.Name
-
-                    compile_output = sink.getvalue()
-
-                    if compile_result != 0:
-                        output_stream.write(compile_output)
-
-        except:
-            compile_result = internal_exception_result_code
-            compile_output = traceback.format_exc()
-
-            raise
-
-        finally:
-            configuration_results.compile_result = compile_result
-            configuration_results.compile_time = str(
-                datetime.timedelta(
-                    seconds=(time.time() - start_time),
-                ),
-            )
-
-            with open(configuration_results.compile_log, "w") as f:
-                f.write(compile_output.replace("\r\n", "\n"))
-
-            if compile_result != 0:
-                with build_failures_lock:
-                    nonlocals.build_failures += 1
-
-        return compile_result
-
-    # ----------------------------------------------------------------------
-
-    debug_tasks = []
-    release_tasks = []
-
-    for working_data in working_data_items:
-        # Rather than add the tasks back-to-back, add all of the debug tasks followed by
-        # all of the release tasks. This will help to avoid potential build issues associated
-        # with building the same binary that has slightly different output.
-        debug_tasks.append(
-            TaskPool.Task(
-                "{} [Debug]".format(working_data.complete_result.Item),
-                BuildThreadProc,
-            ),
-        )
-        release_tasks.append(
-            TaskPool.Task(
-                "{} [Release]".format(working_data.complete_result.Item),
-                BuildThreadProc,
-            ),
-        )
-
-    with output_stream.SingleLineDoneManager(
-        "Building...",
-        done_suffix=lambda: inflect.no("build failure", nonlocals.build_failures),
-    ) as this_dm:
-        result = TaskPool.Execute(
-            debug_tasks + release_tasks,
-            this_dm.stream,
-            progress_bar=True,
-            display_errors=verbose,
-            num_concurrent_tasks=max_num_concurrent_tasks,
-        )
-
-    if build_only:
-        return [working_data.complete_result for working_data in working_data_items]
-
-    # ----------------------------------------------------------------------
-    # |  Execute
-
-    # ----------------------------------------------------------------------
-    def TestThreadProc(
-        output_stream,
-        on_status_update,
-        working_data,
-        configuration_results,
-        configuration,
-        iteration,
-    ):
-        # Don't continue on error unless explicitly requested
-        if not continue_iterations_on_error and configuration_results.has_errors:
-            return
-
-        if no_status:
-            on_status_update = lambda value: None
-
-        on_status_update("Waiting")
-
-        with working_data.execution_lock:
-            on_status_update("Testing")
-
-            # ----------------------------------------------------------------------
-            def WriteLog(log_name, content):
-                if content is None:
-                    return None
-
-                log_filename = os.path.join(
-                    working_data.output_dir,
-                    configuration,
-                    "{0}.{1:06d}.txt".format(log_name, iteration + 1),
-                )
-
-                content = content.replace("\r\n", "\n")
-
-                # Try different techniques to write a variety of stubborn content
-                try:
-                    with open(log_filename, "w") as f:
-                        f.write(content)
-                except UnicodeEncodeError:
-                    byte_content = None
-
-                    for encoding in ["utf-8", "utf-16", "utf-32"]:
-                        try:
-                            byte_content = content.encode(encoding)
-                            break
-                        except UnicodeEncodeError:
-                            pass
-
-                    if byte_content:
-                        with open(log_filename, "wb") as f:
-                            f.write(byte_content)
-                    else:
-                        # We don't have a good way to write this content to a file,
-                        # but don't want to lose it either.
-                        output_stream.write(
-                            "\n\nUnable to write the following content to a log file:\n\n",
-                        )
-                        output_stream.write(content)
-                        output_stream.write("\n\n")
-
-                        with open(log_filename, "w") as f:
-                            f.write(
-                                "The content could not be encoded and has been written to stdout.\n",
-                            )
-
-                return log_filename
-
-            # ----------------------------------------------------------------------
-
-            # Run the test...
-            execute_result = None
-            execute_start_time = time.time()
-
-            try:
-                test_command_line = test_parser.CreateInvokeCommandLine(
-                    configuration_results.compiler_context,
-                    debug_on_error,
-                )
-
-                if optional_test_executor:
-                    executor = optional_test_executor
-                else:
-                    executor = next(
-                        executor
-                        for executor in TEST_EXECUTORS
-                        if executor.Name == "Standard"
-                    )
-
-                execute_result = executor.Execute(
-                    on_status_update,
-                    compiler,
-                    configuration_results.compiler_context,
-                    test_command_line,
-                )
-
-                test_parser.RemoveTemporaryArtifacts(
-                    configuration_results.compiler_context,
-                )
-
-                if (
-                    execute_result.TestResult is not None
-                    and execute_result.TestResult != 0
-                ):
-                    output_stream.write(execute_result.TestOutput)
-
-            except:
-                execute_result = TestExecutorImpl.ExecuteResult(
-                    internal_exception_result_code,
-                    traceback.format_exc(),
-                    None,               # Populate below
-                )
-                raise
-
-            finally:
-                assert execute_result
-
-                if execute_result.TestTime is None:
-                    execute_result.TestTime = str(
-                        datetime.timedelta(
-                            seconds=(time.time() - execute_start_time),
-                        ),
-                    )
-
-                original_test_output = execute_result.TestOutput
-
-                execute_result.TestOutput = WriteLog(
-                    "test",
-                    execute_result.TestOutput,
-                )
-                execute_result.CoverageOutput = WriteLog(
-                    "executor",
-                    execute_result.CoverageOutput,
-                )
-
-                configuration_results.execute_results[iteration] = execute_result
-
-                if execute_result.TestResult != 0:
-                    configuration_results.has_errors = True
-
-        # Parse the results...
-        on_status_update("Parsing")
-
-        parse_start_time = time.time()
-        test_parse_benchmarks = []
-
-        try:
-            if original_test_output is None:
-                test_parse_result = -1
-            else:
-                test_parse_result = test_parser.Parse(original_test_output)
-
-                if isinstance(test_parse_result, tuple):
-                    test_parse_result, test_parse_benchmarks = test_parse_result
-
-        except:
-            test_parse_result = internal_exception_result_code
-            raise
-
-        finally:
-            test_parse_time = str(
-                datetime.timedelta(
-                    seconds=(time.time() - parse_start_time),
-                ),
-            )
-
-            configuration_results.test_parse_results[
-                iteration
-            ] = Results.TestParseResult(
-                test_parse_result,
-                test_parse_time,
-                test_parse_benchmarks,
-            )
-
-            if test_parse_result != 0:
-                configuration_results.has_errors = True
-
-        # Validate code coverage metrics...
-        if optional_code_coverage_validator:
-            on_status_update("Validating Code Coverage")
-
-            validate_start_time = time.time()
-
-            try:
-                if execute_result.CoveragePercentage is None:
-                    validation_result = -1
-                    validation_min = None
-
-                elif isinstance(compiler.InputTypeInfo, DirectoryTypeInfo):
-                    # If the compiler processes an entire directory at a time, process the results
-                    # individually to determine the final results.
-                    validation_result = None
-                    validation_min = None
-
-                    for (filename, (percentage, percentage_desc)) in six.iteritems(
-                        execute_result.CoveragePercentages,
-                    ):
-                        this_validation_result, this_validation_min = optional_code_coverage_validator.Validate(
-                            filename,
-                            percentage,
-                        )
-
-                        if validation_result is None:
-                            validation_result = this_validation_result
-                            validation_min = this_validation_min
-
-                        else:
-                            validation_result = (
-                                this_validation_result
-                                if this_validation_result < 0
-                                else validation_result
-                            )
-                            assert this_validation_min == validation_min, (
-                                this_validation_min,
-                                validation_min,
-                            )
-
-                else:
-                    validation_result, validation_min = optional_code_coverage_validator.Validate(
-                        working_data.complete_result.Item,
-                        execute_result.CoveragePercentage,
-                    )
-
-            except:
-                validation_result = internal_exception_result_code
-                validation_min = None
-
-                raise
-
-            finally:
-                validation_parse_time = str(
-                    datetime.timedelta(
-                        seconds=(time.time() - validate_start_time),
-                    ),
-                )
-
-                configuration_results.coverage_validation_results[
-                    iteration
-                ] = Results.CoverageValidationResult(
-                    validation_result,
-                    validation_parse_time,
-                    validation_min,
-                )
-
-                if validation_result != 0:
-                    configuration_results.has_errors = True
-
-    # ----------------------------------------------------------------------
-
-    debug_tasks = []
-    release_tasks = []
-
-    # ----------------------------------------------------------------------
-    def EnqueueTestIfNecessary(
-        iteration,
-        working_data,
-        configuration_results,
-        configuration,
-    ):
-        if (
-            configuration_results.compiler_context is None
-            or configuration_results.compile_result != 0
-        ):
-            return
-
-        if iteration == 0:
-            configuration_results.execute_results = [None] * iterations
-            configuration_results.test_parse_results = [None] * iterations
-            configuration_results.coverage_validation_results = [None] * iterations
-
-        if configuration == "Debug":
-            task_list = debug_tasks
-        elif configuration == "Release":
-            task_list = release_tasks
-        else:
-            assert False, configuration
-
-        # ----------------------------------------------------------------------
-        # <Wrong hanging indentation> pylint: disable = C0330
-        def TestThreadProcWrapper(
-            # The first args must be named explicitly as TaskPool is using Interface.CreateCulledCallback
-            output_stream,
-            on_status_update,
-            # Capture these values
-            working_data=working_data,
-            configuration_results=configuration_results,
-            configuration=configuration,
-            iteration=iteration,
-        ):
-            return TestThreadProc(
-                output_stream,
-                on_status_update,
-                working_data,
-                configuration_results,
-                configuration,
-                iteration,
-            )
-
-        # ----------------------------------------------------------------------
-
-        task_list.append(
-            TaskPool.Task(
-                "{} [{}]{}".format(
-                    working_data.complete_result.Item,
-                    configuration,
-                    "" if iterations == 1 else " <Iteration {}>".format(iteration + 1),
-                ),
-                TestThreadProcWrapper,
-            ),
-        )
-
-    # ----------------------------------------------------------------------
-
-    for iteration in six.moves.range(iterations):
-        for working_data in working_data_items:
-            EnqueueTestIfNecessary(
-                iteration,
-                working_data,
-                working_data.complete_result.debug,
-                "Debug",
-            )
-            EnqueueTestIfNecessary(
-                iteration,
-                working_data,
-                working_data.complete_result.release,
-                "Release",
-            )
-
-    if debug_tasks or release_tasks:
-        # ----------------------------------------------------------------------
-        def CountTestFailures():
-            failures = 0
-
-            for working_data in working_data_items:
-                for results in [
-                    working_data.complete_result.debug,
-                    working_data.complete_result.release,
-                ]:
-                    if results.has_errors:
-                        failures += 1
-
-            return failures
-
-        # ----------------------------------------------------------------------
-
-        with output_stream.SingleLineDoneManager(
-            "Executing...",
-            done_suffix=lambda: inflect.no("test failure", CountTestFailures()),
-        ) as this_dm:
-            TaskPool.Execute(
-                debug_tasks + release_tasks,
-                this_dm.stream,
-                progress_bar=True,
-                display_errors=verbose,
-                num_concurrent_tasks=max_num_concurrent_tasks if execute_tests_in_parallel else 1,
-            )
-
-    return [working_data.complete_result for working_data in working_data_items]
 
 # ----------------------------------------------------------------------
 # |
@@ -1696,6 +472,7 @@ _code_coverage_validator_param_description              = CommandLine.EntryPoint
 _code_coverage_validator_flag_param_description         = CommandLine.EntryPoint.Parameter(
     "Custom flags passed when creating the code coverage validator.",
 )
+
 
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint(
@@ -1858,6 +635,7 @@ def Test(
         max_num_concurrent_tasks=1 if single_threaded else None,
     )
 
+
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint(
     filename_or_directory=CommandLine.EntryPoint.Parameter(
@@ -1956,6 +734,7 @@ def TestItem(
         code_coverage_validator_flag=code_coverage_validator_flag,
     )
 
+
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint(
     configuration=_configuration_param_description,
@@ -2045,6 +824,7 @@ def TestType(
         code_coverage_validator=code_coverage_validator,
         code_coverage_validator_flag=code_coverage_validator_flag,
     )
+
 
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint(
@@ -2156,6 +936,7 @@ def TestAll(
                 )
 
         return dm.result
+
 
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint(
@@ -2319,6 +1100,7 @@ def MatchTests(
 
     return 0 if not source_files and not test_items else -1
 
+
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint(
     input_dir=_input_dir_param_descripiton,
@@ -2370,6 +1152,7 @@ def MatchAllTests(
 
         return dm.result
 
+
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint(
     input_dir=_input_dir_param_descripiton,
@@ -2414,6 +1197,7 @@ def MatchAllTests(
                 )
 
         return dm.result
+
 
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint(
@@ -2536,6 +1320,7 @@ def Execute(
         no_status=no_status,
         max_num_concurrent_tasks=1 if single_threaded else None,
     )
+
 
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint(
@@ -2671,6 +1456,7 @@ def ExecuteTree(
         no_status=no_status,
         max_num_concurrent_tasks=1 if single_threaded else None,
     )
+
 
 # ----------------------------------------------------------------------
 def CommandLineSuffix():
@@ -2845,6 +1631,7 @@ def _GetFromCommandLineArg(
     # unusual behavior.
     return type(item)(**flags)
 
+
 # ----------------------------------------------------------------------
 def _ExecuteImpl(
     filename_or_dir,
@@ -2900,7 +1687,15 @@ def _ExecuteImpl(
 
             ctr += 1
 
-        complete_results = GenerateTestResults(
+        run_tests_func = CreateRunTestsFunc(
+            next(
+                executor
+                for executor in TEST_EXECUTORS
+                if executor.Name == "Standard"
+            ),
+        )
+
+        complete_results = run_tests_func(
             [filename_or_dir],
             temp_directory,
             compiler,
@@ -3004,6 +1799,7 @@ def _ExecuteImpl(
 
         return result
 
+
 # ----------------------------------------------------------------------
 def _ExecuteTreeImpl(
     input_dir,
@@ -3081,7 +1877,15 @@ def _ExecuteTreeImpl(
                 if execute_tests_in_parallel is None:
                     execute_tests_in_parallel = False
 
-            complete_results = GenerateTestResults(
+            run_tests_func = CreateRunTestsFunc(
+                next(
+                    executor
+                    for executor in TEST_EXECUTORS
+                    if executor.Name == "Standard"
+                ),
+            )
+
+            complete_results = run_tests_func(
                 test_items,
                 output_dir,
                 compiler,
