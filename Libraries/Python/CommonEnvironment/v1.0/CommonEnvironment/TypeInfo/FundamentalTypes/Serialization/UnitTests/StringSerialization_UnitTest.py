@@ -65,6 +65,7 @@ class RegularExpressionVisitorSuite(unittest.TestCase):
         Test(lambda: RegularExpressionVisitor.OnDirectory(None), "anything")
         Test(lambda: RegularExpressionVisitor.OnDuration(None), [ "1.0:00:00.0", "1:0:00:00.0", "1.00:00:00", "1:00:00.0", "23:22:21", "23:22:21.20", ], regex_index=0)
         Test(lambda: RegularExpressionVisitor.OnDuration(None), [ "P1Y", "P1MT2H", "PT1M", ], regex_index=1)
+        Test(lambda: RegularExpressionVisitor.OnDuration(None), [ "1", "1.2345", "3.4", ], regex_index=2)
         Test(lambda: RegularExpressionVisitor.OnEnum(EnumTypeInfo([ "one", "two", ])), [ "one", "two", ])
         Test(lambda: RegularExpressionVisitor.OnFilename(None), "anything")
         Test(lambda: RegularExpressionVisitor.OnFloat(FloatTypeInfo()), [ "0.0", "10.2", "-3.14", ])
@@ -154,6 +155,8 @@ class SerializationSuite(unittest.TestCase):
         self.assertEqual(StringSerialization.SerializeItem(DurationTypeInfo(), datetime.timedelta(days=1, hours=2), regex_index=1), "P1DT2H0M0S")
         self.assertEqual(StringSerialization.SerializeItem(DurationTypeInfo(), datetime.timedelta(days=1, hours=2), sep=':'), "1:02:00:00")
         self.assertEqual(StringSerialization.SerializeItem(DurationTypeInfo(), datetime.timedelta(days=1, hours=2, microseconds=3456)), "1.02:00:00.003456")
+        self.assertEqual(StringSerialization.SerializeItem(DurationTypeInfo(), datetime.timedelta(hours=2), regex_index=2), "7200")
+        self.assertEqual(StringSerialization.SerializeItem(DurationTypeInfo(), datetime.timedelta(hours=2, microseconds=3456), regex_index=2), "7200.003456")
 
         self.assertRaises(ValidationException, lambda: StringSerialization.SerializeItem(DurationTypeInfo(), "this is not a valid duration"))
 
@@ -290,6 +293,8 @@ class DeserializationSuite(unittest.TestCase):
         self.assertEqual(StringSerialization.DeserializeItem(DurationTypeInfo(), "1:02:03:04.5"), datetime.timedelta(days=1, hours=2, minutes=3, seconds=4, microseconds=5))
         self.assertEqual(StringSerialization.DeserializeItem(DurationTypeInfo(), "02:03:04.5"), datetime.timedelta(hours=2, minutes=3, seconds=4, microseconds=5))
         self.assertEqual(StringSerialization.DeserializeItem(DurationTypeInfo(), "P2DT3M21S"), datetime.timedelta(days=2, minutes=3, seconds=21))
+        self.assertEqual(StringSerialization.DeserializeItem(DurationTypeInfo(), "5"), datetime.timedelta(seconds=5))
+        self.assertEqual(StringSerialization.DeserializeItem(DurationTypeInfo(), "1.234"), datetime.timedelta(seconds=1, microseconds=234))
 
         self.assertRaises(ValidationException, lambda: StringSerialization.DeserializeItem(DurationTypeInfo(), "not a valid duration"))
 
