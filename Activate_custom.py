@@ -80,7 +80,6 @@ def GetCustomActions(
         os.environ["DEVELOPMENT_ENVIRONMENT_TEST_PARSERS"] = ""
         os.environ["DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_VALIDATORS"] = ""
         os.environ["DEVELOPMENT_ENVIRONMENT_TESTER_CONFIGURATIONS"] = ""
-        os.environ["DEVELOPMENT_ENVIRONMENT_FORMATTERS"] = ""
 
         actions += [
             Commands.Set("DEVELOPMENT_ENVIRONMENT_COMPILERS", None),
@@ -88,7 +87,6 @@ def GetCustomActions(
             Commands.Set("DEVELOPMENT_ENVIRONMENT_TEST_PARSERS", None),
             Commands.Set("DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_VALIDATORS", None),
             Commands.Set("DEVELOPMENT_ENVIRONMENT_TESTER_CONFIGURATIONS", None),
-            Commands.Set("DEVELOPMENT_ENVIRONMENT_FORMATTERS", None),
         ]
 
         actions += DynamicPluginArchitecture.CreateRegistrationStatements(
@@ -119,18 +117,6 @@ def GetCustomActions(
             os.path.join(_script_dir, "Scripts", "CodeCoverageValidators"),
             lambda fullpath, name, ext: ext == ".py"
             and name.endswith("CodeCoverageValidator"),
-        )
-
-        actions += DynamicPluginArchitecture.CreateRegistrationStatements(
-            "DEVELOPMENT_ENVIRONMENT_FORMATTERS",
-            os.path.join(
-                _script_dir,
-                "src",
-                "Formatter",
-                "CommonEnvironment_Formatter",
-                "Plugins",
-            ),
-            lambda fullpath, name, ext: ext == ".py" and name.endswith("Formatter"),
         )
 
         # Check to see if developer mode is enabled on Windows
@@ -291,8 +277,19 @@ def GetCustomScriptExtractors():
 
     # ----------------------------------------------------------------------
     def PythonWrapper(script_filename):
-        if os.path.basename(script_filename) == "__init__.py":
+        dirname, basename = os.path.split(script_filename)
+
+        if basename == "__init__.py":
             return
+
+        if basename == "__main__.py":
+            # Invoke the dir
+            script_filename = dirname
+        else:
+            # Don't invoke anything in a directory that has a main file
+            potential_main_name = os.path.join(dirname, "__main__.py")
+            if os.path.isfile(potential_main_name):
+                return
 
         return [
             Commands.EchoOff(),
@@ -315,6 +312,16 @@ def GetCustomScriptExtractors():
             and co.co_consts[0][0] != "_"
         ):
             return StringHelpers.Wrap(co.co_consts[0], 100)
+
+    # ----------------------------------------------------------------------
+    def PythonScriptNameDecorator(script_filename):
+        dirname, basename = os.path.split(script_filename)
+        basename = os.path.splitext(basename)[0]
+
+        if basename == "__main__":
+            basename = os.path.split(dirname)[1]
+
+        return basename
 
     # ----------------------------------------------------------------------
     def PowershellScriptWrapper(script_filename):
@@ -341,7 +348,7 @@ def GetCustomScriptExtractors():
 
     return OrderedDict(
         [
-            (".py", (PythonWrapper, PythonDocs)),
+            (".py", (PythonWrapper, PythonDocs, PythonScriptNameDecorator)),
             (".ps1", PowershellScriptWrapper),
             (CurrentShell.ScriptExtension, EnvironmentScriptWrapper),
         ],
