@@ -144,18 +144,24 @@ class RegularExpressionVisitor(Visitor):
                     Seconds                 )(?P<seconds>[0-5][0-9])(?#
                     Microseconds [optional] )(?:\.(?P<microseconds>\d+))?(?#
                     )"""),
+                 # XSD-format
                  textwrap.dedent(
-                    # XSD-format
                     r"""(?#
                                             )P(?#
-                        Years [optional]    )(?:(?P<years>\d+)Y)?(?#
-                        Months [optional]   )(?:(?P<months>\d+)M)?(?#
-                        Days [optional]     )(?:(?P<days>\d+)D)?(?#
-                        Time <begin>        )(?:T(?#
-                        Hours [optional]    )(?:(?P<hours>2[0-3]|[0-1][0-9]|[0-9])H)?(?#
-                        Minutes [optional]  )(?:(?P<minutes>[0-5][0-9]|[0-9])M)?(?#
-                        Seconds [optional]  )(?:(?P<seconds>(?:[0-5][0-9]|[0-9])(?:\.\d+)?)S)?(?#
-                        Time <end>          ))?(?#
+                    Years [optional]        )(?:(?P<years>\d+)Y)?(?#
+                    Months [optional]       )(?:(?P<months>\d+)M)?(?#
+                    Days [optional]         )(?:(?P<days>\d+)D)?(?#
+                    Time <begin>            )(?:T(?#
+                    Hours [optional]        )(?:(?P<hours>2[0-3]|[0-1][0-9]|[0-9])H)?(?#
+                    Minutes [optional]      )(?:(?P<minutes>[0-5][0-9]|[0-9])M)?(?#
+                    Seconds [optional]      )(?:(?P<seconds>(?:[0-5][0-9]|[0-9])(?:\.\d+)?)S)?(?#
+                    Time <end>              ))?(?#
+                    )"""),
+                 # Seconds
+                 textwrap.dedent(
+                    r"""(?#
+                    Seconds                 )(?P<seconds>\d+)(?#
+                    Microseconds [optional] )(?:\.(?P<microseconds>\d+))?(?#
                     )"""),
                ]
 
@@ -424,6 +430,22 @@ class _SerializationVisitor(Visitor):
     @staticmethod
     @override
     def OnDuration(type_info, item, custom_kwargs):
+        # ----------------------------------------------------------------------
+        def CreateSecondsParts(seconds):
+            # {seconds:02.6f} doesn't work as a formatting string on some versions of python,
+            # so we need to do it ourselves.
+
+            seconds_parts = str(float(seconds)).split(".")
+            assert len(seconds_parts) == 2, seconds_parts
+
+            seconds_parts[1] = seconds_parts[1].ljust(6, "0")
+            if len(seconds_parts[1]) > 6:
+                seconds_parts[1] = seconds_parts[1][:6]
+
+            return seconds_parts
+
+        # ----------------------------------------------------------------------
+
         seconds = item.total_seconds()
 
         days, seconds = divmod(seconds, 60 * 60 * 24)
@@ -446,24 +468,17 @@ class _SerializationVisitor(Visitor):
             else:
                 prefix = str(hours)
 
-            # {seconds:02.6f} doesn't work as a formatting string on some versions of python,
-            # so we need to do it ourselves.
             prefix = "{prefix}:{minutes:02}:".format(**locals())
 
-            second_parts = str(seconds).split('.')
-            assert len(second_parts) == 2, second_parts
+            seconds_parts = CreateSecondsParts(seconds)
 
-            assert len(second_parts[0]) <= 2, second_parts[0]
-            second_parts[0] = second_parts[0].rjust(2, '0')
+            assert len(seconds_parts[0]) <= 2, seconds_parts[0]
+            seconds_parts[0] = seconds_parts[0].rjust(2, '0')
 
-            if second_parts[1] == "0":
-                return "{}{}".format(prefix, second_parts[0])
+            if seconds_parts[1] == "000000":
+                return "{}{}".format(prefix, seconds_parts[0])
 
-            second_parts[1] = second_parts[1].ljust(6, '0')
-            if len(second_parts[1]) > 6:
-                second_parts[1] = second_parts[1][:6]
-
-            return "{}{}.{}".format(prefix, second_parts[0], second_parts[1])
+            return "{}{}.{}".format(prefix, seconds_parts[0], seconds_parts[1])
 
         elif regex_index == 1:
             # XSD-Format: P1DT4H5M6S
@@ -476,6 +491,14 @@ class _SerializationVisitor(Visitor):
                 minutes=minutes,
                 seconds=seconds,
             )
+
+        elif regex_index == 2:
+            seconds_parts = CreateSecondsParts(item.total_seconds())
+
+            if seconds_parts[1] == "000000":
+                return seconds_parts[0]
+
+            return "{}.{}".format(seconds_parts[0], seconds_parts[1])
 
         else:
             assert False, regex_index
@@ -690,14 +713,14 @@ class _DeserializationVisitor(Visitor):
             else:
                 assert False, parts
 
-            second_parts = seconds_string.split('.')
-            if len(second_parts) == 2:
+            seconds_parts = seconds_string.split('.')
+            if len(seconds_parts) == 2:
                 # seconds.microseconds
-                seconds = int(second_parts[0])
-                microseconds = int(second_parts[1])
+                seconds = int(seconds_parts[0])
+                microseconds = int(seconds_parts[1])
             else:
                 # seconds
-                seconds = int(second_parts[0])
+                seconds = int(seconds_parts[0])
                 microseconds = 0
 
             return datetime.timedelta( days=days,
@@ -724,6 +747,22 @@ class _DeserializationVisitor(Visitor):
                                        hours=hours,
                                        minutes=minutes,
                                        seconds=seconds,
+                                     )
+
+        elif regex_index == 2:
+            seconds_parts = item.split(".")
+
+            if len(seconds_parts) == 2:
+                # seconds.microseconds
+                seconds = int(seconds_parts[0])
+                microseconds = int(seconds_parts[1])
+            else:
+                # seconds
+                seconds = int(seconds_parts[0])
+                microseconds = 0
+
+            return datetime.timedelta( seconds=seconds,
+                                       microseconds=microseconds,
                                      )
 
         else:
