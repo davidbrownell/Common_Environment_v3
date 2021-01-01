@@ -15,14 +15,18 @@
 # ----------------------------------------------------------------------
 """Contains the CompleteResult object"""
 
+import datetime
 import os
 import textwrap
 
 import colorama
 
 import CommonEnvironment
-from CommonEnvironment import Nonlocals, ObjectReprImpl
+from CommonEnvironment import ObjectReprImpl
 from CommonEnvironment import StringHelpers
+
+from CommonEnvironment.TypeInfo.FundamentalTypes.DurationTypeInfo import DurationTypeInfo
+from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import StringSerialization
 
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()
@@ -115,3 +119,43 @@ class CompleteResult(object):
                 skip_first_line=False,
             ).rstrip(),
         )
+
+    # ----------------------------------------------------------------------
+    def TotalTime(
+        self,
+        as_string=True,
+    ):
+        total_time = datetime.timedelta(
+            seconds=0,
+        )
+
+        if self.debug:
+            total_time += self.debug.TotalTime(as_string=False)
+        if self.release:
+            total_time += self.release.TotalTime(as_string=False)
+
+        if as_string:
+            total_time = StringSerialization.SerializeItem(DurationTypeInfo(), total_time)
+
+        return total_time
+
+    # ----------------------------------------------------------------------
+    def ResultInfo(self):
+        """Returns (num_tests, num_failures, num_skipped)"""
+
+        num_tests = 0
+        num_failures = 0
+        num_skipped = 0
+
+        for results in [self.debug, self.release]:
+            if not results or results.compile_result is None:
+                continue
+
+            num_tests += 1
+
+            if results.has_errors:
+                num_failures += 1
+            elif not results.execute_results:
+                num_skipped += 1
+
+        return (num_tests, num_failures, num_skipped)
