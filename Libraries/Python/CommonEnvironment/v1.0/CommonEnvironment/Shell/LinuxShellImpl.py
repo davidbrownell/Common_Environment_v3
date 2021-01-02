@@ -332,7 +332,7 @@ class LinuxShellImpl(Shell):
     @staticmethod
     @override
     def DecorateEnvironmentVariable(var_name):
-        return "\\${}".format(var_name)
+        return "${}".format(var_name)
 
     # ----------------------------------------------------------------------
     @staticmethod
