@@ -1,0 +1,65 @@
+# JUnit test results, as defined at
+# https://github.com/windyroad/JUnit-Schema/blob/master/JUnit.xsd
+
+<testsuites>:
+    <testsuite *>:
+        [
+            id
+            int
+            description="Incrementing index value"
+        ]
+
+        [name string]
+
+        [
+            hostname
+            string
+            description="Machine executing the test or 'localhost'"
+        ]
+
+        [timestamp datetime]
+        [time_ duration name="time"]
+
+        [tests number min=0]
+        [failures number min=0]
+        [errors number min=0]
+        [skipped number min=0 ?]
+
+        <testcase *>:
+            [
+                name
+                string
+                description="Name of the test"
+            ]
+
+            [
+                classname
+                string
+                description="Name of the class containing the test"
+                ?
+            ]
+
+            [time_ duration name="time"]
+
+            <
+                failure
+                string
+                fundamental_name=desc
+                description="Test failures"
+                *
+            >:
+                [message string]
+                [type string]
+
+            <
+                error
+                string
+                fundamental_name=desc
+                description="Test crashes"
+                *
+            >:
+                [message string]
+                [type string]
+
+        <system-out string ?>
+        <system-err string ?>
