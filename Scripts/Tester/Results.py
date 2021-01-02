@@ -330,7 +330,7 @@ class Results(object):
 
                         output.append(
                             display_template.format(
-                                value="{0:0.2f}%".format(percentage),
+                                value="N/A" if percentage is None else "{0:0.2f}%".format(percentage),
                                 name=name,
                                 suffix="" if not suffix else " ({})".format(suffix),
                             ),

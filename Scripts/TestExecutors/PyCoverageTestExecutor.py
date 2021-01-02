@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  PyCoverageTestExecutor.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-05-24 21:27:31
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-21.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Contains the TestExecutor object"""
 
@@ -67,11 +67,6 @@ class TestExecutor(TestExecutorImpl):
     A best-guess to find the production code when the executed filename ends
     with _*Test.py
     """
-
-    # This environment variable can be set to specify the coverage output file.
-    # A random filename will be created if this environment variable is not defined
-    # and set to an output filename.
-    COVERAGE_FILENAME_ENVIRONMENT_VARIABLE  = "PYCOVERAGE_OUTPUT_FILENAME"
 
     # ----------------------------------------------------------------------
     # |  Public Properties
@@ -167,7 +162,7 @@ class TestExecutor(TestExecutorImpl):
 
             # Import by python fullpath
             dirname, basename = os.path.split(sut_filename)
-            
+
             stack = [ basename, ]
 
             while True:
@@ -187,7 +182,7 @@ class TestExecutor(TestExecutorImpl):
             stack.reverse()
 
             includes.append("*/{}".format('/'.join(stack)))
-        
+
         # Run the process and calculate code coverage
         temp_filename = CurrentShell.CreateTempFilename(".py")
 
@@ -215,19 +210,16 @@ class TestExecutor(TestExecutorImpl):
             test_time = str(datetime.timedelta(seconds=(time.time() - start_time)))
 
             # Get the coverage info
-            xml_temp_filename = os.getenv(cls.COVERAGE_FILENAME_ENVIRONMENT_VARIABLE)
-            if xml_temp_filename is None:
-                xml_temp_filename = CurrentShell.CreateTempFilename(".xml")
-
             start_time = time.time()
-            
+
+            coverage_data_filename = os.path.join(context["output_dir"], "coverage.xml")
+
             command_line = '{} -o "{}"'.format( command_line_template.format("xml"),
-                                                xml_temp_filename,
+                                                coverage_data_filename,
                                               )
 
             coverage_result, coverage_output = Process.Execute(command_line)
             coverage_time = str(datetime.timedelta(seconds=(time.time() - start_time)))
-            coverage_data_filename = xml_temp_filename
 
         # Get the percentage info
         if not os.path.isfile(coverage_data_filename):
@@ -243,7 +235,7 @@ class TestExecutor(TestExecutorImpl):
             root = ET.fromstring(open(coverage_data_filename).read())
 
             percentage = float(root.attrib["line-rate"]) * 100
-            
+
             percentages = OrderedDict()
 
             for package in root.findall("packages/package"):
