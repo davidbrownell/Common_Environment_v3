@@ -393,7 +393,10 @@ class Results(object):
         return "".join(results)
 
     # ----------------------------------------------------------------------
-    def TotalTime(self):
+    def TotalTime(
+        self,
+        as_string=True,
+    ):
         dti = DurationTypeInfo()
 
         total_time = datetime.timedelta(
@@ -410,8 +413,7 @@ class Results(object):
         total_time += get_duration(self.compile_time)
 
         # ----------------------------------------------------------------------
-        def Average(items, attr_name):
-            num_items = 0
+        def CalculateTime(items, attr_name):
             total_time = datetime.timedelta(
                 seconds=0,
             )
@@ -419,19 +421,18 @@ class Results(object):
             for item in items:
                 value = getattr(item, attr_name, None)
                 if value is not None:
-                    num_items += 1
                     total_time += get_duration(value)
 
-            if num_items == 0:
-                return total_time
-
-            return total_time / num_items
+            return total_time
 
         # ----------------------------------------------------------------------
 
-        total_time += Average(self.execute_results, "TestTime")
-        total_time += Average(self.execute_results, "CoverageTime")
-        total_time += Average(self.test_parse_results, "Time")
-        total_time += Average(self.coverage_validation_results, "Time")
+        total_time += CalculateTime(self.execute_results, "TestTime")
+        total_time += CalculateTime(self.execute_results, "CoverageTime")
+        total_time += CalculateTime(self.test_parse_results, "Time")
+        total_time += CalculateTime(self.coverage_validation_results, "Time")
 
-        return StringSerialization.SerializeItem(dti, total_time)
+        if as_string:
+            total_time = StringSerialization.SerializeItem(dti, total_time)
+
+        return total_time
