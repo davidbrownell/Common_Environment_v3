@@ -615,6 +615,9 @@ def CreateRunTestsFunc(standard_test_executor):
                         for (filename, (percentage, percentage_desc)) in six.iteritems(
                             execute_result.CoveragePercentages,
                         ):
+                            if percentage is None:
+                                continue
+
                             this_validation_result, this_validation_min = optional_code_coverage_validator.Validate(
                                 filename,
                                 percentage,
