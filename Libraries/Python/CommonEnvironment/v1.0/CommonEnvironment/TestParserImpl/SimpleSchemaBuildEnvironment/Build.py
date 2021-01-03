@@ -7,7 +7,7 @@
 # |
 # ----------------------------------------------------------------------
 # |
-# |  Copyright David Brownell 2020
+# |  Copyright David Brownell 2020-21
 # |  Distributed under the Boost Software License, Version 1.0. See
 # |  accompanying file LICENSE_1_0.txt or copy at
 # |  http://www.boost.org/LICENSE_1_0.txt.
@@ -46,26 +46,43 @@ def Build(
         prefix="\nResults: ",
         suffix="\n",
     ) as dm:
-        schema_filename = os.path.realpath(os.path.join(_script_dir, "..", "..", "..", "..", "..", "..", "..", "Scripts", "Tester", "Benchmarks.SimpleSchema"))
-        assert os.path.isfile(schema_filename), schema_filename
+        schema_info = [
+            # Filename, Plugin, Name, Args
+            ("Benchmarks.SimpleSchema", "PythonJson", "Tester_Benchmarks", []),
+            ("JUnit.SimpleSchema", "PythonXml", "Tester_JUnit", ["no_deserialization:true"]),
+        ]
 
-        command_line = '{script} Generate PythonJson Tester_Benchmarks "{output_dir}" "/input={input}"{force}{verbose}'.format(
+        command_line_template = '{script} Generate {{plugin}} {{name}} "{output_dir}" "/input={{input}}" "/output_data_filename_prefix={{name}}" {{args}}{force}{verbose}'.format(
             script=CurrentShell.CreateScriptName("SimpleSchemaGenerator"),
             output_dir=os.path.join(_script_dir, "..", "GeneratedCode"),
-            input=schema_filename,
             force=" /force" if force else "",
             verbose=" /verbose" if verbose else "",
         )
 
-        dm.stream.write("Generating code...")
-        with dm.stream.DoneManager() as this_dm:
-            this_dm.result, output = Process.Execute(command_line)
+        for schema_info_index, (schema_basename, plugin, name, args) in enumerate(schema_info):
+            dm.stream.write("Processing '{}' ({} of {})...".format(schema_basename, schema_info_index + 1, len(schema_info)))
+            with dm.stream.DoneManager(
+                suffix="\n",
+            ) as this_dm:
+                schema_filename = os.path.realpath(os.path.join(_script_dir, "..", "..", "..", "..", "..", "..", "..", "Scripts", "Tester", schema_basename))
+                assert os.path.isfile(schema_filename), schema_filename
 
-            if this_dm.result != 0 or verbose:
-                this_dm.stream.write(output)
+                command_line = command_line_template.format(
+                    plugin=plugin,
+                    name=name,
+                    input=schema_filename,
+                    args=" ".join(['"/plugin_arg={}"'.format(arg) for arg in args]),
+                )
 
-                if this_dm.result != 0:
-                    return this_dm.result
+                this_dm.stream.write("Generating code...")
+                with this_dm.stream.DoneManager() as execute_dm:
+                    execute_dm.result, output = Process.Execute(command_line)
+
+                    if execute_dm.result != 0 or verbose:
+                        execute_dm.stream.write(output)
+
+                        if execute_dm.result != 0:
+                            return execute_dm.result
 
         with open(os.path.join(_script_dir, "..", "GeneratedCode", "__init__.py"), "w") as f:
             # Nothing to write

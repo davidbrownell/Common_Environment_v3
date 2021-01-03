@@ -7,13 +7,14 @@
 # |
 # ----------------------------------------------------------------------
 # |
-# |  Copyright David Brownell 2018-20.
+# |  Copyright David Brownell 2018-21.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 # |
 # ----------------------------------------------------------------------
 """General purpose test executor."""
 
+import datetime
 import json
 import os
 import re
@@ -35,10 +36,12 @@ from CommonEnvironment import StringHelpers
 from CommonEnvironment.StreamDecorator import StreamDecorator
 from CommonEnvironment.TestTypeMetadata import TEST_TYPES
 
-from CommonEnvironment.TypeInfo.FundamentalTypes.DirectoryTypeInfo import (
-    DirectoryTypeInfo,
-)
+from CommonEnvironment.TypeInfo.FundamentalTypes.DateTimeTypeInfo import DateTimeTypeInfo
+from CommonEnvironment.TypeInfo.FundamentalTypes.DirectoryTypeInfo import DirectoryTypeInfo
+from CommonEnvironment.TypeInfo.FundamentalTypes.DurationTypeInfo import DurationTypeInfo
 from CommonEnvironment.TypeInfo.FundamentalTypes.FilenameTypeInfo import FilenameTypeInfo
+
+from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import StringSerialization
 
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()
@@ -77,7 +80,6 @@ def _LoadCompilerFromModule(mod):
 
 
 # ----------------------------------------------------------------------
-
 COMPILERS                                   = [
     _LoadCompilerFromModule(mod)
     for mod in DPA.EnumeratePlugins("DEVELOPMENT_ENVIRONMENT_COMPILERS")
@@ -294,7 +296,6 @@ def _CreateConfigurations():
 
 
 # ----------------------------------------------------------------------
-
 CONFIGURATIONS                              = _CreateConfigurations()
 del _CreateConfigurations
 
@@ -444,6 +445,9 @@ _preserve_ansi_escape_sequences_param_description       = CommandLine.EntryPoint
 _no_status_param_description                            = CommandLine.EntryPoint.Parameter(
     "Do not display progress bar status when building and executing.",
 )
+_junit_xml_output_filename_param_description            = CommandLine.EntryPoint.Parameter(
+    "Filename for JUnit XML output; JUnit output will only be generated if this filename is provided on the command line.",
+)
 
 _compiler_param_description                 = CommandLine.EntryPoint.Parameter(
     "The name or index of the compiler to use.",
@@ -477,7 +481,7 @@ _code_coverage_validator_flag_param_description         = CommandLine.EntryPoint
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint(
     configuration=_configuration_param_description,
-    filename_or_dir=CommandLine.EntryPoint.Parameter("Filename or directory to test."),
+    filename_or_directory=CommandLine.EntryPoint.Parameter("Filename or directory to test."),
     output_dir=_output_dir_param_description,
     test_type=_test_type_param_description,
     execute_tests_in_parallel=_execute_tests_in_parallel_param_description,
@@ -493,12 +497,13 @@ _code_coverage_validator_flag_param_description         = CommandLine.EntryPoint
     quiet=_quiet_param_description,
     preserve_ansi_escape_sequences=_preserve_ansi_escape_sequences_param_description,
     no_status=_no_status_param_description,
+    junit_xml_output_filename=_junit_xml_output_filename_param_description,
     code_coverage_validator=_code_coverage_validator_param_description,
     code_coverage_validator_flag=_code_coverage_validator_flag_param_description,
 )
 @CommandLine.Constraints(
     configuration=_configuration_type_info,
-    filename_or_dir=CommandLine.FilenameTypeInfo(
+    filename_or_directory=CommandLine.FilenameTypeInfo(
         match_any=True,
     ),
     output_dir=CommandLine.DirectoryTypeInfo(
@@ -520,11 +525,14 @@ _code_coverage_validator_flag_param_description         = CommandLine.EntryPoint
         require_exact_match=False,
         arity="*",
     ),
+    junit_xml_output_filename=CommandLine.StringTypeInfo(
+        arity="?",
+    ),
     output_stream=None,
 )
 def Test(
     configuration,
-    filename_or_dir,
+    filename_or_directory,
     output_dir=None,
     test_type=None,
     execute_tests_in_parallel=None,
@@ -543,6 +551,7 @@ def Test(
     no_status=False,
     code_coverage_validator=None,
     code_coverage_validator_flag=None,
+    junit_xml_output_filename=None,
 ):
     """Tests the given input"""
 
@@ -571,19 +580,24 @@ def Test(
     else:
         code_coverage_executor = None
 
-    if os.path.isfile(filename_or_dir) or (
-        os.path.isdir(filename_or_dir)
-        and configuration.Compiler.IsSupported(filename_or_dir)
+    if os.path.isfile(filename_or_directory) or (
+        os.path.isdir(filename_or_directory)
+        and configuration.Compiler.IsSupported(filename_or_directory)
     ):
         if quiet:
-            if os.path.isfile(filename_or_dir):
+            if os.path.isfile(filename_or_directory):
                 raise CommandLine.UsageException(
                     "'quiet' is only used when executing tests via a directory",
                 )
             quiet = False
 
+        if junit_xml_output_filename:
+            raise CommandLine.UsageException(
+                "'junit_xml_output_filename' is only used when executing tests via a directory",
+            )
+
         return _ExecuteImpl(
-            filename_or_dir,
+            filename_or_directory,
             configuration.Compiler,
             configuration.TestParser,
             code_coverage_executor,
@@ -604,16 +618,16 @@ def Test(
 
     if test_type is None:
         raise CommandLine.UsageException(
-            "The 'test_type' command line argument must be provided when 'filename_or_dir' is a directory.",
+            "The 'test_type' command line argument must be provided when 'filename_or_directory' is a directory.",
         )
 
     if output_dir is None:
         raise CommandLine.UsageException(
-            "The 'output_dir' command line argument must be provided when 'filename_or_dir' is a directory.",
+            "The 'output_dir' command line argument must be provided when 'filename_or_directory' is a directory.",
         )
 
     return _ExecuteTreeImpl(
-        filename_or_dir,
+        filename_or_directory,
         output_dir,
         test_type,
         configuration.Compiler,
@@ -633,6 +647,7 @@ def Test(
         preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
         no_status=no_status,
         max_num_concurrent_tasks=1 if single_threaded else None,
+        junit_xml_output_filename=junit_xml_output_filename,
     )
 
 
@@ -754,6 +769,7 @@ def TestItem(
     quiet=_quiet_param_description,
     preserve_ansi_escape_sequences=_preserve_ansi_escape_sequences_param_description,
     no_status=_no_status_param_description,
+    junit_xml_output_filename=_junit_xml_output_filename_param_description,
     code_coverage_validator=_code_coverage_validator_param_description,
     code_coverage_validator_flag=_code_coverage_validator_flag_param_description,
 )
@@ -775,6 +791,9 @@ def TestItem(
     code_coverage_validator_flag=CommandLine.DictTypeInfo(
         require_exact_match=False,
         arity="*",
+    ),
+    junit_xml_output_filename=CommandLine.StringTypeInfo(
+        arity="?",
     ),
     output_stream=None,
 )
@@ -799,6 +818,7 @@ def TestType(
     no_status=False,
     code_coverage_validator=None,
     code_coverage_validator_flag=None,
+    junit_xml_output_filename=None,
 ):
     """Run tests for the test type with the specified configuration"""
 
@@ -823,6 +843,7 @@ def TestType(
         no_status=no_status,
         code_coverage_validator=code_coverage_validator,
         code_coverage_validator_flag=code_coverage_validator_flag,
+        junit_xml_output_filename=junit_xml_output_filename,
     )
 
 
@@ -844,6 +865,7 @@ def TestType(
     quiet=_quiet_param_description,
     preserve_ansi_escape_sequences=_preserve_ansi_escape_sequences_param_description,
     no_status=_no_status_param_description,
+    junit_xml_output_filename=_junit_xml_output_filename_param_description,
     code_coverage_validator=_code_coverage_validator_param_description,
     code_coverage_validator_flag=_code_coverage_validator_flag_param_description,
 )
@@ -864,6 +886,9 @@ def TestType(
     code_coverage_validator_flag=CommandLine.DictTypeInfo(
         require_exact_match=False,
         arity="*",
+    ),
+    junit_xml_output_filename=CommandLine.StringTypeInfo(
+        arity="?",
     ),
     output_stream=None,
 )
@@ -887,6 +912,7 @@ def TestAll(
     no_status=False,
     code_coverage_validator=None,
     code_coverage_validator_flag=None,
+    junit_xml_output_filename=None,
 ):
     """Run tests for the test type with all configurations"""
 
@@ -933,6 +959,7 @@ def TestAll(
                     no_status=no_status,
                     code_coverage_validator=code_coverage_validator,
                     code_coverage_validator_flag=code_coverage_validator_flag,
+                    junit_xml_output_filename=junit_xml_output_filename,
                 )
 
         return dm.result
@@ -1221,6 +1248,7 @@ def MatchAllTests(
     verbose=_verbose_param_description,
     preserve_ansi_escape_sequences=_preserve_ansi_escape_sequences_param_description,
     no_status=_no_status_param_description,
+    junit_xml_output_filename=_junit_xml_output_filename_param_description,
 )
 @CommandLine.Constraints(
     filename=CommandLine.FilenameTypeInfo(),
@@ -1251,6 +1279,9 @@ def MatchAllTests(
         require_exact_match=False,
         arity="*",
     ),
+    junit_xml_output_filename=CommandLine.StringTypeInfo(
+        arity="?",
+    ),
     output_stream=None,
 )
 def Execute(
@@ -1275,10 +1306,11 @@ def Execute(
     verbose=False,
     preserve_ansi_escape_sequences=False,
     no_status=False,
+    junit_xml_output_filename=None,
 ):
     """
     Executes a specific test using a specific compiler, test parser, test executor, and code coverage validator. In most
-    cases, it is easier to use a Test___ method rather than this one.
+    cases, it is easier to use a Test___ method rather than this one (as those methods will auto-detect these settings).
     """
 
     if test_executor_flag and test_executor is None:
@@ -1319,6 +1351,7 @@ def Execute(
         preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
         no_status=no_status,
         max_num_concurrent_tasks=1 if single_threaded else None,
+        junit_xml_output_filename=junit_xml_output_filename,
     )
 
 
@@ -1347,6 +1380,7 @@ def Execute(
     quiet=_quiet_param_description,
     preserve_ansi_escape_sequences=_preserve_ansi_escape_sequences_param_description,
     no_status=_no_status_param_description,
+    junit_xml_output_filename=_junit_xml_output_filename_param_description,
 )
 @CommandLine.Constraints(
     input_dir=CommandLine.DirectoryTypeInfo(),
@@ -1381,6 +1415,9 @@ def Execute(
         require_exact_match=False,
         arity="*",
     ),
+    junit_xml_output_filename=CommandLine.StringTypeInfo(
+        arity="?",
+    ),
     output_stream=None,
 )
 def ExecuteTree(
@@ -1408,10 +1445,11 @@ def ExecuteTree(
     quiet=False,
     preserve_ansi_escape_sequences=False,
     no_status=False,
+    junit_xml_output_filename=None,
 ):
     """
     Executes tests found within 'test_type' subdirectories using a specific compiler, test parser, test executor, and code coverage validator. In most
-    cases, it is easier to use a Test___ method rather than this one.
+    cases, it is easier to use a Test___ method rather than this one (as those methods will auto-detect these settings).
     """
 
     if test_executor_flag and test_executor is None:
@@ -1455,6 +1493,7 @@ def ExecuteTree(
         preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
         no_status=no_status,
         max_num_concurrent_tasks=1 if single_threaded else None,
+        junit_xml_output_filename=junit_xml_output_filename,
     )
 
 
@@ -1634,7 +1673,7 @@ def _GetFromCommandLineArg(
 
 # ----------------------------------------------------------------------
 def _ExecuteImpl(
-    filename_or_dir,
+    filename_or_directory,
     compiler,
     test_parser,
     test_executor,
@@ -1652,9 +1691,9 @@ def _ExecuteImpl(
     no_status,
     max_num_concurrent_tasks=None,
 ):
-    if not compiler.IsSupported(filename_or_dir):
+    if not compiler.IsSupported(filename_or_directory):
         raise CommandLine.UsageException(
-            "'{}' is not supported by '{}'".format(filename_or_dir, compiler.Name),
+            "'{}' is not supported by '{}'".format(filename_or_directory, compiler.Name),
         )
 
     if (
@@ -1696,7 +1735,7 @@ def _ExecuteImpl(
         )
 
         complete_results = run_tests_func(
-            [filename_or_dir],
+            [filename_or_directory],
             temp_directory,
             compiler,
             test_parser,
@@ -1822,6 +1861,7 @@ def _ExecuteTreeImpl(
     preserve_ansi_escape_sequences,
     no_status,
     max_num_concurrent_tasks=None,
+    junit_xml_output_filename=None,
 ):
     if verbose and quiet:
         raise CommandLine.UsageException(
@@ -1913,52 +1953,18 @@ def _ExecuteTreeImpl(
             benchmark_filename = os.path.join(output_dir, "benchmarks.json")
 
             dm.stream.write("Creating '{}'...".format(benchmark_filename))
-            with dm.stream.DoneManager(
-                suffix="\n",
-            ):
-                benchmarks = OrderedDict()
+            with dm.stream.DoneManager():
+                _CreateBenchmarks(input_dir, benchmark_filename, complete_results)
 
-                for complete_result in complete_results:
-                    these_benchmarks = OrderedDict()
+            # Persist JUnit output (if requested)
+            if junit_xml_output_filename:
+                junit_xml_output_filename = os.path.join(output_dir, junit_xml_output_filename)
 
-                    for configuration in ["debug", "release"]:
-                        configuration_benchmarks = OrderedDict()
+                dm.stream.write("Creating '{}'...".format(junit_xml_output_filename))
+                with dm.stream.DoneManager():
+                    _CreateJUnit(input_dir, junit_xml_output_filename, complete_results)
 
-                        for test_parse_result in getattr(
-                            complete_result,
-                            configuration,
-                        ).test_parse_results:
-                            if test_parse_result is None:
-                                continue
-
-                            if test_parse_result.Benchmarks:
-                                for k, v in six.iteritems(test_parse_result.Benchmarks):
-                                    if k not in configuration_benchmarks:
-                                        configuration_benchmarks[k] = []
-
-                                    configuration_benchmarks[k] += v
-
-                        if configuration_benchmarks:
-                            these_benchmarks[configuration] = configuration_benchmarks
-
-                    if these_benchmarks:
-                        key = FileSystem.TrimPath(complete_result.Item, input_dir)
-
-                        benchmarks[key] = these_benchmarks
-
-                with open(benchmark_filename, "w") as f:
-                    # ----------------------------------------------------------------------
-                    class JsonEncoder(json.JSONEncoder):
-                        def default(self, o):
-                            return getattr(o, "__dict__", o)
-
-                    # ----------------------------------------------------------------------
-
-                    json.dump(
-                        benchmarks,
-                        f,
-                        cls=JsonEncoder,
-                    )
+            dm.stream.write("\n")
 
             # Display the results
             if not quiet:
@@ -2029,6 +2035,137 @@ def _ExecuteTreeImpl(
                 dm.result = -1
 
             return dm.result
+
+
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+def _CreateBenchmarks(input_dir, filename, complete_results):
+    benchmarks = OrderedDict()
+
+    for complete_result in complete_results:
+        these_benchmarks = OrderedDict()
+
+        for configuration in ["debug", "release"]:
+            configuration_benchmarks = OrderedDict()
+
+            for test_parse_result in getattr(
+                complete_result,
+                configuration,
+            ).test_parse_results:
+                if test_parse_result is None:
+                    continue
+
+                if test_parse_result.Benchmarks:
+                    for k, v in six.iteritems(test_parse_result.Benchmarks):
+                        if k not in configuration_benchmarks:
+                            configuration_benchmarks[k] = []
+
+                        configuration_benchmarks[k] += v
+
+            if configuration_benchmarks:
+                these_benchmarks[configuration] = configuration_benchmarks
+
+        if these_benchmarks:
+            key = FileSystem.TrimPath(complete_result.Item, input_dir)
+
+            benchmarks[key] = these_benchmarks
+
+    with open(filename, "w") as f:
+        # ----------------------------------------------------------------------
+        class JsonEncoder(json.JSONEncoder):
+            def default(self, o):
+                return getattr(o, "__dict__", o)
+
+        # ----------------------------------------------------------------------
+
+        json.dump(
+            benchmarks,
+            f,
+            cls=JsonEncoder,
+        )
+
+
+# ----------------------------------------------------------------------
+def _CreateJUnit(input_dir, filename, complete_results):
+    # TODO: Eventually, we should serialize this content based on XML code generated
+    #       via JUnit.SimpleSchema and the PythonXmlPlugin. However, that code has problems
+    #       with collections and is not ready for prime time. Therefore, we are creating the
+    #       XML manually here.
+    #
+    #       Update this code once the issues PythonXmlPlugin have been addressed.
+
+    import socket
+    from xml.etree import ElementTree as ET
+
+    dti = DurationTypeInfo()
+
+    root = ET.Element("testsuites")
+
+    hostname = socket.gethostname()
+    timestamp = StringSerialization.SerializeItem(DateTimeTypeInfo(), datetime.datetime.now())
+
+    for index, complete_result in enumerate(complete_results):
+        suite = ET.Element("testsuite")
+
+        suite.set("id", str(index))
+        suite.set("name", FileSystem.TrimPath(complete_result.Item, input_dir).replace(os.path.sep, "/"))
+        suite.set("hostname", hostname)
+        suite.set("timestamp", timestamp)
+
+        suite.set(
+            "time",
+            StringSerialization.SerializeItem(
+                dti,
+                complete_result.TotalTime(
+                    as_string=False,
+                ),
+                regex_index=2,
+            ),
+        )
+
+        num_tests, num_failures, num_skipped = complete_result.ResultInfo()
+
+        suite.set("tests", str(num_tests))
+        suite.set("failures", str(num_failures))
+        suite.set("skipped", str(num_skipped))
+
+        for configuration, results in [
+            ("Debug", complete_result.debug),
+            ("Release", complete_result.release),
+        ]:
+            if results is None or results.compile_result is None:
+                continue
+
+            testcase = ET.Element("testcase")
+
+            testcase.set("name", configuration)
+
+            testcase.set(
+                "time",
+                StringSerialization.SerializeItem(
+                    dti,
+                    results.TotalTime(
+                        as_string=False,
+                    ),
+                    regex_index=2,
+                ),
+            )
+
+            suite.append(testcase)
+
+        root.append(suite)
+
+    FileSystem.MakeDirs(os.path.dirname(filename))
+
+    with open(filename, "w") as f:
+        f.write(
+            ET.tostring(
+                root,
+                encoding="unicode",
+            ),
+        )
+
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------

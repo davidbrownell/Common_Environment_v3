@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Build.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-06-02 21:36:36
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
-# |  Copyright David Brownell 2018-20.
+# |
+# |  Copyright David Brownell 2018-21.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Builds the Common_Environment Docker image"""
 
@@ -33,7 +33,7 @@ Build                                       = DockerBuildImpl.CreateRepositoryBu
                                                                                          os.path.join(_script_dir, "..", ".."),
                                                                                          "dbrownell",
                                                                                          "common_environment",
-                                                                                         "phusion/baseimage:latest",
+                                                                                         "phusion/baseimage:master",
                                                                                          "David Brownell <db@DavidBrownell.com>",
                                                                                          repository_source_excludes=[],
                                                                                          repository_activation_configurations=[ "python36",
