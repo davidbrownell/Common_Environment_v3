@@ -563,6 +563,7 @@ def CreateRunTestsFunc(standard_test_executor):
 
             parse_start_time = time.time()
             test_parse_benchmarks = []
+            test_parse_subtests = None
 
             try:
                 if original_test_output is None:
@@ -571,7 +572,12 @@ def CreateRunTestsFunc(standard_test_executor):
                     test_parse_result = test_parser.Parse(original_test_output)
 
                     if isinstance(test_parse_result, tuple):
-                        test_parse_result, test_parse_benchmarks = test_parse_result
+                        if len(test_parse_result) == 2:
+                            test_parse_result, test_parse_benchmarks = test_parse_result
+                        elif len(test_parse_result) == 3:
+                            test_parse_result, test_parse_benchmarks, test_parse_subtests = test_parse_result
+                        else:
+                            assert False, test_parse_result
 
             except:
                 test_parse_result = internal_exception_result_code
@@ -590,6 +596,7 @@ def CreateRunTestsFunc(standard_test_executor):
                     test_parse_result,
                     test_parse_time,
                     test_parse_benchmarks,
+                    test_parse_subtests,
                 )
 
                 if test_parse_result != 0:
