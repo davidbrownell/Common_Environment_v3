@@ -1768,6 +1768,7 @@ def _ExecuteImpl(
                 test_executor,
                 code_coverage_validator,
                 include_benchmarks=True,
+                include_subresults=True,
             ),
         )
 
@@ -1975,6 +1976,8 @@ def _ExecuteTreeImpl(
                             test_parser,
                             test_executor,
                             code_coverage_validator,
+                            include_benchmarks=False,
+                            include_subresults=True,
                         ),
                     )
 
@@ -2151,6 +2154,21 @@ def _CreateJUnit(input_dir, filename, complete_results):
                     regex_index=2,
                 ),
             )
+
+            for result in results.test_parse_results:
+                if result.SubResults:
+                    for subresult_name, (subresult_result, subresult_time) in six.iteritems(result.SubResults):
+                        if subresult_result == 0:
+                            continue
+
+                        failure = ET.Element("failure")
+
+                        failure.text = "{} ({}, {})".format(subresult_name, subresult_result, subresult_time)
+
+                        failure.set("message", failure.text)
+                        failure.set("type", "SubResult failure")
+
+                        testcase.append(failure)
 
             suite.append(testcase)
 
