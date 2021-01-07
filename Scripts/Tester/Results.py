@@ -336,7 +336,7 @@ class Results(object):
                                                 Mean:                   {mean} {units}
                                                 Min:                    {min} {units}
                                                 Max:                    {max} {units}
-                                                Standard Deviation:     {standard_deviation} {units}
+                                                Standard Deviation:     {standard_deviation}
 
                                         """,
                                     ).format(
