@@ -146,8 +146,8 @@ class TestParserImpl(Interface):
         # ->
         #   Union[
         #       int,
-        #       Tuple[int, List[TestParserImpl.BenchmarkStat]],
-        #       Tuple[int, List[TestParserImpl.BenchmarkStat], Dict[str, Tuple[int, datetime.timedelta]]],
+        #       Tuple[int, Dict[str, TestParserImpl.BenchmarkStat]],
+        #       Tuple[int, Dict[str, TestParserImpl.BenchmarkStat], Dict[str, Tuple[int, datetime.timedelta]]],
         #   ]
 
         """
@@ -155,8 +155,8 @@ class TestParserImpl(Interface):
 
         Returns one of the following:
             - Error code
-            - Error code and list of benchmarks
-            - Error code, list of benchmarks, and subtest error codes and execution times
+            - Error code and dict of benchmarks
+            - Error code, dict of benchmarks, and subtest error codes and execution times
         """
         raise Exception("Abstract property")
 
