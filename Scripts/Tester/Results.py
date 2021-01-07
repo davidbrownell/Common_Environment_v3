@@ -43,14 +43,49 @@ class Results(object):
     """Results for executing a single test"""
 
     # ----------------------------------------------------------------------
+    # |
     # |  Public Types
-    TestParseResult                         = namedtuple("TestParseResult", ["Result", "Time", "Benchmarks"])
+    # |
+    # ----------------------------------------------------------------------
+    class TestParseResult(object):
+        # ----------------------------------------------------------------------
+        def __init__(
+            self,
+            result,                         # : int
+            time,                           # : timedelta
+            benchmarks=None,                # : Dict[str, List[TestParserImpl.BenchmarkStat]]
+            sub_results=None,               # : Dict[str, Tuple[int, timedelta]]
+        ):
+            self.Result                     = result
+            self.Time                       = time
+            self.Benchmarks                 = benchmarks
+            self.SubResults                 = sub_results
 
-    CoverageValidationResult                = namedtuple(
-        "CoverageValidationResult",
-        ["Result", "Time", "Min"],
-    )
+        # ----------------------------------------------------------------------
+        def __repr__(self):
+            return ObjectReprImpl(self)
 
+    # ----------------------------------------------------------------------
+    class CoverageValidationResult(object):
+        # ----------------------------------------------------------------------
+        def __init__(
+            self,
+            result,                         # : int
+            time,                           # : timedelta
+            min,                            # : float
+        ):
+            self.Result                     = result
+            self.Time                       = time
+            self.Min                        = min
+
+        # ----------------------------------------------------------------------
+        def __repr__(self):
+            return ObjectReprImpl(self)
+
+    # ----------------------------------------------------------------------
+    # |
+    # |  Public Methods
+    # |
     # ----------------------------------------------------------------------
     def __init__(self):
         self.compiler_context               = None
@@ -132,6 +167,7 @@ class Results(object):
         optional_test_executor,
         optional_code_coverage_validator,
         include_benchmarks=False,
+        include_subresults=False,
     ):
         # ----------------------------------------------------------------------
         def ResultToString(result):
@@ -264,6 +300,20 @@ class Results(object):
                         skip_first_line=False,
                     ),
                 )
+
+                if test_parse_result.SubResults and include_subresults:
+                    results.append("    Test Parse Subtests:\n")
+
+                    display_template = "            - {subtest_name} ({result_code}, {result_time})\n"
+
+                    for subtest_name, (result_code, result_time) in six.iteritems(test_parse_result.SubResults):
+                        results.append(
+                            display_template.format(
+                                result_code=result_code,
+                                subtest_name=subtest_name,
+                                result_time=result_time,
+                            ),
+                        )
 
                 if test_parse_result.Benchmarks and include_benchmarks:
                     results.append("    Test Parse Benchmarks:\n")

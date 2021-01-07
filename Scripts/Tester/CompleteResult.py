@@ -74,6 +74,7 @@ class CompleteResult(object):
         optional_test_executor,
         optional_code_coverage_validator,
         include_benchmarks=False,
+        include_subresults=False,
     ):
         header_length = max(180, len(self.Item) + 4)
 
@@ -103,6 +104,7 @@ class CompleteResult(object):
                     optional_test_executor,
                     optional_code_coverage_validator,
                     include_benchmarks=include_benchmarks,
+                    include_subresults=include_subresults,
                 ),
                 4,
                 skip_first_line=False,
@@ -114,6 +116,7 @@ class CompleteResult(object):
                     optional_test_executor,
                     optional_code_coverage_validator,
                     include_benchmarks=include_benchmarks,
+                    include_subresults=include_subresults,
                 ),
                 4,
                 skip_first_line=False,

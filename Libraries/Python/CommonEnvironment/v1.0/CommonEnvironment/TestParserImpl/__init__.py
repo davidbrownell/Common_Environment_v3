@@ -143,16 +143,20 @@ class TestParserImpl(Interface):
     @staticmethod
     @abstractmethod
     def Parse(test_data):
+        # ->
+        #   Union[
+        #       int,
+        #       Tuple[int, List[TestParserImpl.BenchmarkStat]],
+        #       Tuple[int, List[TestParserImpl.BenchmarkStat], Dict[str, Tuple[int, datetime.timedelta]]],
+        #   ]
+
         """
         Parses the given data looking for signs of successful execution.
 
-        Returns:
-
-            Error code indicating the results
-
-            - or -
-
-            Error code indicating the results and a list of `BenchmarkStat` objects
+        Returns one of the following:
+            - Error code
+            - Error code and list of benchmarks
+            - Error code, list of benchmarks, and subtest error codes and execution times
         """
         raise Exception("Abstract property")
 
