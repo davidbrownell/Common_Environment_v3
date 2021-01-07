@@ -69,21 +69,96 @@ class TestParser(TestParserImpl):
     _Parse_failed                           = re.compile(r"== FAILURES ==")
     _Parse_passed                           = re.compile(r"== \d+ passed in [\d\.]+s ==")
 
+    _Parse_benchmark_content                = re.compile(
+        r"""(?#
+        Header Prefix                       )----+ benchmark: \d+ tests ----+\r?\n(?#
+        Header
+            Name                            )Name \(time in (?P<units>\S+)\)\s+(?#
+            Min                             )Min\s+(?#
+            Max                             )Max\s+(?#
+            Mean                            )Mean\s+(?#
+            StdDev                          )StdDev\s+(?#
+            Median                          )Median\s+(?#
+            InterQuartile Range             )IQR\s+(?#
+            Outliners                       )Outliers\s+(?#
+            Operations per second           )OPS \(Mops/s\)\s+(?#
+            Rounds                          )Rounds\s+(?#
+            Iterations                      )Iterations\r?\n(?#
+        Header Suffix                       )----+\r?\n(?#
+        Content                             )(?P<content>.+)\r?\n(?#
+        Footer                              )----+\r?\n(?#
+        )""",
+        re.DOTALL | re.MULTILINE,
+    )
+
+    _Parse_benchmark_line_item              = re.compile(
+        r"""(?#
+        Name                                )(?P<name>\S+)\s+(?#
+        Min                                 )(?P<min>{float_regex}) \((?P<min_dev>{float_regex})\)\s+(?#
+        Max                                 )(?P<max>{float_regex}) \((?P<max_dev>{float_regex})\)\s+(?#
+        Mean                                )(?P<mean>{float_regex}) \((?P<mean_dev>{float_regex})\)\s+(?#
+        StdDev                              )(?P<std_dev>{float_regex}) \((?P<std_dev_dev>{float_regex})\)\s+(?#
+        Median                              )(?P<median>{float_regex}) \((?P<median_dev>{float_regex})\)\s+(?#
+        IQR                                 )(?P<iqr>{float_regex}) \((?P<iqr_dev>{float_regex})\)\s+(?#
+        Outliers                            )(?P<outlier_first>\d+);(?P<outlier_second>\d+)\s+(?#
+        OPS                                 )(?P<ops>{float_regex}) \((?P<ops_dev>{float_regex})\)\s+(?#
+        Rounds                              )(?P<rounds>\d+)\s+(?#
+        Iterations                          )(?P<iterations>\d+)(?#
+        )""".format(
+            float_regex=r"[\d,]+\.\d+",
+        ),
+    )
+
     @classmethod
     @Interface.override
     def Parse(cls, test_data):
         if cls._Parse_failed.search(test_data):
             return -1
 
-        if cls._Parse_passed.search(test_data):
-            return 0
+        if not cls._Parse_passed.search(test_data):
+            return 1
 
-        return 1
+        benchmarks = []
+
+        match = cls._Parse_benchmark_content.search(test_data)
+        if match:
+            units = match.group("units")
+            match = match.group("content")
+
+            for line_item in match.split("\n"):
+                line_item = line_item.strip()
+
+                match = cls._Parse_benchmark_line_item.match(line_item)
+                assert match, line_item
+
+                benchmarks.append(
+                    TestParserImpl.BenchmarkStat(
+                        match.group("name"),
+                        cls._filename,
+                        0, # Line number
+                        "pytest-5.3.2, benchmark-3.2.2",
+                        float(match.group("min").replace(",", "")),
+                        float(match.group("max").replace(",", "")),
+                        float(match.group("mean").replace(",", "")),
+                        float(match.group("std_dev").replace(",", "")),
+                        int(match.group("rounds")),
+                        units,
+                        int(match.group("iterations")),
+                    ),
+                )
+
+        if benchmarks:
+            return 0, { "benchmarks" : benchmarks }
+
+        return 0
 
     # ----------------------------------------------------------------------
     @classmethod
     @Interface.override
     def CreateInvokeCommandLine(cls, context, debug_on_error):
+        # Store the filename for later
+        cls._filename = context["input"]
+
         command_line = super(TestParser, cls).CreateInvokeCommandLine(context, debug_on_error)
 
         return 'python -m pytest -o python_files=*Test.py --verbose "{}"'.format(command_line)
