@@ -20,6 +20,7 @@ import re
 
 import CommonEnvironment
 from CommonEnvironment import Interface
+from CommonEnvironment.Shell.All import CurrentShell
 from CommonEnvironment.TestParserImpl import TestParserImpl
 
 # ----------------------------------------------------------------------
@@ -94,14 +95,14 @@ class TestParser(TestParserImpl):
     _Parse_benchmark_line_item              = re.compile(
         r"""(?#
         Name                                )(?P<name>\S+)\s+(?#
-        Min                                 )(?P<min>{float_regex}) \((?P<min_dev>{float_regex})\)\s+(?#
-        Max                                 )(?P<max>{float_regex}) \((?P<max_dev>{float_regex})\)\s+(?#
-        Mean                                )(?P<mean>{float_regex}) \((?P<mean_dev>{float_regex})\)\s+(?#
-        StdDev                              )(?P<std_dev>{float_regex}) \((?P<std_dev_dev>{float_regex})\)\s+(?#
-        Median                              )(?P<median>{float_regex}) \((?P<median_dev>{float_regex})\)\s+(?#
-        IQR                                 )(?P<iqr>{float_regex}) \((?P<iqr_dev>{float_regex})\)\s+(?#
+        Min                                 )(?P<min>{float_regex})(?: \((?P<min_dev>{float_regex})\))?\s+(?#
+        Max                                 )(?P<max>{float_regex})(?: \((?P<max_dev>{float_regex})\))?\s+(?#
+        Mean                                )(?P<mean>{float_regex})(?: \((?P<mean_dev>{float_regex})\))?\s+(?#
+        StdDev                              )(?P<std_dev>{float_regex})(?: \((?P<std_dev_dev>{float_regex})\))?\s+(?#
+        Median                              )(?P<median>{float_regex})(?: \((?P<median_dev>{float_regex})\))?\s+(?#
+        IQR                                 )(?P<iqr>{float_regex})(?: \((?P<iqr_dev>{float_regex})\))?\s+(?#
         Outliers                            )(?P<outlier_first>\d+);(?P<outlier_second>\d+)\s+(?#
-        OPS                                 )(?P<ops>{float_regex}) \((?P<ops_dev>{float_regex})\)\s+(?#
+        OPS                                 )(?P<ops>{float_regex})(?: \((?P<ops_dev>{float_regex})\))?\s+(?#
         Rounds                              )(?P<rounds>\d+)\s+(?#
         Iterations                          )(?P<iterations>\d+)(?#
         )""".format(
@@ -161,4 +162,18 @@ class TestParser(TestParserImpl):
 
         command_line = super(TestParser, cls).CreateInvokeCommandLine(context, debug_on_error)
 
-        return 'python -m pytest -o python_files=*Test.py --verbose "{}"'.format(command_line)
+        additional_args = [
+            "-m",
+            "pytest",
+            "-o",
+            "python_files=*Test.py",
+            "--verbose",
+        ]
+
+        if CurrentShell.CategoryName == "Windows":
+            additional_args += ["-W", "ignore::DeprecationWarning:pywintypes"]
+
+        return 'python {} "{}"'.format(
+            " ".join(['"{}"'.format(arg) for arg in additional_args]),
+            command_line,
+        )
