@@ -1506,11 +1506,11 @@ def CommandLineSuffix():
             Where...
 
                 <configuration> can be one of these values:
-                      (A configuration provides pre-configured values for <compiler>, <test_parser>, and <test_executor>)
+                    (A configuration provides pre-configured values for <compiler>, <test_parser>, and <test_executor>)
 
             {configurations}
 
-                Common values for <test_type> are (although these are not required):
+                Common values for <test_type> are (note that a value is not required to be in this list):
 
             {test_types}
 
@@ -2096,7 +2096,7 @@ def _CreateJUnit(input_dir, filename, complete_results):
     #       with collections and is not ready for prime time. Therefore, we are creating the
     #       XML manually here.
     #
-    #       Update this code once the issues PythonXmlPlugin have been addressed.
+    #       Update this code once the issues in PythonXmlPlugin have been addressed.
 
     import socket
     from xml.etree import ElementTree as ET
