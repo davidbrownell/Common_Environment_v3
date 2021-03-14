@@ -298,7 +298,7 @@ class SourceControlManagement(Interface):
                 ):
         """
         Adds the file or files specified or will search for new files in the current dir
-        (if files is False) or from the repo root (if false is True).
+        (if files is False) or from the repo root (if files is True).
         """
 
         if isinstance(files, bool):
