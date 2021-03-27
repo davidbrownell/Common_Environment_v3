@@ -89,6 +89,16 @@ def ThisFullpath():
     else:
         filename = os.path.realpath(os.path.abspath(inspect.stack()[1].filename))
 
+        # WSL manages to screw up this path value
+        if filename.startswith("/mnt/"):
+            index = filename.find(":")
+            if index != -1:
+                # Recreate the path based on the information detected
+                filename = "/mnt/{}/{}".format(
+                    filename[filename.rfind("/", 0, index) + 1:index].lower(),
+                    filename[index + 1:].replace("\\", "/"),
+                )
+
     assert os.path.exists(filename), filename
 
     if os.path.islink(filename):
