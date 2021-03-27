@@ -17,6 +17,7 @@
 import datetime
 import os
 import re
+import shlex
 import sys
 import textwrap
 import time
@@ -99,11 +100,16 @@ class TestExecutor(TestExecutorImpl):
         excludes = excludes or []
 
         # Get the name of the script to execute
-        if command_line.lower().startswith("python"):
-            filename = command_line[len("python"):].replace('"', '').strip()
-            assert os.path.isfile(filename), filename
-        else:
-            filename = command_line
+        args = shlex.split(command_line)
+
+        filename = None
+        for arg in args:
+            if os.path.isfile(arg):
+                filename = arg
+                break
+
+        assert filename is not None, command_line
+        assert os.path.isfile(filename), filename
 
         # Attempt to extract include and exclude information from the source
         disable_code_coverage = False
@@ -153,7 +159,7 @@ class TestExecutor(TestExecutorImpl):
         if disable_code_coverage:
             return StandardTestExecutor.Execute( compiler,
                                                  context,
-                                                 'python "{}"'.format(filename),
+                                                 command_line,
                                                )
 
         # Attempt to determine include and exclude information based on the original filename
@@ -184,29 +190,34 @@ class TestExecutor(TestExecutorImpl):
             includes.append("*/{}".format('/'.join(stack)))
 
         # Run the process and calculate code coverage
-        temp_filename = CurrentShell.CreateTempFilename(".py")
+        if command_line.startswith("python"):
+            temp_filename = CurrentShell.CreateTempFilename(".py")
 
-        with open(temp_filename, 'w') as f:
-            f.write(textwrap.dedent(
-                """\
-                from coverage.cmdline import main
+            with open(temp_filename, 'w') as f:
+                f.write(textwrap.dedent(
+                    """\
+                    from coverage.cmdline import main
 
-                main()
-                """))
+                    main()
+                    """))
 
-        with CallOnExit(lambda: FileSystem.RemoveFile(temp_filename)):
-            command_line_template = 'python "{}" "{{}}"'.format(temp_filename)
+            coverage_command_line_template = 'python "{}" run {{include}} {{omit}} "{}"'.format(temp_filename, filename)
 
+            cleanup_func = lambda: FileSystem.RemoveFile(temp_filename)
+        else:
+            coverage_command_line_template = 'coverage run {{include}} {{omit}} -m {}'.format(command_line)
+            cleanup_func = lambda: None
+
+        with CallOnExit(cleanup_func):
             # Run the process
             start_time = time.time()
 
-            command_line = '{} {} {} {}'.format( command_line_template.format("run"),
-                                                 '"--include={}"'.format(','.join(includes)) if includes else '',
-                                                 '"--omit={}"'.format(','.join(excludes)) if excludes else '',
-                                                 filename,
-                                               )
+            coverage_command_line = coverage_command_line_template.format(
+                include='"--include={}"'.format(','.join(includes)) if includes else '',
+                omit='"--omit={}"'.format(','.join(excludes)) if excludes else '',
+            )
 
-            test_result, test_output = Process.Execute(command_line)
+            test_result, test_output = Process.Execute(coverage_command_line)
             test_time = str(datetime.timedelta(seconds=(time.time() - start_time)))
 
             # Get the coverage info
@@ -214,11 +225,9 @@ class TestExecutor(TestExecutorImpl):
 
             coverage_data_filename = os.path.join(context["output_dir"], "coverage.xml")
 
-            command_line = '{} -o "{}"'.format( command_line_template.format("xml"),
-                                                coverage_data_filename,
-                                              )
+            coverage_command_line = 'coverage xml -o "{}"'.format(coverage_data_filename)
 
-            coverage_result, coverage_output = Process.Execute(command_line)
+            coverage_result, coverage_output = Process.Execute(coverage_command_line)
             coverage_time = str(datetime.timedelta(seconds=(time.time() - start_time)))
 
         # Get the percentage info
