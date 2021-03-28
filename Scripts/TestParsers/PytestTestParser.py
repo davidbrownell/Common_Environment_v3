@@ -48,6 +48,7 @@ class TestParser(TestParserImpl):
 
     # ----------------------------------------------------------------------
     _IsSupportedTestItem_imports            = [
+        # If these imports are present, it is NOT a pytest test file
         re.compile("^\s*import unittest"),
         re.compile("^\s*from unittest import"),
     ]
@@ -162,18 +163,4 @@ class TestParser(TestParserImpl):
 
         command_line = super(TestParser, cls).CreateInvokeCommandLine(context, debug_on_error)
 
-        additional_args = [
-            "-m",
-            "pytest",
-            "-o",
-            "python_files=*Test.py",
-            "--verbose",
-        ]
-
-        if CurrentShell.CategoryName == "Windows":
-            additional_args += ["-W", "ignore::DeprecationWarning:pywintypes"]
-
-        return 'python {} "{}"'.format(
-            " ".join(['"{}"'.format(arg) for arg in additional_args]),
-            command_line,
-        )
+        return 'pytest --verbose "{}"'.format(command_line)

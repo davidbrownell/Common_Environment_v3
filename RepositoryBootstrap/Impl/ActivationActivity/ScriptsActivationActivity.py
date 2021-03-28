@@ -96,7 +96,6 @@ class ScriptsActivationActivity(ActivationActivity):
 
         # ----------------------------------------------------------------------
 
-
         dest_dir = os.path.join(generated_dir, cls.Name)
 
         verbose_stream.write("Cleaning previous content...")
@@ -104,6 +103,13 @@ class ScriptsActivationActivity(ActivationActivity):
             CommonEnvironmentImports.FileSystem.RemoveTree(dest_dir)
 
         CommonEnvironmentImports.FileSystem.MakeDirs(dest_dir)
+
+        # As a convenience, generate links without file extensions that
+        # point to the file extension version on some systems.
+        generate_extensionless_links = (
+            CommonEnvironmentImports.CurrentShell.CategoryName == "Linux"
+            and CommonEnvironmentImports.CurrentShell.ScriptExtension
+        )
 
         # Scripts can come in a variety of different forms and customization methods
         # may return new ways to traverse a directory. Maintain a list of all potential
@@ -312,6 +318,15 @@ class ScriptsActivationActivity(ActivationActivity):
                                                                     script_info,
                                                                   )
 
+                        if generate_extensionless_links:
+                            extensionless_link = os.path.splitext(potential_filename)[0]
+
+                            CommonEnvironmentImports.CurrentShell.CreateSymLink(
+                                extensionless_link,
+                                potential_filename,
+                            )
+                            CommonEnvironmentImports.CurrentShell.MakeFileExecutable(extensionless_link)
+
                 if wrappers:
                     verbose_stream.write("Creating '{}'...".format(Constants.SCRIPT_LIST_NAME))
                     with verbose_stream.DoneManager():
@@ -387,5 +402,6 @@ class ScriptsActivationActivity(ActivationActivity):
                                      content='\n'.join([ centered_template.format(line) for line in lines ]),
                                    ))
 
-        return [ CommonEnvironmentImports.CurrentShell.Commands.AugmentPath(dest_dir),
-               ]
+        return [
+            CommonEnvironmentImports.CurrentShell.Commands.AugmentPath(dest_dir),
+        ]
