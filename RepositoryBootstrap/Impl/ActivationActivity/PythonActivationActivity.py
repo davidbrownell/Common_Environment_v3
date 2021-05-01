@@ -357,9 +357,12 @@ class PythonActivationActivity(ActivationActivity):
                 CommonEnvironmentImports.CurrentShell.Commands.AugmentPath(script_dir),
             ]
 
-        actions.append(
-            CommonEnvironmentImports.CurrentShell.Commands.Set("PYTHONUNBUFFERED", "1"),
-        )
+        # It doesn't appear that this is necessary anymore, but I am hesitant to completely
+        # remove it as there may be situations where it is still necessary.
+        #
+        # actions.append(
+        #     CommonEnvironmentImports.CurrentShell.Commands.Set("PYTHONUNBUFFERED", "1"),
+        # )
 
         # Get the python version
         tools_dir = os.path.realpath(
