@@ -163,4 +163,7 @@ class TestParser(TestParserImpl):
 
         command_line = super(TestParser, cls).CreateInvokeCommandLine(context, debug_on_error)
 
+        if CurrentShell.CategoryName == "Windows":
+            return 'pytest --verbose -W ignore::DeprecationWarning:pywintypes "{}"'.format(command_line)
+
         return 'pytest --verbose "{}"'.format(command_line)
