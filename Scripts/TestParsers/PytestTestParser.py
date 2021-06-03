@@ -161,9 +161,12 @@ class TestParser(TestParserImpl):
         # Store the filename for later
         cls._filename = context["input"]
 
-        command_line = super(TestParser, cls).CreateInvokeCommandLine(context, debug_on_error)
+        command_line_prefix = 'pytest --verbose -vv --capture=no'
 
         if CurrentShell.CategoryName == "Windows":
-            return 'pytest --verbose -W ignore::DeprecationWarning:pywintypes "{}"'.format(command_line)
+            command_line_prefix += " -W ignore::DeprecationWarning:pywintypes"
 
-        return 'pytest --verbose "{}"'.format(command_line)
+        return '{} "{}"'.format(
+            command_line_prefix,
+            super(TestParser, cls).CreateInvokeCommandLine(context, debug_on_error),
+        )
