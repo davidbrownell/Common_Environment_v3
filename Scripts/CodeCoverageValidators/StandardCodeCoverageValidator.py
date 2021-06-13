@@ -16,7 +16,7 @@
 
 import os
 
-import rtyaml
+import yaml
 
 import CommonEnvironment
 from CommonEnvironment.Interface import override, DerivedProperty
@@ -69,7 +69,10 @@ class CodeCoverageValidator(CodeCoverageValidatorImpl):
                 potential_filename = os.path.join(dirname, self.MIN_COVERAGE_PERCENTAGE_FILENAME)
                 if os.path.isfile(potential_filename):
                     with open(potential_filename) as f:
-                        content = rtyaml.load(f)
+                        content = yaml.load(
+                            f,
+                            Loader=yaml.FullLoader,
+                        )
 
                     if isinstance(content, int):
                         content = float(content)
