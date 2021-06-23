@@ -2014,8 +2014,13 @@ def _ExecuteTreeImpl(
                     nonlocals.failures += 1
 
                 dm.stream.write(
-                    " {}, {}, {}\n".format(test_item, result_type, results.TotalTime()),
+                    " {}, {}, {}".format(test_item, result_type, results.TotalTime()),
                 )
+
+                if results.execute_results[0].CoveragePercentage is not None:
+                    dm.stream.write(", {0:0.2f}%".format(results.execute_results[0].CoveragePercentage))
+
+                dm.stream.write("\n")
 
             # ----------------------------------------------------------------------
 
