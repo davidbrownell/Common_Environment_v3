@@ -692,9 +692,6 @@ def _ProcessType(processed_types, cls):
     errors = []
 
     for member_name, value in inspect.getmembers(cls):
-        if member_name.startswith("__"):
-            continue
-
         entity = _Entity(cls, value)
 
         decorator_count = 0
