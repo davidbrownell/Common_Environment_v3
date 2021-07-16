@@ -17,6 +17,7 @@
 
 import os
 import re
+import sys
 
 import CommonEnvironment
 from CommonEnvironment import Interface
@@ -49,13 +50,17 @@ class TestParser(TestParserImpl):
     # ----------------------------------------------------------------------
     _IsSupportedTestItem_imports            = [
         # If these imports are present, it is NOT a pytest test file
-        re.compile("^\s*import unittest"),
-        re.compile("^\s*from unittest import"),
+        re.compile(r"^\s*import unittest"),
+        re.compile(r"^\s*from unittest import"),
     ]
 
     @classmethod
     @Interface.override
     def IsSupportedTestItem(cls, item):
+        # pytest is only supported on python3
+        if sys.version_info[0] == 2:
+            return False
+
         # Use this parser for any python test file that does not explicitly import 'unittest'
         assert os.path.isfile(item), item
 
@@ -70,6 +75,9 @@ class TestParser(TestParserImpl):
     # ----------------------------------------------------------------------
     _Parse_failed                           = re.compile(r"== FAILURES ==")
     _Parse_passed                           = re.compile(r"== \d+ passed in [\d\.]+s ==")
+
+    _Pytest_version                         = re.compile(r"(?P<value>pytest-\d+\.\d+\.\d+)")
+    _Benchmark_version                      = re.compile(r"(?P<value>benchmark-\d+\.\d+\.\d+)")
 
     _Parse_benchmark_content                = re.compile(
         r"""(?#
@@ -124,6 +132,16 @@ class TestParser(TestParserImpl):
 
         match = cls._Parse_benchmark_content.search(test_data)
         if match:
+            # Get the pytest and benchmark versions
+            pytest_version = cls._Pytest_version.search(test_data)
+            assert pytest_version
+            pytest_version = pytest_version.group("value")
+
+            benchmark_version = cls._Benchmark_version.search(test_data)
+            assert benchmark_version
+            benchmark_version = benchmark_version.group("value")
+
+            # Parse the match
             units = match.group("units")
             match = match.group("content")
 
@@ -137,8 +155,8 @@ class TestParser(TestParserImpl):
                     TestParserImpl.BenchmarkStat(
                         match.group("name"),
                         cls._filename,
-                        0, # Line number
-                        "pytest-5.3.2, benchmark-3.2.2",
+                        1, # Line number
+                        "{}, {}".format(pytest_version, benchmark_version),
                         float(match.group("min").replace(",", "")),
                         float(match.group("max").replace(",", "")),
                         float(match.group("mean").replace(",", "")),
