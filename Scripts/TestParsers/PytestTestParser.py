@@ -17,6 +17,7 @@
 
 import os
 import re
+import sys
 
 import CommonEnvironment
 from CommonEnvironment import Interface
@@ -56,6 +57,10 @@ class TestParser(TestParserImpl):
     @classmethod
     @Interface.override
     def IsSupportedTestItem(cls, item):
+        # pytest is only supported on python3
+        if sys.version_info[0] == 2:
+            return False
+
         # Use this parser for any python test file that does not explicitly import 'unittest'
         assert os.path.isfile(item), item
 
