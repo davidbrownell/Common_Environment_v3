@@ -155,7 +155,7 @@ class TestParser(TestParserImpl):
                     TestParserImpl.BenchmarkStat(
                         match.group("name"),
                         cls._filename,
-                        0, # Line number
+                        1, # Line number
                         "{}, {}".format(pytest_version, benchmark_version),
                         float(match.group("min").replace(",", "")),
                         float(match.group("max").replace(",", "")),
