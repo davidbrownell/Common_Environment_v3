@@ -114,6 +114,7 @@ _describe_stack                             = set()
 def Describe( item,                         # str, dict, iterable, obj
               output_stream=sys.stdout,
               unique_id=None,
+              include_class=True,
               **kwargs                      # { "<attribute_name>" : def Func(<attribute_value>) -> string, ... }
             ):
     """Writes information about the item to the provided stream."""
@@ -210,7 +211,7 @@ def Describe( item,                         # str, dict, iterable, obj
                 if not Display():
                     content = str(item).strip()
 
-                    if "<class" not in content:
+                    if include_class and "<class" not in content:
                         content += "{}{}".format( '\n' if content.count('\n') > 1 else ' ',
                                                   type(item),
                                                 )
@@ -247,6 +248,7 @@ def ObjectReprImpl( obj,
                     include_methods=False,
                     include_private=False,
                     include_id=True,
+                    include_class=True,
                     **kwargs                            # { "<attribute_name>" : def Func(<attribute_value>) -> string, ... }
                   ):
     """\
@@ -257,7 +259,10 @@ def ObjectReprImpl( obj,
             return CommonEnvironment.ObjReprImpl(self)
     """
 
-    d = ObjectToDict(obj, include_id=include_id)
+    d = ObjectToDict(
+        obj,
+        include_id=include_id,
+    )
 
     # Displaying builtins prevents anything from being displayed after it
     if "f_builtins" in d:
@@ -280,10 +285,16 @@ def ObjectReprImpl( obj,
     Describe( d,
               sink,
               unique_id=(type(obj), id(obj)),
+              include_class=include_class,
               **kwargs
             )
 
-    return "{}\n{}\n".format(type(obj), sink.getvalue().rstrip())
+    result = "{}\n".format(sink.getvalue().rstrip())
+
+    if include_class:
+        result = "{}\n{}".format(type(obj), result)
+
+    return result
 
 # ----------------------------------------------------------------------
 def NormalizeObjectReprOutput(output):
