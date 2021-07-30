@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  __init___UnitTest.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-04-20 19:31:28
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-21.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Unit test for __init__.py"""
 
@@ -60,9 +60,9 @@ class DescribeSuite(unittest.TestCase):
     def test_Dict(self):
         # Standard
         sink = six.moves.StringIO()
-        CommonEnvironment.Describe(OrderedDict([ ( "a", "one" ), 
-                                                 ( "bee", 2 ), 
-                                                 ( "c", True ), 
+        CommonEnvironment.Describe(OrderedDict([ ( "a", "one" ),
+                                                 ( "bee", 2 ),
+                                                 ( "c", True ),
                                                  ( "d", 1.0 ),
                                                ]), sink)
 
@@ -99,8 +99,8 @@ class DescribeSuite(unittest.TestCase):
                 nested : foo : bar
                          baz : biz
                          one : more
-                
-                
+
+
                 """))
         else:
             self.assertEqual(sink.getvalue(), textwrap.dedent(
@@ -110,8 +110,8 @@ class DescribeSuite(unittest.TestCase):
                          one : more
                 a      : one
                 bee    : 2 <class 'int'>
-                
-                
+
+
                 """))
 
         # Empty
@@ -130,15 +130,15 @@ class DescribeSuite(unittest.TestCase):
         # Standard
         sink = six.moves.StringIO()
         CommonEnvironment.Describe([ "one", 2, 3.0, ], sink)
-        
+
         if sys.version[0] == '2':
             self.assertEqual(sink.getvalue(), textwrap.dedent(
                 """\
                 0)   one
                 1)   2 <type 'int'>
                 2)   3.0 <type 'float'>
-                
-                
+
+
                 """))
         else:
             self.assertEqual(sink.getvalue(), textwrap.dedent(
@@ -146,14 +146,14 @@ class DescribeSuite(unittest.TestCase):
                 0)   one
                 1)   2 <class 'int'>
                 2)   3.0 <class 'float'>
-                
-                
+
+
                 """))
-        
+
         # Nested
         sink = six.moves.StringIO()
         CommonEnvironment.Describe([ "one", [ "foo", "bar", ], 2, 3.0, ], sink)
-        
+
         if sys.version[0] == '2':
             self.assertEqual(sink.getvalue(), textwrap.dedent(
                 """\
@@ -162,8 +162,8 @@ class DescribeSuite(unittest.TestCase):
                      1)   bar
                 2)   2 <type 'int'>
                 3)   3.0 <type 'float'>
-        
-        
+
+
                 """))
         else:
             self.assertEqual(sink.getvalue(), textwrap.dedent(
@@ -173,8 +173,8 @@ class DescribeSuite(unittest.TestCase):
                      1)   bar
                 2)   2 <class 'int'>
                 3)   3.0 <class 'float'>
-            
-            
+
+
                 """))
 
         # Empty
@@ -216,7 +216,7 @@ class ObjectToDictSuite(unittest.TestCase):
 class ObjectReprImpl(unittest.TestCase):
     def test_Standard(self):
         # ----------------------------------------------------------------------
-        def CreateObj(include_methods):
+        def CreateObj(include_methods, include_class):
             class Object(object):
                 def __init__(self, a, b, c):
                     self.a = a
@@ -224,16 +224,17 @@ class ObjectReprImpl(unittest.TestCase):
                     self.c = c
 
                 def Method(self): pass
-                
+
                 @staticmethod
                 def StaticMethod(): pass
-                
+
                 @classmethod
                 def ClassMethod(cls): pass
 
                 def __repr__(self):
-                    return CommonEnvironment.ObjectReprImpl( self, 
+                    return CommonEnvironment.ObjectReprImpl( self,
                                                              include_methods=include_methods,
+                                                             include_class=include_class,
                                                              include_id=False,
                                                            )
 
@@ -241,8 +242,10 @@ class ObjectReprImpl(unittest.TestCase):
 
         # ----------------------------------------------------------------------
 
+        self.maxDiff = None
+
         if sys.version[0] == '2':
-            self.assertEqual(str(CreateObj(False)), textwrap.dedent(
+            self.assertEqual(str(CreateObj(False, True)), textwrap.dedent(
                 """\
                 <class '__main__.Object'>
                 a : one
@@ -252,8 +255,9 @@ class ObjectReprImpl(unittest.TestCase):
                     b : four
                     c : True <type 'bool'>
                 """))
+
         else:
-            self.assertEqual(str(CreateObj(False)), textwrap.dedent(
+            self.assertEqual(str(CreateObj(False, True)), textwrap.dedent(
                 """\
                 <class '__main__.ObjectReprImpl.test_Standard.<locals>.CreateObj.<locals>.Object'>
                 a : one
@@ -264,10 +268,18 @@ class ObjectReprImpl(unittest.TestCase):
                     c : True <class 'bool'>
                 """))
 
-        self.maxDiff = None
-        
+        self.assertEqual(str(CreateObj(False, False)), textwrap.dedent(
+                """\
+                a : one
+                b : 2
+                c : a : 3.0
+                    b : four
+                    c : True
+                """,
+            ))
+
         if sys.version[0] == '2':
-            self.assertEqual(str(CreateObj(True)), textwrap.dedent(
+            self.assertEqual(str(CreateObj(True, True)), textwrap.dedent(
                 """\
                 <class '__main__.Object'>
                 ClassMethod  : callable
@@ -285,7 +297,7 @@ class ObjectReprImpl(unittest.TestCase):
                 """))
 
         else:
-            self.assertEqual(str(CreateObj(True)), textwrap.dedent(
+            self.assertEqual(str(CreateObj(True, True)), textwrap.dedent(
             """\
             <class '__main__.ObjectReprImpl.test_Standard.<locals>.CreateObj.<locals>.Object'>
             ClassMethod  : callable
@@ -301,7 +313,24 @@ class ObjectReprImpl(unittest.TestCase):
                            b            : four
                            c            : True <class 'bool'>
             """))
-        
+
+        self.assertEqual(str(CreateObj(True, False)), textwrap.dedent(
+            """\
+            ClassMethod  : callable
+            Method       : callable
+            StaticMethod : callable
+            a            : one
+            b            : 2
+            c            : ClassMethod  : callable
+                           Method       : callable
+                           StaticMethod : callable
+                           a            : 3.0
+                           b            : four
+                           c            : True
+            """))
+
+
+
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
