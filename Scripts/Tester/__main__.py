@@ -1010,12 +1010,21 @@ def MatchTests(
     with output_stream.DoneManager(
         suffix="\n",
     ) as dm:
+        # ----------------------------------------------------------------------
+        def IncludeDir(fullpath):
+            fullpath = os.path.join(fullpath, test_type)
+            if not os.path.isdir(fullpath):
+                return False
+
+            # Don't include dirs that are empty
+            return bool(os.listdir(fullpath))
+
+        # ----------------------------------------------------------------------
+
         source_files = list(
             FileSystem.WalkFiles(
                 input_dir,
-                include_dir_paths=[
-                    lambda fullpath: os.path.isdir(os.path.join(fullpath, test_type)),
-                ],
+                include_dir_paths=[IncludeDir,],
                 include_full_paths=[compiler.IsSupported],
                 exclude_file_names=["Build.py"],
                 traverse_exclude_dir_names=traverse_exclude_dir_names,
