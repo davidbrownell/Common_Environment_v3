@@ -152,6 +152,9 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
         versions = []
 
         for version_string in version_strings:
+            if version_string.startswith("."):
+                continue
+
             original_version_string = version_string
 
             for potential_prefix in ["v", "r"]:
@@ -164,7 +167,7 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
                 parts = []
 
                 for part in version_string.split("."):
-                    assert part
+                    assert part, version_string
 
                     part = part.lstrip("0")
                     if part:
