@@ -17,6 +17,7 @@
 import os
 import re
 import sys
+import textwrap
 
 from collections import OrderedDict
 
@@ -105,11 +106,6 @@ def ThisFullpath():
 
 
 # ----------------------------------------------------------------------
-# Global used to prevent infinite recursion loops for types that reference ancestors in its type
-# heierarchy. This functionality cannot be a parameter of this function, as this functionality may
-# be invoked from __repr__ methods (which do not take arguments).
-_describe_stack                             = set()
-
 def Describe(
     item,
     output_stream=sys.stdout,
@@ -118,31 +114,36 @@ def Describe(
     include_id=True,
     include_methods=False,
     include_private=False,
-    recurse=True,
+    max_recursion_depth=None,
+    describe_stack=None,
     **custom_display_funcs # Callable[[Any], Optional[str]]
 ):
     """Writes formatted information about the provided item to the provided output stream."""
 
     if unique_id is None:
         unique_id = (id(item), type(item))
+    if max_recursion_depth is None:
+        max_recursion_depth = sys.maxsize
+    if describe_stack is None:
+        describe_stack = set()
 
-    if unique_id in _describe_stack:
+    if unique_id in describe_stack:
         # Display this value in a way that is similar to what is done inline so that normalization
         # functions normalize this value too.
         output_stream.write("The item '<<<id>>> : {} {}' has already been described.\n".format(id(item), type(item)))
         return
 
-    _describe_stack.add(unique_id)
+    describe_stack.add(unique_id)
 
     try:
         # ----------------------------------------------------------------------
-        def OutputDict(item, indentation_str, recurse_ctr):
+        def OutputDict(item, indentation_str, max_recursion_depth):
             if not item:
                 output_stream.write("-- empty dict --\n")
                 return
 
-            if not recurse and recurse_ctr != 0:
-                output_stream.write("-- dict with {} item(s) --\n".format(len(item)))
+            if max_recursion_depth == 0:
+                output_stream.write("-- recursion is disabled: dict with {} item(s) --\n".format(len(item)))
                 return
 
             if hasattr(item, "_asdict"):
@@ -162,6 +163,19 @@ def Describe(
             item_indentation_str = indentation_str + (" " * (max_length + len(" : ")))
 
             for index, (key, key_name) in enumerate(six.iteritems(keys)):
+                result = None
+
+                if key in custom_display_funcs:
+                    func = custom_display_funcs[key]
+                    if func is None:
+                        continue
+
+                    result = func(item[key])
+                    if result is None:
+                        continue
+
+                    result = "{}\n".format(result)
+
                 output_stream.write(
                     "{0}{1:<{2}} : ".format(
                         indentation_str if index else "",
@@ -170,25 +184,19 @@ def Describe(
                     ),
                 )
 
-                if key in custom_display_funcs:
-                    result = custom_display_funcs[key](item[key])
-
-                    if result is not None:
-                        output_stream.write("{}".format(result))
-
-                    output_stream.write("\n")
-
+                if result:
+                    output_stream.write(result)
                 else:
-                    DisplayImpl(item[key], item_indentation_str, recurse_ctr + 1)
+                    DisplayImpl(item[key], item_indentation_str, max_recursion_depth - 1)
 
         # ----------------------------------------------------------------------
-        def OutputList(item, indentation_str, recurse_ctr):
+        def OutputList(item, indentation_str, max_recursion_depth):
             if not item:
                 output_stream.write("-- empty list --\n")
                 return
 
-            if not recurse and recurse_ctr != 0:
-                output_stream.write("-- list with {} item(s) --\n".format(len(item)))
+            if max_recursion_depth == 0:
+                output_stream.write("-- recursion is disabled: list with {} item(s) --\n".format(len(item)))
                 return
 
             item_indentation_str = indentation_str + (" " * 5)
@@ -201,10 +209,10 @@ def Describe(
                     ),
                 )
 
-                DisplayImpl(i, item_indentation_str, recurse_ctr + 1)
+                DisplayImpl(i, item_indentation_str, max_recursion_depth - 1)
 
         # ----------------------------------------------------------------------
-        def TryDisplay(item, indentation_str, recurse_ctr):
+        def TryDisplayCollection(item, indentation_str, max_recursion_depth):
             try:
                 # Is the item iterable?
                 potential_attribute_name = next(iter(item))
@@ -215,15 +223,48 @@ def Describe(
             try:
                 # Is the item dict-like?
                 ignore_me = item[potential_attribute_name]
-                OutputDict(item, indentation_str, recurse_ctr)
+                OutputDict(item, indentation_str, max_recursion_depth)
             except (TypeError, IndexError):
                 # Not dict-like
-                OutputList(item, indentation_str, recurse_ctr)
+                OutputList(item, indentation_str, max_recursion_depth)
 
             return True
 
         # ----------------------------------------------------------------------
-        def DisplayImpl(item, indentation_str, recurse_ctr):
+        def TryGetCustomContent(item, indentation_str, max_recursion_depth):
+            # Attempt to lever common display methods
+            for potential_display_method_name in ["ToString", "to_string"]:
+                potential_func = getattr(item, potential_display_method_name, None)
+                if potential_func is None:
+                    continue
+
+                for potential_args in [
+                    {
+                        "include_class_info" : include_class_info,
+                        "include_id" : include_id,
+                        "include_methods" : include_methods,
+                        "include_private" : include_private,
+                        "max_recursion_depth" : max_recursion_depth,
+                        "describe_stack" : describe_stack,
+                    },
+                    {
+                        "max_recursion_depth" : max_recursion_depth,
+                        "describe_stack" : describe_stack,
+                    },
+                    {},
+                ]:
+                    try:
+                        potential_result = potential_func(**potential_args)
+                        if potential_result is not None:
+                            return potential_result
+
+                    except TypeError:
+                        pass
+
+            return None
+
+        # ----------------------------------------------------------------------
+        def DisplayImpl(item, indentation_str, max_recursion_depth):
             if isinstance(item, six.string_types):
                 output_stream.write(
                     "{}\n".format(
@@ -231,36 +272,28 @@ def Describe(
                     ),
                 )
             elif isinstance(item, dict):
-                OutputDict(item, indentation_str, recurse_ctr)
+                OutputDict(item, indentation_str, max_recursion_depth)
             elif isinstance(item, list):
-                OutputList(item, indentation_str, recurse_ctr)
-            elif not TryDisplay(item, indentation_str, recurse_ctr):
-                if (
-                    not recurse
-                    and recurse_ctr != 0
-                    and not isinstance(
-                        item,
-                        (
-                            bool,
-                            complex,
-                            float,
-                            int,
-                            six.string_types,
-                        ),
-                    )
-                ):
-                    output_stream.write("-- recursion is disabled --\n")
+                OutputList(item, indentation_str, max_recursion_depth)
+            elif not TryDisplayCollection(item, indentation_str, max_recursion_depth):
+                is_primitive_type = isinstance(item, (bool, complex, float, int, six.string_types))
+
+                if max_recursion_depth == 0 and not is_primitive_type:
+                    output_stream.write("-- recursion is disabled: complex element --\n")
                     return
 
-                content = str(item).strip()
+                content = (TryGetCustomContent(item, indentation_str, max_recursion_depth) or str(item)).strip()
 
-                if include_class_info and "<class" not in content:
-                    content += "{}{}".format(
-                        "\n" if content.count("\n") > 1 else " ",
-                        type(item),
-                    )
+                if "<class" not in content:
+                    if include_class_info:
+                        if content.count("\n") > 1:
+                            content = "{}\n{}".format(type(item), content)
+                        else:
+                            content += " {}".format(type(item))
 
                 if " object at " in content:
+                    raise Exception("TODO: Is this ever used?")
+
                     if not include_id:
                         content = str(type(item)).strip()
 
@@ -271,7 +304,8 @@ def Describe(
                             include_id=include_id,
                             include_methods=include_methods,
                             include_private=include_private,
-                            recurse=recurse or recurse_ctr == 0,
+                            max_recursion_depth=max_recursion_depth,
+                            describe_stack=describe_stack,
                             **custom_display_funcs
                         ),
                     )
@@ -284,14 +318,16 @@ def Describe(
 
         # ----------------------------------------------------------------------
 
-        DisplayImpl(item, "", 0)
+        DisplayImpl(item, "", max_recursion_depth)
         output_stream.write("\n\n")
 
     finally:
-        _describe_stack.remove(unique_id)
+        describe_stack.remove(unique_id)
 
 
 # ----------------------------------------------------------------------
+# This function should not be used directly and remains here for legacy support.
+# New code should prefer to base their class on ObjectReplImplBase.
 def ObjectReprImpl(
     obj,
     include_class_info=True,
@@ -299,7 +335,8 @@ def ObjectReprImpl(
     include_methods=False,
     include_private=False,
     scrub_results=False,
-    recurse=True,
+    max_recursion_depth=None, # Optional[int]
+    describe_stack=None,
     **custom_display_funcs # Callable[[Any], Optional[str]]
 ):
     """\
@@ -344,19 +381,105 @@ def ObjectReprImpl(
         include_id=include_id,
         include_methods=include_methods,
         include_private=include_private,
-        recurse=recurse,
+        max_recursion_depth=max_recursion_depth,
+        describe_stack=describe_stack,
         **custom_display_funcs
     )
 
-    result = "{}\n".format(sink.getvalue().rstrip())
-
-    if include_class_info:
-        result = "{}\n{}".format(type(obj), result)
+    # Custom types must always display the type
+    result = textwrap.dedent(
+        """\
+        {}
+        {}
+        """,
+    ).format(
+        type(obj),
+        sink.getvalue().rstrip(),
+    )
 
     if scrub_results:
         result = NormalizeObjectReprOutput(result)
 
     return result
+
+
+# ----------------------------------------------------------------------
+class ObjectReplImplBase(object):
+    """\
+    Implements __repr__ and ToString functionality for the parent class and its
+    entire class hierarchy.
+
+    Example:
+        class MyObject(CommandLine.ObjectReplImplBase):
+            pass
+
+        print(str(MyObject()))
+    """
+
+    # ----------------------------------------------------------------------
+    def __init__(
+        self,
+        include_class_info=True,
+        include_id=False,
+        include_methods=False,
+        include_private=False,
+        max_recursion_depth=None,
+        **custom_display_funcs
+    ):
+        d = {
+            "include_class_info" : include_class_info,
+            "include_id" : include_id,
+            "include_methods" : include_methods,
+            "include_private" : include_private,
+        }
+
+        for k, v in six.iteritems(custom_display_funcs):
+            assert k not in d, k
+            d[k] = v
+
+        self._object_repr_impl_args         = d
+        self._max_recursion_depth           = max_recursion_depth
+
+    # ----------------------------------------------------------------------
+    def __repr__(self):
+        # There is something special about __repr__ in that it cannot
+        # forward directly to ToString. Therefore, we have to make what
+        # is basically the same call to ObjectReprImpl in both __repr__
+        # and ToString.
+        self._AutoInit()
+
+        return ObjectReprImpl(
+            self,
+            max_recursion_depth=self._max_recursion_depth,
+            **self._object_repr_impl_args
+        )
+
+    # ----------------------------------------------------------------------
+    def ToString(
+        self,
+        max_recursion_depth=None, # Optional[int]
+        describe_stack=None,
+    ):
+        self._AutoInit()
+
+        if max_recursion_depth is None:
+            max_recursion_depth = self._max_recursion_depth
+        elif self._max_recursion_depth is not None:
+            max_recursion_depth = min(max_recursion_depth, self._max_recursion_depth)
+
+        return ObjectReprImpl(
+            self,
+            describe_stack=describe_stack,
+            max_recursion_depth=max_recursion_depth,
+            **self._object_repr_impl_args
+        )
+
+    # ----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    def _AutoInit(self):
+        if not hasattr(self, "_object_repr_impl_args"):
+            ObjectReplImplBase.__init__(self)
 
 
 # ----------------------------------------------------------------------

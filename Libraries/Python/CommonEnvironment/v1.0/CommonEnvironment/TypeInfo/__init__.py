@@ -209,7 +209,7 @@ class Arity(object):
         return self.__cmp__(other) == 0
 
 # ----------------------------------------------------------------------
-class TypeInfo(Interface):
+class TypeInfo(Interface, CommonEnvironment.ObjectReplImplBase):
     """
     Base class for information about a type.
 
@@ -280,10 +280,6 @@ class TypeInfo(Interface):
         self.Arity                          = arity
         self.ValidationFunc                 = validation_func
         self.CollectionValidationFunc       = collection_validation_func
-
-    # ----------------------------------------------------------------------
-    def __repr__(self):
-        return CommonEnvironment.ObjectReprImpl(self)
 
     # ----------------------------------------------------------------------
     def __eq__(self, other):
