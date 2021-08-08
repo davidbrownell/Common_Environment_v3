@@ -14,14 +14,11 @@
 # ----------------------------------------------------------------------
 """Contains types and methods that are fundamental"""
 
-import datetime
 import os
 import re
 import sys
-import time
 
 from collections import OrderedDict
-from contextlib import contextmanager
 
 import six
 
@@ -111,12 +108,14 @@ def ThisFullpath():
 # object with circular dependencies.
 _describe_stack                             = set()
 
-def Describe( item,                         # str, dict, iterable, obj
-              output_stream=sys.stdout,
-              unique_id=None,
-              include_class=True,
-              **kwargs                      # { "<attribute_name>" : def Func(<attribute_value>) -> string, ... }
-            ):
+def Describe(
+    item,                                   # str, dict, iterable, obj
+    output_stream=sys.stdout,
+    unique_id=None,
+    include_class=True,
+    include_id=True,
+    **kwargs                                 # { "<attribute_name>" : def Func(<attribute_value>) -> string, ... }
+):
     """Writes information about the item to the provided stream."""
 
     if unique_id is None:
@@ -149,10 +148,13 @@ def Describe( item,                         # str, dict, iterable, obj
             item_indentation_str = indentation_str + (' ' * (max_length + len(" : ")))
 
             for index, (key, key_name) in enumerate(six.iteritems(keys)):
-                output_stream.write("{0}{1:<{2}} : ".format( indentation_str if index else '',
-                                                             key_name,
-                                                             max_length,
-                                                           ))
+                output_stream.write(
+                    "{0}{1:<{2}} : ".format(
+                        indentation_str if index else '',
+                        key_name,
+                        max_length,
+                    ),
+                )
 
                 if key in kwargs:
                     result = kwargs[key](item[key])
@@ -173,9 +175,13 @@ def Describe( item,                         # str, dict, iterable, obj
             item_indentation_str = indentation_str + (' ' * 5)
 
             for index, i in enumerate(item):
-                output_stream.write("{0}{1:<5}".format( indentation_str if index else '',
-                                                        "{})".format(index),
-                                                      ))
+                output_stream.write(
+                    "{0}{1:<5}".format(
+                        indentation_str if index else '',
+                        "{})".format(index),
+                    ),
+                )
+
                 Impl(i, item_indentation_str)
 
         # ----------------------------------------------------------------------
@@ -212,12 +218,23 @@ def Describe( item,                         # str, dict, iterable, obj
                     content = str(item).strip()
 
                     if include_class and "<class" not in content:
-                        content += "{}{}".format( '\n' if content.count('\n') > 1 else ' ',
-                                                  type(item),
-                                                )
+                        content += "{}{}".format(
+                            '\n' if content.count('\n') > 1 else ' ',
+                            type(item),
+                        )
 
                     if " object at " in content:
-                        content += "\n\n{}".format(ObjectReprImpl(item))
+                        if not include_id:
+                            content = str(type(item)).strip()
+
+                        content += "\n\n{}".format(
+                            ObjectReprImpl(
+                                item,
+                                include_class=include_class,
+                                include_id=include_id,
+                                **kwargs
+                            ),
+                        )
 
                     output_stream.write("{}\n".format(('\n{}'.format(indentation_str)).join(content.split('\n'))))
 
@@ -230,7 +247,10 @@ def Describe( item,                         # str, dict, iterable, obj
         _describe_stack.remove(unique_id)
 
 # ----------------------------------------------------------------------
-def ObjectToDict(obj, include_id=True):
+def ObjectToDict(
+    obj,
+    include_id=True,
+):
     """Converts an object into a dict."""
 
     kvps = []
@@ -244,13 +264,14 @@ def ObjectToDict(obj, include_id=True):
     return OrderedDict(kvps)
 
 # ----------------------------------------------------------------------
-def ObjectReprImpl( obj,
-                    include_methods=False,
-                    include_private=False,
-                    include_id=True,
-                    include_class=True,
-                    **kwargs                            # { "<attribute_name>" : def Func(<attribute_value>) -> string, ... }
-                  ):
+def ObjectReprImpl(
+    obj,
+    include_methods=False,
+    include_private=False,
+    include_id=True,
+    include_class=True,
+    **kwargs                            # { "<attribute_name>" : def Func(<attribute_value>) -> string, ... }
+):
     """\
     Implementation of an object's __repr__ method.
 
@@ -282,12 +303,16 @@ def ObjectReprImpl( obj,
 
     sink = six.moves.StringIO()
 
-    Describe( d,
-              sink,
-              unique_id=(type(obj), id(obj)),
-              include_class=include_class,
-              **kwargs
-            )
+    Describe(
+        d,
+        sink,
+        unique_id=(type(obj), id(obj)),
+        include_methods=include_methods,
+        include_private=include_private,
+        include_id=include_id,
+        include_class=include_class,
+        **kwargs
+    )
 
     result = "{}\n".format(sink.getvalue().rstrip())
 
@@ -305,13 +330,15 @@ def NormalizeObjectReprOutput(output):
 
     # ----------------------------------------------------------------------
     def Sub(match):
-        return "{} : __scrubbed_id__ {}".format( match.group("prefix"),
-                                                 match.group("suffix"),
-                                               )
+        return "{} : __scrubbed_id__ {}".format(
+            match.group("prefix"),
+            match.group("suffix"),
+        )
 
     # ----------------------------------------------------------------------
 
-    return re.sub( r"(?P<prefix>\<\<\<id\>\>\>\s*?) : (?P<id>\d+) (?P<suffix>[^\n]*?)",
-                   Sub,
-                   output,
-                 )
+    return re.sub(
+        r"(?P<prefix>\<\<\<id\>\>\>\s*?) : (?P<id>\d+) (?P<suffix>[^\n]*?)",
+        Sub,
+        output,
+    )
