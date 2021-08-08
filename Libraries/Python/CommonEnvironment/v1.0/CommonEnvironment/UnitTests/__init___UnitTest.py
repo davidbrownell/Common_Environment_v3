@@ -189,34 +189,14 @@ class DescribeSuite(unittest.TestCase):
             """))
 
 # ----------------------------------------------------------------------
-class ObjectToDictSuite(unittest.TestCase):
-    def test_Standard(self):
-        # ----------------------------------------------------------------------
-        class Object(object):
-            def __init__(self, a, b, c):
-                self.a = a
-                self.b = b
-                self.c = c
-
-            def Method(self): pass
-
-            @staticmethod
-            def StaticMethod(): pass
-
-            @classmethod
-            def ClassMethod(cls): pass
-
-        # ----------------------------------------------------------------------
-
-        obj = Object("one", 2, 3.0)
-
-        self.assertEqual(CommonEnvironment.ObjectToDict(obj, include_id=False), { "a" : obj.a, "b" : obj.b, "c" : obj.c, "Method" : obj.Method, "StaticMethod" : obj.StaticMethod, "ClassMethod" : obj.ClassMethod, })
-
-# ----------------------------------------------------------------------
 class ObjectReprImpl(unittest.TestCase):
     def test_Standard(self):
         # ----------------------------------------------------------------------
-        def CreateObj(include_methods, include_class):
+        def CreateObj(
+            include_methods,
+            include_class_info,
+            recurse=True,
+        ):
             class Object(object):
                 def __init__(self, a, b, c):
                     self.a = a
@@ -232,13 +212,15 @@ class ObjectReprImpl(unittest.TestCase):
                 def ClassMethod(cls): pass
 
                 def __repr__(self):
-                    return CommonEnvironment.ObjectReprImpl( self,
-                                                             include_methods=include_methods,
-                                                             include_class=include_class,
-                                                             include_id=False,
-                                                           )
+                    return CommonEnvironment.ObjectReprImpl(
+                        self,
+                        include_methods=include_methods,
+                        include_class_info=include_class_info,
+                        include_id=False,
+                        recurse=recurse,
+                )
 
-            return Object("one", 2, Object(3.0, "four", True))
+            return Object("one", 2, Object(3.0, "four", Object('1', '2', True)))
 
         # ----------------------------------------------------------------------
 
@@ -253,7 +235,10 @@ class ObjectReprImpl(unittest.TestCase):
                 c : <class '__main__.Object'>
                     a : 3.0 <type 'float'>
                     b : four
-                    c : True <type 'bool'>
+                    c : <class '__main__.Object'>
+                        a : 1
+                        b : 2
+                        c : True <type 'bool'>
                 """))
 
         else:
@@ -265,7 +250,10 @@ class ObjectReprImpl(unittest.TestCase):
                 c : <class '__main__.ObjectReprImpl.test_Standard.<locals>.CreateObj.<locals>.Object'>
                     a : 3.0 <class 'float'>
                     b : four
-                    c : True <class 'bool'>
+                    c : <class '__main__.ObjectReprImpl.test_Standard.<locals>.CreateObj.<locals>.Object'>
+                        a : 1
+                        b : 2
+                        c : True <class 'bool'>
                 """))
 
         self.assertEqual(str(CreateObj(False, False)), textwrap.dedent(
@@ -274,7 +262,9 @@ class ObjectReprImpl(unittest.TestCase):
                 b : 2
                 c : a : 3.0
                     b : four
-                    c : True
+                    c : a : 1
+                        b : 2
+                        c : True
                 """,
             ))
 
@@ -293,7 +283,13 @@ class ObjectReprImpl(unittest.TestCase):
                                StaticMethod : callable
                                a            : 3.0 <type 'float'>
                                b            : four
-                               c            : True <type 'bool'>
+                               c            : <class '__main__.Object'>
+                                              ClassMethod  : callable
+                                              Method       : callable
+                                              StaticMethod : callable
+                                              a            : 1
+                                              b            : 2
+                                              c            : True <type 'bool'>
                 """))
 
         else:
@@ -311,7 +307,13 @@ class ObjectReprImpl(unittest.TestCase):
                            StaticMethod : callable
                            a            : 3.0 <class 'float'>
                            b            : four
-                           c            : True <class 'bool'>
+                           c            : <class '__main__.ObjectReprImpl.test_Standard.<locals>.CreateObj.<locals>.Object'>
+                                          ClassMethod  : callable
+                                          Method       : callable
+                                          StaticMethod : callable
+                                          a            : 1
+                                          b            : 2
+                                          c            : True <class 'bool'>
             """))
 
         self.assertEqual(str(CreateObj(True, False)), textwrap.dedent(
@@ -326,7 +328,22 @@ class ObjectReprImpl(unittest.TestCase):
                            StaticMethod : callable
                            a            : 3.0
                            b            : four
-                           c            : True
+                           c            : ClassMethod  : callable
+                                          Method       : callable
+                                          StaticMethod : callable
+                                          a            : 1
+                                          b            : 2
+                                          c            : True
+            """))
+
+        self.assertEqual(str(CreateObj(True, False, False)), textwrap.dedent(
+            """\
+            ClassMethod  : callable
+            Method       : callable
+            StaticMethod : callable
+            a            : one
+            b            : 2
+            c            : -- recursion is disabled --
             """))
 
 

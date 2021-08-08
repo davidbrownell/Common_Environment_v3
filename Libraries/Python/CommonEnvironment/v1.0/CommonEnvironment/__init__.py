@@ -103,20 +103,25 @@ def ThisFullpath():
 
     return filename
 
+
 # ----------------------------------------------------------------------
-# Data type used to short-circuit infinite loops when attempting to describe
-# object with circular dependencies.
+# Global used to prevent infinite recursion loops for types that reference ancestors in its type
+# heierarchy. This functionality cannot be a parameter of this function, as this functionality may
+# be invoked from __repr__ methods (which do not take arguments).
 _describe_stack                             = set()
 
 def Describe(
-    item,                                   # str, dict, iterable, obj
+    item,
     output_stream=sys.stdout,
     unique_id=None,
-    include_class=True,
+    include_class_info=True,
     include_id=True,
-    **kwargs                                 # { "<attribute_name>" : def Func(<attribute_value>) -> string, ... }
+    include_methods=False,
+    include_private=False,
+    recurse=True,
+    **custom_display_funcs # Callable[[Any], Optional[str]]
 ):
-    """Writes information about the item to the provided stream."""
+    """Writes formatted information about the provided item to the provided output stream."""
 
     if unique_id is None:
         unique_id = (id(item), type(item))
@@ -131,195 +136,228 @@ def Describe(
 
     try:
         # ----------------------------------------------------------------------
-        def OutputDict(item, indentation_str):
+        def OutputDict(item, indentation_str, recurse_ctr):
             if not item:
                 output_stream.write("-- empty dict --\n")
+                return
+
+            if not recurse and recurse_ctr != 0:
+                output_stream.write("-- dict with {} item(s) --\n".format(len(item)))
                 return
 
             if hasattr(item, "_asdict"):
                 item = item._asdict()
 
-            keys = OrderedDict([ (key, key if isinstance(key, six.string_types) else str(key)) for key in item.keys() ])
+            keys = OrderedDict(
+                [
+                    (key, key if isinstance(key, six.string_types) else str(key))
+                    for key in item.keys()
+                ],
+            )
 
             max_length = 0
             for key in six.itervalues(keys):
                 max_length = max(max_length, len(key))
 
-            item_indentation_str = indentation_str + (' ' * (max_length + len(" : ")))
+            item_indentation_str = indentation_str + (" " * (max_length + len(" : ")))
 
             for index, (key, key_name) in enumerate(six.iteritems(keys)):
                 output_stream.write(
                     "{0}{1:<{2}} : ".format(
-                        indentation_str if index else '',
+                        indentation_str if index else "",
                         key_name,
                         max_length,
                     ),
                 )
 
-                if key in kwargs:
-                    result = kwargs[key](item[key])
+                if key in custom_display_funcs:
+                    result = custom_display_funcs[key](item[key])
 
                     if result is not None:
                         output_stream.write("{}".format(result))
 
                     output_stream.write("\n")
+
                 else:
-                    Impl(item[key], item_indentation_str)
+                    DisplayImpl(item[key], item_indentation_str, recurse_ctr + 1)
 
         # ----------------------------------------------------------------------
-        def OutputList(item, indentation_str):
+        def OutputList(item, indentation_str, recurse_ctr):
             if not item:
                 output_stream.write("-- empty list --\n")
                 return
 
-            item_indentation_str = indentation_str + (' ' * 5)
+            if not recurse and recurse_ctr != 0:
+                output_stream.write("-- list with {} item(s) --\n".format(len(item)))
+                return
+
+            item_indentation_str = indentation_str + (" " * 5)
 
             for index, i in enumerate(item):
                 output_stream.write(
                     "{0}{1:<5}".format(
-                        indentation_str if index else '',
+                        indentation_str if index else "",
                         "{})".format(index),
                     ),
                 )
 
-                Impl(i, item_indentation_str)
+                DisplayImpl(i, item_indentation_str, recurse_ctr + 1)
 
         # ----------------------------------------------------------------------
-        def Impl(item, indentation_str):
+        def TryDisplay(item, indentation_str, recurse_ctr):
+            try:
+                # Is the item iterable?
+                potential_attribute_name = next(iter(item))
+            except (TypeError, IndexError, StopIteration):
+                # Not iterable
+                return False
+
+            try:
+                # Is the item dict-like?
+                ignore_me = item[potential_attribute_name]
+                OutputDict(item, indentation_str, recurse_ctr)
+            except (TypeError, IndexError):
+                # Not dict-like
+                OutputList(item, indentation_str, recurse_ctr)
+
+            return True
+
+        # ----------------------------------------------------------------------
+        def DisplayImpl(item, indentation_str, recurse_ctr):
             if isinstance(item, six.string_types):
-                output_stream.write("{}\n".format(('\n{}'.format(indentation_str)).join(item.split('\n'))))
+                output_stream.write(
+                    "{}\n".format(
+                        "{}\n".format(indentation_str).join(item.split("\n")),
+                    ),
+                )
             elif isinstance(item, dict):
-                OutputDict(item, indentation_str)
+                OutputDict(item, indentation_str, recurse_ctr)
             elif isinstance(item, list):
-                OutputList(item, indentation_str)
-            else:
-                # ----------------------------------------------------------------------
-                def Display():
-                    try:
-                        # Is the item iterable?
-                        potential_attribute_name = next(iter(item))
-                    except (TypeError, IndexError, StopIteration):
-                        # Not iterable
-                        return False
+                OutputList(item, indentation_str, recurse_ctr)
+            elif not TryDisplay(item, indentation_str, recurse_ctr):
+                if (
+                    not recurse
+                    and recurse_ctr != 0
+                    and not isinstance(
+                        item,
+                        (
+                            bool,
+                            complex,
+                            float,
+                            int,
+                            six.string_types,
+                        ),
+                    )
+                ):
+                    output_stream.write("-- recursion is disabled --\n")
+                    return
 
-                    # Is the item dict-like?
-                    try:
-                        ignore_me = item[potential_attribute_name]
-                        OutputDict(item, indentation_str)
-                    except (TypeError, IndexError):
-                        # No, it isn't
-                        OutputList(item, indentation_str)
+                content = str(item).strip()
 
-                    return True
+                if include_class_info and "<class" not in content:
+                    content += "{}{}".format(
+                        "\n" if content.count("\n") > 1 else " ",
+                        type(item),
+                    )
 
-                # ----------------------------------------------------------------------
+                if " object at " in content:
+                    if not include_id:
+                        content = str(type(item)).strip()
 
-                if not Display():
-                    content = str(item).strip()
+                    content += "\n\n{}".format(
+                        ObjectReprImpl(
+                            item,
+                            include_class_info=include_class_info,
+                            include_id=include_id,
+                            include_methods=include_methods,
+                            include_private=include_private,
+                            recurse=recurse or recurse_ctr == 0,
+                            **custom_display_funcs
+                        ),
+                    )
 
-                    if include_class and "<class" not in content:
-                        content += "{}{}".format(
-                            '\n' if content.count('\n') > 1 else ' ',
-                            type(item),
-                        )
-
-                    if " object at " in content:
-                        if not include_id:
-                            content = str(type(item)).strip()
-
-                        content += "\n\n{}".format(
-                            ObjectReprImpl(
-                                item,
-                                include_class=include_class,
-                                include_id=include_id,
-                                **kwargs
-                            ),
-                        )
-
-                    output_stream.write("{}\n".format(('\n{}'.format(indentation_str)).join(content.split('\n'))))
+                output_stream.write(
+                    "{}\n".format(
+                        "\n{}".format(indentation_str).join(content.split("\n")),
+                    ),
+                )
 
         # ----------------------------------------------------------------------
 
-        Impl(item, '')
-        output_stream.write('\n\n')
+        DisplayImpl(item, "", 0)
+        output_stream.write("\n\n")
 
     finally:
         _describe_stack.remove(unique_id)
 
-# ----------------------------------------------------------------------
-def ObjectToDict(
-    obj,
-    include_id=True,
-):
-    """Converts an object into a dict."""
-
-    kvps = []
-
-    if include_id:
-        kvps.append(( "<<<id>>>", id(obj) ))
-
-    keys = [ k for k in dir(obj) if not k.startswith("__") ]
-    kvps += [ ( k, getattr(obj, k) ) for k in keys ]
-
-    return OrderedDict(kvps)
 
 # ----------------------------------------------------------------------
 def ObjectReprImpl(
     obj,
+    include_class_info=True,
+    include_id=True,
     include_methods=False,
     include_private=False,
-    include_id=True,
-    include_class=True,
-    **kwargs                            # { "<attribute_name>" : def Func(<attribute_value>) -> string, ... }
+    scrub_results=False,
+    recurse=True,
+    **custom_display_funcs # Callable[[Any], Optional[str]]
 ):
     """\
     Implementation of an object's __repr__ method.
 
     Example:
         def __repr__(self):
-            return CommonEnvironment.ObjReprImpl(self)
+            return CommonEnvironment.ObjectReprImpl(self)
     """
 
-    d = ObjectToDict(
-        obj,
-        include_id=include_id,
-    )
+    # Convert the object into a dictionary that we can pass to Describe.
+    d = OrderedDict()
 
-    # Displaying builtins prevents anything from being displayed after it
-    if "f_builtins" in d:
-        del d["f_builtins"]
+    if include_id:
+        d["<<<id>>>"] = id(obj)
 
-    for k, v in list(six.iteritems(d)):
-        if callable(v):
-            if include_methods:
-                d[k] = "callable"
-            else:
-                del d[k]
-                continue
-
-        if not include_private and k.startswith('_'):
-            del d[k]
+    for key in dir(obj):
+        if key.startswith("__"):
             continue
 
+        if key.startswith("_") and not include_private:
+            continue
+
+        value = getattr(obj, key)
+
+        if callable(value):
+            if include_methods:
+                value = "callable"
+            else:
+                continue
+
+        d[key] = value
+
+    # Describe the object
     sink = six.moves.StringIO()
 
     Describe(
         d,
         sink,
         unique_id=(type(obj), id(obj)),
+        include_class_info=include_class_info,
+        include_id=include_id,
         include_methods=include_methods,
         include_private=include_private,
-        include_id=include_id,
-        include_class=include_class,
-        **kwargs
+        recurse=recurse,
+        **custom_display_funcs
     )
 
     result = "{}\n".format(sink.getvalue().rstrip())
 
-    if include_class:
+    if include_class_info:
         result = "{}\n{}".format(type(obj), result)
 
+    if scrub_results:
+        result = NormalizeObjectReprOutput(result)
+
     return result
+
 
 # ----------------------------------------------------------------------
 def NormalizeObjectReprOutput(output):
