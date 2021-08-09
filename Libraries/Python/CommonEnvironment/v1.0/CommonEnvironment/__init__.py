@@ -282,7 +282,11 @@ def Describe(
                     output_stream.write("-- recursion is disabled: complex element --\n")
                     return
 
-                content = (TryGetCustomContent(item, indentation_str, max_recursion_depth) or str(item)).strip()
+                content = TryGetCustomContent(item, indentation_str, max_recursion_depth)
+                if content is None:
+                    content = str(item)
+
+                content = content.strip()
 
                 if "<class" not in content:
                     if include_class_info:
@@ -290,25 +294,6 @@ def Describe(
                             content = "{}\n{}".format(type(item), content)
                         else:
                             content += " {}".format(type(item))
-
-                if " object at " in content:
-                    raise Exception("TODO: Is this ever used?")
-
-                    if not include_id:
-                        content = str(type(item)).strip()
-
-                    content += "\n\n{}".format(
-                        ObjectReprImpl(
-                            item,
-                            include_class_info=include_class_info,
-                            include_id=include_id,
-                            include_methods=include_methods,
-                            include_private=include_private,
-                            max_recursion_depth=max_recursion_depth,
-                            describe_stack=describe_stack,
-                            **custom_display_funcs
-                        ),
-                    )
 
                 output_stream.write(
                     "{}\n".format(
@@ -442,6 +427,10 @@ class ObjectReplImplBase(object):
 
     # ----------------------------------------------------------------------
     def __repr__(self):
+        return self.ToString(
+            max_recursion_depth=self._max_recursion_depth,
+        )
+
         # There is something special about __repr__ in that it cannot
         # forward directly to ToString. Therefore, we have to make what
         # is basically the same call to ObjectReprImpl in both __repr__
