@@ -312,7 +312,7 @@ def Describe(
 
 # ----------------------------------------------------------------------
 # This function should not be used directly and remains here for legacy support.
-# New code should prefer to base their class on ObjectReplImplBase.
+# New code should prefer to base their class on ObjectReprImplBase.
 def ObjectReprImpl(
     obj,
     include_class_info=True,
@@ -389,13 +389,13 @@ def ObjectReprImpl(
 
 
 # ----------------------------------------------------------------------
-class ObjectReplImplBase(object):
+class ObjectReprImplBase(object):
     """\
     Implements __repr__ and ToString functionality for the parent class and its
     entire class hierarchy.
 
     Example:
-        class MyObject(CommandLine.ObjectReplImplBase):
+        class MyObject(CommandLine.ObjectReprImplBase):
             pass
 
         print(str(MyObject()))
@@ -468,7 +468,7 @@ class ObjectReplImplBase(object):
     # ----------------------------------------------------------------------
     def _AutoInit(self):
         if not hasattr(self, "_object_repr_impl_args"):
-            ObjectReplImplBase.__init__(self)
+            ObjectReprImplBase.__init__(self)
 
 
 # ----------------------------------------------------------------------

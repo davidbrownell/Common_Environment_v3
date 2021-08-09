@@ -209,7 +209,7 @@ class Arity(object):
         return self.__cmp__(other) == 0
 
 # ----------------------------------------------------------------------
-class TypeInfo(Interface, CommonEnvironment.ObjectReplImplBase):
+class TypeInfo(Interface, CommonEnvironment.ObjectReprImplBase):
     """
     Base class for information about a type.
 
