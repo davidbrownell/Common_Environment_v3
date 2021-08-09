@@ -345,7 +345,10 @@ def ObjectReprImpl(
         if key.startswith("_") and not include_private:
             continue
 
-        value = getattr(obj, key)
+        try:
+            value = getattr(obj, key)
+        except Exception as ex:
+            value = str(ex)
 
         if callable(value):
             if include_methods:
@@ -422,25 +425,17 @@ class ObjectReprImplBase(object):
             assert k not in d, k
             d[k] = v
 
-        self._object_repr_impl_args         = d
-        self._max_recursion_depth           = max_recursion_depth
+        # Note that this code may be invokved from a frozen dataclass,
+        # so we need to take special care when assigning attributes.
+        object.__setattr__(self, "_object_repr_impl_args", d)
+        object.__setattr__(self, "_max_recursion_depth", max_recursion_depth)
 
     # ----------------------------------------------------------------------
     def __repr__(self):
-        return self.ToString(
-            max_recursion_depth=self._max_recursion_depth,
-        )
-
-        # There is something special about __repr__ in that it cannot
-        # forward directly to ToString. Therefore, we have to make what
-        # is basically the same call to ObjectReprImpl in both __repr__
-        # and ToString.
         self._AutoInit()
 
-        return ObjectReprImpl(
-            self,
+        return self.ToString(
             max_recursion_depth=self._max_recursion_depth,
-            **self._object_repr_impl_args
         )
 
     # ----------------------------------------------------------------------
