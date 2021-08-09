@@ -231,7 +231,7 @@ def Describe(
             return True
 
         # ----------------------------------------------------------------------
-        def TryGetCustomContent(item, indentation_str, max_recursion_depth):
+        def TryGetCustomContent(item, max_recursion_depth):
             # Attempt to lever common display methods
             for potential_display_method_name in ["ToString", "to_string"]:
                 potential_func = getattr(item, potential_display_method_name, None)
@@ -282,7 +282,7 @@ def Describe(
                     output_stream.write("-- recursion is disabled: complex element --\n")
                     return
 
-                content = TryGetCustomContent(item, indentation_str, max_recursion_depth)
+                content = TryGetCustomContent(item, max_recursion_depth)
                 if content is None:
                     content = str(item)
 
@@ -435,7 +435,7 @@ class ObjectReprImplBase(object):
         self._AutoInit()
 
         return self.ToString(
-            max_recursion_depth=self._max_recursion_depth,
+            max_recursion_depth=self._max_recursion_depth,  #  type: ignore # <has no member> pylint: disable=E1101
         )
 
     # ----------------------------------------------------------------------
@@ -447,15 +447,15 @@ class ObjectReprImplBase(object):
         self._AutoInit()
 
         if max_recursion_depth is None:
-            max_recursion_depth = self._max_recursion_depth
-        elif self._max_recursion_depth is not None:
-            max_recursion_depth = min(max_recursion_depth, self._max_recursion_depth)
+            max_recursion_depth = self._max_recursion_depth  #  type: ignore # <has no member> pylint: disable=E1101
+        elif self._max_recursion_depth is not None:  #  type: ignore # <has no member> pylint: disable=E1101
+            max_recursion_depth = min(max_recursion_depth, self._max_recursion_depth)  #  type: ignore # <has no member> pylint: disable=E1101
 
         return ObjectReprImpl(
             self,
             describe_stack=describe_stack,
             max_recursion_depth=max_recursion_depth,
-            **self._object_repr_impl_args
+            **self._object_repr_impl_args  #  type: ignore # <has no member> pylint: disable=E1101
         )
 
     # ----------------------------------------------------------------------
