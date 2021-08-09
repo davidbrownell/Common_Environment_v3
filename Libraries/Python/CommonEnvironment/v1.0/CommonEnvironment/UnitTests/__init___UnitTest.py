@@ -179,9 +179,9 @@ class ObjectReprImpl(unittest.TestCase):
             include_class_info,
             max_recursion_depth=None,
         ):
-            class Object(CommonEnvironment.ObjectReplImplBase):
+            class Object(CommonEnvironment.ObjectReprImplBase):
                 def __init__(self, a, b, c):
-                    CommonEnvironment.ObjectReplImplBase.__init__(
+                    CommonEnvironment.ObjectReprImplBase.__init__(
                         self,
                         include_class_info=include_class_info,
                         include_methods=include_methods,

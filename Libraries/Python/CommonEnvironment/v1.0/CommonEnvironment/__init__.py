@@ -231,7 +231,7 @@ def Describe(
             return True
 
         # ----------------------------------------------------------------------
-        def TryGetCustomContent(item, indentation_str, max_recursion_depth):
+        def TryGetCustomContent(item, max_recursion_depth):
             # Attempt to lever common display methods
             for potential_display_method_name in ["ToString", "to_string"]:
                 potential_func = getattr(item, potential_display_method_name, None)
@@ -282,7 +282,11 @@ def Describe(
                     output_stream.write("-- recursion is disabled: complex element --\n")
                     return
 
-                content = (TryGetCustomContent(item, indentation_str, max_recursion_depth) or str(item)).strip()
+                content = TryGetCustomContent(item, max_recursion_depth)
+                if content is None:
+                    content = str(item)
+
+                content = content.strip()
 
                 if "<class" not in content:
                     if include_class_info:
@@ -290,25 +294,6 @@ def Describe(
                             content = "{}\n{}".format(type(item), content)
                         else:
                             content += " {}".format(type(item))
-
-                if " object at " in content:
-                    raise Exception("TODO: Is this ever used?")
-
-                    if not include_id:
-                        content = str(type(item)).strip()
-
-                    content += "\n\n{}".format(
-                        ObjectReprImpl(
-                            item,
-                            include_class_info=include_class_info,
-                            include_id=include_id,
-                            include_methods=include_methods,
-                            include_private=include_private,
-                            max_recursion_depth=max_recursion_depth,
-                            describe_stack=describe_stack,
-                            **custom_display_funcs
-                        ),
-                    )
 
                 output_stream.write(
                     "{}\n".format(
@@ -327,7 +312,7 @@ def Describe(
 
 # ----------------------------------------------------------------------
 # This function should not be used directly and remains here for legacy support.
-# New code should prefer to base their class on ObjectReplImplBase.
+# New code should prefer to base their class on ObjectReprImplBase.
 def ObjectReprImpl(
     obj,
     include_class_info=True,
@@ -360,7 +345,10 @@ def ObjectReprImpl(
         if key.startswith("_") and not include_private:
             continue
 
-        value = getattr(obj, key)
+        try:
+            value = getattr(obj, key)
+        except Exception as ex:
+            value = str(ex)
 
         if callable(value):
             if include_methods:
@@ -404,13 +392,13 @@ def ObjectReprImpl(
 
 
 # ----------------------------------------------------------------------
-class ObjectReplImplBase(object):
+class ObjectReprImplBase(object):
     """\
     Implements __repr__ and ToString functionality for the parent class and its
     entire class hierarchy.
 
     Example:
-        class MyObject(CommandLine.ObjectReplImplBase):
+        class MyObject(CommandLine.ObjectReprImplBase):
             pass
 
         print(str(MyObject()))
@@ -437,21 +425,17 @@ class ObjectReplImplBase(object):
             assert k not in d, k
             d[k] = v
 
-        self._object_repr_impl_args         = d
-        self._max_recursion_depth           = max_recursion_depth
+        # Note that this code may be invokved from a frozen dataclass,
+        # so we need to take special care when assigning attributes.
+        object.__setattr__(self, "_object_repr_impl_args", d)
+        object.__setattr__(self, "_max_recursion_depth", max_recursion_depth)
 
     # ----------------------------------------------------------------------
     def __repr__(self):
-        # There is something special about __repr__ in that it cannot
-        # forward directly to ToString. Therefore, we have to make what
-        # is basically the same call to ObjectReprImpl in both __repr__
-        # and ToString.
         self._AutoInit()
 
-        return ObjectReprImpl(
-            self,
-            max_recursion_depth=self._max_recursion_depth,
-            **self._object_repr_impl_args
+        return self.ToString(
+            max_recursion_depth=self._max_recursion_depth,  #  type: ignore # <has no member> pylint: disable=E1101
         )
 
     # ----------------------------------------------------------------------
@@ -463,15 +447,15 @@ class ObjectReplImplBase(object):
         self._AutoInit()
 
         if max_recursion_depth is None:
-            max_recursion_depth = self._max_recursion_depth
-        elif self._max_recursion_depth is not None:
-            max_recursion_depth = min(max_recursion_depth, self._max_recursion_depth)
+            max_recursion_depth = self._max_recursion_depth  #  type: ignore # <has no member> pylint: disable=E1101
+        elif self._max_recursion_depth is not None:  #  type: ignore # <has no member> pylint: disable=E1101
+            max_recursion_depth = min(max_recursion_depth, self._max_recursion_depth)  #  type: ignore # <has no member> pylint: disable=E1101
 
         return ObjectReprImpl(
             self,
             describe_stack=describe_stack,
             max_recursion_depth=max_recursion_depth,
-            **self._object_repr_impl_args
+            **self._object_repr_impl_args  #  type: ignore # <has no member> pylint: disable=E1101
         )
 
     # ----------------------------------------------------------------------
@@ -479,7 +463,7 @@ class ObjectReplImplBase(object):
     # ----------------------------------------------------------------------
     def _AutoInit(self):
         if not hasattr(self, "_object_repr_impl_args"):
-            ObjectReplImplBase.__init__(self)
+            ObjectReprImplBase.__init__(self)
 
 
 # ----------------------------------------------------------------------
