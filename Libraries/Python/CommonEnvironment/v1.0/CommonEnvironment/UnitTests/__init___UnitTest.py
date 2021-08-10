@@ -66,26 +66,22 @@ class DescribeSuite(unittest.TestCase):
                                                  ( "d", 1.0 ),
                                                ]), sink)
 
+        self.maxDiff = None
+
         if sys.version[0] == '2':
-            self.assertEqual(sink.getvalue(), textwrap.dedent(
-                """\
-                a   : one
-                bee : 2 <type 'int'>
-                c   : True <type 'bool'>
-                d   : 1.0 <type 'float'>
-
-
-                """))
+            type_name = "type"
         else:
-            self.assertEqual(sink.getvalue(), textwrap.dedent(
-                """\
-                a   : one
-                bee : 2 <class 'int'>
-                c   : True <class 'bool'>
-                d   : 1.0 <class 'float'>
+            type_name = "class"
+
+        self.assertEqual(sink.getvalue(), textwrap.dedent(
+            """\
+            a   : one
+            bee : 2 <{type_name} 'int'>
+            c   : True <{type_name} 'bool'>
+            d   : 1.0 <{type_name} 'float'>
 
 
-                """))
+            """).format(type_name=type_name))
 
         # Nested
         sink = six.moves.StringIO()
@@ -127,55 +123,41 @@ class DescribeSuite(unittest.TestCase):
 
     # ----------------------------------------------------------------------
     def test_List(self):
+
+        self.maxDiff = None
+
+        if sys.version[0] == '2':
+            type_name = "type"
+        else:
+            type_name = "class"
+
         # Standard
         sink = six.moves.StringIO()
         CommonEnvironment.Describe([ "one", 2, 3.0, ], sink)
 
-        if sys.version[0] == '2':
-            self.assertEqual(sink.getvalue(), textwrap.dedent(
-                """\
-                0)   one
-                1)   2 <type 'int'>
-                2)   3.0 <type 'float'>
+        self.assertEqual(sink.getvalue(), textwrap.dedent(
+            """\
+            0)   one
+            1)   2 <{type_name} 'int'>
+            2)   3.0 <{type_name} 'float'>
 
 
-                """))
-        else:
-            self.assertEqual(sink.getvalue(), textwrap.dedent(
-                """\
-                0)   one
-                1)   2 <class 'int'>
-                2)   3.0 <class 'float'>
-
-
-                """))
+            """).format(type_name=type_name))
 
         # Nested
         sink = six.moves.StringIO()
         CommonEnvironment.Describe([ "one", [ "foo", "bar", ], 2, 3.0, ], sink)
 
-        if sys.version[0] == '2':
-            self.assertEqual(sink.getvalue(), textwrap.dedent(
-                """\
-                0)   one
-                1)   0)   foo
-                     1)   bar
-                2)   2 <type 'int'>
-                3)   3.0 <type 'float'>
+        self.assertEqual(sink.getvalue(), textwrap.dedent(
+            """\
+            0)   one
+            1)   0)   foo
+                 1)   bar
+            2)   2 <{type_name} 'int'>
+            3)   3.0 <{type_name} 'float'>
 
 
-                """))
-        else:
-            self.assertEqual(sink.getvalue(), textwrap.dedent(
-                """\
-                0)   one
-                1)   0)   foo
-                     1)   bar
-                2)   2 <class 'int'>
-                3)   3.0 <class 'float'>
-
-
-                """))
+            """).format(type_name=type_name))
 
         # Empty
         sink = six.moves.StringIO()
@@ -189,36 +171,23 @@ class DescribeSuite(unittest.TestCase):
             """))
 
 # ----------------------------------------------------------------------
-class ObjectToDictSuite(unittest.TestCase):
-    def test_Standard(self):
-        # ----------------------------------------------------------------------
-        class Object(object):
-            def __init__(self, a, b, c):
-                self.a = a
-                self.b = b
-                self.c = c
-
-            def Method(self): pass
-
-            @staticmethod
-            def StaticMethod(): pass
-
-            @classmethod
-            def ClassMethod(cls): pass
-
-        # ----------------------------------------------------------------------
-
-        obj = Object("one", 2, 3.0)
-
-        self.assertEqual(CommonEnvironment.ObjectToDict(obj, include_id=False), { "a" : obj.a, "b" : obj.b, "c" : obj.c, "Method" : obj.Method, "StaticMethod" : obj.StaticMethod, "ClassMethod" : obj.ClassMethod, })
-
-# ----------------------------------------------------------------------
 class ObjectReprImpl(unittest.TestCase):
     def test_Standard(self):
         # ----------------------------------------------------------------------
-        def CreateObj(include_methods, include_class):
-            class Object(object):
+        def CreateObj(
+            include_methods,
+            include_class_info,
+            max_recursion_depth=None,
+        ):
+            class Object(CommonEnvironment.ObjectReprImplBase):
                 def __init__(self, a, b, c):
+                    CommonEnvironment.ObjectReprImplBase.__init__(
+                        self,
+                        include_class_info=include_class_info,
+                        include_methods=include_methods,
+                        max_recursion_depth=max_recursion_depth,
+                    )
+
                     self.a = a
                     self.b = b
                     self.c = c
@@ -231,104 +200,130 @@ class ObjectReprImpl(unittest.TestCase):
                 @classmethod
                 def ClassMethod(cls): pass
 
-                def __repr__(self):
-                    return CommonEnvironment.ObjectReprImpl( self,
-                                                             include_methods=include_methods,
-                                                             include_class=include_class,
-                                                             include_id=False,
-                                                           )
-
-            return Object("one", 2, Object(3.0, "four", True))
+            return Object("one", 2, Object(3.0, "four", Object('1', '2', True)))
 
         # ----------------------------------------------------------------------
 
         self.maxDiff = None
 
         if sys.version[0] == '2':
-            self.assertEqual(str(CreateObj(False, True)), textwrap.dedent(
-                """\
-                <class '__main__.Object'>
-                a : one
-                b : 2 <type 'int'>
-                c : <class '__main__.Object'>
-                    a : 3.0 <type 'float'>
-                    b : four
-                    c : True <type 'bool'>
-                """))
-
+            class_name = "<class '__main__.Object'>"
+            type_name = "type"
         else:
-            self.assertEqual(str(CreateObj(False, True)), textwrap.dedent(
-                """\
-                <class '__main__.ObjectReprImpl.test_Standard.<locals>.CreateObj.<locals>.Object'>
-                a : one
-                b : 2 <class 'int'>
-                c : <class '__main__.ObjectReprImpl.test_Standard.<locals>.CreateObj.<locals>.Object'>
-                    a : 3.0 <class 'float'>
-                    b : four
-                    c : True <class 'bool'>
-                """))
+            class_name = "<class '__main__.ObjectReprImpl.test_Standard.<locals>.CreateObj.<locals>.Object'>"
+            type_name = "class"
+
+        self.assertEqual(str(CreateObj(False, True)), textwrap.dedent(
+            """\
+            {class_name}
+            a : one
+            b : 2 <{type_name} 'int'>
+            c : {class_name}
+                a : 3.0 <{type_name} 'float'>
+                b : four
+                c : {class_name}
+                    a : 1
+                    b : 2
+                    c : True <{type_name} 'bool'>
+            """).format(class_name=class_name, type_name=type_name))
 
         self.assertEqual(str(CreateObj(False, False)), textwrap.dedent(
-                """\
-                a : one
-                b : 2
-                c : a : 3.0
-                    b : four
-                    c : True
-                """,
-            ))
-
-        if sys.version[0] == '2':
-            self.assertEqual(str(CreateObj(True, True)), textwrap.dedent(
-                """\
-                <class '__main__.Object'>
-                ClassMethod  : callable
-                Method       : callable
-                StaticMethod : callable
-                a            : one
-                b            : 2 <type 'int'>
-                c            : <class '__main__.Object'>
-                               ClassMethod  : callable
-                               Method       : callable
-                               StaticMethod : callable
-                               a            : 3.0 <type 'float'>
-                               b            : four
-                               c            : True <type 'bool'>
-                """))
-
-        else:
-            self.assertEqual(str(CreateObj(True, True)), textwrap.dedent(
             """\
-            <class '__main__.ObjectReprImpl.test_Standard.<locals>.CreateObj.<locals>.Object'>
+            {class_name}
+            a : one
+            b : 2
+            c : {class_name}
+                a : 3.0
+                b : four
+                c : {class_name}
+                    a : 1
+                    b : 2
+                    c : True
+            """,
+        ).format(class_name=class_name, type_name=type_name))
+
+        self.assertEqual(str(CreateObj(True, True)), textwrap.dedent(
+            """\
+            {class_name}
             ClassMethod  : callable
             Method       : callable
             StaticMethod : callable
+            ToString     : callable
             a            : one
-            b            : 2 <class 'int'>
-            c            : <class '__main__.ObjectReprImpl.test_Standard.<locals>.CreateObj.<locals>.Object'>
+            b            : 2 <{type_name} 'int'>
+            c            : {class_name}
                            ClassMethod  : callable
                            Method       : callable
                            StaticMethod : callable
-                           a            : 3.0 <class 'float'>
+                           ToString     : callable
+                           a            : 3.0 <{type_name} 'float'>
                            b            : four
-                           c            : True <class 'bool'>
-            """))
+                           c            : {class_name}
+                                          ClassMethod  : callable
+                                          Method       : callable
+                                          StaticMethod : callable
+                                          ToString     : callable
+                                          a            : 1
+                                          b            : 2
+                                          c            : True <{type_name} 'bool'>
+            """).format(class_name=class_name, type_name=type_name))
 
         self.assertEqual(str(CreateObj(True, False)), textwrap.dedent(
             """\
+            {class_name}
             ClassMethod  : callable
             Method       : callable
             StaticMethod : callable
+            ToString     : callable
             a            : one
             b            : 2
-            c            : ClassMethod  : callable
+            c            : {class_name}
+                           ClassMethod  : callable
                            Method       : callable
                            StaticMethod : callable
+                           ToString     : callable
                            a            : 3.0
                            b            : four
-                           c            : True
-            """))
+                           c            : {class_name}
+                                          ClassMethod  : callable
+                                          Method       : callable
+                                          StaticMethod : callable
+                                          ToString     : callable
+                                          a            : 1
+                                          b            : 2
+                                          c            : True
+            """).format(class_name=class_name, type_name=type_name))
 
+        self.assertEqual(str(CreateObj(True, False, 1)), textwrap.dedent(
+            """\
+            {class_name}
+            ClassMethod  : callable
+            Method       : callable
+            StaticMethod : callable
+            ToString     : callable
+            a            : one
+            b            : 2
+            c            : -- recursion is disabled: complex element --
+            """).format(class_name=class_name, type_name=type_name))
+
+        self.assertEqual(str(CreateObj(True, False, 2)), textwrap.dedent(
+            """\
+            {class_name}
+            ClassMethod  : callable
+            Method       : callable
+            StaticMethod : callable
+            ToString     : callable
+            a            : one
+            b            : 2
+            c            : {class_name}
+                           ClassMethod  : callable
+                           Method       : callable
+                           StaticMethod : callable
+                           ToString     : callable
+                           a            : 3.0
+                           b            : four
+                           c            : -- recursion is disabled: complex element --
+            """).format(class_name=class_name, type_name=type_name))
 
 
 # ----------------------------------------------------------------------
