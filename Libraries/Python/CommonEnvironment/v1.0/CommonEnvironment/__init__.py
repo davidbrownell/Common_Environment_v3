@@ -190,13 +190,13 @@ def Describe(
                     DisplayImpl(item[key], item_indentation_str, max_recursion_depth - 1)
 
         # ----------------------------------------------------------------------
-        def OutputList(item, indentation_str, max_recursion_depth):
+        def OutputIterable(item, indentation_str, max_recursion_depth, type_name):
             if not item:
-                output_stream.write("-- empty list --\n")
+                output_stream.write("-- empty {} --\n".format(type_name))
                 return
 
             if max_recursion_depth == 0:
-                output_stream.write("-- recursion is disabled: list with {} item(s) --\n".format(len(item)))
+                output_stream.write("-- recursion is disabled: {} with {} item(s) --\n".format(type_name, len(item)))
                 return
 
             item_indentation_str = indentation_str + (" " * 5)
@@ -221,12 +221,23 @@ def Describe(
                 return False
 
             try:
-                # Is the item dict-like?
-                ignore_me = item[potential_attribute_name]
-                OutputDict(item, indentation_str, max_recursion_depth)
+                if not isinstance(item, tuple):
+                    # Is the item dict-like?
+                    ignore_me = item[potential_attribute_name]
+                    OutputDict(item, indentation_str, max_recursion_depth)
+
+                    return True
+
             except (TypeError, IndexError):
                 # Not dict-like
-                OutputList(item, indentation_str, max_recursion_depth)
+                pass
+
+            OutputIterable(
+                item,
+                indentation_str,
+                max_recursion_depth,
+                "tuple" if isinstance(item, tuple) else "list",
+            )
 
             return True
 
@@ -273,8 +284,13 @@ def Describe(
                 )
             elif isinstance(item, dict):
                 OutputDict(item, indentation_str, max_recursion_depth)
-            elif isinstance(item, list):
-                OutputList(item, indentation_str, max_recursion_depth)
+            elif isinstance(item, (list, tuple)):
+                OutputIterable(
+                    item,
+                    indentation_str,
+                    max_recursion_depth,
+                    type_name="tuple" if isinstance(item, tuple) else "list",
+                )
             elif not TryDisplayCollection(item, indentation_str, max_recursion_depth):
                 is_primitive_type = isinstance(item, (bool, complex, float, int, six.string_types))
 
