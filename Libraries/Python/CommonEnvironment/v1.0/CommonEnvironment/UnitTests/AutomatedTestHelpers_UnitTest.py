@@ -18,7 +18,6 @@
 import os
 import sys
 import textwrap
-import unittest
 
 import CommonEnvironment
 from CommonEnvironment.AutomatedTestHelpers import *
@@ -30,76 +29,65 @@ _script_dir, _script_name                   = os.path.split(_script_fullpath)
 
 
 # ----------------------------------------------------------------------
-class Standard(unittest.TestCase):
-    # ----------------------------------------------------------------------
-    def __init__(self, *args, **kwargs):
-        super(Standard, self).__init__(*args, **kwargs)
-        self.maxDiff = None
-
-    # ----------------------------------------------------------------------
-    def test_Method(self):
-        self.assertEqual(
-            textwrap.dedent(
-                """\
-                test_Method1
-                test_Method2
-                test_Method3
-                test_Method4
-                """,
-            ),
-            ResultsFromFile()
-        )
-
-    # ----------------------------------------------------------------------
-    def test_StandAlone(self):
-        FromFunc(self)
-
-    # ----------------------------------------------------------------------
-    def test_MissingFile(self):
-        self.assertEqual(
-            ResultsFromFile(),
-            textwrap.dedent(
-                """\
-                ********************************************************************************
-                ********************************************************************************
-                ********************************************************************************
-
-                The filename does not exist:
-
-                    {}
-
-                ********************************************************************************
-                ********************************************************************************
-                ********************************************************************************
-                """,
-            ).format(
-                os.path.join(os.path.dirname(_script_fullpath), "Results", "{}.Standard.test_MissingFile.txt".format(os.path.splitext(_script_name)[0])),
-            ),
-        )
+def test_StandAlone():
+    assert textwrap.dedent(
+        """\
+        test_StandAlone1
+        test_StandAlone2
+        """,
+    ) == ResultsFromFile()
 
 
 # ----------------------------------------------------------------------
-def FromFunc(asserter):
-    asserter.assertEqual(
-        textwrap.dedent(
-            """\
-            FromFunc1
-            FromFunc2
-            """,
-        ),
-        ResultsFromFile(),
+def test_MissingFile():
+    assert ResultsFromFile() == textwrap.dedent(
+        """\
+        ********************************************************************************
+        ********************************************************************************
+        ********************************************************************************
+
+        The filename does not exist:
+
+            {}
+
+        ********************************************************************************
+        ********************************************************************************
+        ********************************************************************************
+        """,
+    ).format(
+        os.path.join(os.path.dirname(_script_fullpath), "Results", "{}.test_MissingFile.txt".format(os.path.splitext(_script_name)[0])),
     )
 
 
 # ----------------------------------------------------------------------
-# ----------------------------------------------------------------------
-# ----------------------------------------------------------------------
-if __name__ == "__main__":
-    try:
-        sys.exit(
-            unittest.main(
-                verbosity=2,
-            ),
+class TestStandard(object):
+    # ----------------------------------------------------------------------
+    def test_Method(self):
+        assert textwrap.dedent(
+            """\
+            test_Method1
+            test_Method2
+            test_Method3
+            test_Method4
+            """,
+        ) == ResultsFromFile()
+
+    # ----------------------------------------------------------------------
+    def test_MissingFile(self):
+        assert ResultsFromFile() == textwrap.dedent(
+            """\
+            ********************************************************************************
+            ********************************************************************************
+            ********************************************************************************
+
+            The filename does not exist:
+
+                {}
+
+            ********************************************************************************
+            ********************************************************************************
+            ********************************************************************************
+            """,
+        ).format(
+            os.path.join(os.path.dirname(_script_fullpath), "Results", "{}.TestStandard.test_MissingFile.txt".format(os.path.splitext(_script_name)[0])),
         )
-    except KeyboardInterrupt:
-        pass
