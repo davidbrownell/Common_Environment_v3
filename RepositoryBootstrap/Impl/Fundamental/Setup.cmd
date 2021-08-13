@@ -48,7 +48,7 @@ cd "%DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME%"
 echo Installing Python dependencies for 2.7.14...
 
 call :CreateTempScriptName
-python -m pip install -r "%~dp0python_requirements.txt" -r "%~dp0python_windows_requirements.txt" 1> "%_SETUP_FUNDAMENTAL_TEMP_SCRIPT_NAME%" 2>&1
+python -m pip install -r "%~dp0python_requirements.txt" -r "%~dp0python2_windows_requirements.txt" 1> "%_SETUP_FUNDAMENTAL_TEMP_SCRIPT_NAME%" 2>&1
 set _error=%ERRORLEVEL%
 popd
 
@@ -75,7 +75,7 @@ cd "%DEVELOPMENT_ENVIRONMENT_ENVIRONMENT_NAME%"
 echo Installing Python dependencies for 3.6.5...
 
 call :CreateTempScriptName
-python -m pip install -r "%~dp0python_requirements.txt" -r "%~dp0python_windows_requirements.txt" 1> "%_SETUP_FUNDAMENTAL_TEMP_SCRIPT_NAME%" 2>&1
+python -m pip install -r "%~dp0python_requirements.txt" -r "%~dp0python3_windows_requirements.txt" 1> "%_SETUP_FUNDAMENTAL_TEMP_SCRIPT_NAME%" 2>&1
 set _error=%ERRORLEVEL%
 popd
 
