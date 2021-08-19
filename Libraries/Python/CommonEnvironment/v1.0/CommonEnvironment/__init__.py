@@ -174,7 +174,11 @@ def Describe(
                     if result is None:
                         continue
 
-                    result = "{}\n".format(result)
+                    if isinstance(result, six.string_types):
+                        append_newline = True
+
+                if result is None:
+                    result = item[key]
 
                 output_stream.write(
                     "{0}{1:<{2}} : ".format(
@@ -184,10 +188,10 @@ def Describe(
                     ),
                 )
 
-                if result:
-                    output_stream.write(result)
+                if isinstance(result, six.string_types):
+                    output_stream.write("{}\n".format(result.rstrip()))
                 else:
-                    DisplayImpl(item[key], item_indentation_str, max_recursion_depth - 1)
+                    DisplayImpl(result, item_indentation_str, max_recursion_depth - 1)
 
         # ----------------------------------------------------------------------
         def OutputIterable(item, indentation_str, max_recursion_depth, type_name):
