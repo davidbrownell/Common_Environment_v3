@@ -74,7 +74,16 @@ class TestParser(TestParserImpl):
 
     # ----------------------------------------------------------------------
     _Parse_failed                           = re.compile(r"== FAILURES ==")
-    _Parse_passed                           = re.compile(r"== \d+ passed(?:, \d+ skipped)? in [\d\.]+s ==")
+    _Parse_passed                           = re.compile(
+        r"""(?#
+            Delimiter prefix                )== (?#
+            Passed statement                )\d+ passed(?#
+            Skipped statement [optional]    )(?:, \d+ skipped)?(?#
+            In ___s                         ) in [\d\.]+s(?#
+            Minutes conversion [optional]   )(?: \([\d:]+\))?(?#
+            Delimiter suffix                ) ==(?#
+        )""",
+    )
 
     _Pytest_version                         = re.compile(r"(?P<value>pytest-\d+\.\d+\.\d+)")
     _Benchmark_version                      = re.compile(r"(?P<value>benchmark-\d+\.\d+\.\d+)")
