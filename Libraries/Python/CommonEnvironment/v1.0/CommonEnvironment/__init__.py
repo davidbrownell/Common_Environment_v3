@@ -174,9 +174,6 @@ def Describe(
                     if result is None:
                         continue
 
-                    if isinstance(result, six.string_types):
-                        append_newline = True
-
                 if result is None:
                     result = item[key]
 

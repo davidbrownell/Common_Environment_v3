@@ -468,7 +468,7 @@ class StreamDecorator(object):
                     if ( not getattr(ex, "_DisplayedException", False) and
                          not getattr(info.stream, "IsAssociatedStream", False)
                        ):
-                        ex._DisplayedException = True
+                        object.__setattr__(ex, "_DisplayedException", True)
 
                         if display_exception_callstacks and not getattr(ex, "__suppress_context__", False):
                             import traceback
