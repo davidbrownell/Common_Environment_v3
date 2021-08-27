@@ -19,6 +19,9 @@ import os
 import sys
 import textwrap
 
+import pytest
+pytest.register_assert_rewrite("CommonEnvironment.AutomatedTestHelpers")
+
 import CommonEnvironment
 from CommonEnvironment.AutomatedTestHelpers import *
 
@@ -55,7 +58,7 @@ def test_MissingFile():
         ********************************************************************************
         """,
     ).format(
-        os.path.join(os.path.dirname(_script_fullpath), "Results", "{}.test_MissingFile.txt".format(os.path.splitext(_script_name)[0])),
+        os.path.join(os.path.dirname(_script_fullpath), "Results", "{}.test_MissingFile.yaml".format(os.path.splitext(_script_name)[0])),
     )
 
 
@@ -89,5 +92,19 @@ class TestStandard(object):
             ********************************************************************************
             """,
         ).format(
-            os.path.join(os.path.dirname(_script_fullpath), "Results", "{}.TestStandard.test_MissingFile.txt".format(os.path.splitext(_script_name)[0])),
+            os.path.join(os.path.dirname(_script_fullpath), "Results", "{}.TestStandard.test_MissingFile.yaml".format(os.path.splitext(_script_name)[0])),
         )
+
+
+# ----------------------------------------------------------------------
+def test_CompareResultsFromFile():
+    CompareResultsFromFile(
+        textwrap.dedent(
+            """\
+            These are the
+            expected results.
+            """,
+        ),
+        file_ext=".txt",
+        # overwrite_content_with_these_results=ReallyReallyWantToDoThis(),
+    )
