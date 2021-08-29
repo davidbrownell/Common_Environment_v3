@@ -58,9 +58,9 @@ def Describe(
 ) -> None:
     """Writes formatted yaml about the provided item to the given output stream"""
 
-    if use_incorrect is None:
-        use_correct_value = not use_incorrect
     if use_correct is None:
+        use_correct_value = True
+    else:
         use_correct_value = use_correct
 
     include_class_info_value = include_class_info if include_class_info is not None else False
@@ -410,10 +410,7 @@ class ObjectReprImplBase(object):
             max_recursion_depth = getattr(self, "__max_recursion_depth")
 
         # TODO Temporary params while working through bugfix
-        if use_incorrect is None:
-            use_incorrect = args["use_incorrect"]
-        if use_correct is None:
-            use_correct = args["use_correct"]
+        use_correct_value = True
 
         # Convert the object into a dictionary that we can pass to Describe
         d = OrderedDict()
@@ -466,7 +463,7 @@ class ObjectReprImplBase(object):
         result = "\n".join([line.rstrip() for line in result.split("\n")])
 
         # Custom types must always display the type
-        if use_correct and result.startswith("\n"):
+        if use_correct_value and result.startswith("\n"):
             result = result.lstrip()
 
         result = textwrap.dedent(
