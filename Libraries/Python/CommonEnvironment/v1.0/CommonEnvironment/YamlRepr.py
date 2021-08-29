@@ -46,9 +46,9 @@ def Describe(
     include_private: bool=None,             # False
     indentation_level: int=None,            # 2
     scrub_results: bool=None,               # False
-    item_stack=None,                        # <impl detail>
-    max_recursion_depth=None,               # sys.maxint
-    unique_id=None,                         # <impl detail>
+    item_stack: Any=None,                   # <impl detail>
+    max_recursion_depth: int=None,          # sys.maxint
+    unique_id: Any=None,                    # <impl detail>
     **custom_display_funcs: Callable[[Any], Optional[Any]],
 ) -> None:
     """Writes formatted yaml about the provided item to the given output stream"""
@@ -77,6 +77,12 @@ def Describe(
 
     try:
         # ----------------------------------------------------------------------
+        def IsPrimitiveType(
+            item: Any,
+        ) -> bool:
+            return item is None or isinstance(item, (bool, complex, float, int, six.string_types))
+
+        # ----------------------------------------------------------------------
         def OutputDict(
             item: Any,
             indentation: int,
@@ -96,6 +102,8 @@ def Describe(
 
             if hasattr(item, "_asdict"):
                 item = item._asdict()
+
+            output_stream.write("\n")
 
             indentation_str = " " * indentation
 
@@ -256,7 +264,7 @@ def Describe(
                 if TryDisplayAsCollection(item, indentation, max_recursion_depth):
                     return
 
-                is_primitive_type = item is None or isinstance(item, (bool, complex, float, int, six.string_types))
+                is_primitive_type = IsPrimitiveType(item)
 
                 if max_recursion_depth == 0 and not is_primitive_type:
                     output_stream.write(
@@ -281,6 +289,9 @@ def Describe(
                         content = "{} # {}\n".format(content, type(item))
 
                 if is_yaml:
+                    if not content.endswith("\n"):
+                        content += "\n"
+
                     output_stream.write(StringHelpers.LeftJustify(content, indentation))
                 else:
                     DisplayImpl(content, indentation, max_recursion_depth)
@@ -421,6 +432,9 @@ class ObjectReprImplBase(object):
         # Strip trailing whitespace
         result = sink.getvalue().rstrip()
         result = "\n".join([line.rstrip() for line in result.split("\n")])
+
+        if result.startswith("\n"):
+            result = result.lstrip()
 
         # Custom types must always display the type
         result = textwrap.dedent(
