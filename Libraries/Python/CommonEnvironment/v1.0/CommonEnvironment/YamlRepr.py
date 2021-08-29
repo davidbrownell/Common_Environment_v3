@@ -46,12 +46,22 @@ def Describe(
     include_private: bool=None,             # False
     indentation_level: int=None,            # 2
     scrub_results: bool=None,               # False
-    item_stack=None,                        # <impl detail>
-    max_recursion_depth=None,               # sys.maxint
-    unique_id=None,                         # <impl detail>
+    item_stack: Any=None,                   # <impl detail>
+    max_recursion_depth: int=None,          # sys.maxint
+    unique_id: Any=None,                    # <impl detail>
+
+    # TODO Temporary params while working through bugfix
+    use_incorrect: bool=None,
+    use_correct: bool=None,
+
     **custom_display_funcs: Callable[[Any], Optional[Any]],
 ) -> None:
     """Writes formatted yaml about the provided item to the given output stream"""
+
+    if use_incorrect is None:
+        use_correct_value = not use_incorrect
+    if use_correct is None:
+        use_correct_value = use_correct
 
     include_class_info_value = include_class_info if include_class_info is not None else False
     indentation_level_value = indentation_level if indentation_level is not None else 2
@@ -77,6 +87,12 @@ def Describe(
 
     try:
         # ----------------------------------------------------------------------
+        def IsPrimitiveType(
+            item: Any,
+        ) -> bool:
+            return item is None or isinstance(item, (bool, complex, float, int, six.string_types))
+
+        # ----------------------------------------------------------------------
         def OutputDict(
             item: Any,
             indentation: int,
@@ -96,6 +112,9 @@ def Describe(
 
             if hasattr(item, "_asdict"):
                 item = item._asdict()
+
+            if use_correct_value:
+                output_stream.write("\n")
 
             indentation_str = " " * indentation
 
@@ -119,6 +138,9 @@ def Describe(
 
                 output_stream.write("{}{}: ".format(indentation_str, key))
                 DisplayImpl(display_value, indentation + indentation_level_value, max_recursion_depth - 1)
+
+            if use_correct_value:
+                output_stream.write("\n")
 
         # ----------------------------------------------------------------------
         def OutputIterable(
@@ -208,6 +230,9 @@ def Describe(
                         "scrub_results" : scrub_results,
                         "item_stack" : item_stack,
                         "max_recursion_depth" : max_recursion_depth,
+                        # TODO Temporary params while working through bugfix
+                        "use_incorrect" : use_incorrect,
+                        "use_correct" : use_correct,
                     },
                     {},
                 ]:
@@ -256,7 +281,7 @@ def Describe(
                 if TryDisplayAsCollection(item, indentation, max_recursion_depth):
                     return
 
-                is_primitive_type = item is None or isinstance(item, (bool, complex, float, int, six.string_types))
+                is_primitive_type = IsPrimitiveType(item)
 
                 if max_recursion_depth == 0 and not is_primitive_type:
                     output_stream.write(
@@ -281,6 +306,9 @@ def Describe(
                         content = "{} # {}\n".format(content, type(item))
 
                 if is_yaml:
+                    if use_correct_value and not content.endswith("\n"):
+                        content += "\n"
+
                     output_stream.write(StringHelpers.LeftJustify(content, indentation))
                 else:
                     DisplayImpl(content, indentation, max_recursion_depth)
@@ -318,6 +346,9 @@ class ObjectReprImplBase(object):
         indentation_level: int=None,        # See `Describe` for default value
         scrub_results: bool=None,           # See `Describe` for default value
         max_recursion_depth: int=None,      # See `Describe` for default value
+        # TODO Temporary params while working through bugfix
+        use_incorrect: bool=None,
+        use_correct: bool=None,
         **custom_display_funcs: Optional[Callable[[Any], Optional[Any]]],
     ):
         d = {
@@ -327,6 +358,9 @@ class ObjectReprImplBase(object):
             "include_private" : include_private,
             "indentation_level" : indentation_level,
             "scrub_results" : scrub_results,
+            # TODO Temporary params while working through bugfix
+            "use_incorrect" : use_incorrect,
+            "use_correct" : use_correct,
         }
 
         # Note that this code may be invoked from a frozen dataclass, so we
@@ -355,6 +389,9 @@ class ObjectReprImplBase(object):
         scrub_results: bool=None,           # See `Describe` for default value
         item_stack: Set[int]=None,          # See `Describe` for default value
         max_recursion_depth: int=None,      # See `Describe` for default value
+        # TODO Temporary params while working through bugfix
+        use_incorrect: bool=None,
+        use_correct: bool=None,
     ) -> str:
         self._AutoInit()
 
@@ -374,6 +411,12 @@ class ObjectReprImplBase(object):
             scrub_results = args["scrub_results"]
         if max_recursion_depth is None:
             max_recursion_depth = getattr(self, "__max_recursion_depth")
+
+        # TODO Temporary params while working through bugfix
+        if use_incorrect is None:
+            use_incorrect = args["use_incorrect"]
+        if use_correct is None:
+            use_correct = args["use_correct"]
 
         # Convert the object into a dictionary that we can pass to Describe
         d = OrderedDict()
@@ -423,6 +466,9 @@ class ObjectReprImplBase(object):
         result = "\n".join([line.rstrip() for line in result.split("\n")])
 
         # Custom types must always display the type
+        if use_correct and result.startswith("\n"):
+            result = result.lstrip()
+
         result = textwrap.dedent(
             """\
             # {}
