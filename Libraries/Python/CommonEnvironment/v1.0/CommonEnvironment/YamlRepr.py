@@ -139,9 +139,6 @@ def Describe(
                 output_stream.write("{}{}: ".format(indentation_str, key))
                 DisplayImpl(display_value, indentation + indentation_level_value, max_recursion_depth - 1)
 
-            if use_correct_value:
-                output_stream.write("\n")
-
         # ----------------------------------------------------------------------
         def OutputIterable(
             item: Any,
