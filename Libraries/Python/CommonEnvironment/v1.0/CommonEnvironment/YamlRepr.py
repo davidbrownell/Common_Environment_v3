@@ -458,6 +458,9 @@ class ObjectReprImplBase(object):
             item_stack=item_stack,
             max_recursion_depth=max_recursion_depth,
             unique_id=(type(self), id(self)),
+            # TODO: Remove this once changes are complete in Common_Environment
+            use_correct=use_correct,
+            use_incorrect=use_incorrect,
             **getattr(self, "__custom_display_funcs"),
         )
 
