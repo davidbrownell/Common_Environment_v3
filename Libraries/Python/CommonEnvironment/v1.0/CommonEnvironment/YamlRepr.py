@@ -49,19 +49,9 @@ def Describe(
     item_stack: Any=None,                   # <impl detail>
     max_recursion_depth: int=None,          # sys.maxint
     unique_id: Any=None,                    # <impl detail>
-
-    # TODO Temporary params while working through bugfix
-    use_incorrect: bool=None,
-    use_correct: bool=None,
-
     **custom_display_funcs: Callable[[Any], Optional[Any]],
 ) -> None:
     """Writes formatted yaml about the provided item to the given output stream"""
-
-    if use_correct is None:
-        use_correct_value = True
-    else:
-        use_correct_value = use_correct
 
     include_class_info_value = include_class_info if include_class_info is not None else False
     indentation_level_value = indentation_level if indentation_level is not None else 2
@@ -113,8 +103,7 @@ def Describe(
             if hasattr(item, "_asdict"):
                 item = item._asdict()
 
-            if use_correct_value:
-                output_stream.write("\n")
+            output_stream.write("\n")
 
             indentation_str = " " * indentation
 
@@ -227,9 +216,6 @@ def Describe(
                         "scrub_results" : scrub_results,
                         "item_stack" : item_stack,
                         "max_recursion_depth" : max_recursion_depth,
-                        # TODO Temporary params while working through bugfix
-                        "use_incorrect" : use_incorrect,
-                        "use_correct" : use_correct,
                     },
                     {},
                 ]:
@@ -303,7 +289,7 @@ def Describe(
                         content = "{} # {}\n".format(content, type(item))
 
                 if is_yaml:
-                    if use_correct_value and not content.endswith("\n"):
+                    if not content.endswith("\n"):
                         content += "\n"
 
                     output_stream.write(StringHelpers.LeftJustify(content, indentation))
@@ -343,9 +329,6 @@ class ObjectReprImplBase(object):
         indentation_level: int=None,        # See `Describe` for default value
         scrub_results: bool=None,           # See `Describe` for default value
         max_recursion_depth: int=None,      # See `Describe` for default value
-        # TODO Temporary params while working through bugfix
-        use_incorrect: bool=None,
-        use_correct: bool=None,
         **custom_display_funcs: Optional[Callable[[Any], Optional[Any]]],
     ):
         d = {
@@ -355,9 +338,6 @@ class ObjectReprImplBase(object):
             "include_private" : include_private,
             "indentation_level" : indentation_level,
             "scrub_results" : scrub_results,
-            # TODO Temporary params while working through bugfix
-            "use_incorrect" : use_incorrect,
-            "use_correct" : use_correct,
         }
 
         # Note that this code may be invoked from a frozen dataclass, so we
@@ -386,9 +366,6 @@ class ObjectReprImplBase(object):
         scrub_results: bool=None,           # See `Describe` for default value
         item_stack: Set[int]=None,          # See `Describe` for default value
         max_recursion_depth: int=None,      # See `Describe` for default value
-        # TODO Temporary params while working through bugfix
-        use_incorrect: bool=None,
-        use_correct: bool=None,
     ) -> str:
         self._AutoInit()
 
@@ -408,9 +385,6 @@ class ObjectReprImplBase(object):
             scrub_results = args["scrub_results"]
         if max_recursion_depth is None:
             max_recursion_depth = getattr(self, "__max_recursion_depth")
-
-        # TODO Temporary params while working through bugfix
-        use_correct_value = True
 
         # Convert the object into a dictionary that we can pass to Describe
         d = OrderedDict()
@@ -452,9 +426,6 @@ class ObjectReprImplBase(object):
             item_stack=item_stack,
             max_recursion_depth=max_recursion_depth,
             unique_id=(type(self), id(self)),
-            # TODO: Remove this once changes are complete in Common_Environment
-            use_correct=use_correct,
-            use_incorrect=use_incorrect,
             **getattr(self, "__custom_display_funcs"),
         )
 
@@ -462,10 +433,10 @@ class ObjectReprImplBase(object):
         result = sink.getvalue().rstrip()
         result = "\n".join([line.rstrip() for line in result.split("\n")])
 
-        # Custom types must always display the type
-        if use_correct_value and result.startswith("\n"):
+        if result.startswith("\n"):
             result = result.lstrip()
 
+        # Custom types must always display the type
         result = textwrap.dedent(
             """\
             # {}
