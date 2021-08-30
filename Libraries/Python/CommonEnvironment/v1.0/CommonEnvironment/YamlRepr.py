@@ -236,6 +236,8 @@ def Describe(
             max_recursion_depth: int,
         ) -> None:
             if isinstance(item, six.string_types):
+                item = item.replace("\\", "\\\\")
+
                 if item.count("\n") > 1:
                     output_stream.write(
                         "|-\n{}\n".format(
