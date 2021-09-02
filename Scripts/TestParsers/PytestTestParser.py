@@ -49,6 +49,10 @@ class TestParser(TestParserImpl):
 
     # ----------------------------------------------------------------------
     _IsSupportedTestItem_imports            = [
+        re.compile(r"^\s*import pytest"),
+    ]
+
+    _IsUnsupportedTestItem_imports          = [
         # If these imports are present, it is NOT a pytest test file
         re.compile(r"^\s*import unittest"),
         re.compile(r"^\s*from unittest import"),
@@ -67,6 +71,10 @@ class TestParser(TestParserImpl):
         with open(item) as f:
             for line in f.readlines():
                 for regex in cls._IsSupportedTestItem_imports:
+                    if regex.search(line):
+                        return True
+
+                for regex in cls._IsUnsupportedTestItem_imports:
                     if regex.search(line):
                         return False
 
