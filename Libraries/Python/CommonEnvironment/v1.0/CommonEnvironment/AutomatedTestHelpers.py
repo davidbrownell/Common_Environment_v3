@@ -106,6 +106,7 @@ def CompareResultsFromFile(
         pytest.register_assert_rewrite("CommonEnvironment.AutomatedTestHelpers")
 
     """
+
     if overwrite_content_with_these_results is not None:
         filename = _GetResultsFilename(suffix, subdir, file_ext, 1)
         assert os.path.isfile(filename), filename
