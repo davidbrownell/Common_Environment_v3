@@ -1016,8 +1016,13 @@ def MatchTests(
             if not os.path.isdir(fullpath):
                 return False
 
-            # Don't include dirs that are empty
-            return bool(os.listdir(fullpath))
+            # Don't include dirs that don't have any files
+            for item in os.listdir(fullpath):
+                item_fullpath = os.path.join(fullpath, item)
+                if os.path.isfile(item_fullpath):
+                    return True
+
+            return False
 
         # ----------------------------------------------------------------------
 
