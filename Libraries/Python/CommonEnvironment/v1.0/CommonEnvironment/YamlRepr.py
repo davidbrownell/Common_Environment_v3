@@ -113,7 +113,7 @@ def Describe(
 
                 display_value = None
 
-                if key in custom_display_funcs:
+                if indentation == 0 and key in custom_display_funcs:
                     func = custom_display_funcs[key]
                     if func is None:
                         continue
