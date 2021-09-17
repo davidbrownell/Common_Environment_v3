@@ -238,7 +238,7 @@ def Describe(
             if isinstance(item, six.string_types):
                 item = item.replace("\\", "\\\\")
 
-                if item.count("\n") > 1:
+                if any(c == "\n" for c in item):
                     output_stream.write(
                         "|-\n{}\n".format(
                             StringHelpers.LeftJustify(
