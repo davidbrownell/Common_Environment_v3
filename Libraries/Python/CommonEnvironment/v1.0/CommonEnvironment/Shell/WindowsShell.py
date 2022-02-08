@@ -105,7 +105,11 @@ class WindowsShell(Shell):
         @classmethod
         @override
         def OnExecute(cls, command):
-            result = command.CommandLine
+            if command.CommandLine.endswith(".bat") or command.CommandLine.endswith(".cmd"):
+                result = 'cmd /c "{}"'.format(command.CommandLine)
+            else:
+                result = command.CommandLine
+
             if command.ExitOnError:
                 result += "\n{}".format(cls.Accept(ExitOnError()))
 
