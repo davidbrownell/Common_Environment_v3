@@ -110,7 +110,7 @@ class WindowsShell(Shell):
             commands = shlex.split(command.CommandLine)
 
             if commands[0].endswith(".bat") or commands[0].endswith(".cmd"):
-                result = 'cmd /c "{}"'.format(command.CommandLine)
+                result = "cmd /c {}".format(command.CommandLine)
             else:
                 result = command.CommandLine
 
