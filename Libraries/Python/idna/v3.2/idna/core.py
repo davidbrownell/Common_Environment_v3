@@ -2,6 +2,7 @@ from . import idnadata
 import bisect
 import unicodedata
 import re
+# (dbrownell): Removed the following import, as it didn't work with python27
 #from typing import Union, Optional
 from .intranges import intranges_contain
 
