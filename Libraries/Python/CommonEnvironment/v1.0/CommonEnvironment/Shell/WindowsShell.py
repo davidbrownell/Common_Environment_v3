@@ -7,7 +7,7 @@
 # |
 # ----------------------------------------------------------------------
 # |
-# |  Copyright David Brownell 2018-21.
+# |  Copyright David Brownell 2018-22.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 # |
@@ -15,6 +15,7 @@
 """Contains the WindowsShell object."""
 
 import os
+import shlex
 import sys
 import textwrap
 import uuid
@@ -97,7 +98,7 @@ class WindowsShell(Shell):
         def OnCall(cls, command):
             result = "call {}".format(command.CommandLine)
             if command.ExitOnError:
-                result += "\n{}".format(cls.Accept(ExitOnError()))
+                result += "\n{}\n".format(cls.Accept(ExitOnError()))
 
             return result
 
@@ -105,9 +106,16 @@ class WindowsShell(Shell):
         @classmethod
         @override
         def OnExecute(cls, command):
-            result = command.CommandLine
+            # Execute the command line with a special prefix if the command line invokes a .bat or .cmd file
+            commands = shlex.split(command.CommandLine)
+
+            if commands[0].endswith(".bat") or commands[0].endswith(".cmd"):
+                result = "cmd /c {}".format(command.CommandLine)
+            else:
+                result = command.CommandLine
+
             if command.ExitOnError:
-                result += "\n{}".format(cls.Accept(ExitOnError()))
+                result += "\n{}\n".format(cls.Accept(ExitOnError()))
 
             return result
 
