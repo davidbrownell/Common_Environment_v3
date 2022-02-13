@@ -1,21 +1,22 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  FileSystem.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-05-03 15:54:54
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-22.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Utilities helpful when working with the file system."""
 
 import hashlib
 import os
+import shutil
 import threading
 import time
 
@@ -45,9 +46,9 @@ CODE_EXCLUDE_FILE_EXTENSIONS                = [ # Python
                                               ]
 
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Public Methods
-# |  
+# |
 # ----------------------------------------------------------------------
 def IsFilename(
     value,
@@ -157,7 +158,7 @@ def GetRelativePath(starting_dir, dest):
         return os.path.join(".", dest)
 
     seps = os.path.splitdrive(starting_dir)[1].count(os.path.sep) + 1
-    
+
     return "{}{}".format((("..{}".format(os.path.sep)) * seps), dest)
 
 # ----------------------------------------------------------------------
@@ -194,7 +195,7 @@ def RemoveInitialSep(value):
         value = value[len(os.path.sep):]
 
     return value
-    
+
 # ----------------------------------------------------------------------
 def AddTrailingSep(value):
     if not value.endswith(os.path.sep):
@@ -214,7 +215,7 @@ def Normalize(path):
     """Normalizes a path, including ensuring case consistency."""
 
     path = os.path.realpath(os.path.normpath(path))
-    
+
     if not CurrentShell.HasCaseSensitiveFileSystem:
         if os.path.exists(path) and CurrentShell.Name == "Windows":
             try:
@@ -225,7 +226,7 @@ def Normalize(path):
                 path = win32api.GetLongPathName(win32api.GetShortPathName(path))
             except ImportError:
                 pass
-                
+
         drive, suffix = os.path.splitdrive(path)
         path = "{}{}".format(drive.upper(), suffix)
 
@@ -242,7 +243,7 @@ def GetSizeDisplay(num_bytes, suffix='B'):
     return "%.1f %s%s" % (num_bytes, 'Yi', suffix)
 
 # ----------------------------------------------------------------------
-def MakeDirs( path, 
+def MakeDirs( path,
               as_user=False,                # If True, ownership of the dir is associated with a calling user and not root
                                             # (if invoked as sudo)
             ):
@@ -260,7 +261,7 @@ def RemoveTree( path,
 
     if not os.path.isdir(path):
         return False
-    
+
     _RemoveImpl(CurrentShell.RemoveDir, path, optional_retry_iterations)
     return True
 
@@ -284,7 +285,7 @@ def RemoveItem( path,
 
     if os.path.isdir(path):
         return RemoveTree(path)
-    
+
     if os.path.isfile(path):
         return RemoveFile(path)
 
@@ -297,8 +298,6 @@ def CopyTree( source,
               optional_output_stream=None,
             ):
     """Copies content from the source to the dest, displaying progress for large operations"""
-
-    import shutil
 
     import tqdm
 
@@ -402,7 +401,7 @@ def WalkDirs( directory,
             ):
     """
     Yields ( root, filenames ) on a (potentially) recursive search.
-    
+
     All include/exclude values can be strings, callable, or regular expressions.
     """
 
@@ -491,7 +490,7 @@ def WalkFiles( directory,
              ):
     """
     Yields <filename> on a (potentially) recursive search.
-    
+
     All include/exclude values can be strings, callable, or regular expressions.
     """
 
@@ -563,10 +562,10 @@ def CalculateHashes( filenames,
             while True:
                 try:
                     block = blocks_queue.get(True, 0.25) # seconds
-                    
+
                     hash.update(block)
                     blocks_queue.task_done()
-                
+
                 except six.moves.queue.Empty:
                     if blocks_available_event.is_set():
                         # More blocks are coming
@@ -606,7 +605,7 @@ def CalculateHashes( filenames,
 
             else:
                 # Read blocks on one thread and process them on another. This can yield
-                # minor performance gains on systems with a high read latency and can 
+                # minor performance gains on systems with a high read latency and can
                 # make a signifiant difference when processing thousands of files.
                 blocks_available_event.set()
 
@@ -658,7 +657,7 @@ def CalculateHashes( filenames,
                             )
 
         return hashes
-     
+
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
@@ -685,7 +684,7 @@ def _RemoveImpl( func,                      # def Func(path)
     iteration = 0
     while True:
         try:
-            os.rename(path, renamed_path)
+            shutil.move(path, renamed_path)
             break
         except:
             if optional_retry_iterations is not None:
@@ -722,7 +721,7 @@ def _ProcessWalkArgs(include_items, exclude_items):
                 try:
                     if item(value):
                         return True
-                except: 
+                except:
                     pass
 
             elif hasattr(item, "match") and item.match(value):
