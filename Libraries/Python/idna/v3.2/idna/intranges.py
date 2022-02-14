@@ -6,7 +6,8 @@ in the original list?" in time O(log(# runs)).
 """
 
 import bisect
-from typing import List, Tuple
+# (dbrownell): Removed the following import, as it didn't work with python27
+#from typing import List, Tuple
 
 def intranges_from_list(list_):
     # type: (List[int]) -> Tuple[int, ...]
