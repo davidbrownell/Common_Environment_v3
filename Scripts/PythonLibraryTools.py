@@ -577,6 +577,11 @@ def Install( lib_name,
                 if library.lower().startswith("py"):
                     potential_library_names.append(library[len("py"):])
 
+                # Replace dashes with underscores
+                underscored_library_name = potential_library_names[0].replace("-", "_")
+                if underscored_library_name != potential_library_names[0]:
+                    potential_library_names.append(underscored_library_name)
+
                 for potential_library_name in potential_library_names:
                     potential_library_name_lower = potential_library_name.lower()
 
