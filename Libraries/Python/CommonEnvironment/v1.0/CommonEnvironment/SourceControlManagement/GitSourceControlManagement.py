@@ -293,8 +293,8 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
             return 0, "<<Skipped>>"
 
         commands = [
-            "git clean -xfd",
-            "git submodule foreach --recursive git clean -xfd",
+            "git clean -df",
+            "git submodule foreach --recursive git clean -df",
             "git reset --hard",
             "git submodule foreach --recursive git reset --hard",
         ]
@@ -795,7 +795,10 @@ class GitSourceControlManagement(DistributedSourceControlManagement):
             if cls._DetachedHeadPseudoBranchName_regex.match(potential_delete_branch):
                 commands.append('git branch -D "{}"'.format(potential_delete_branch))
 
-        commands += ['git reset --hard "origin/{}"'.format(branch), "git clean -df"]
+        commands += [
+            "git clean -xdf",
+            'git reset --hard "origin/{}"'.format(branch),
+        ]
 
         return cls.Execute(repo_root, " && ".join(commands))
 

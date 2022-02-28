@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  CallOnExit.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-04-20 19:03:11
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-22.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Contains the `CallOnExit` method"""
 
@@ -29,20 +29,20 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Public Types
-# |  
+# |
 # ----------------------------------------------------------------------
 class CallOnExitException(Exception):
     """Exception thrown after `CallOnExit` encounters an exception when calling a functor."""
 
-    def __init__(self):
-        super(CallOnExitException, self).__init__("")
+    def __init__(self, exception_text):
+        super(CallOnExitException, self).__init__("CallOnExitException:\n{}".format(exception_text))
 
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Public Methods
-# |  
+# |
 # ----------------------------------------------------------------------
 @contextmanager
 def CallOnExit(*arguments):
@@ -100,6 +100,8 @@ def CallOnExit(*arguments):
                     inner_exceptions.append('\n'.join([ "    {}".format(line) for line in traceback.format_exc().split('\n') ]))
 
             if inner_exceptions:
+                exception_text = "\n".join(inner_exceptions).rstrip()
+
                 stream.write(textwrap.dedent(
                     """
 
@@ -107,6 +109,6 @@ def CallOnExit(*arguments):
 
                     {}
 
-                    """).format('\n'.join(inner_exceptions).rstrip()))
+                    """).format(exception_text))
 
-                raise CallOnExitException()
+                raise CallOnExitException(exception_text)
