@@ -28,7 +28,7 @@ _script_dir, _script_name                   = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 # ----------------------------------------------------------------------
-def test_Simple():
+def test_DefaultValues():
     # ----------------------------------------------------------------------
     @DataclassDefaultValues(
         b=10,
@@ -53,8 +53,9 @@ def test_Simple():
     assert value.b == "with_override"
     assert value.c == True
 
+
 # ----------------------------------------------------------------------
-def test_BaseAndDerived():
+def test_DefaultValuesBaseAndDerived():
     # ----------------------------------------------------------------------
     @dataclass(frozen=True)
     class Base(object):
@@ -82,3 +83,39 @@ def test_BaseAndDerived():
     assert value.a == "Hello"
     assert value.b == "with_override"
     assert value.c == True
+
+
+# ----------------------------------------------------------------------
+def test_ComparisonOperators():
+    # ----------------------------------------------------------------------
+    @ComparisonOperators
+    @dataclass(frozen=True)
+    class Location(object):
+        line: int
+        column: int
+
+        @staticmethod
+        def Compare(a: "Location", b:"Location") -> int:
+            result = a.line - b.line
+            if result != 0:
+                return result
+
+            result = a.column - b.column
+            if result != 0:
+                return result
+
+            return 0
+
+    # ----------------------------------------------------------------------
+
+    assert Location(1, 2) == Location(1, 2)
+    assert Location(1, 2) != Location(3, 4)
+    assert Location(1, 2) != Location(1, 5)
+    assert Location(1, 2) < Location(3, 4)
+    assert Location(1, 2) < Location(1, 5)
+    assert Location(1, 2) <= Location(3, 4)
+    assert Location(1, 2) <= Location(1, 2)
+    assert Location(3, 4) > Location(1, 2)
+    assert Location(1, 5) > Location(1, 2)
+    assert Location(3, 4) >= Location(1, 2)
+    assert Location(1, 2) >= Location(1, 2)
