@@ -92,13 +92,7 @@ def DataclassDefaultValues(
 
 
 # ----------------------------------------------------------------------
-@wrapt.decorator
-def ComparisonOperators(
-    wrapped: Any,
-    _instance: None,
-    args: Tuple[Any],
-    kwargs: Dict[str, Any],
-):
+def ComparisonOperators(cls):
     """\
     Implements comparison operators in terms of a static Compare method defined on the object.
 
@@ -125,11 +119,11 @@ def ComparisonOperators(
 
     # ----------------------------------------------------------------------
 
-    wrapped.__eq__ = lambda self, b: CompareImpl(self, b, lambda value: value == 0)
-    wrapped.__ne__ = lambda self, b: CompareImpl(self, b, lambda value: value != 0)
-    wrapped.__lt__ = lambda self, b: CompareImpl(self, b, lambda value: value < 0)
-    wrapped.__le__ = lambda self, b: CompareImpl(self, b, lambda value: value <= 0)
-    wrapped.__gt__ = lambda self, b: CompareImpl(self, b, lambda value: value > 0)
-    wrapped.__ge__ = lambda self, b: CompareImpl(self, b, lambda value: value >= 0)
+    cls.__eq__ = lambda self, b: CompareImpl(self, b, lambda value: value == 0)
+    cls.__ne__ = lambda self, b: CompareImpl(self, b, lambda value: value != 0)
+    cls.__lt__ = lambda self, b: CompareImpl(self, b, lambda value: value < 0)
+    cls.__le__ = lambda self, b: CompareImpl(self, b, lambda value: value <= 0)
+    cls.__gt__ = lambda self, b: CompareImpl(self, b, lambda value: value > 0)
+    cls.__ge__ = lambda self, b: CompareImpl(self, b, lambda value: value >= 0)
 
-    return wrapped(*args, **kwargs)
+    return cls
