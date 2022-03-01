@@ -325,6 +325,7 @@ class PythonActivationActivity(ActivationActivity):
         generated_dir,
         no_python_libraries=False,
         ignore_conflicted_library_names=None,
+        override_conflicted_library_names=None,
     ):
         dest_dir = os.path.join(generated_dir, cls.Name)
 
@@ -524,6 +525,7 @@ class PythonActivationActivity(ActivationActivity):
                     generated_dir,
                     library_version_dirs={tuple(python_version_dirs): python_version_dir},
                     ignore_conflicted_library_names=ignore_conflicted_library_names,
+                    override_conflicted_library_names=override_conflicted_library_names,
                 ),
             )
 

@@ -429,10 +429,12 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
         generated_dir,
         library_version_dirs=None,                      # { ( <potential_version_dir>, ... ) : <dir_to_use>, }
         ignore_conflicted_library_names=None,
+        override_conflicted_library_names=None,
     ):
         """Returns all versioned libraries that should be activated."""
         library_version_dirs = library_version_dirs or {}
         ignore_conflicted_library_names = ignore_conflicted_library_names or []
+        override_conflicted_library_names = override_conflicted_library_names or []
 
         version_info = version_specs.Libraries.get(cls.Name, [])
 
@@ -451,34 +453,35 @@ class ActivationActivity(CommonEnvironmentImports.Interface.Interface):
 
             for item in os.listdir(potential_library_dir):
                 if item in libraries:
-                    if item not in ignore_conflicted_library_names:
-                        errors.append(
-                            textwrap.dedent(
-                                """\
-                                The library '{name}' has already been defined.
+                    if item not in override_conflicted_library_names:
+                        if item not in ignore_conflicted_library_names:
+                            errors.append(
+                                textwrap.dedent(
+                                    """\
+                                    The library '{name}' has already been defined.
 
-                                    New:                {new_name}{new_config} <{new_id}> [{new_root}]
-                                    Original:           {original_name}{original_config} <<{original_version}>> <{original_id}> [{original_root}]
+                                        New:                {new_name}{new_config} <{new_id}> [{new_root}]
+                                        Original:           {original_name}{original_config} <<{original_version}>> <{original_id}> [{original_root}]
 
-                                """,
-                            ).format(
-                                name=item,
-                                new_name=repository.Name,
-                                new_config=" ({})".format(
-                                    repository.Configuration,
-                                ) if repository.Configuration else "",
-                                new_id=repository.Id,
-                                new_root=repository.Root,
-                                original_name=libraries[item].Repository.Name,
-                                original_config=" ({})".format(
-                                    libraries[item].Repository.Configuration,
-                                ) if libraries[item].Repository.Configuration else "",
-                                original_version=libraries[item].Version,
-                                original_id=libraries[item].Repository.Id,
-                                original_root=libraries[item].Repository.Root,
-                            ),
-                        )
-                    continue
+                                    """,
+                                ).format(
+                                    name=item,
+                                    new_name=repository.Name,
+                                    new_config=" ({})".format(
+                                        repository.Configuration,
+                                    ) if repository.Configuration else "",
+                                    new_id=repository.Id,
+                                    new_root=repository.Root,
+                                    original_name=libraries[item].Repository.Name,
+                                    original_config=" ({})".format(
+                                        libraries[item].Repository.Configuration,
+                                    ) if libraries[item].Repository.Configuration else "",
+                                    original_version=libraries[item].Version,
+                                    original_id=libraries[item].Repository.Id,
+                                    original_root=libraries[item].Repository.Root,
+                                ),
+                            )
+                        continue
 
                 fullpath = os.path.join(potential_library_dir, item)
 
