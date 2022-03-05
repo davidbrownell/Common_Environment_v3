@@ -199,6 +199,7 @@ def Activate( output_filename_or_stdout,
                              ( "repositories", activation_data.PrioritizedRepositories ),
                              ( "is_mixin_repo", is_mixin_repo ),
                              ( "ignore_conflicted_library_names", activation_data.IgnoreConflictedLibraryNames ),
+                             ( "override_conflicted_library_names", activation_data.OverrideConflictedLibraryNames ),
                            ])
 
         # Invoke the methods
@@ -381,7 +382,7 @@ def _ActivateNames(output_stream, repositories):
                                        ))
 
 # ----------------------------------------------------------------------
-def _ActivatePython(output_stream, configuration, repositories, version_specs, generated_dir, no_python_libraries, fast, verbose, ignore_conflicted_library_names):
+def _ActivatePython(output_stream, configuration, repositories, version_specs, generated_dir, no_python_libraries, fast, verbose, ignore_conflicted_library_names, override_conflicted_library_names):
     if fast:
         output_stream.write("** FAST: Activating python without libraries ({}) **\n\n".format(_script_fullpath))
 
@@ -395,6 +396,7 @@ def _ActivatePython(output_stream, configuration, repositories, version_specs, g
                                                     generated_dir,
                                                     no_python_libraries=no_python_libraries,
                                                     ignore_conflicted_library_names=ignore_conflicted_library_names,
+                                                    override_conflicted_library_names=override_conflicted_library_names,
                                                   )
 
 # ----------------------------------------------------------------------
