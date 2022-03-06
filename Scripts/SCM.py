@@ -2032,6 +2032,8 @@ def _WrapAll(
                 this_dm.stream,
                 verbose=verbose,
                 progress_bar=True,
+                # Limit the number of concurrent tasks to work around limitation with standard Windows
+                num_concurrent_tasks=5,
             )
 
         if processed_repositories:
