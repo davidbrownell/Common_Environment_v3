@@ -108,6 +108,7 @@ class Configuration(object):
                   version_specs=None,
                   ignore_conflicted_repository_names=None,
                   ignore_conflicted_library_names=None,
+                  override_conflicted_library_names=None,
                 ):
         # `ignore_conflicted_repository_names` is a list of names of repositories that have configuration conflicts
         # that can be safely ignored. In the vast majority of cases, two repositories with different configurations
@@ -121,11 +122,15 @@ class Configuration(object):
         # library), these conflicts can be ignored. In those scenarios, the first version encountered will always
         # be the version used within the activated environment.
 
+        # `override_conflicted_library_names` is a list of names of libraries that have conflicts, but are not errors.
+        # Use the library in the root library / override any existing libraries with the same name.
+
         self.Description                                = description
         self.Dependencies                               = dependencies or []
         self.VersionSpecs                               = version_specs or VersionSpecs([], {})
         self.IgnoreConflictedRepositoryNames            = ignore_conflicted_repository_names
         self.IgnoreConflictedLibraryNames               = ignore_conflicted_library_names
+        self.OverrideConflictedLibraryNames             = override_conflicted_library_names
         self.Fingerprint                                = None      # Populated during setup
 
     # ----------------------------------------------------------------------

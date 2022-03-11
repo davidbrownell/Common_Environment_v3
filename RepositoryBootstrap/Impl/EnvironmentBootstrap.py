@@ -130,6 +130,7 @@ class EnvironmentBootstrap(object):
             # Get the IgnoreConflictedLibraryNames
             ignore_conflicted_repository_names = config_info.get("IgnoreConflictedRepositoryNames", [])
             ignore_conflicted_library_names = config_info.get("IgnoreConflictedLibraryNames", [])
+            override_conflicted_library_names = config_info.get("OverrideConflictedLibraryNames", [])
 
             # Update the fingerprint
             fingerprint = config_info["Fingerprint"]
@@ -147,6 +148,7 @@ class EnvironmentBootstrap(object):
                                                                        Configuration.VersionSpecs(tools, libraries),
                                                                        ignore_conflicted_repository_names=ignore_conflicted_repository_names or None,
                                                                        ignore_conflicted_library_names=ignore_conflicted_library_names or None,
+                                                                       override_conflicted_library_names=override_conflicted_library_names or None,
                                                                      )
             configurations[config_name].Fingerprint = fingerprint
 
