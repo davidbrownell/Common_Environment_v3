@@ -48,7 +48,7 @@ def Describe(
     scrub_results: bool=None,               # False
     item_stack: Any=None,                   # <impl detail>
     max_recursion_depth: int=None,          # sys.maxint
-    unique_id: Any=None,                    # <impl detail>
+    unique_id__: Any=None,                  # <impl detail>
     **custom_display_funcs: Callable[[Any], Optional[Any]],
 ) -> None:
     """Writes formatted yaml about the provided item to the given output stream"""
@@ -59,10 +59,10 @@ def Describe(
 
     if item_stack is None:
         item_stack = set()
-    if unique_id is None:
-        unique_id = (type(item), id(item))
+    if unique_id__ is None:
+        unique_id__ = (type(item), id(item))
 
-    if unique_id in item_stack:
+    if unique_id__ in item_stack:
         # Don't rely on yaml's reference functionality, as we are creating yaml-like content
         # for display purposes and not actual yaml.
         output_stream.write(
@@ -73,7 +73,7 @@ def Describe(
         )
         return
 
-    item_stack.add(unique_id)
+    item_stack.add(unique_id__)
 
     try:
         # ----------------------------------------------------------------------
@@ -304,7 +304,7 @@ def Describe(
         output_stream.write("\n\n")
 
     finally:
-        item_stack.remove(unique_id)
+        item_stack.remove(unique_id__)
 
 
 # ----------------------------------------------------------------------
@@ -427,7 +427,7 @@ class ObjectReprImplBase(object):
             scrub_results=scrub_results,
             item_stack=item_stack,
             max_recursion_depth=max_recursion_depth,
-            unique_id=(type(self), id(self)),
+            unique_id__=(type(self), id(self)),
             **getattr(self, "__custom_display_funcs"),
         )
 
