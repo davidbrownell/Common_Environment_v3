@@ -94,6 +94,9 @@ class Verifier(VerifierMod.Verifier):
         if name == "__init__" and ext == ".py" and os.path.getsize(item_name) == 0:
             return None
 
+        if name == "__main__" and ext == ".py":
+            return None
+
         return os.path.join(
             dirname,
             test_type_name,
@@ -137,7 +140,7 @@ class Verifier(VerifierMod.Verifier):
     @override
     def IsSupportedTestItem(item):
         basename = os.path.basename(item)
-        if basename in ["__init__.py", "Build.py"]:
+        if basename in ["__init__.py", "__main__.py", "Build.py"]:
             return False
 
         name = os.path.splitext(basename)[0]
