@@ -854,6 +854,7 @@ def _VerifyType(cls):
 
         errors.append(
             "'{}' is defined as both an abstract and extension item ({}, {})".format(
+                abstract_name,
                 abstract_entity.LocationString(),
                 extension_entity.LocationString(),
             ),
