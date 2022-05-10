@@ -20,16 +20,12 @@ import os
 from typing import Dict, Optional, Union
 
 import CommonEnvironment
-
-from CommonEnvironmentEx.Package import InitRelativeImports
+from CommonEnvironment.DoesNotExist import *
 
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name                   = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
-
-with InitRelativeImports():
-    from ..DoesNotExist import *
 
 
 # ----------------------------------------------------------------------
