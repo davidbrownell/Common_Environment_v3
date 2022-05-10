@@ -76,6 +76,9 @@ def DataclassDefaultValues(
 
             potential_value = default_values.get(attribute_name, does_not_exist)
             if not isinstance(potential_value, DoesNotExist):
+                if callable(potential_value):
+                    potential_value = potential_value()
+
                 kwargs[attribute_name] = potential_value
             else:
                 if args_index == len(args):
