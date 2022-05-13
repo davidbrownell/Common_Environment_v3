@@ -34,6 +34,13 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 
 # <Naming style> pylint: disable = C0103
 
+
+# ----------------------------------------------------------------------
+class StreamDecoratorException(Exception):
+    """Exception whose callstack is not displayed when caught within an active StreamDecorator object"""
+    pass
+
+
 # ----------------------------------------------------------------------
 class StreamDecorator(object):
     """Augments the provided stream with additional functionality."""
@@ -470,7 +477,10 @@ class StreamDecorator(object):
                        ):
                         object.__setattr__(ex, "_DisplayedException", True)
 
-                        if display_exception_callstacks and not getattr(ex, "__suppress_context__", False):
+                        if (
+                            display_exception_callstacks and not getattr(ex, "__suppress_context__", False)
+                            and not isinstance(ex, StreamDecoratorException)
+                        ):
                             import traceback
                             info.stream.write("ERROR: {}\n".format(StringHelpers.LeftJustify(traceback.format_exc(), len("ERROR: ")).rstrip()))
                         else:
