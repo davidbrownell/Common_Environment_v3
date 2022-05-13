@@ -55,16 +55,38 @@ MAX_COLUMN_WIDTH                            = 190
 
 # The following methods can be optionally defined by the calling file
 # to customize output characteristics.
-CUSTOMIZATION_METHODS                       = [
-    # Overrides the displayed script name; the calling file's name                                        # will be used if not provided.
-    "CommandLineScriptName",                # def Func() -> string
-    # Overrides the script description; the calling file's docstring                                        # will be used if not provided.
-    "CommandLineScritpDescription",         # def Func() -> string
-    # Content displayed after the description but before usage                                        # information; no prefix will be displayed if not provided.
-    "CommandLineDocPrefix",                 # def Func() -> string
-    # Content displayed after usage information; no prefix will                                        # be displayed if not provided.
-    "CommandLineDocSuffix",                 # def Func() -> string
-]
+
+# Overrides the displayed script name; the calling file's name
+# will be used if not provided.
+#
+#   def CommandLineScriptName() -> str:
+#       return "MyScript"
+#
+COMMAND_LINE_SCRIPT_NAME_FUNC               = "CommandLineScriptName"
+
+# Overrides the script description; the calling file's docstring
+# will be used if not provided.
+#
+#   def CommandLineScriptDescription() -> str:
+#       return "MyScript description"
+#
+COMMAND_LINE_SCRIPT_DESCRIPTION_FUNC        = "CommandLineScriptDescription"
+
+# Content displayed after the description but before usage
+# information; no prefix will be displayed if not provided.
+#
+#   def CommandLinePrefix() -> str:
+#       return "MyScript prefix"
+#
+COMMAND_LINE_PREFIX_FUNC                    = "CommandLinePrefix"
+
+# Content displayed after usage information; no prefix will
+# be displayed if not provided.
+#
+#   def CommandLineSuffix() -> str:
+#       return "MyScript suffix"
+#
+COMMAND_LINE_SUFFIX_FUNC                    = "CommandLineSuffix"
 
 
 class UsageException(Exception):
@@ -426,10 +448,10 @@ class Executor(object):
         self.CommandLineDictTagValueSeparator           = command_line_dict_tag_value_separator
         self.ArgsInAFilePrefix                          = args_in_a_file_prefix
         self.SecondaryCommandLineKeywordSeparator       = secondary_command_line_keyword_separator
-        self.ScriptName                                 = script_name or (mod.CommandLineScriptName() if hasattr(mod, "CommandLineScriptName") else os.path.basename(self.Args[0]))
-        self.ScriptDescription                          = script_description or (mod.CommandLineScriptDescription() if hasattr(mod, "CommandLineScriptDescription") else mod.__doc__) or ""
-        self.ScriptDescriptionPrefix                    = script_description_prefix or (mod.CommandLinePrefix() if hasattr(mod, "CommandLinePrefix") else "")
-        self.ScriptDescriptionSuffix                    = script_description_suffix or (mod.CommandLineSuffix() if hasattr(mod, "CommandLineSuffix") else "")
+        self.ScriptName                                 = script_name or (mod.CommandLineScriptName() if hasattr(mod, COMMAND_LINE_SCRIPT_NAME_FUNC) else os.path.basename(self.Args[0]))
+        self.ScriptDescription                          = script_description or (mod.CommandLineScriptDescription() if hasattr(mod, COMMAND_LINE_SCRIPT_DESCRIPTION_FUNC) else mod.__doc__) or ""
+        self.ScriptDescriptionPrefix                    = script_description_prefix or (mod.CommandLinePrefix() if hasattr(mod, COMMAND_LINE_PREFIX_FUNC) else "")
+        self.ScriptDescriptionSuffix                    = script_description_suffix or (mod.CommandLineSuffix() if hasattr(mod, COMMAND_LINE_SUFFIX_FUNC) else "")
         self.EntryPoints                                = entry_points or EntryPointInformation.FromModule(mod)
 
         if not self.EntryPoints:
@@ -708,11 +730,12 @@ class Executor(object):
             # ----------------------------------------------------------------------
             def FormatInlineFuncDesc(content):
                 initial_whitespace = 37
+                col_padding = 2
 
                 assert MAX_COLUMN_WIDTH > initial_whitespace
                 content = StringHelpers.Wrap(content, MAX_COLUMN_WIDTH - initial_whitespace)
 
-                return StringHelpers.LeftJustify(content, initial_whitespace)
+                return StringHelpers.LeftJustify(content, initial_whitespace + col_padding)
 
             # ----------------------------------------------------------------------
 
@@ -870,6 +893,8 @@ class Executor(object):
                 # Preserve the value as a string so it can be deserialized below
                 arg = StringSerialization.SerializeItem(parameter.TypeInfo, not parameter.DefaultValue)
 
+            value = None
+
             try:
                 if isinstance(parameter.TypeInfo, tuple(ALL_FUNDAMENTAL_TYPES)):
                     value = StringSerialization.DeserializeItem(parameter.TypeInfo, arg)
@@ -1017,6 +1042,8 @@ class Executor(object):
         verbose_template = []
 
         verbose_desc_offset = 0
+        width = 0
+
         for index, width in enumerate(six.itervalues(cols)):
             verbose_template.append("{{{}:<{}}}".format(index, width))
 

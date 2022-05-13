@@ -1,22 +1,22 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  StringHelpers_UnitTest.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-05-03 14:40:00
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-22.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Unit test for StringHelpers.py."""
 
 import os
 import sys
-import unittest 
+import unittest
 
 import CommonEnvironment
 from CommonEnvironment.StringHelpers import *
@@ -48,19 +48,19 @@ class WrapSuite(unittest.TestCase):
     def test_Standard(self):
         self.assertEqual( Wrap( textwrap.dedent(
                                       """\
-                                      
+
                                       This is a test of some longer text in multiple paragraphs.
 
-                                      
-                                      
+
+
                                       One two three four five six seven eight nine ten eleven.
-                                      
+
                                       """),
                                 width=15,
                               ),
                           textwrap.dedent(
                               """\
-                              
+
                               This is a test
                               of some longer
                               text in
@@ -68,25 +68,25 @@ class WrapSuite(unittest.TestCase):
                               paragraphs.
 
 
-                                                            
+
                               One two three
                               four five six
                               seven eight
                               nine ten
                               eleven.
-                              
+
                               """),
                         )
 
         self.assertEqual( Wrap( textwrap.dedent(
                                       """\
-                                      
+
                                       This is a test of some longer text in multiple paragraphs.
 
-                                      
-                                      
+
+
                                       One two three four five six seven eight nine ten eleven.
-                                      
+
                                       """),
                                 width=15,
                                 replace_whitespace=True,
@@ -98,9 +98,9 @@ class WrapSuite(unittest.TestCase):
                               text in
                               multiple
                               paragraphs.
-                              
-                              
-                              
+
+
+
                               One two three
                               four five six
                               seven eight
@@ -110,7 +110,7 @@ class WrapSuite(unittest.TestCase):
 
         self.assertEqual( Wrap( textwrap.dedent(
                                     """\
-                                    
+
                                     This is a test
                                     of some longer
                                     text in
@@ -124,25 +124,108 @@ class WrapSuite(unittest.TestCase):
                                     seven eight
                                     nine ten
                                     eleven.
-                                    
+
                                     """),
                                 width=115,
                               ),
                           textwrap.dedent(
                                       """\
-                                      
+
                                       This is a test of some longer text in multiple paragraphs.
 
-                                      
-                                      
+
+
                                       One two three four five six seven eight nine ten eleven.
-                                      
+
                                       """),
                         )
 
+    # ----------------------------------------------------------------------
+    def test_ListItems(self):
+        self.maxDiff = None
+
+        self.assertEqual(
+            Wrap(
+                textwrap.dedent(
+                    """\
+                    This is a test
+                    of some longer
+                    text in
+                    multiple
+                    paragraphs.
+
+                    - One
+                    - Two
+                    - Three
+
+                    * Four
+                    * Five
+
+                        - Six
+                        - Seven
+                        1) a
+                        2) b
+                        30) c
+
+
+                        - 1; this is a really long line that should be wrapped; I am curious to see what happens to the output.
+                        - 2
+
+                        3) 3; this is a really long line that should be wrapped; I am curious to see what happens to the output.
+                        4) 4
+                        5) 5
+
+
+                        - 100
+                        - 200
+
+
+                        300) 300
+                        400) 400; this is a really long line that should be wrapped; I am curious to see what happens to the output.
+                        500) 500
+                    """,
+                ),
+            ),
+            textwrap.dedent(
+                """\
+                This is a test of some longer text in multiple paragraphs.
+
+                - One
+                - Two
+                - Three
+
+                * Four
+                * Five
+
+                    - Six
+                    - Seven
+                    1) a
+                    2) b
+                    30) c
+
+                    - 1; this is a really long line that should be wrapped; I am
+                      curious to see what happens to the output.
+                    - 2
+
+                    3) 3; this is a really long line that should be wrapped; I am
+                       curious to see what happens to the output.
+                    4) 4
+                    5) 5
+
+                    - 100
+                    - 200
+
+                    300) 300
+                    400) 400; this is a really long line that should be wrapped; I am
+                         curious to see what happens to the output.
+                    500) 500
+                """,
+            ),
+        )
+
 # ----------------------------------------------------------------------
 class StringConversionSuite(unittest.TestCase):
-    
+
     # ----------------------------------------------------------------------
     def test_ToPascalCase(self):
         self.assertEqual(ToPascalCase("this_is_a_test"), "ThisIsATest")

@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  __init__.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-04-30 08:52:20
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-22.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Contains shell-related tool and functionality."""
 
@@ -19,6 +19,7 @@ import re
 import stat
 import tempfile
 import textwrap
+import unicodedata
 
 from collections import OrderedDict
 
@@ -48,9 +49,9 @@ class Shell(Interface):
     """
 
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Public Properties
-    # |  
+    # |
     # ----------------------------------------------------------------------
     @abstractproperty
     def Name(self):
@@ -116,9 +117,9 @@ class Shell(Interface):
         raise Exception("Abstract property")
 
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Public Methods
-    # |  
+    # |
     # ----------------------------------------------------------------------
     @classmethod
     def DecorateObjectWithCommands(cls):
@@ -130,7 +131,7 @@ class Shell(Interface):
         """
 
         from CommonEnvironment.Shell.Commands.All import ALL_COMMANDS
-        
+
         # ----------------------------------------------------------------------
         class ShellCommandsObject(object):
             pass
@@ -168,7 +169,7 @@ class Shell(Interface):
 
     # ----------------------------------------------------------------------
     @classmethod
-    def GenerateCommands( cls, 
+    def GenerateCommands( cls,
                           command_or_commands,
                           suppress_prefix=False,
                           suppress_suffix=False,
@@ -204,7 +205,7 @@ class Shell(Interface):
 
     # ----------------------------------------------------------------------
     @classmethod
-    def ExecuteCommands( cls, 
+    def ExecuteCommands( cls,
                          command_or_commands,
                          output_stream,
                          environment=None,
@@ -214,7 +215,7 @@ class Shell(Interface):
         and then executes it. Returns the result and output generated during
         execution.
         """
-        
+
         from CommonEnvironment.CallOnExit import CallOnExit
         from CommonEnvironment import FileSystem
         from CommonEnvironment import Process
@@ -222,10 +223,10 @@ class Shell(Interface):
         temp_filename = cls.CreateTempFilename(cls.ScriptExtension)
         with open(temp_filename, 'w') as f:
             f.write(cls.GenerateCommands(command_or_commands))
-        
+
         with CallOnExit(lambda: FileSystem.RemoveFile(temp_filename)):
             cls.MakeFileExecutable(temp_filename)
-            
+
             return Process.Execute( cls.CreateScriptName(temp_filename),
                                     output_stream,
                                     environment=environment,
@@ -246,7 +247,30 @@ class Shell(Interface):
 
     # ----------------------------------------------------------------------
     @classmethod
-    def CreateScriptName(cls, name, filename_only=False):
+    def ScrubFilename(
+        cls,
+        filename, # : str
+        replace_char='_',
+    ): # -> str
+        """Returns a filename where all invalid characters in the filename have been replaced by the replace_char"""
+
+        # Taken from https://github.com/django/django/blob/master/django/utils/text.py
+        # Convert to ASCII if 'allow_unicode' is False. Convert spaces or repeated
+        # dashes to single dashes. Remove characters that aren't alphanumerics,
+        # underscores, or hyphens. Convert to lowercase. Also strip leading and
+        # trailing whitespace, dashes, and underscores.
+        filename = unicodedata.normalize('NFKD', filename).encode('ascii', 'ignore').decode('ascii')
+
+        filename = re.sub(r'[^\w\s\-\(\)\[\]\.]', replace_char, filename)
+        return filename
+
+    # ----------------------------------------------------------------------
+    @classmethod
+    def CreateScriptName(
+        cls,
+        name,
+        filename_only=False,  # This parameter is no longer used but remains for backwards compatibility
+    ):
         ext = cls.ScriptExtension
         if ext and not name.endswith(ext):
             name += ext
@@ -266,7 +290,7 @@ class Shell(Interface):
     @staticmethod
     def CreateTempFilename(suffix=''):
         filename_handle, filename = tempfile.mkstemp(suffix=suffix)
-        
+
         os.close(filename_handle)
         os.remove(filename)
 
@@ -294,7 +318,7 @@ class Shell(Interface):
 
         # By default, do nothing as not all shells support running as sudo
         pass
-        
+
     # ----------------------------------------------------------------------
     @classmethod
     def CreateDataFilename( cls,
@@ -316,9 +340,9 @@ class Shell(Interface):
 
         from CommonEnvironment.Shell.Commands import SymbolicLink
 
-        result, output = cls.ExecuteCommands( SymbolicLink( link_filename, 
-                                                            target, 
-                                                            is_dir=is_dir, 
+        result, output = cls.ExecuteCommands( SymbolicLink( link_filename,
+                                                            target,
+                                                            is_dir=is_dir,
                                                             remove_existing=True,
                                                           ),
                                               output_stream=None,
@@ -364,7 +388,7 @@ class Shell(Interface):
             os.unlink(filename)
         else:
             os.remove(filename)
-    
+
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
@@ -429,11 +453,11 @@ class Shell(Interface):
                 value = regex.sub(OnMatch, value)
                 value = value.replace(escape_char, '')
                 value = Postprocess(value)
-                
+
                 return value
 
             # ----------------------------------------------------------------------
 
             setattr(cls, "_ProcessEscapedChars_func", staticmethod(Func))
-            
-        return cls._ProcessEscapedChars_func(value)
+
+        return cls._ProcessEscapedChars_func(value)  # type: ignore
