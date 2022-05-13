@@ -40,15 +40,15 @@ def Describe(
     item: Any,
     output_stream: TextIO=sys.stdout,
     *,
-    include_class_info: bool=None,          # False
-    include_id: bool=None,                  # False
-    include_methods: bool=None,             # False
-    include_private: bool=None,             # False
-    indentation_level: int=None,            # 2
-    scrub_results: bool=None,               # False
-    item_stack: Any=None,                   # <impl detail>
-    max_recursion_depth: int=None,          # sys.maxint
-    unique_id__: Any=None,                  # <impl detail>
+    include_class_info: Optional[bool]=None,            # False
+    include_id: Optional[bool]=None,                    # False
+    include_methods: Optional[bool]=None,               # False
+    include_private: Optional[bool]=None,               # False
+    indentation_level: Optional[int]=None,              # 2
+    scrub_results: Optional[bool]=None,                 # False
+    item_stack: Any=None,                               # <impl detail>
+    max_recursion_depth: Optional[int]=None,            # sys.maxint
+    unique_id__: Any=None,                              # <impl detail>
     **custom_display_funcs: Callable[[Any], Optional[Any]],
 ) -> None:
     """Writes formatted yaml about the provided item to the given output stream"""
@@ -324,16 +324,23 @@ class ObjectReprImplBase(object):
     def __init__(
         self,
         *,
-        include_class_info: bool=None,      # See `Describe` for default value
-        include_id: bool=None,              # See `Describe` for default value
-        include_methods: bool=None,         # See `Describe` for default value
-        include_private: bool=None,         # See `Describe` for default value
-        indentation_level: int=None,        # See `Describe` for default value
-        scrub_results: bool=None,           # See `Describe` for default value
-        max_recursion_depth: int=None,      # See `Describe` for default value
+        # In May 2022, I found a bug where we weren't respecting 'include_class_info' for root-level
+        # objects. However, a lot of code dependens on this behavior, so I am introducing a new flag
+        # to control this specific scenario and maintaining backwards compatibility. If writing this
+        # code from scratch, this flag would not exist and everything would work according to
+        # 'include_class_info'.
+        include_root_class_info: bool=True,
+        include_class_info: Optional[bool]=None,        # See `Describe` for default value
+        include_id: Optional[bool]=None,                # See `Describe` for default value
+        include_methods: Optional[bool]=None,           # See `Describe` for default value
+        include_private: Optional[bool]=None,           # See `Describe` for default value
+        indentation_level: Optional[int]=None,          # See `Describe` for default value
+        scrub_results: Optional[bool]=None,             # See `Describe` for default value
+        max_recursion_depth: Optional[int]=None,        # See `Describe` for default value
         **custom_display_funcs: Optional[Callable[[Any], Optional[Any]]],
     ):
         d = {
+            "include_root_class_info": include_root_class_info,
             "include_class_info" : include_class_info,
             "include_id" : include_id,
             "include_methods" : include_methods,
@@ -360,19 +367,22 @@ class ObjectReprImplBase(object):
     def ToYamlString(
         self,
         *,
-        include_class_info: bool=None,      # See `Describe` for default value
-        include_id: bool=None,              # See `Describe` for default value
-        include_methods: bool=None,         # See `Describe` for default value
-        include_private: bool=None,         # See `Describe` for default value
-        indentation_level: int=None,        # See `Describe` for default value
-        scrub_results: bool=None,           # See `Describe` for default value
-        item_stack: Set[int]=None,          # See `Describe` for default value
-        max_recursion_depth: int=None,      # See `Describe` for default value
+        include_root_class_info: Optional[bool]=None,
+        include_class_info: Optional[bool]=None,        # See `Describe` for default value
+        include_id: Optional[bool]=None,                # See `Describe` for default value
+        include_methods: Optional[bool]=None,           # See `Describe` for default value
+        include_private: Optional[bool]=None,           # See `Describe` for default value
+        indentation_level: Optional[int]=None,          # See `Describe` for default value
+        scrub_results: Optional[bool]=None,             # See `Describe` for default value
+        item_stack: Optional[Set[int]]=None,            # See `Describe` for default value
+        max_recursion_depth: Optional[int]=None,        # See `Describe` for default value
     ) -> str:
         self._AutoInit()
 
         args = getattr(self, "__object_repr_impl_args")
 
+        if include_root_class_info is None:
+            include_root_class_info = args["include_root_class_info"]
         if include_class_info is None:
             include_class_info = args["include_class_info"]
         if include_id is None:
@@ -441,10 +451,12 @@ class ObjectReprImplBase(object):
         # Custom types must always display the type
         result = textwrap.dedent(
             """\
-            # {}
-            {}
+            {}{}
             """,
-        ).format(type(self), result)
+        ).format(
+            "# {}\n".format(type(self)) if include_root_class_info else "",
+            result,
+        )
 
         if scrub_results:
             # ----------------------------------------------------------------------
