@@ -17,7 +17,7 @@ from setuptools import setup, find_packages
 # Do the setup
 setup(
     name="CommonEnvironment",
-    version="1.0.6",
+    version="1.1.0",
     packages=find_packages(),
     install_requires=[
         "asciitree >= 0.3.3",
