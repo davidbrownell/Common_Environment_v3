@@ -277,7 +277,21 @@ def Describe(
                     return
 
                 if is_primitive_type:
-                    content = "{}\n".format(str(item))
+                    # Convert some python types into yaml friendly types
+                    value = None
+
+                    if not include_class_info:
+                        if item is None:
+                            value = "null"
+                        elif item is True:
+                            value = "true"
+                        elif item is False:
+                            value = "false"
+
+                    if value is None:
+                        value = str(item)
+
+                    content = "{}\n".format(value)
                     is_yaml = True
                 else:
                     content, is_yaml = GetCustomContent(item, max_recursion_depth)
