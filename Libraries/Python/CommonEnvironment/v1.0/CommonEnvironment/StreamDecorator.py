@@ -641,6 +641,12 @@ class StreamDecorator(object):
 
             try:
                 yield dm
+
+                # If nothing has been written, write something so the cursor movement
+                # functions as expected.
+                if nonlocals.first_write:
+                    dm.stream.write(" ")
+
             except:
                 nonlocals.reset_content = False
                 raise
