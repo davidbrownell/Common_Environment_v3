@@ -347,8 +347,6 @@ def Execute(
     if progress_bar:
         from tqdm import tqdm
 
-        pb_lock = threading.Lock()
-
         with tqdm(
             total=len(tasks),
             file=output_stream,
@@ -356,6 +354,12 @@ def Execute(
             unit=" items",
             leave=False,
         ) as pb:
+            pb_lock = threading.Lock()
+
+            progress_bar_nonlocals = Nonlocals(
+                first_status=True,
+            )
+
             # ----------------------------------------------------------------------
             def PBGetStatus(_, task, update_type, optional_content):
                 if update_type == StatusUpdate.Stop:
@@ -378,7 +382,11 @@ def Execute(
             def PBWriteStatuses(statuses):
                 with pb_lock:
                     # Move down one line to compensate for the progress bar
-                    output_stream.write("\033[1B")
+                    if progress_bar_nonlocals.first_status:
+                        output_stream.write("\n")
+                        progress_bar_nonlocals.first_status = False
+                    else:
+                        output_stream.write("\033[1B")
 
                     # Ensure that something is written (if nothing is written,
                     # the call to move up a line that is invoked after WriteStatuses
