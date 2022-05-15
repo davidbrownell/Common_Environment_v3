@@ -131,48 +131,48 @@ class TestStandard(object):
               C: "**A**"
             Simple: # <class 'CommonEnvironment.UnitTests.YamlRepr_UnitTest.Simple'>
               A: 1
-              B: True
+              B: true
               C: "A"
-              S: None
+              S: null
             Simples:
               - # <class 'CommonEnvironment.UnitTests.YamlRepr_UnitTest.Simple'>
                 A: 100
-                B: True
+                B: true
                 C: "a string"
-                S: None
+                S: null
               - # <class 'CommonEnvironment.UnitTests.YamlRepr_UnitTest.Simple'>
                 A: 200
-                B: False
+                B: false
                 C: "b string"
-                S: None
+                S: null
               - # <class 'CommonEnvironment.UnitTests.YamlRepr_UnitTest.Simple'>
                 A: 300
-                B: True
-                C: None
-                S: None
+                B: true
+                C: null
+                S: null
               - # <class 'CommonEnvironment.UnitTests.YamlRepr_UnitTest.Simple'>
                 A: 400
-                B: False
-                C: None
+                B: false
+                C: null
                 S: # <class 'CommonEnvironment.UnitTests.YamlRepr_UnitTest.Simple'>
                   A: 400000
-                  B: True
+                  B: true
                   C: |-
                     An embedded object
                     with
                       **multiple**
                     lines!
-                  S: None
+                  S: null
               - # <class 'CommonEnvironment.UnitTests.YamlRepr_UnitTest.Simple'>
                 A: 500
-                B: True
+                B: true
                 C: "e string"
-                S: None
+                S: null
             String: "This is a single string"
             Strings:
               - "one"
               - "two"
-              - None
+              - null
               - "three"
             """,
         )
@@ -280,9 +280,9 @@ class TestStandard(object):
               C: "**A**"
             Simple: # <class 'CommonEnvironment.UnitTests.YamlRepr_UnitTest.Simple'>
               A: 1
-              B: True
+              B: true
               C: "A"
-              S: None
+              S: null
             Simples:
               - "-- recursion is disabled: complex element '<class 'CommonEnvironment.UnitTests.YamlRepr_UnitTest.Simple'>' --"
               - "-- recursion is disabled: complex element '<class 'CommonEnvironment.UnitTests.YamlRepr_UnitTest.Simple'>' --"
@@ -293,7 +293,7 @@ class TestStandard(object):
             Strings:
               - "one"
               - "two"
-              - None
+              - null
               - "three"
             """,
         )
