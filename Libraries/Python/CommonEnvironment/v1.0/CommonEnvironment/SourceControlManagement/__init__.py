@@ -74,7 +74,7 @@ class SourceControlManagement(Interface):
     def WorkingDirectories(self):
         """
         Names of the directory(ies) used by the system to track changes and local state.
-        This can be an empty list if the system don't use local directories to track state.
+        This can be an empty list if the system doesn't use local directories to track state.
         """
         raise Exception("Abstract property")
 
