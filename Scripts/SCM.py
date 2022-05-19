@@ -84,7 +84,7 @@ def CommandLineSuffix():
         arity="?",
     ),
     output_stream=None,
-)
+)  # type: ignore
 def Info(
     directory=None,
     output_stream=sys.stdout,
@@ -149,7 +149,7 @@ def Info(
         ensure_exists=False,
     ),
     output_stream=None,
-)
+)  # type: ignore
 def Create(
     scm,
     output_dir,
@@ -178,7 +178,7 @@ def Create(
         arity="?",
     ),
     output_stream=None,
-)
+)  # type: ignore
 def Clone(
     scm,
     uri,
@@ -212,7 +212,7 @@ def Clone(
         arity="?",
     ),
     output_stream=None,
-)
+)  # type: ignore
 def GetUniqueName(
     directory=None,
     scm=None,
@@ -240,7 +240,7 @@ def GetUniqueName(
         arity="?",
     ),
     output_stream=None,
-)
+)  # type: ignore
 def Who(
     directory=None,
     scm=None,
@@ -268,7 +268,7 @@ def Who(
         arity="?",
     ),
     output_stream=None,
-)
+)  # type: ignore
 def GetRoot(
     directory=None,
     scm=None,
@@ -296,7 +296,7 @@ def GetRoot(
         arity="?",
     ),
     output_stream=None,
-)
+)  # type: ignore
 def IsRoot(
     directory=None,
     scm=None,
@@ -306,6 +306,35 @@ def IsRoot(
     return _Wrap(
         "IsRoot",
         lambda directory, scm: scm.IsRoot(directory),
+        directory,
+        scm,
+        output_stream,
+        verbose=verbose,
+    )
+
+# ----------------------------------------------------------------------
+@CommandLine.EntryPoint
+@CommandLine.Constraints(
+    directory=CommandLine.DirectoryTypeInfo(
+        arity="?",
+    ),
+    scm=CommandLine.EnumTypeInfo(
+        _SCM_NAMES,
+        arity="?",
+    ),
+    output_stream=None,
+)  # type: ignore
+def GetIgnoreFilename(
+    directory=None,
+    scm=None,
+    output_stream=sys.stdout,
+    verbose=False,
+):
+    """Returns the fullpath to the ignore file used by the active SCM."""
+
+    return _Wrap(
+        "GetIgnoreFilename",
+        lambda directory, scm: os.path.join(scm.GetRoot(directory), scm.IgnoreFilename),
         directory,
         scm,
         output_stream,
@@ -324,7 +353,7 @@ def IsRoot(
         arity="?",
     ),
     output_stream=None,
-)
+)  # type: ignore
 def Clean(
     yes=False,
     directory=None,
@@ -356,7 +385,7 @@ def Clean(
         arity="?",
     ),
     output_stream=None,
-)
+)  # type: ignore
 def GetBranches(
     directory=None,
     scm=None,
@@ -384,7 +413,7 @@ def GetBranches(
         arity="?",
     ),
     output_stream=None,
-)
+)  # type: ignore
 def GetCurrentBranch(
     directory=None,
     scm=None,
@@ -412,7 +441,7 @@ def GetCurrentBranch(
         arity="?",
     ),
     output_stream=None,
-)
+)  # type: ignore
 def GetCurrentNormalizedBranch(
     directory=None,
     scm=None,
@@ -440,7 +469,7 @@ def GetCurrentNormalizedBranch(
         arity="?",
     ),
     output_stream=None,
-)
+)  # type: ignore
 def GetMostRecentBranch(
     directory=None,
     scm=None,
@@ -469,7 +498,7 @@ def GetMostRecentBranch(
         arity="?",
     ),
     output_stream=None,
-)
+)  # type: ignore
 def CreateBranch(
     branch_name,
     directory=None,
@@ -499,7 +528,7 @@ def CreateBranch(
         arity="?",
     ),
     output_stream=None,
-)
+)  # type: ignore
 def SetBranch(
     branch_name,
     directory=None,
@@ -529,7 +558,7 @@ def SetBranch(
         arity="?",
     ),
     output_stream=None,
-)
+)  # type: ignore
 def SetBranchOrDefault(
     branch_name,
     directory=None,
@@ -559,7 +588,7 @@ def SetBranchOrDefault(
         arity="?",
     ),
     output_stream=None,
-)
+)  # type: ignore
 def GetExecutePermission(
     filename,
     directory=None,
@@ -590,7 +619,7 @@ def GetExecutePermission(
         arity="?",
     ),
     output_stream=None,
-)
+)  # type: ignore
 def SetExecutePermission(
     filename,
     value,
@@ -620,7 +649,7 @@ def SetExecutePermission(
         arity="?",
     ),
     output_stream=None,
-)
+)  # type: ignore
 def HasUntrackedWorkingChanges(
     directory=None,
     scm=None,
@@ -648,7 +677,7 @@ def HasUntrackedWorkingChanges(
         arity="?",
     ),
     output_stream=None,
-)
+)  # type: ignore
 def HasWorkingChanges(
     directory=None,
     scm=None,
@@ -676,7 +705,7 @@ def HasWorkingChanges(
         arity="?",
     ),
     output_stream=None,
-)
+)  # type: ignore
 def GetWorkingChanges(
     directory=None,
     scm=None,
@@ -704,7 +733,7 @@ def GetWorkingChanges(
         arity="?",
     ),
     output_stream=None,
-)
+)  # type: ignore
 def GetWorkingChangeStatus(
     directory=None,
     scm=None,
@@ -733,7 +762,7 @@ def GetWorkingChangeStatus(
         arity="?",
     ),
     output_stream=None,
-)
+)  # type: ignore
 def GetChangeInfo(
     change,
     directory=None,
@@ -774,7 +803,7 @@ def GetChangeInfo(
         arity="?",
     ),
     output_stream=None,
-)
+)  # type: ignore
 def AddFiles(
     filename=None,
     recurse=None,
@@ -785,7 +814,7 @@ def AddFiles(
     output_stream=sys.stdout,
     verbose=False,
 ):
-    files = filename
+    filenames = filename
     del filename
 
     include_res = include_re
@@ -796,39 +825,43 @@ def AddFiles(
     if recurse is None and (include_res or exclude_res):
         recurse = False
 
-    if files and recurse is not None:
+    if filenames and recurse is not None:
         raise CommandLine.UsageException(
-            "'file' or 'recurse' arguments may be provided individually, but not both at the same time.",
+            "'filename' or 'recurse' arguments may be provided individually, but not both at the same time.",
         )
 
-    if not files and recurse is None:
-        raise CommandLine.UsageException("'file' or 'recurse' must be provided.")
+    if not filenames and recurse is None:
+        raise CommandLine.UsageException("'filename' or 'recurse' must be provided.")
 
     if recurse is not None and (include_res or exclude_res):
-        include_res = [re.compile(regex) for regex in include_res]
-        exclude_res = [re.compile(regex) for regex in exclude_res]
+        include_res = [re.compile(regex) for regex in (include_res or [])]
+        exclude_res = [re.compile(regex) for regex in (exclude_res or [])]
 
         # ----------------------------------------------------------------------
-        def Functor(fullpath):
+        def RecurseFunctor(fullpath):
             return (
                 not exclude_res or not any(regex.match(fullpath) for regex in exclude_res)
             ) and (not include_res or any(regex.match(fullpath) for regex in include_res))
 
         # ----------------------------------------------------------------------
 
+        functor = RecurseFunctor
+
     else:
         # ----------------------------------------------------------------------
-        def Functor(_):
+        def StandardFunctor(_):
             return True
 
         # ----------------------------------------------------------------------
+
+        functor = StandardFunctor
 
     return _Wrap(
         "AddFiles",
         lambda directory, scm: scm.AddFiles(
             directory,
-            file or recurse,
-            Functor=Functor,
+            filenames or recurse,
+            file_functor=functor,
         ),
         directory,
         scm,
@@ -852,7 +885,7 @@ def AddFiles(
         arity="?",
     ),
     output_stream=None,
-)
+)  # type: ignore
 def Commit(
     description,
     username=None,
@@ -895,7 +928,7 @@ def Commit(
         arity="?",
     ),
     output_stream=None,
-)
+)  # type: ignore
 def Update(
     change=None,
     branch=None,
@@ -942,7 +975,7 @@ def Update(
         arity="?",
     ),
     output_stream=None,
-)
+)  # type: ignore
 def Merge(
     change=None,
     branch=None,
@@ -993,7 +1026,7 @@ def Merge(
         arity="?",
     ),
     output_stream=None,
-)
+)  # type: ignore
 def GetChangesSinceLastMerge(
     dest_branch,
     source_change=None,
@@ -1038,7 +1071,7 @@ def GetChangesSinceLastMerge(
         arity="?",
     ),
     output_stream=None,
-)
+)  # type: ignore
 def GetChangedFiles(
     change=None,
     directory=None,
@@ -1070,7 +1103,7 @@ def GetChangedFiles(
         arity="?",
     ),
     output_stream=None,
-)
+)  # type: ignore
 def EnumBlameInfo(
     filename,
     directory=None,
@@ -1099,7 +1132,7 @@ def EnumBlameInfo(
         arity="?",
     ),
     output_stream=None,
-)
+)  # type: ignore
 def EnumTrackedFiles(
     directory=None,
     scm=None,
@@ -1136,7 +1169,7 @@ def EnumTrackedFiles(
         arity="?",
     ),
     output_stream=None,
-)
+)  # type: ignore
 def CreatePatch(
     patch_filename,
     start_change=None,
@@ -1173,7 +1206,7 @@ def CreatePatch(
         arity="?",
     ),
     output_stream=None,
-)
+)  # type: ignore
 def ApplyPatch(
     patch_filename,
     commit=False,
@@ -1207,7 +1240,7 @@ def ApplyPatch(
         arity="?",
     ),
     output_stream=None,
-)
+)  # type: ignore
 def Reset(
     yes=False,
     skip_backup=False,
@@ -1242,7 +1275,7 @@ def Reset(
         arity="?",
     ),
     output_stream=None,
-)
+)  # type: ignore
 def HasUpdateChanges(
     directory=None,
     scm=None,
@@ -1271,7 +1304,7 @@ def HasUpdateChanges(
         arity="?",
     ),
     output_stream=None,
-)
+)  # type: ignore
 def HasLocalChanges(
     directory=None,
     scm=None,
@@ -1300,7 +1333,7 @@ def HasLocalChanges(
         arity="?",
     ),
     output_stream=None,
-)
+)  # type: ignore
 def GetLocalChanges(
     directory=None,
     scm=None,
@@ -1329,7 +1362,7 @@ def GetLocalChanges(
         arity="?",
     ),
     output_stream=None,
-)
+)  # type: ignore
 def HasRemoteChanges(
     directory=None,
     scm=None,
@@ -1358,7 +1391,7 @@ def HasRemoteChanges(
         arity="?",
     ),
     output_stream=None,
-)
+)  # type: ignore
 def GetRemoteChanges(
     directory=None,
     scm=None,
@@ -1387,7 +1420,7 @@ def GetRemoteChanges(
         arity="?",
     ),
     output_stream=None,
-)
+)  # type: ignore
 def GetChangeStatus(
     directory=None,
     scm=None,
@@ -1416,7 +1449,7 @@ def GetChangeStatus(
         arity="?",
     ),
     output_stream=None,
-)
+)  # type: ignore
 def Push(
     create_remote_branch=False,
     directory=None,
@@ -1452,7 +1485,7 @@ def Push(
         arity="?",
     ),
     output_stream=None,
-)
+)  # type: ignore
 def Pull(
     branch=None,
     directory=None,
@@ -1484,7 +1517,7 @@ def Pull(
         arity="?",
     ),
     output_stream=None,
-)
+)  # type: ignore
 def PullAndUpdate(
     directory=None,
     scm=None,
@@ -1523,7 +1556,7 @@ def PullAndUpdate(
 @CommandLine.Constraints(
     directory=CommandLine.DirectoryTypeInfo(),
     output_stream=None,
-)
+)  # type: ignore
 def AllChangeStatus(
     directory,
     output_stream=sys.stdout,
@@ -1653,7 +1686,7 @@ def AllChangeStatus(
 @CommandLine.Constraints(
     directory=CommandLine.DirectoryTypeInfo(),
     output_stream=None,
-)
+)  # type: ignore
 def AllWorkingChangeStatus(
     directory,
     output_stream=sys.stdout,
@@ -1722,7 +1755,7 @@ def AllWorkingChangeStatus(
 @CommandLine.Constraints(
     directory=CommandLine.DirectoryTypeInfo(),
     output_stream=None,
-)
+)  # type: ignore
 def PushAll(
     directory,
     output_stream=sys.stdout,
@@ -1746,7 +1779,7 @@ def PushAll(
 @CommandLine.Constraints(
     directory=CommandLine.DirectoryTypeInfo(),
     output_stream=None,
-)
+)  # type: ignore
 def PullAll(
     directory,
     output_stream=sys.stdout,
@@ -1770,7 +1803,7 @@ def PullAll(
 @CommandLine.Constraints(
     directory=CommandLine.DirectoryTypeInfo(),
     output_stream=None,
-)
+)  # type: ignore
 def UpdateAll(
     directory,
     output_stream=sys.stdout,
@@ -1794,7 +1827,7 @@ def UpdateAll(
 @CommandLine.Constraints(
     directory=CommandLine.DirectoryTypeInfo(),
     output_stream=None,
-)
+)  # type: ignore
 def PullAndUpdateAll(
     directory,
     output_stream=sys.stdout,
@@ -1855,6 +1888,8 @@ def _Wrap(
         except Exception as ex:
             output_stream.write("ERROR: {}\n".format(str(ex)))
             return -1
+
+    assert scm is not None
 
     if requires_distributed and not scm.IsDistributed:
         output_stream.write(

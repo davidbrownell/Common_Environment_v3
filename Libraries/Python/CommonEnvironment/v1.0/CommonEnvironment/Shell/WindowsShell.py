@@ -15,6 +15,7 @@
 """Contains the WindowsShell object."""
 
 import os
+import re
 import shlex
 import sys
 import textwrap
@@ -484,8 +485,61 @@ class WindowsShell(Shell):
             return None
     else:
         # ----------------------------------------------------------------------
+        _ResolveSymLinkRegex                = None
+
         @classmethod
         @override
         def ResolveSymLink(cls, filename):
             """os.realpath still doesn't work on Windows. os.readlink does."""
-            return os.readlink(filename)
+
+            # Actually, os.readline works for symlinks but not for junctions.
+            # Assume that the content is a symlink and then take more extreme
+            # measures if it looks like we are looking at a junction.
+            assert cls.IsSymLink(filename)
+
+            try:
+                return os.readlink(filename)
+            except ValueError as ex:
+                if not os.path.isdir(filename):
+                    raise
+
+            # If here, we are looking at a junction.
+            dirname, basename = os.path.split(filename)
+
+            # Execute the dir command
+            from io import StringIO
+            from CommonEnvironment import Process
+
+            sink = StringIO()
+
+            result = Process.Execute('dir /AL "{}"'.format(dirname), sink)
+            assert result == 0, result
+
+            sink = sink.getvalue()
+
+            # Process the output
+
+            # This is annoying in that we have to search the parent dir to get a display
+            # of what the junction points to. However, we can't use the exact directory name,
+            # as that will display the contents of the junction.
+            if cls._ResolveSymLinkRegex is None:
+                cls._ResolveSymLinkRegex = re.compile(
+                    textwrap.dedent(
+                        r"""(?#
+                        Start of line       )^(?#
+                        Date                )\d{2}/\d{2}/\d{2,4}\s+(?#
+                        Time                )\d{2}:\d{2} [AP]M\s+(?#
+                        Junction            )<JUNCTION>\s+(?#
+                        Name                )(?P<name>.+)\s+(?#
+                        Target              )\[(?P<target>.+)\]\s*(?#
+                        End of Line         )$(?#
+                        )""",
+                    ),
+                )
+
+            for line in sink.split("\n"):
+                match = cls._ResolveSymLinkRegex.match(line)
+                if match and match.group("name") == basename:
+                    return match.group("target")
+
+            raise Exception("'{}' is not a junction".format(filename))

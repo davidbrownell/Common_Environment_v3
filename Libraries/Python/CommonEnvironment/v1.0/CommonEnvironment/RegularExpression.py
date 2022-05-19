@@ -35,13 +35,13 @@ _script_dir, _script_name                   = os.path.split(_script_fullpath)
 _TemplateStringToRegex_tag_regex            = re.compile(
     textwrap.dedent(
         r"""(?#
-                                                                LBracket:           )\{\s*(?#
-                                                                Tag:                )(?P<tag>.+?)(?#
-                                                                [optional begin]    )(?:(?#
-                                                                    Delimiter:      )\:.*?(?#
-                                                                [optional end]      ))?(?#
-                                                                RBracket:           )\s*\}(?#
-                                                                )""",
+        LBracket:                           )\{\s*(?#
+        Tag:                                )(?P<tag>.+?)(?#
+        [optional begin]                    )(?:(?#
+            Delimiter:                      )\:.*?(?#
+        [optional end]                      ))?(?#
+        RBracket:                           )\s*\}(?#
+        )""",
     ),
 )
 

@@ -47,6 +47,41 @@ class StreamDecorator(object):
 
     # ----------------------------------------------------------------------
     # |
+    # |  Public Types
+    # |
+    # ----------------------------------------------------------------------
+    class DoneManagerInfo(object):
+
+        # ----------------------------------------------------------------------
+        def __init__(self, stream_decorator, line_prefix, result=0):
+            self.stream                     = StreamDecorator( stream_decorator,
+                                                               one_time_prefix='\n' if line_prefix else '',
+                                                               line_prefix=line_prefix,
+                                                               flush_after_write=True,
+                                                             )
+            self.stream._done_manager       = self
+
+            self.result                     = result
+
+        # ----------------------------------------------------------------------
+        def Enumerate(self):
+            # ----------------------------------------------------------------------
+            def Impl(decorator):
+                for stream in decorator._streams:
+                    if hasattr(stream, "_done_manager"):
+                        yield stream._done_manager
+
+                        for dm in Impl(stream._done_manager.stream):
+                            yield dm
+
+            # ----------------------------------------------------------------------
+
+            yield self
+            for dm in Impl(self.stream):
+                yield dm
+
+    # ----------------------------------------------------------------------
+    # |
     # |  Public Methods
     # |
     # ----------------------------------------------------------------------
@@ -382,7 +417,7 @@ class StreamDecorator(object):
 
         nonlocals = Nonlocals(time_delta=None)
 
-        info = self._DoneManagerInfo(self, line_prefix)
+        info = self.DoneManagerInfo(self, line_prefix)
 
         done_suffixes_funcs = [ ToFunctor(ds) for ds in (done_suffixes or []) ]
         if done_suffix:
@@ -657,38 +692,3 @@ class StreamDecorator(object):
     # |
     # ----------------------------------------------------------------------
     _eol_regex                              = re.compile(r"(?P<eol>\r?\n)")
-
-    # ----------------------------------------------------------------------
-    # |
-    # |  Private Types
-    # |
-    # ----------------------------------------------------------------------
-    class _DoneManagerInfo(object):
-
-        # ----------------------------------------------------------------------
-        def __init__(self, stream_decorator, line_prefix, result=0):
-            self.stream                     = StreamDecorator( stream_decorator,
-                                                               one_time_prefix='\n' if line_prefix else '',
-                                                               line_prefix=line_prefix,
-                                                               flush_after_write=True,
-                                                             )
-            self.stream._done_manager       = self
-
-            self.result                     = result
-
-        # ----------------------------------------------------------------------
-        def Enumerate(self):
-            # ----------------------------------------------------------------------
-            def Impl(decorator):
-                for stream in decorator._streams:
-                    if hasattr(stream, "_done_manager"):
-                        yield stream._done_manager
-
-                        for dm in Impl(stream._done_manager.stream):
-                            yield dm
-
-            # ----------------------------------------------------------------------
-
-            yield self
-            for dm in Impl(self.stream):
-                yield dm
