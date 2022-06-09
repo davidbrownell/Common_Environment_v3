@@ -29,23 +29,23 @@ Setup
   Windows                               ``Setup.cmd``
   Windows (PowerShell)                  ``Setup.ps1``
   ====================================  =====================================================
-  
+
 .. _Activate:
 
 Activate
   Activate prepares the current environment for development activities and must be run at least once in each terminal window.
-  
+
   ====================================  =====================================================
   Linux                                 ``Activate.sh <TODO: Update configurations>``
   Windows                               ``Activate.cmd <TODO: Update configurations>``
   Windows (PowerShell)                  ``Activate.ps1 <TODO: Update configurations>``
   ====================================  =====================================================
-  
+
 License
 =======
 <TODO: Update for your repo>
 
-This repository is licensed under the `Boost Software License <https://www.boost.org/LICENSE_1_0.txt>`_. 
+This repository is licensed under the `Boost Software License <https://www.boost.org/LICENSE_1_0.txt>`_.
 
 `GitHub <https://github.com>`_ describes this license as:
 
@@ -68,9 +68,9 @@ This software has been verified on the following platforms.
 ========================  ======================  =========================================
 Platform                  Scripting Environment   Version
 ========================  ======================  =========================================
-Windows                   Cmd.exe                 Windows 10 April 2018 Update
-Windows                   PowerShell              Windows 10 April 2018 Update
-Linux                     Bash                    Ubuntu 18.04, 16.04
+Windows                   Cmd.exe                 Windows 11, Windows 10 April 2018 Update
+Windows                   PowerShell              Windows 11, Windows 10 April 2018 Update
+Linux                     Bash                    Ubuntu 20.04, 18.04, 16.04
 ========================  ======================  =========================================
 
 Definitions
@@ -83,10 +83,10 @@ Term 1
   Definition
 
 .. _`Term 2`:
-  
+
 Term 2
   Definition
-  
+
 Functionality
 =============
 <TODO: Update for your repo>
@@ -95,12 +95,12 @@ Functionality
 
 Feature 1
   Description
-  
+
 .. _`Feature 2`:
 
 Feature 2
   Description
-  
+
 Docker Images
 =============
 Docker images of this repository are generated with updates.

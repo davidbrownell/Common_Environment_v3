@@ -110,7 +110,7 @@ def EntryPoint(
         if support_windows:
             support_powershell = _Prompt(
                 "Support development on Windows using PowerShell? ",
-                "yes",
+                "no",
             ).lower() in ["yes", "y"]
         else:
             support_powershell = False
@@ -130,8 +130,13 @@ def EntryPoint(
             "y",
         ]
 
-        if not (support_git or support_hg):
-            raise Exception("At least one of Git or Hg must be supported")
+        include_scmhook = _Prompt("Include SCM hooks? ", "no").lower() in [
+            "yes",
+            "y",
+        ]
+
+        readme_format = _Prompt("Readme format (.md or .rst)? ", ".md").lower()
+
         if not (support_windows or support_powershell or support_linux):
             raise Exception(
                 "At least one of Windows, PowerShell, or Linux must be supported",
@@ -142,9 +147,7 @@ def EntryPoint(
 
         filenames = [
             "Activate_custom.py",
-            "ScmHook_custom.py",
             "Setup_custom.py",
-            "Readme.rst",
         ]
 
         if support_git:
@@ -168,6 +171,16 @@ def EntryPoint(
                 filenames.append("bootstrap.cmd")
             if support_linux:
                 filenames.append("bootstrap.sh")
+
+        if include_scmhook:
+            filenames.append("ScmHook_custom.py")
+
+        if readme_format == ".md":
+            filenames.append("Readme.md")
+        elif readme_format == ".rst":
+            filenames.append("Readme.rst")
+        else:
+            raise Exception("'{}' is not a supported Readme extension".format(readme_format))
 
         dm.stream.write(
             "\nPopulating {}...".format(inflect.no("file", len(filenames) + 1)),
