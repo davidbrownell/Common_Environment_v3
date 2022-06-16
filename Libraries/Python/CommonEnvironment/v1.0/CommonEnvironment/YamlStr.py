@@ -1,6 +1,6 @@
 # ----------------------------------------------------------------------
 # |
-# |  YamlRepr.py
+# |  YamlStr.py
 # |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2021-08-25 19:20:03
@@ -13,10 +13,7 @@
 # |  http://www.boost.org/LICENSE_1_0.txt.
 # |
 # ----------------------------------------------------------------------
-"""Functionality to output yaml content during for __repr__-style implementations"""
-
-# NOTE THAT THIS FILE IS DEPRECATED AND WILL BE REMOVED IN THE FUTURE. IT TURNS OUT THAT THE
-# FUNCTIONALITY IS TOO EXPENSIVE TO INVOKE DURING __repr__. YamlStr SHOULD BE USED INSTEAD.
+"""Functionality to output yaml content during for __str__-style implementations"""
 
 import io
 import os
@@ -325,13 +322,13 @@ def Describe(
 
 
 # ----------------------------------------------------------------------
-class ObjectReprImplBase(object):
+class ObjectStrImplBase(object):
     """\
-    Implements __repr__ and DisplayAsYaml functionality for the parent class
+    Implements __str__ and DisplayAsYaml functionality for the parent class
     and its entire class hierarchy.
 
     Example:
-        class MyObject(CommonEnvironment.ObjectReprImplBase):
+        class MyObject(CommonEnvironment.ObjectStrImplBase):
             pass
 
         print(str(MyObject()))
@@ -368,7 +365,7 @@ class ObjectReprImplBase(object):
 
         # Note that this code may be invoked from a frozen dataclass, so we
         # need to take special create when assigning attributes.
-        object.__setattr__(self, "__object_repr_impl_args", d)
+        object.__setattr__(self, "__object_str_impl_args", d)
         object.__setattr__(self, "__max_recursion_depth", max_recursion_depth)
         object.__setattr__(self, "__custom_display_funcs", custom_display_funcs)
 
@@ -396,7 +393,7 @@ class ObjectReprImplBase(object):
     ) -> str:
         self._AutoInit()
 
-        args = getattr(self, "__object_repr_impl_args")
+        args = getattr(self, "__object_str_impl_args")
 
         if include_root_class_info is None:
             include_root_class_info = args["include_root_class_info"]
@@ -497,5 +494,5 @@ class ObjectReprImplBase(object):
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
     def _AutoInit(self):
-        if not hasattr(self, "__object_repr_impl_args"):
-            ObjectReprImplBase.__init__(self)
+        if not hasattr(self, "__object_str_impl_args"):
+            ObjectStrImplBase.__init__(self)
