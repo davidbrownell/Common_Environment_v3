@@ -130,7 +130,7 @@ class Interface(object):
     # <Too many local variables> pylint: disable = R0914
     def __new__(cls, *args, **kwargs):
         # If here, ABC has already validated that abstract methods and properties are
-        # present and named correctly. We not need to validate static methods and parameters.
+        # present and named correctly. We now need to validate static methods and parameters.
 
         try:
             _ResolveType(

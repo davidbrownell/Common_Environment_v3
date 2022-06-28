@@ -86,16 +86,17 @@ def test_DefaultValuesBaseAndDerived():
 
 
 # ----------------------------------------------------------------------
-def test_ComparisonOperators():
+def test_ComparisonOperatorsStandard():
     # ----------------------------------------------------------------------
     @ComparisonOperators
     @dataclass(frozen=True)
     class Location(object):
         line: int
         column: int
+        value: str
 
-        @staticmethod
-        def Compare(a: "Location", b:"Location") -> int:
+        @classmethod
+        def Compare(cls, a: "Location", b:"Location") -> int:
             result = a.line - b.line
             if result != 0:
                 return result
@@ -104,18 +105,23 @@ def test_ComparisonOperators():
             if result != 0:
                 return result
 
-            return 0
+            return CompareImpl(a.value, b.value)
 
     # ----------------------------------------------------------------------
 
-    assert Location(1, 2) == Location(1, 2)
-    assert Location(1, 2) != Location(3, 4)
-    assert Location(1, 2) != Location(1, 5)
-    assert Location(1, 2) < Location(3, 4)
-    assert Location(1, 2) < Location(1, 5)
-    assert Location(1, 2) <= Location(3, 4)
-    assert Location(1, 2) <= Location(1, 2)
-    assert Location(3, 4) > Location(1, 2)
-    assert Location(1, 5) > Location(1, 2)
-    assert Location(3, 4) >= Location(1, 2)
-    assert Location(1, 2) >= Location(1, 2)
+    assert Location(1, 2, "a") == Location(1, 2, "a")
+    assert Location(1, 2, "a") != Location(3, 4, "a")
+    assert Location(1, 2, "a") != Location(1, 5, "a")
+    assert Location(1, 2, "a") < Location(3, 4, "a")
+    assert Location(1, 2, "a") < Location(1, 5, "a")
+    assert Location(1, 2, "a") <= Location(3, 4, "a")
+    assert Location(1, 2, "a") <= Location(1, 2, "a")
+    assert Location(3, 4, "a") > Location(1, 2, "a")
+    assert Location(1, 5, "a") > Location(1, 2, "a")
+    assert Location(3, 4, "a") >= Location(1, 2, "a")
+    assert Location(1, 2, "a") >= Location(1, 2, "a")
+    assert Location(1, 2, "a") != Location(1, 2, "b")
+    assert Location(1, 2, "a") < Location(1, 2, "b")
+    assert Location(1, 2, "a") <= Location(1, 2, "b")
+    assert Location(1, 2, "z") > Location(1, 2, "b")
+    assert Location(1, 2, "z") >= Location(1, 2, "b")
