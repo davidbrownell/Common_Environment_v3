@@ -22,6 +22,8 @@ from typing import Any, Callable, Dict, Tuple
 import wrapt
 
 import CommonEnvironment
+from CommonEnvironment.Compare import Compare as CompareImpl
+from CommonEnvironment import Interface
 
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()
@@ -112,21 +114,20 @@ def ComparisonOperators(cls):
     """
 
     # ----------------------------------------------------------------------
-    def CompareImpl(
+    def CompareImplWrapper(
         value_a: Any,
         value_b: Any,
         result_func: Callable[[int], bool],
     ):
-        assert isinstance(value_b, type(value_a)), (value_a, value_b)
-        return result_func(type(value_a).Compare(value_a, value_b))
+        return result_func(CompareImpl(value_a, value_b))
 
     # ----------------------------------------------------------------------
 
-    cls.__eq__ = lambda self, b: CompareImpl(self, b, lambda value: value == 0)
-    cls.__ne__ = lambda self, b: CompareImpl(self, b, lambda value: value != 0)
-    cls.__lt__ = lambda self, b: CompareImpl(self, b, lambda value: value < 0)
-    cls.__le__ = lambda self, b: CompareImpl(self, b, lambda value: value <= 0)
-    cls.__gt__ = lambda self, b: CompareImpl(self, b, lambda value: value > 0)
-    cls.__ge__ = lambda self, b: CompareImpl(self, b, lambda value: value >= 0)
+    cls.__eq__ = lambda self, b: CompareImplWrapper(self, b, lambda value: value == 0)
+    cls.__ne__ = lambda self, b: CompareImplWrapper(self, b, lambda value: value != 0)
+    cls.__lt__ = lambda self, b: CompareImplWrapper(self, b, lambda value: value < 0)
+    cls.__le__ = lambda self, b: CompareImplWrapper(self, b, lambda value: value <= 0)
+    cls.__gt__ = lambda self, b: CompareImplWrapper(self, b, lambda value: value > 0)
+    cls.__ge__ = lambda self, b: CompareImplWrapper(self, b, lambda value: value >= 0)
 
     return cls
